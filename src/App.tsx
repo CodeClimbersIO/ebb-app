@@ -4,7 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
 
 import { MonitoringControl } from "./Monitor";
-import { enable, isEnabled, disable } from '@tauri-apps/plugin-autostart'
+import { isEnabled, disable } from '@tauri-apps/plugin-autostart'
 import {
   isPermissionGranted,
   requestPermission,
