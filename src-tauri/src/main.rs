@@ -17,14 +17,13 @@ fn get_thread_info() -> String {
 fn main() {
     println!("Main thread info: {}", get_thread_info());
     tauri::Builder::default()
-        .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_autostart::init(
             MacosLauncher::LaunchAgent,
             Some(vec!["--flag1", "--flag2"]),
         ))
         .setup(|app| {
             let app_handle = app.handle().clone();
-            println!("setup");
             println!("setup thread info: {}", get_thread_info());
             window_monitor::start_monitoring(app_handle);
             Ok(())

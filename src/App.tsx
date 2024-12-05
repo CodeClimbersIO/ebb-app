@@ -1,43 +1,63 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import reactLogo from "./assets/react.svg";
 import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
 
 import { MonitoringControl } from "./Monitor";
 import { isEnabled, disable } from '@tauri-apps/plugin-autostart'
-import {
-  isPermissionGranted,
-  requestPermission,
-  sendNotification,
-} from '@tauri-apps/plugin-notification';
+
 import { TestThread } from "./TestThread";
+import { listen, UnlistenFn } from '@tauri-apps/api/event';
 // when using `"withGlobalTauri": true`, you may use
 // const { isPermissionGranted, requestPermission, sendNotification, } = window.__TAURI__.notification;
-
-
 
 
 disable()
 function App() {
   const [greetMsg, setGreetMsg] = useState("");
   const [name, setName] = useState("");
+  useEffect(() => {
+    const unlisten: Promise<UnlistenFn>[] = [];
 
+    async function setupListeners() {
+      try {
+        // Store the unsubscribe functions
+        unlisten.push(
+          listen('mouse-event', (event) => {
+            console.log('Mouse event:', event.payload);
+            // event.payload will contain x, y, event_type, and scroll_delta
+          })
+        );
+
+        unlisten.push(
+          listen('keyboard-event', (event) => {
+            console.log('Keyboard event:', event.payload);
+          })
+        );
+
+        unlisten.push(
+          listen('window-focus', (event) => {
+            console.log('Window focus changed:', event.payload);
+          })
+        );
+      } catch (error) {
+        console.error('Failed to setup event listeners:', error);
+      }
+    }
+
+    // Set up listeners
+    setupListeners();
+
+    // Cleanup function
+    return () => {
+      unlisten.forEach(async (unlistenPromise) => {
+        const unlistenFn = await unlistenPromise;
+        unlistenFn();
+      });
+    };
+  }, []);
   async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    // Do you have permission to send a notification?
-    let permissionGranted = await isPermissionGranted();
-    // If not we need to request it
-    console.log("permissionGranted", permissionGranted)
-    if (!permissionGranted) {
-      console.log("requesting permission")
-      const permission = await requestPermission();
-      permissionGranted = permission === 'granted';
-    }
-    console.log("permissionGranted", permissionGranted)
-    // Once permission has been granted we can send the notification
-    if (permissionGranted) {
-      sendNotification({ title: 'Tauri', body: 'Tauri is awesome!' });
-    }
+
     console.log("is enabled", await isEnabled())
     const isStartupEnabled = await isEnabled()
     if (isStartupEnabled) {

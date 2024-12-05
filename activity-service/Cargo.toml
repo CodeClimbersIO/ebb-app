@@ -1,0 +1,9 @@
+[package]
+name = "activity-service"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+dirs = "5.0.1"
+sqlx = { version = "0.8.2", features = ["sqlite", "runtime-tokio"] }
+tokio = { version = "1.42.0", features = ["full"] }
