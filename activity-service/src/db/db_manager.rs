@@ -14,6 +14,17 @@ pub fn get_db_path() -> String {
         .to_string()
 }
 
+#[cfg(test)]
+pub fn get_test_db_path() -> String {
+    let home_dir = dirs::home_dir().expect("Could not find home directory");
+    home_dir
+        .join(".codeclimbers")
+        .join("codeclimbers-desktop-test.sqlite")
+        .to_str()
+        .expect("Invalid path")
+        .to_string()
+}
+
 async fn set_wal_mode(pool: &sqlx::SqlitePool) -> Result<(), sqlx::Error> {
     sqlx::query("PRAGMA journal_mode=WAL;")
         .execute(pool)
@@ -46,7 +57,7 @@ impl DbManager {
         let pool = SqlitePool::connect(&database_url).await?;
 
         set_wal_mode(&pool).await?;
-        sqlx::migrate!("src/db/migrations").run(&pool).await?;
+        sqlx::migrate!().run(&pool).await?;
 
         Ok(Self { pool })
     }
@@ -61,11 +72,6 @@ mod tests {
         let pool = SqlitePoolOptions::new()
             .max_connections(1)
             .connect("sqlite::memory:")
-            .await
-            .unwrap();
-
-        sqlx::migrate!("src/db/migrations")
-            .run(&pool)
             .await
             .unwrap();
 
@@ -85,6 +91,6 @@ mod tests {
         let result: Result<i32, _> = sqlx::query_scalar("SELECT 1")
             .fetch_one(&db_manager.pool)
             .await;
-        println!("result:{:?}", result);
+        assert_eq!(result.unwrap(), 1);
     }
 }
