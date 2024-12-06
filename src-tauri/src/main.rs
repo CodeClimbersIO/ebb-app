@@ -23,9 +23,9 @@ fn main() {
             Some(vec!["--flag1", "--flag2"]),
         ))
         .setup(|app| {
-            let app_handle = app.handle().clone();
+            println!("setup");
             println!("setup thread info: {}", get_thread_info());
-            window_monitor::start_monitoring(app_handle);
+            window_monitor::start_monitoring();
             Ok(())
         })
         .run(tauri::generate_context!())

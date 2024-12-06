@@ -3,8 +3,8 @@ CREATE TABLE activities (
     activity_type TEXT NOT NULL CHECK (activity_type IN ('WINDOW', 'MOUSE', 'KEYBOARD')),
     app_name TEXT,
     app_window_title TEXT,
-    mouse_x INTEGER,
-    mouse_y INTEGER,
+    mouse_x REAL,
+    mouse_y REAL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

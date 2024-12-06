@@ -4,7 +4,12 @@ use dotenv::dotenv;
 
 mod db;
 mod services;
+mod window_monitor;
+use monitor::WindowEvent;
+use services::activity_service::ActivityService;
 use tokio;
+use window_monitor::start_monitoring;
+
 #[tokio::main]
 async fn main() {
     println!("starting activity service");
@@ -15,8 +20,12 @@ async fn main() {
         .fetch_one(&db_manager.pool)
         .await;
 
-    let activity_service = services::activity_service::ActivityService::new(db_manager);
-    let activity = Activity::__create_test_window();
+    let activity_service = ActivityService::new(db_manager.pool);
+    let activity = Activity::create_window_activity(&WindowEvent {
+        app_name: "Cursor".to_string(),
+        title: "main.rs - app-codeclimbers".to_string(),
+    });
     activity_service.save_activity(&activity).await.unwrap();
+    start_monitoring();
     println!("{:?}", result);
 }

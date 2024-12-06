@@ -1,6 +1,5 @@
 fn main() {
-    println!("cargo:rerun-if-changed=migrations/");
-
+    println!("Running SQLx migrations");
     // Run SQLx migrations
     let result = std::process::Command::new("sqlx")
         .args(["database", "create"])

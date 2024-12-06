@@ -1,14 +1,15 @@
 [package]
-name = "activity-service"
+name = "activities-service"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
 dirs = "5.0.1"
 dotenv = "0.15.0"
-sqlx = { version = "0.8.2", features = ["sqlite", "runtime-tokio"] }
+sqlx = { version = "0.8.2", features = ["sqlite", "runtime-tokio", "chrono", "time"] }
 tokio = { version = "1.42.0", features = ["full"] }
 chrono = { version = "0.4", features = ["serde"] }
+monitor = { path = "../monitor" }
 
 [build-dependencies]
 sqlx = "0.8.2"

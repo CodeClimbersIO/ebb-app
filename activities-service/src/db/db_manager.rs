@@ -25,6 +25,22 @@ pub fn get_test_db_path() -> String {
         .to_string()
 }
 
+#[cfg(test)]
+pub async fn create_test_db() -> SqlitePool {
+    use sqlx::sqlite::SqlitePoolOptions;
+
+    let pool = SqlitePoolOptions::new()
+        .max_connections(1)
+        .connect("sqlite::memory:")
+        .await
+        .unwrap();
+
+    set_wal_mode(&pool).await.unwrap();
+    sqlx::migrate!().run(&pool).await.unwrap();
+
+    pool
+}
+
 async fn set_wal_mode(pool: &sqlx::SqlitePool) -> Result<(), sqlx::Error> {
     sqlx::query("PRAGMA journal_mode=WAL;")
         .execute(pool)
@@ -66,31 +82,20 @@ impl DbManager {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use sqlx::sqlite::SqlitePoolOptions;
+    use std::fs;
 
-    async fn create_test_db() -> SqlitePool {
-        let pool = SqlitePoolOptions::new()
-            .max_connections(1)
-            .connect("sqlite::memory:")
-            .await
-            .unwrap();
-
-        pool
+    #[tokio::test]
+    async fn test_db_manager() {
+        let db_path = get_test_db_path();
+        let db_manager = DbManager::new(&db_path).await.unwrap();
+        let result: Result<i32, _> = sqlx::query_scalar("SELECT 1")
+            .fetch_one(&db_manager.pool)
+            .await;
+        assert_eq!(result.unwrap(), 1);
     }
 
     #[tokio::test]
     async fn test_migrations() {
         let _ = create_test_db().await;
-    }
-
-    #[tokio::test]
-    async fn test_db_manager() {
-        let db_path = get_db_path();
-        let db_manager = DbManager::new(&db_path).await.unwrap();
-        // query with pool
-        let result: Result<i32, _> = sqlx::query_scalar("SELECT 1")
-            .fetch_one(&db_manager.pool)
-            .await;
-        assert_eq!(result.unwrap(), 1);
     }
 }
