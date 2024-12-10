@@ -1,6 +1,6 @@
-use chrono::{NaiveDateTime, Utc};
 use monitor::{KeyboardEvent, MouseEvent, WindowEvent};
 use sqlx::Row;
+use time::OffsetDateTime;
 
 #[derive(Debug, sqlx::Type)]
 #[sqlx(type_name = "TEXT", rename_all = "UPPERCASE")]
@@ -23,8 +23,8 @@ impl From<String> for ActivityType {
 
 pub struct Activity {
     pub id: Option<i64>,
-    pub created_at: Option<NaiveDateTime>,
-    pub timestamp: Option<NaiveDateTime>,
+    pub created_at: Option<OffsetDateTime>,
+    pub timestamp: Option<OffsetDateTime>,
     pub activity_type: ActivityType,
     pub app_name: Option<String>,
     pub app_window_title: Option<String>,
@@ -51,8 +51,8 @@ impl Activity {
     fn new(activity_type: ActivityType) -> Self {
         Activity {
             id: None,
-            created_at: Some(Utc::now().naive_utc()),
-            timestamp: Some(Utc::now().naive_utc()),
+            created_at: Some(OffsetDateTime::now_utc()),
+            timestamp: Some(OffsetDateTime::now_utc()),
             activity_type,
             app_name: None,
             app_window_title: None,
