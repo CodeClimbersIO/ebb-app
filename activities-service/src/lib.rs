@@ -1,7 +1,7 @@
 mod db;
 mod services;
-mod window_monitor;
+mod system_monitor;
 
 pub use db::db_manager::DbManager;
 pub use services::activity_service::ActivityService;
-pub use window_monitor::start_monitoring;
+pub use system_monitor::start_monitoring;

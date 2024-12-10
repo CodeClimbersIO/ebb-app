@@ -3,16 +3,5 @@
   "identifier": "default",
   "description": "Capability for the main window",
   "windows": ["main"],
-  "permissions": [
-    "core:default",
-    "autostart:allow-enable",
-    "autostart:allow-disable",
-    "autostart:allow-is-enabled",
-    "sql:default",
-    "fs:default",
-    {
-      "identifier": "fs:allow-mkdir",
-      "allow": [{ "path": "$HOME/.codeclimbers" }]
-    }
-  ]
+  "permissions": ["core:default"]
 }
