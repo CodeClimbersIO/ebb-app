@@ -97,6 +97,7 @@ name = "app-codeclimbers"
 version = "0.1.0"
 dependencies = [
  "activities-service",
+ "monitor",
  "serde",
  "serde_json",
  "tauri",

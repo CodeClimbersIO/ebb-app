@@ -1,17 +1,74 @@
 // activity service provides an interface to read/write to the activities table
-
-use monitor::{KeyboardEvent, MouseEvent, WindowEvent};
+use monitor::{EventCallback, KeyboardEvent, MouseEvent, WindowEvent};
+use tokio::sync::mpsc;
 
 use crate::db::{activities_repo::ActivitiesRepo, models::Activity};
 #[derive(Clone)]
 pub struct ActivityService {
     activities_repo: ActivitiesRepo,
+    event_sender: mpsc::UnboundedSender<ActivityEvent>,
 }
 
+enum ActivityEvent {
+    Keyboard(KeyboardEvent),
+    Mouse(MouseEvent),
+    Window(WindowEvent),
+}
+
+impl EventCallback for ActivityService {
+    fn on_keyboard_event(&self, event: KeyboardEvent) {
+        if let Err(e) = self.event_sender.send(ActivityEvent::Keyboard(event)) {
+            eprintln!("Failed to send keyboard event: {}", e);
+        }
+    }
+
+    fn on_mouse_event(&self, event: MouseEvent) {
+        if let Err(e) = self.event_sender.send(ActivityEvent::Mouse(event)) {
+            eprintln!("Failed to send mouse event: {}", e);
+        }
+    }
+
+    fn on_window_event(&self, event: WindowEvent) {
+        println!("on_window_event: {:?}", event);
+        if let Err(e) = self.event_sender.send(ActivityEvent::Window(event)) {
+            eprintln!("Failed to send window event: {}", e);
+        }
+    }
+}
 impl ActivityService {
     pub fn new(pool: sqlx::SqlitePool) -> Self {
+        let (sender, mut receiver) = mpsc::unbounded_channel();
+
+        let activities_repo = ActivitiesRepo::new(pool);
+        let repo = activities_repo.clone();
+        tokio::spawn(async move {
+            while let Some(event) = receiver.recv().await {
+                match event {
+                    ActivityEvent::Keyboard(e) => {
+                        let activity = Activity::create_keyboard_activity(&e);
+                        if let Err(err) = repo.save_activity(&activity).await {
+                            eprintln!("Failed to save keyboard activity: {}", err);
+                        }
+                    }
+                    ActivityEvent::Mouse(e) => {
+                        let activity = Activity::create_mouse_activity(&e);
+                        if let Err(err) = repo.save_activity(&activity).await {
+                            eprintln!("Failed to save mouse activity: {}", err);
+                        }
+                    }
+                    ActivityEvent::Window(e) => {
+                        let activity = Activity::create_window_activity(&e);
+                        println!("activity: {:?}", activity.app_window_title);
+                        if let Err(err) = repo.save_activity(&activity).await {
+                            eprintln!("Failed to save window activity: {}", err);
+                        }
+                    }
+                }
+            }
+        });
         ActivityService {
-            activities_repo: ActivitiesRepo::new(pool),
+            activities_repo,
+            event_sender: sender,
         }
     }
 
@@ -24,33 +81,6 @@ impl ActivityService {
 
     pub async fn get_activity(&self, id: i32) -> Result<Activity, sqlx::Error> {
         self.activities_repo.get_activity(id).await
-    }
-
-    pub async fn on_keyboard_event(&self, event: KeyboardEvent) {
-        println!("on_keyboard_event: {:?}", event);
-        let activity = Activity::create_keyboard_activity(&event);
-        self.activities_repo
-            .save_activity(&activity)
-            .await
-            .expect("failed to save activity");
-    }
-
-    pub async fn on_mouse_event(&self, event: MouseEvent) {
-        println!("on_mouse_event: {:?}", event);
-        let activity = Activity::create_mouse_activity(&event);
-        self.activities_repo
-            .save_activity(&activity)
-            .await
-            .expect("failed to save activity");
-    }
-
-    pub async fn on_window_event(&self, event: WindowEvent) {
-        println!("on_window_event: {:?}", event);
-        let activity = Activity::create_window_activity(&event);
-        self.activities_repo
-            .save_activity(&activity)
-            .await
-            .expect("failed to save activity");
     }
 }
 
@@ -90,7 +120,9 @@ mod tests {
             app_name: "Cursor".to_string(),
             title: "main.rs - app-codeclimbers".to_string(),
         };
-        activity_service.on_window_event(event).await;
+        activity_service.on_window_event(event);
+
+        tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
 
         let activity = activity_service.get_activity(1).await.unwrap();
         assert_eq!(activity.app_name, Some("Cursor".to_string()));
