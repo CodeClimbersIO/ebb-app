@@ -58,7 +58,6 @@ impl ActivityService {
                     }
                     ActivityEvent::Window(e) => {
                         let activity = Activity::create_window_activity(&e);
-                        println!("activity: {:?}", activity.app_window_title);
                         if let Err(err) = repo.save_activity(&activity).await {
                             eprintln!("Failed to save window activity: {}", err);
                         }

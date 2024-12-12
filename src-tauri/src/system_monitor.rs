@@ -10,10 +10,11 @@ pub fn start_monitoring(app: AppHandle) {
         let activity_service = Arc::new(activities_service::start_monitoring().await);
         loop {
             let activity_service_clone = activity_service.clone();
+            monitor::initialize_callback(activity_service_clone)
+                .expect("Failed to initialize callback");
             sleep(Duration::from_secs(1)).await;
             let _ = app.run_on_main_thread(move || {
-                monitor::detect_changes(activity_service_clone).expect("Failed to detect changes");
-                println!("Running on main thread");
+                monitor::detect_changes().expect("Failed to detect changes");
             });
         }
     });
