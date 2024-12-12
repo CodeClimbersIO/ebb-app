@@ -14,14 +14,16 @@ fn get_thread_info() -> String {
         is_main
     )
 }
+
 #[tokio::main]
 async fn main() {
     tauri::async_runtime::set(tokio::runtime::Handle::current());
     println!("Main thread info: {}", get_thread_info());
-    system_monitor::start_monitoring();
 
     tauri::Builder::default()
         .setup(|app| {
+            let app_handle = app.handle().clone();
+            system_monitor::start_monitoring(app_handle);
             println!("setup thread info: {}", get_thread_info());
             Ok(())
         })
