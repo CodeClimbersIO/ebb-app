@@ -62,14 +62,12 @@ impl Activity {
         activity
     }
 
-    pub fn create_mouse_activity(event: &MouseEvent) -> Self {
-        let mut activity = Self::new(ActivityType::Mouse);
-        activity
+    pub fn create_mouse_activity() -> Self {
+        Self::new(ActivityType::Mouse)
     }
 
-    pub fn create_keyboard_activity(_event: &KeyboardEvent) -> Self {
-        let activity = Self::new(ActivityType::Keyboard);
-        activity
+    pub fn create_keyboard_activity() -> Self {
+        Self::new(ActivityType::Keyboard)
     }
 
     #[cfg(test)]
@@ -82,20 +80,11 @@ impl Activity {
 
     #[cfg(test)]
     pub fn __create_test_mouse() -> Self {
-        use monitor::MouseEventType;
-
-        Self::create_mouse_activity(&MouseEvent {
-            x: 127.32,
-            y: 300.81,
-            event_type: MouseEventType::Move,
-            scroll_delta: 0,
-        })
+        Self::create_mouse_activity()
     }
 
     #[cfg(test)]
     pub fn __create_test_keyboard() -> Self {
-        use monitor::KeyboardEvent;
-
-        Self::create_keyboard_activity(&KeyboardEvent { key_code: 65 })
+        Self::create_keyboard_activity()
     }
 }
