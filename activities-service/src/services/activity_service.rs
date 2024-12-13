@@ -17,12 +17,14 @@ enum ActivityEvent {
 
 impl EventCallback for ActivityService {
     fn on_keyboard_event(&self, event: KeyboardEvent) {
+        println!("on_keyboard_event: {:?}", event);
         if let Err(e) = self.event_sender.send(ActivityEvent::Keyboard(event)) {
             eprintln!("Failed to send keyboard event: {}", e);
         }
     }
 
     fn on_mouse_event(&self, event: MouseEvent) {
+        println!("on_mouse_event: {:?}", event);
         if let Err(e) = self.event_sender.send(ActivityEvent::Mouse(event)) {
             eprintln!("Failed to send mouse event: {}", e);
         }
@@ -36,39 +38,49 @@ impl EventCallback for ActivityService {
     }
 }
 impl ActivityService {
+    async fn handle_keyboard_activity(&self, event: KeyboardEvent) {
+        let activity = Activity::create_keyboard_activity(&event);
+        if let Err(err) = self.save_activity(&activity).await {
+            eprintln!("Failed to save keyboard activity: {}", err);
+        }
+    }
+
+    async fn handle_mouse_activity(&self, event: MouseEvent) {
+        let activity = Activity::create_mouse_activity(&event);
+        if let Err(err) = self.save_activity(&activity).await {
+            eprintln!("Failed to save mouse activity: {}", err);
+        }
+    }
+
+    async fn handle_window_activity(&self, event: WindowEvent) {
+        let activity = Activity::create_window_activity(&event);
+        if let Err(err) = self.save_activity(&activity).await {
+            eprintln!("Failed to save window activity: {}", err);
+        }
+    }
     pub fn new(pool: sqlx::SqlitePool) -> Self {
         let (sender, mut receiver) = mpsc::unbounded_channel();
-
         let activities_repo = ActivitiesRepo::new(pool);
-        let repo = activities_repo.clone();
+        let service = ActivityService {
+            activities_repo,
+            event_sender: sender,
+        };
+        let service_clone = service.clone();
+
         tokio::spawn(async move {
             while let Some(event) = receiver.recv().await {
                 match event {
                     ActivityEvent::Keyboard(e) => {
-                        let activity = Activity::create_keyboard_activity(&e);
-                        if let Err(err) = repo.save_activity(&activity).await {
-                            eprintln!("Failed to save keyboard activity: {}", err);
-                        }
+                        Self::handle_keyboard_activity(&service_clone, e).await
                     }
-                    ActivityEvent::Mouse(e) => {
-                        let activity = Activity::create_mouse_activity(&e);
-                        if let Err(err) = repo.save_activity(&activity).await {
-                            eprintln!("Failed to save mouse activity: {}", err);
-                        }
-                    }
+                    ActivityEvent::Mouse(e) => Self::handle_mouse_activity(&service_clone, e).await,
                     ActivityEvent::Window(e) => {
-                        let activity = Activity::create_window_activity(&e);
-                        if let Err(err) = repo.save_activity(&activity).await {
-                            eprintln!("Failed to save window activity: {}", err);
-                        }
+                        Self::handle_window_activity(&service_clone, e).await
                     }
                 }
             }
         });
-        ActivityService {
-            activities_repo,
-            event_sender: sender,
-        }
+        service
     }
 
     pub async fn save_activity(
@@ -85,8 +97,10 @@ impl ActivityService {
 
 #[cfg(test)]
 mod tests {
+    use monitor::{KeyboardEvent, MouseEventType, WindowEvent};
+
     use super::*;
-    use crate::db::db_manager;
+    use crate::db::{db_manager, models::ActivityType};
 
     #[tokio::test]
     async fn test_activity_service() {
@@ -121,9 +135,40 @@ mod tests {
         };
         activity_service.on_window_event(event);
 
-        tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+        tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
 
         let activity = activity_service.get_activity(1).await.unwrap();
         assert_eq!(activity.app_name, Some("Cursor".to_string()));
+    }
+
+    #[tokio::test]
+    async fn test_on_keyboard_event() {
+        let pool = db_manager::create_test_db().await;
+        let activity_service = ActivityService::new(pool);
+        let event = KeyboardEvent { key_code: 65 };
+        activity_service.on_keyboard_event(event);
+
+        tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+
+        let activity = activity_service.get_activity(1).await.unwrap();
+        assert_eq!(activity.activity_type, ActivityType::Keyboard);
+    }
+
+    #[tokio::test]
+    async fn test_on_mouse_event() {
+        let pool = db_manager::create_test_db().await;
+        let activity_service = ActivityService::new(pool);
+        let event = MouseEvent {
+            x: 127.32,
+            y: 300.81,
+            event_type: MouseEventType::Move,
+            scroll_delta: 0,
+        };
+        activity_service.on_mouse_event(event);
+
+        tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+
+        let activity = activity_service.get_activity(1).await.unwrap();
+        assert_eq!(activity.mouse_x, Some(127.32));
     }
 }

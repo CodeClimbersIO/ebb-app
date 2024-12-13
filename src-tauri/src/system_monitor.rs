@@ -9,8 +9,7 @@ pub fn start_monitoring(app: AppHandle) {
     async_runtime::spawn(async move {
         let activity_service = Arc::new(activities_service::start_monitoring().await);
         loop {
-            let activity_service_clone = activity_service.clone();
-            monitor::initialize_callback(activity_service_clone)
+            monitor::initialize_callback(activity_service.clone())
                 .expect("Failed to initialize callback");
             sleep(Duration::from_secs(1)).await;
             let _ = app.run_on_main_thread(move || {

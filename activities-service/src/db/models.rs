@@ -2,12 +2,12 @@ use monitor::{KeyboardEvent, MouseEvent, WindowEvent};
 use sqlx::Row;
 use time::OffsetDateTime;
 
-#[derive(Debug, sqlx::Type)]
+#[derive(Debug, sqlx::Type, PartialEq)]
 #[sqlx(type_name = "TEXT", rename_all = "UPPERCASE")]
 pub enum ActivityType {
-    Window,
-    Mouse,
     Keyboard,
+    Mouse,
+    Window,
 }
 
 impl From<String> for ActivityType {
@@ -104,9 +104,6 @@ impl Activity {
     pub fn __create_test_keyboard() -> Self {
         use monitor::KeyboardEvent;
 
-        Self::create_keyboard_activity(&KeyboardEvent {
-            key_code: 65,
-            is_down: true,
-        })
+        Self::create_keyboard_activity(&KeyboardEvent { key_code: 65 })
     }
 }
