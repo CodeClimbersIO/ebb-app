@@ -28,8 +28,6 @@ pub struct Activity {
     pub activity_type: ActivityType,
     pub app_name: Option<String>,
     pub app_window_title: Option<String>,
-    pub mouse_x: Option<f64>,
-    pub mouse_y: Option<f64>,
 }
 
 impl<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> for Activity {
@@ -41,8 +39,6 @@ impl<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> for Activity {
             activity_type: row.try_get("activity_type")?,
             app_name: row.try_get("app_name")?,
             app_window_title: row.try_get("app_window_title")?,
-            mouse_x: row.try_get("mouse_x")?,
-            mouse_y: row.try_get("mouse_y")?,
         })
     }
 }
@@ -56,8 +52,6 @@ impl Activity {
             activity_type,
             app_name: None,
             app_window_title: None,
-            mouse_x: None,
-            mouse_y: None,
         }
     }
 
@@ -70,8 +64,6 @@ impl Activity {
 
     pub fn create_mouse_activity(event: &MouseEvent) -> Self {
         let mut activity = Self::new(ActivityType::Mouse);
-        activity.mouse_x = Some(event.x);
-        activity.mouse_y = Some(event.y);
         activity
     }
 

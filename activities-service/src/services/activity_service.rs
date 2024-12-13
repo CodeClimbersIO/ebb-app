@@ -22,16 +22,18 @@ enum ActivityEvent {
 
 impl EventCallback for ActivityService {
     fn on_keyboard_event(&self, event: KeyboardEvent) {
-        println!("on_keyboard_event: {:?}", event);
-        if let Err(e) = self.event_sender.send(ActivityEvent::Keyboard(event)) {
-            eprintln!("Failed to send keyboard event: {}", e);
+        if Self::should_send_event(Instant::now(), &self.last_keyboard_time) {
+            if let Err(e) = self.event_sender.send(ActivityEvent::Keyboard(event)) {
+                eprintln!("Failed to send keyboard event: {}", e);
+            }
         }
     }
 
     fn on_mouse_event(&self, event: MouseEvent) {
-        println!("on_mouse_event: {:?}", event);
-        if let Err(e) = self.event_sender.send(ActivityEvent::Mouse(event)) {
-            eprintln!("Failed to send mouse event: {}", e);
+        if Self::should_send_event(Instant::now(), &self.last_mouse_time) {
+            if let Err(e) = self.event_sender.send(ActivityEvent::Mouse(event)) {
+                eprintln!("Failed to send mouse event: {}", e);
+            }
         }
     }
 
@@ -43,41 +45,26 @@ impl EventCallback for ActivityService {
     }
 }
 impl ActivityService {
-    fn should_save_event(now: Instant, last_time: &std::sync::Arc<Mutex<Instant>>) -> bool {
+    fn should_send_event(now: Instant, last_time: &std::sync::Arc<Mutex<Instant>>) -> bool {
         let mut guard = last_time.lock();
-        println!("now: {:?}", now);
-        println!("last_time: {:?}", *guard);
-        println!("duration: {:?}", now.duration_since(*guard));
-        println!("duration 30: {:?}", Duration::from_secs(30));
-        println!(
-            "duration >= 30: {:?}",
-            now.duration_since(*guard) >= Duration::from_secs(30)
-        );
         if now.duration_since(*guard) >= Duration::from_secs(30) {
-            println!("saving event");
             *guard = now;
             true
         } else {
-            println!("not saving event");
             false
         }
     }
-
     async fn handle_keyboard_activity(&self, event: KeyboardEvent) {
-        if Self::should_save_event(Instant::now(), &self.last_keyboard_time) {
-            let activity = Activity::create_keyboard_activity(&event);
-            if let Err(err) = self.save_activity(&activity).await {
-                eprintln!("Failed to save keyboard activity: {}", err);
-            }
+        let activity = Activity::create_keyboard_activity(&event);
+        if let Err(err) = self.save_activity(&activity).await {
+            eprintln!("Failed to save keyboard activity: {}", err);
         }
     }
 
     async fn handle_mouse_activity(&self, event: MouseEvent) {
-        if Self::should_save_event(Instant::now(), &self.last_mouse_time) {
-            let activity = Activity::create_mouse_activity(&event);
-            if let Err(err) = self.save_activity(&activity).await {
-                eprintln!("Failed to save mouse activity: {}", err);
-            }
+        let activity = Activity::create_mouse_activity(&event);
+        if let Err(err) = self.save_activity(&activity).await {
+            eprintln!("Failed to save mouse activity: {}", err);
         }
     }
 
@@ -204,7 +191,7 @@ mod tests {
         tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
 
         let activity = activity_service.get_activity(1).await.unwrap();
-        assert_eq!(activity.mouse_x, Some(127.32));
+        assert_eq!(activity.activity_type, ActivityType::Mouse);
     }
 
     #[tokio::test]
@@ -238,27 +225,27 @@ mod tests {
         }
     }
     #[test]
-    fn test_should_save_event() {
+    fn test_should_send_event() {
         let now = Instant::now();
         let last_time = std::sync::Arc::new(Mutex::new(now));
 
         // Create an instant that's 31 seconds in the future
         let future = now + Duration::from_secs(31);
-        assert!(ActivityService::should_save_event(future, &last_time));
+        assert!(ActivityService::should_send_event(future, &last_time));
         // Call immediately after the 31-second future call should not save
-        assert!(!ActivityService::should_save_event(future, &last_time));
+        assert!(!ActivityService::should_send_event(future, &last_time));
     }
 
     #[test]
-    fn test_should_save_event_exact_threshold() {
+    fn test_should_send_event_exact_threshold() {
         let last_time = std::sync::Arc::new(Mutex::new(Instant::now()));
 
         // Exactly 30 seconds should save
         let future = Instant::now() + Duration::from_secs(30);
-        assert!(ActivityService::should_save_event(future, &last_time));
+        assert!(ActivityService::should_send_event(future, &last_time));
 
         // Exactly 29.9 seconds should not save
         let just_under = Instant::now() + Duration::from_secs(30) - Duration::from_millis(100);
-        assert!(!ActivityService::should_save_event(just_under, &last_time));
+        assert!(!ActivityService::should_send_event(just_under, &last_time));
     }
 }
