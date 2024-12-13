@@ -1,4 +1,4 @@
-CREATE TABLE activities (
+CREATE TABLE IF NOT EXISTS activity (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     activity_type TEXT NOT NULL CHECK (activity_type IN ('WINDOW', 'MOUSE', 'KEYBOARD')),
     app_name TEXT,

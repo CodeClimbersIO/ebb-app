@@ -1,10 +1,26 @@
+use std::time::Duration;
+
 use monitor::{EventCallback, KeyboardEvent, MouseEvent, WindowEvent};
+use once_cell::sync::Lazy;
+use parking_lot::Mutex;
 use tokio::sync::mpsc;
 
-use crate::db::{activities_repo::ActivitiesRepo, db_manager, models::Activity};
+use crate::db::{
+    activity_repo::ActivityRepo,
+    activity_state_repo::ActivityStateRepo,
+    db_manager,
+    models::{Activity, ActivityState},
+};
+
+use super::context_switch::ContextSwitchState;
+
+static CONTEXT_SWITCH_STATE: Lazy<Mutex<ContextSwitchState>> =
+    Lazy::new(|| Mutex::new(ContextSwitchState::new(Duration::from_secs(15))));
+
 #[derive(Clone)]
 pub struct ActivityService {
-    activities_repo: ActivitiesRepo,
+    activities_repo: ActivityRepo,
+    activity_state_repo: ActivityStateRepo,
     event_sender: mpsc::UnboundedSender<ActivityEvent>,
 }
 
@@ -29,6 +45,13 @@ impl EventCallback for ActivityService {
 
     fn on_window_event(&self, event: WindowEvent) {
         println!("on_window_event: {:?}", event);
+        let mut context_switch_state = CONTEXT_SWITCH_STATE.lock();
+        let activity = Activity::create_window_activity(&event);
+        context_switch_state.new_window_activity(activity);
+        println!(
+            "context_switches: {}",
+            context_switch_state.context_switches
+        );
         if let Err(e) = self.event_sender.send(ActivityEvent::Window(event)) {
             eprintln!("Failed to send window event: {}", e);
         }
@@ -51,6 +74,7 @@ impl ActivityService {
 
     async fn handle_window_activity(&self, event: WindowEvent) {
         let activity = Activity::create_window_activity(&event);
+
         if let Err(err) = self.save_activity(&activity).await {
             eprintln!("Failed to save window activity: {}", err);
         }
@@ -58,9 +82,11 @@ impl ActivityService {
 
     pub fn new(pool: sqlx::SqlitePool) -> Self {
         let (sender, mut receiver) = mpsc::unbounded_channel();
-        let activities_repo = ActivitiesRepo::new(pool);
+        let activities_repo = ActivityRepo::new(pool.clone());
+        let activity_state_repo = ActivityStateRepo::new(pool.clone());
         let service = ActivityService {
             activities_repo,
+            activity_state_repo,
             event_sender: sender,
         };
         let service_clone = service.clone();
@@ -89,6 +115,42 @@ impl ActivityService {
     pub async fn get_activity(&self, id: i32) -> Result<Activity, sqlx::Error> {
         self.activities_repo.get_activity(id).await
     }
+
+    async fn save_activity_state(&self) -> Result<sqlx::sqlite::SqliteQueryResult, sqlx::Error> {
+        let activity_state = ActivityState::new();
+        self.activity_state_repo
+            .save_activity_state(&activity_state)
+            .await
+    }
+
+    // async fn get_activities_since_last_activity_state(&self) -> Result<Vec<Activity>, sqlx::Error> {
+    //     self.activities_repo
+    //         .get_activities_since_last_activity_state()
+    //         .await
+    // }
+
+    // async fn create_activity_state_from_activities(&self, activities: Vec<Activity>) -> Result<sqlx::sqlite::SqliteQueryResult, sqlx::Error> {
+    //     // iterate over the activities to create the start, end, context_switches, and activity_state_type
+    //     let mut start = activities[0].created_at;
+    //     let mut end = activities[0].created_at;
+    //     let mut context_switches = 0;
+    //     let mut activity_state_type = ActivityStateType::Idle;
+    //     for activity in activities {
+    //         if activity.created_at < start {
+    //             start = activity.created_at;
+    //         }
+    //     }
+    // }
+
+    // async fn create_activity_state_job(&self) {
+    //     // every 2 minutes, get the activities since the last activity state and create a new activity state
+    //     let interval = tokio::time::interval(tokio::time::Duration::from_secs(120));
+    //     loop {
+    //         interval.tick().await;
+    //         let activities = self.get_activities_since_last_activity_state().await;
+    //         self.save_activity_state(activities).await;
+    //     }
+    // }
 }
 
 pub async fn start_monitoring() -> ActivityService {
@@ -159,4 +221,7 @@ mod tests {
         let activity = activity_service.get_activity(1).await.unwrap();
         assert_eq!(activity.activity_type, ActivityType::Keyboard);
     }
+
+    #[tokio::test]
+    async fn test_count_context_switches() {}
 }

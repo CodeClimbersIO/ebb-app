@@ -2,7 +2,7 @@ use monitor::WindowEvent;
 use sqlx::Row;
 use time::OffsetDateTime;
 
-#[derive(Debug, sqlx::Type, PartialEq)]
+#[derive(Debug, sqlx::Type, PartialEq, Clone)]
 #[sqlx(type_name = "TEXT", rename_all = "UPPERCASE")]
 pub enum ActivityType {
     Keyboard,
@@ -21,6 +21,7 @@ impl From<String> for ActivityType {
     }
 }
 
+#[derive(Clone)]
 pub struct Activity {
     pub id: Option<i64>,
     pub created_at: Option<OffsetDateTime>,
@@ -44,30 +45,35 @@ impl<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> for Activity {
 }
 
 impl Activity {
-    fn new(activity_type: ActivityType) -> Self {
+    pub fn new(
+        activity_type: ActivityType,
+        app_name: Option<String>,
+        app_window_title: Option<String>,
+    ) -> Self {
         Activity {
             id: None,
             created_at: Some(OffsetDateTime::now_utc()),
             timestamp: Some(OffsetDateTime::now_utc()),
             activity_type,
-            app_name: None,
-            app_window_title: None,
+            app_name,
+            app_window_title,
         }
     }
 
     pub fn create_window_activity(event: &WindowEvent) -> Self {
-        let mut activity = Self::new(ActivityType::Window);
-        activity.app_name = Some(event.app_name.clone());
-        activity.app_window_title = Some(event.title.clone());
-        activity
+        Self::new(
+            ActivityType::Window,
+            Some(event.app_name.clone()),
+            Some(event.title.clone()),
+        )
     }
 
     pub fn create_mouse_activity() -> Self {
-        Self::new(ActivityType::Mouse)
+        Self::new(ActivityType::Mouse, None, None)
     }
 
     pub fn create_keyboard_activity() -> Self {
-        Self::new(ActivityType::Keyboard)
+        Self::new(ActivityType::Keyboard, None, None)
     }
 
     #[cfg(test)]

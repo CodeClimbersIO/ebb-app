@@ -1,14 +1,14 @@
-// activities repo is responsible for all the database operations related to activities. Makes use of the db manager to get the pool and execute queries.
+// activity repo is responsible for all the database operations related to activities. Makes use of the db manager to get the pool and execute queries.
 
 use super::models::Activity;
 #[derive(Clone)]
-pub struct ActivitiesRepo {
+pub struct ActivityRepo {
     pool: sqlx::SqlitePool,
 }
 
-impl ActivitiesRepo {
+impl ActivityRepo {
     pub fn new(pool: sqlx::SqlitePool) -> Self {
-        ActivitiesRepo { pool }
+        ActivityRepo { pool }
     }
 
     pub async fn save_activity(
@@ -17,7 +17,7 @@ impl ActivitiesRepo {
     ) -> Result<sqlx::sqlite::SqliteQueryResult, sqlx::Error> {
         let mut conn = self.pool.acquire().await?;
         sqlx::query!(
-            r#"INSERT INTO activities (activity_type, app_name, app_window_title) 
+            r#"INSERT INTO activity (activity_type, app_name, app_window_title) 
           VALUES (?, ?, ?)"#,
             activity.activity_type as _, // Cast enum to database type
             activity.app_name,
@@ -29,7 +29,7 @@ impl ActivitiesRepo {
 
     pub async fn get_activity(&self, id: i32) -> Result<Activity, sqlx::Error> {
         let mut conn = self.pool.acquire().await?;
-        sqlx::query_as!(Activity, "SELECT * FROM activities WHERE id = ?", id)
+        sqlx::query_as!(Activity, "SELECT * FROM activity WHERE id = ?", id)
             .fetch_one(&mut *conn)
             .await
     }
@@ -40,10 +40,10 @@ mod tests {
     use super::*;
     use crate::db::db_manager;
     #[tokio::test]
-    async fn test_activities_repo() {
+    async fn test_activity_repo() {
         let pool = db_manager::create_test_db().await;
-        let activities_repo = ActivitiesRepo::new(pool);
+        let activity_repo = ActivityRepo::new(pool);
         let activity = Activity::__create_test_window();
-        activities_repo.save_activity(&activity).await.unwrap();
+        activity_repo.save_activity(&activity).await.unwrap();
     }
 }

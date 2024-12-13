@@ -800,6 +800,7 @@ dependencies = [
  "dirs",
  "dotenv",
  "monitor",
+ "once_cell",
  "parking_lot",
  "sqlx",
  "time",

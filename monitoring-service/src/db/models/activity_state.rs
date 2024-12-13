@@ -1,15 +1,19 @@
+use std::time::Duration;
+
+use time::OffsetDateTime;
+
 #[derive(Debug, sqlx::Type, PartialEq)]
 #[sqlx(type_name = "TEXT", rename_all = "UPPERCASE")]
-pub enum ActivityState {
+pub enum ActivityStateType {
     Active,
     Inactive,
 }
 
-impl From<String> for ActivityState {
+impl From<String> for ActivityStateType {
     fn from(s: String) -> Self {
         match s.as_str() {
-            "ACTIVE" => ActivityState::Active,
-            "INACTIVE" => ActivityState::Inactive,
+            "ACTIVE" => ActivityStateType::Active,
+            "INACTIVE" => ActivityStateType::Inactive,
             _ => panic!("Unknown activity state: {}", s), // Or handle invalid types differently
         }
     }
@@ -17,9 +21,7 @@ impl From<String> for ActivityState {
 
 pub struct ActivityState {
     pub id: Option<i64>,
-    pub state: ActivityState,
-    pub current_window_title: Option<String>,
-    pub current_window_app_name: Option<String>,
+    pub state: ActivityStateType,
     pub context_switches: i64,
     pub start_time: Option<OffsetDateTime>,
     pub end_time: Option<OffsetDateTime>,
@@ -31,9 +33,7 @@ impl ActivityState {
         let now = OffsetDateTime::now_utc();
         ActivityState {
             id: None,
-            state: ActivityState::Inactive,
-            current_window_title: None,
-            current_window_app_name: None,
+            state: ActivityStateType::Inactive,
             context_switches: 0,
             start_time: Some(now - Duration::from_secs(120)),
             end_time: Some(now),
