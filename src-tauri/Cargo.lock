@@ -3,19 +3,6 @@
 version = 4
 
 [[package]]
-name = "activities-service"
-version = "0.1.0"
-dependencies = [
- "dirs",
- "dotenv",
- "monitor",
- "parking_lot",
- "sqlx",
- "time",
- "tokio",
-]
-
-[[package]]
 name = "addr2line"
 version = "0.24.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -97,8 +84,8 @@ checksum = "4c95c10ba0b00a02636238b814946408b1322d5ac4760326e6fb8ec956d85775"
 name = "app-codeclimbers"
 version = "0.1.0"
 dependencies = [
- "activities-service",
  "monitor",
+ "monitoring-service",
  "serde",
  "serde_json",
  "tauri",
@@ -2106,6 +2093,19 @@ dependencies = [
  "once_cell",
  "serde",
  "thiserror 1.0.69",
+]
+
+[[package]]
+name = "monitoring-service"
+version = "0.1.0"
+dependencies = [
+ "dirs",
+ "dotenv",
+ "monitor",
+ "parking_lot",
+ "sqlx",
+ "time",
+ "tokio",
 ]
 
 [[package]]

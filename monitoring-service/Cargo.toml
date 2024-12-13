@@ -1,5 +1,5 @@
 [package]
-name = "activities-service"
+name = "monitoring-service"
 version = "0.1.0"
 edition = "2021"
 

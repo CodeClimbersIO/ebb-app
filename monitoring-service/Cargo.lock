@@ -3,19 +3,6 @@
 version = 4
 
 [[package]]
-name = "activities-service"
-version = "0.1.0"
-dependencies = [
- "dirs",
- "dotenv",
- "monitor",
- "parking_lot",
- "sqlx",
- "time",
- "tokio",
-]
-
-[[package]]
 name = "addr2line"
 version = "0.24.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -804,6 +791,19 @@ dependencies = [
  "once_cell",
  "serde",
  "thiserror",
+]
+
+[[package]]
+name = "monitoring-service"
+version = "0.1.0"
+dependencies = [
+ "dirs",
+ "dotenv",
+ "monitor",
+ "parking_lot",
+ "sqlx",
+ "time",
+ "tokio",
 ]
 
 [[package]]
