@@ -75,7 +75,7 @@ impl Activity {
         activity
     }
 
-    pub fn create_keyboard_activity(event: &KeyboardEvent) -> Self {
+    pub fn create_keyboard_activity(_event: &KeyboardEvent) -> Self {
         let activity = Self::new(ActivityType::Keyboard);
         activity
     }

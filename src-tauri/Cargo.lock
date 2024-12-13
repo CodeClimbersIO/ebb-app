@@ -9,6 +9,7 @@ dependencies = [
  "dirs",
  "dotenv",
  "monitor",
+ "parking_lot",
  "sqlx",
  "time",
  "tokio",

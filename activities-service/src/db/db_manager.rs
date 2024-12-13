@@ -82,7 +82,6 @@ impl DbManager {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs;
 
     #[tokio::test]
     async fn test_db_manager() {

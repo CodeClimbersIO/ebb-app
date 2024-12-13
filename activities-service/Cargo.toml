@@ -10,6 +10,7 @@ sqlx = { version = "0.8.2", features = ["sqlite", "runtime-tokio", "time"] }
 tokio = { version = "1.42.0", features = ["full"] }
 monitor = { path = "../monitor" }
 time = { version = "0.3", features = ["serde"] }
+parking_lot = "0.12"
 
 [build-dependencies]
 sqlx = "0.8.2"
