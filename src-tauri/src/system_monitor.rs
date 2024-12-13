@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use activities_service;
+use activities_service::activity_service;
 use monitor;
 use tauri::async_runtime;
 use tauri::AppHandle;
@@ -8,7 +8,7 @@ use tokio::time::{sleep, Duration};
 
 pub fn start_monitoring(app: AppHandle) {
     async_runtime::spawn(async move {
-        let activity_service = Arc::new(activities_service::start_monitoring().await);
+        let activity_service = Arc::new(activity_service::start_monitoring().await);
         monitor::initialize_callback(activity_service.clone())
             .expect("Failed to initialize callback");
         loop {

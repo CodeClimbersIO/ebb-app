@@ -5,7 +5,7 @@ use monitor::{EventCallback, KeyboardEvent, MouseEvent, WindowEvent};
 use parking_lot::Mutex;
 use tokio::{sync::mpsc, time::Instant};
 
-use crate::db::{activities_repo::ActivitiesRepo, models::Activity};
+use crate::db::{activities_repo::ActivitiesRepo, db_manager, models::Activity};
 #[derive(Clone)]
 pub struct ActivityService {
     activities_repo: ActivitiesRepo,
@@ -70,6 +70,7 @@ impl ActivityService {
             eprintln!("Failed to save window activity: {}", err);
         }
     }
+
     pub fn new(pool: sqlx::SqlitePool) -> Self {
         let (sender, mut receiver) = mpsc::unbounded_channel();
         let activities_repo = ActivitiesRepo::new(pool);
@@ -86,12 +87,10 @@ impl ActivityService {
             while let Some(event) = receiver.recv().await {
                 match event {
                     ActivityEvent::Keyboard(_) => {
-                        Self::handle_keyboard_activity(&service_clone).await
+                        service_clone.handle_keyboard_activity().await;
                     }
-                    ActivityEvent::Mouse(_) => Self::handle_mouse_activity(&service_clone).await,
-                    ActivityEvent::Window(e) => {
-                        Self::handle_window_activity(&service_clone, e).await
-                    }
+                    ActivityEvent::Mouse(_) => service_clone.handle_mouse_activity().await,
+                    ActivityEvent::Window(e) => service_clone.handle_window_activity(e).await,
                 }
             }
         });
@@ -108,6 +107,15 @@ impl ActivityService {
     pub async fn get_activity(&self, id: i32) -> Result<Activity, sqlx::Error> {
         self.activities_repo.get_activity(id).await
     }
+}
+
+pub async fn start_monitoring() -> ActivityService {
+    println!("monitoring starting");
+
+    let db_path = db_manager::get_db_path();
+    let db_manager = db_manager::DbManager::new(&db_path).await.unwrap();
+
+    ActivityService::new(db_manager.pool)
 }
 
 #[cfg(test)]

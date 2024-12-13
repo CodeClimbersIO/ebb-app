@@ -1,4 +1,4 @@
-use monitor::{KeyboardEvent, MouseEvent, WindowEvent};
+use monitor::WindowEvent;
 use sqlx::Row;
 use time::OffsetDateTime;
 
@@ -76,15 +76,5 @@ impl Activity {
             app_name: "Cursor".to_string(),
             title: "main.rs - app-codeclimbers".to_string(),
         })
-    }
-
-    #[cfg(test)]
-    pub fn __create_test_mouse() -> Self {
-        Self::create_mouse_activity()
-    }
-
-    #[cfg(test)]
-    pub fn __create_test_keyboard() -> Self {
-        Self::create_keyboard_activity()
     }
 }
