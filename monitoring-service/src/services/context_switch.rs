@@ -46,6 +46,8 @@ impl ContextSwitchState {
 
 #[cfg(test)]
 mod tests {
+    use time::OffsetDateTime;
+
     use crate::db::models::ActivityType;
 
     use super::*;
@@ -57,30 +59,35 @@ mod tests {
             ActivityType::Window,
             Some("app1".to_string()),
             Some("window1".to_string()),
+            OffsetDateTime::now_utc(),
         ));
         std::thread::sleep(Duration::from_millis(2));
         context_switch_state.new_window_activity(Activity::new(
             ActivityType::Window,
             Some("app2".to_string()),
             Some("window2".to_string()),
+            OffsetDateTime::now_utc(),
         ));
         std::thread::sleep(Duration::from_millis(2));
         context_switch_state.new_window_activity(Activity::new(
             ActivityType::Window,
             Some("app3".to_string()),
             Some("window3".to_string()),
+            OffsetDateTime::now_utc(),
         ));
         std::thread::sleep(Duration::from_millis(2));
         context_switch_state.new_window_activity(Activity::new(
             ActivityType::Window,
             Some("app3".to_string()),
             Some("window4".to_string()),
+            OffsetDateTime::now_utc(),
         ));
         std::thread::sleep(Duration::from_millis(2));
         context_switch_state.new_window_activity(Activity::new(
             ActivityType::Window,
             Some("app3".to_string()),
             Some("window5".to_string()),
+            OffsetDateTime::now_utc(),
         ));
         assert_eq!(context_switch_state.context_switches, 2);
     }
@@ -93,6 +100,7 @@ mod tests {
                 ActivityType::Window,
                 Some(format!("app{}", i)),
                 Some(format!("window{}", i)),
+                OffsetDateTime::now_utc(),
             ));
         }
         assert_eq!(context_switch_state.context_switches, 0);
@@ -105,12 +113,14 @@ mod tests {
             ActivityType::Window,
             Some("app1".to_string()),
             Some("window1".to_string()),
+            OffsetDateTime::now_utc(),
         ));
         std::thread::sleep(Duration::from_millis(2));
         context_switch_state.new_window_activity(Activity::new(
             ActivityType::Window,
             Some("app2".to_string()),
             Some("window2".to_string()),
+            OffsetDateTime::now_utc(),
         ));
         context_switch_state.reset_context_switches();
         assert_eq!(context_switch_state.context_switches, 0);

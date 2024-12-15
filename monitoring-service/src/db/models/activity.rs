@@ -21,7 +21,7 @@ impl From<String> for ActivityType {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Activity {
     pub id: Option<i64>,
     pub created_at: Option<OffsetDateTime>,
@@ -49,11 +49,12 @@ impl Activity {
         activity_type: ActivityType,
         app_name: Option<String>,
         app_window_title: Option<String>,
+        timestamp: OffsetDateTime,
     ) -> Self {
         Activity {
             id: None,
             created_at: Some(OffsetDateTime::now_utc()),
-            timestamp: Some(OffsetDateTime::now_utc()),
+            timestamp: Some(timestamp),
             activity_type,
             app_name,
             app_window_title,
@@ -65,15 +66,21 @@ impl Activity {
             ActivityType::Window,
             Some(event.app_name.clone()),
             Some(event.title.clone()),
+            OffsetDateTime::now_utc(),
         )
     }
 
     pub fn create_mouse_activity() -> Self {
-        Self::new(ActivityType::Mouse, None, None)
+        Self::new(ActivityType::Mouse, None, None, OffsetDateTime::now_utc())
     }
 
     pub fn create_keyboard_activity() -> Self {
-        Self::new(ActivityType::Keyboard, None, None)
+        Self::new(
+            ActivityType::Keyboard,
+            None,
+            None,
+            OffsetDateTime::now_utc(),
+        )
     }
 
     #[cfg(test)]

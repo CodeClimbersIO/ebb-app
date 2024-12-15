@@ -3,6 +3,7 @@ use std::time::Duration;
 use monitor::{EventCallback, KeyboardEvent, MouseEvent, WindowEvent};
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
+use time::OffsetDateTime;
 use tokio::sync::mpsc;
 
 use crate::db::{
@@ -15,7 +16,7 @@ use crate::db::{
 use super::context_switch::ContextSwitchState;
 
 static CONTEXT_SWITCH_STATE: Lazy<Mutex<ContextSwitchState>> =
-    Lazy::new(|| Mutex::new(ContextSwitchState::new(Duration::from_secs(15))));
+    Lazy::new(|| Mutex::new(ContextSwitchState::new(Duration::from_secs(2))));
 
 #[derive(Clone)]
 pub struct ActivityService {
@@ -89,19 +90,23 @@ impl ActivityService {
             activity_state_repo,
             event_sender: sender,
         };
-        let service_clone = service.clone();
+        let callback_service_clone = service.clone();
+        // let activity_state_clone = service.clone();
 
         tokio::spawn(async move {
             while let Some(event) = receiver.recv().await {
                 match event {
                     ActivityEvent::Keyboard() => {
-                        service_clone.handle_keyboard_activity().await;
+                        callback_service_clone.handle_keyboard_activity().await
                     }
-                    ActivityEvent::Mouse() => service_clone.handle_mouse_activity().await,
-                    ActivityEvent::Window(e) => service_clone.handle_window_activity(e).await,
+                    ActivityEvent::Mouse() => callback_service_clone.handle_mouse_activity().await,
+                    ActivityEvent::Window(e) => {
+                        callback_service_clone.handle_window_activity(e).await
+                    }
                 }
             }
         });
+
         service
     }
 
@@ -116,41 +121,99 @@ impl ActivityService {
         self.activities_repo.get_activity(id).await
     }
 
-    async fn save_activity_state(&self) -> Result<sqlx::sqlite::SqliteQueryResult, sqlx::Error> {
-        let activity_state = ActivityState::new();
+    async fn save_activity_state(
+        &self,
+        activity_state: &ActivityState,
+    ) -> Result<sqlx::sqlite::SqliteQueryResult, sqlx::Error> {
         self.activity_state_repo
-            .save_activity_state(&activity_state)
+            .save_activity_state(activity_state)
             .await
     }
 
-    // async fn get_activities_since_last_activity_state(&self) -> Result<Vec<Activity>, sqlx::Error> {
-    //     self.activities_repo
-    //         .get_activities_since_last_activity_state()
-    //         .await
-    // }
+    async fn get_activities_since_last_activity_state(&self) -> Result<Vec<Activity>, sqlx::Error> {
+        self.activities_repo
+            .get_activities_since_last_activity_state()
+            .await
+    }
 
-    // async fn create_activity_state_from_activities(&self, activities: Vec<Activity>) -> Result<sqlx::sqlite::SqliteQueryResult, sqlx::Error> {
-    //     // iterate over the activities to create the start, end, context_switches, and activity_state_type
-    //     let mut start = activities[0].created_at;
-    //     let mut end = activities[0].created_at;
-    //     let mut context_switches = 0;
-    //     let mut activity_state_type = ActivityStateType::Idle;
-    //     for activity in activities {
-    //         if activity.created_at < start {
-    //             start = activity.created_at;
-    //         }
-    //     }
-    // }
+    async fn create_activity_state_from_activities(
+        &self,
+        activities: Vec<Activity>,
+        interval: Duration,
+    ) -> Result<sqlx::sqlite::SqliteQueryResult, sqlx::Error> {
+        // iterate over the activities to create the start, end, context_switches, and activity_state_type
+        println!(
+            "\n\ncreate_activity_state_from_activities: {:?}",
+            activities
+        );
+        println!(
+            "create_activity_state_from_activities: {}",
+            activities.len()
+        );
+        if activities.is_empty() {
+            println!("create_activity_state_from_activities: empty");
+            self.activity_state_repo
+                .create_idle_activity_state(interval)
+                .await
+        } else {
+            println!("create_activity_state_from_activities: not empty");
+            // First lock: Get the context switches
+            let context_switches = {
+                let context_switch = CONTEXT_SWITCH_STATE.lock();
+                context_switch.context_switches.clone()
+            }; // lock is released here
+            let result = self
+                .activity_state_repo
+                .create_active_activity_state(context_switches, interval)
+                .await;
 
-    // async fn create_activity_state_job(&self) {
-    //     // every 2 minutes, get the activities since the last activity state and create a new activity state
-    //     let interval = tokio::time::interval(tokio::time::Duration::from_secs(120));
-    //     loop {
-    //         interval.tick().await;
-    //         let activities = self.get_activities_since_last_activity_state().await;
-    //         self.save_activity_state(activities).await;
-    //     }
-    // }
+            {
+                let mut context_switch = CONTEXT_SWITCH_STATE.lock();
+                context_switch.reset_context_switches();
+            } // lock is released here
+            result
+        }
+    }
+
+    async fn get_last_activity_state(&self) -> Result<ActivityState, sqlx::Error> {
+        self.activity_state_repo.get_last_activity_state().await
+    }
+
+    async fn get_activity_starting_states_between(
+        &self,
+        start_time: OffsetDateTime,
+        end_time: OffsetDateTime,
+    ) -> Result<Vec<ActivityState>, sqlx::Error> {
+        self.activity_state_repo
+            .get_activity_states_starting_between(start_time, end_time)
+            .await
+    }
+
+    async fn get_all_activity_states(&self) -> Result<Vec<ActivityState>, sqlx::Error> {
+        self.activity_state_repo.get_all_activity_states().await
+    }
+
+    pub fn start_activity_state_loop(&self, activity_state_interval: Duration) {
+        let activity_service_clone = self.clone();
+        tokio::spawn(async move {
+            let mut wait_interval = tokio::time::interval(activity_state_interval);
+            loop {
+                println!("tick");
+                wait_interval.tick().await;
+                let activities = activity_service_clone
+                    .get_activities_since_last_activity_state()
+                    .await
+                    .unwrap();
+
+                activity_service_clone
+                    .create_activity_state_from_activities(activities, activity_state_interval)
+                    .await
+                    .expect("Failed to create activity state");
+
+                println!("activity_state_created\n");
+            }
+        });
+    }
 }
 
 pub async fn start_monitoring() -> ActivityService {
@@ -166,9 +229,13 @@ pub async fn start_monitoring() -> ActivityService {
 mod tests {
 
     use monitor::WindowEvent;
+    use time::OffsetDateTime;
 
     use super::*;
-    use crate::db::{db_manager, models::ActivityType};
+    use crate::db::{
+        db_manager,
+        models::{ActivityStateType, ActivityType},
+    };
 
     #[tokio::test]
     async fn test_activity_service() {
@@ -223,5 +290,90 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_count_context_switches() {}
+    async fn test_create_activity_state_from_activities_inactive() {
+        let pool = db_manager::create_test_db().await;
+        let activity_service = ActivityService::new(pool);
+        let activities = vec![];
+        let result = activity_service
+            .create_activity_state_from_activities(activities, Duration::from_secs(120))
+            .await;
+        assert!(result.is_ok());
+        let activity_state = activity_service.get_last_activity_state().await.unwrap();
+        assert_eq!(activity_state.state, ActivityStateType::Inactive);
+        assert_eq!(activity_state.context_switches, 0);
+    }
+
+    #[tokio::test]
+    async fn test_create_activity_state_from_activities_active() {
+        let pool = db_manager::create_test_db().await;
+        let activity_service = ActivityService::new(pool);
+        let activities = vec![Activity::__create_test_window()];
+        let result = activity_service
+            .create_activity_state_from_activities(activities, Duration::from_secs(120))
+            .await;
+        assert!(result.is_ok());
+        let activity_state = activity_service.get_last_activity_state().await.unwrap();
+        assert_eq!(activity_state.state, ActivityStateType::Active);
+        assert_eq!(activity_state.context_switches, 0);
+    }
+
+    #[tokio::test]
+    async fn test_get_activities_since_last_activity_state_edge_time_case() {
+        let pool = db_manager::create_test_db().await;
+        let activity_service = ActivityService::new(pool);
+        let now = OffsetDateTime::now_utc();
+
+        // we have an activity at time 2 seconds ago.
+        let mut activity = Activity::__create_test_window();
+        activity.timestamp = Some(now - Duration::from_secs(2));
+        activity_service.save_activity(&activity).await.unwrap();
+
+        // we have an activity at time 1 second ago.
+        let mut activity = Activity::__create_test_window();
+        activity.timestamp = Some(now - Duration::from_secs(1));
+        activity_service.save_activity(&activity).await.unwrap();
+
+        // we have an activity at time 0 seconds ago.
+        let mut activity = Activity::__create_test_window();
+        activity.timestamp = Some(now);
+        activity_service.save_activity(&activity).await.unwrap();
+
+        // we have an activity_state that started 1 second ago.
+        let mut activity_state = ActivityState::new();
+        activity_state.start_time = Some(now - Duration::from_secs(1));
+        activity_service
+            .save_activity_state(&activity_state)
+            .await
+            .unwrap();
+
+        // retrieve activities since the last activity state
+        let activities = activity_service
+            .get_activities_since_last_activity_state()
+            .await
+            .unwrap();
+        // should equal to 1 as the first activity is at time 2 seconds ago and the second activity is at time 1 second ago.
+        assert_eq!(activities.len(), 1);
+
+        // assert that the activities are from the second time window
+    }
+
+    #[tokio::test]
+    async fn test_activity_state_loop() {
+        let pool = db_manager::create_test_db().await;
+        let activity_service = ActivityService::new(pool);
+        let start = OffsetDateTime::now_utc();
+
+        activity_service.start_activity_state_loop(Duration::from_millis(100));
+
+        // Wait for a few iterations
+        tokio::time::sleep(Duration::from_millis(350)).await;
+
+        // Verify the results
+        let activity_states = activity_service
+            .get_activity_starting_states_between(start, OffsetDateTime::now_utc())
+            .await
+            .unwrap();
+
+        assert!(activity_states.len() >= 3);
+    }
 }

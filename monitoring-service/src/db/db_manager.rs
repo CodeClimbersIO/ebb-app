@@ -28,10 +28,11 @@ pub fn get_test_db_path() -> String {
 #[cfg(test)]
 pub async fn create_test_db() -> SqlitePool {
     use sqlx::sqlite::SqlitePoolOptions;
-
+    // let db_path = get_test_db_path();
+    let db_path = ":memory:";
     let pool = SqlitePoolOptions::new()
         .max_connections(1)
-        .connect("sqlite::memory:")
+        .connect(&format!("sqlite:{db_path}"))
         .await
         .unwrap();
 

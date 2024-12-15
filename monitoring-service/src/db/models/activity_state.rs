@@ -19,6 +19,7 @@ impl From<String> for ActivityStateType {
     }
 }
 
+#[derive(Debug, sqlx::FromRow, PartialEq)]
 pub struct ActivityState {
     pub id: Option<i64>,
     pub state: ActivityStateType,
