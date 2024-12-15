@@ -32,13 +32,19 @@ enum ActivityEvent {
 }
 
 impl EventCallback for ActivityService {
-    fn on_keyboard_events(&self, _: Vec<KeyboardEvent>) {
+    fn on_keyboard_events(&self, events: Vec<KeyboardEvent>) {
+        if events.is_empty() {
+            return;
+        }
         if let Err(e) = self.event_sender.send(ActivityEvent::Keyboard()) {
             eprintln!("Failed to send keyboard event: {}", e);
         }
     }
 
-    fn on_mouse_events(&self, _: Vec<MouseEvent>) {
+    fn on_mouse_events(&self, events: Vec<MouseEvent>) {
+        if events.is_empty() {
+            return;
+        }
         if let Err(e) = self.event_sender.send(ActivityEvent::Mouse()) {
             eprintln!("Failed to send mouse event: {}", e);
         }
@@ -67,6 +73,7 @@ impl ActivityService {
     }
 
     async fn handle_mouse_activity(&self) {
+        println!("handle_mouse_activity");
         let activity = Activity::create_mouse_activity();
         if let Err(err) = self.save_activity(&activity).await {
             eprintln!("Failed to save mouse activity: {}", err);
