@@ -24,3 +24,12 @@ dist-ssr
 *.sw?
 
 .env
+
+.DS_Store
+
+# monitor
+/target
+
+*.dylib
+*.dll
+*.a
