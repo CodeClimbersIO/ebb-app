@@ -119,10 +119,6 @@ WindowTitle* detect_focused_window(void) {
     return nil;
 }
 
-void start_window_monitoring(WindowEventCallback callback) {
-    // TODO: Implement window monitoring
-}
-
 void start_mouse_monitoring(MouseEventCallback callback) {
     if (!monitorHolder) {
         monitorHolder = [[MonitorHolder alloc] init];
@@ -172,7 +168,6 @@ void start_mouse_monitoring(MouseEventCallback callback) {
             default:
                 return;
         }
-        printf("Click event: %d\n", eventType);
         callback(event.locationInWindow.x,
                 event.locationInWindow.y,
                 eventType,
@@ -185,7 +180,6 @@ void start_mouse_monitoring(MouseEventCallback callback) {
     // Scroll monitor
     id scrollMonitor = [NSEvent addGlobalMonitorForEventsMatchingMask:NSEventMaskScrollWheel
                                                             handler:^(NSEvent *event) {
-        printf("Scroll event: %f, %f\n", event.locationInWindow.x, event.locationInWindow.y);
         callback(event.locationInWindow.x,
                 event.locationInWindow.y,
                 MouseEventTypeScroll,
@@ -198,7 +192,21 @@ void start_mouse_monitoring(MouseEventCallback callback) {
 }
 
 void start_keyboard_monitoring(KeyboardEventCallback callback) {
-    // TODO: Implement keyboard monitoring
+    if (!monitorHolder) {
+        monitorHolder = [[MonitorHolder alloc] init];
+    }
+    
+    id keyboardMonitor = [NSEvent addGlobalMonitorForEventsMatchingMask:NSEventMaskKeyDown
+                                                               handler:^(NSEvent *event) {
+        callback((int32_t)event.keyCode);
+    }];
+    
+    if (keyboardMonitor) {
+        if (!monitorHolder.monitors) {
+            monitorHolder.monitors = @[];
+        }
+        monitorHolder.monitors = [monitorHolder.monitors arrayByAddingObject:keyboardMonitor];
+    }
 }
 
 void initialize(void) {

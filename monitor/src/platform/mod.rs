@@ -8,13 +8,13 @@ mod windows;
 #[cfg(target_os = "windows")]
 pub(crate) use windows::*;
 
-use crate::event::EventCallback;
+use crate::{event::EventCallback, MonitorError};
 use std::sync::Arc;
 
-pub fn detect_changes() {
-    platform_detect_changes();
+pub fn detect_changes() -> Result<(), MonitorError> {
+    platform_detect_changes()
 }
 
-pub fn initialize_callback(callback: Arc<dyn EventCallback>) {
-    platform_initialize_callback(callback);
+pub fn initialize_callback(callback: Arc<dyn EventCallback>) -> Result<(), MonitorError> {
+    platform_initialize_callback(callback)
 }

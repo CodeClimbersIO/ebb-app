@@ -56,7 +56,7 @@ pub struct WindowEvent {
 }
 
 pub trait EventCallback: Send + Sync {
-    fn on_mouse_event(&self, event: MouseEvent);
-    fn on_keyboard_event(&self, event: KeyboardEvent);
+    fn on_mouse_events(&self, events: Vec<MouseEvent>);
+    fn on_keyboard_events(&self, events: Vec<KeyboardEvent>);
     fn on_window_event(&self, event: WindowEvent);
 }
