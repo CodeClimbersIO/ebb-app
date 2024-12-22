@@ -1,2 +1,2 @@
 pub mod activities_service;
-pub(crate) mod context_switch;
+pub(crate) mod app_switch;

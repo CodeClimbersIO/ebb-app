@@ -23,7 +23,7 @@ impl From<String> for ActivityStateType {
 pub struct ActivityState {
     pub id: Option<i64>,
     pub state: ActivityStateType,
-    pub context_switches: i64,
+    pub app_switches: i64,
     pub start_time: Option<OffsetDateTime>,
     pub end_time: Option<OffsetDateTime>,
     pub created_at: Option<OffsetDateTime>,
@@ -35,7 +35,7 @@ impl ActivityState {
         ActivityState {
             id: None,
             state: ActivityStateType::Inactive,
-            context_switches: 0,
+            app_switches: 0,
             start_time: Some(now - Duration::from_secs(120)),
             end_time: Some(now),
             created_at: Some(now),

@@ -9,6 +9,11 @@ use tokio::time::{sleep, Duration};
 pub fn start_monitoring(app: AppHandle) {
     async_runtime::spawn(async move {
         let activity_service = Arc::new(activities_service::start_monitoring().await);
+
+        let activity_state_interval = Duration::from_secs(30);
+
+        activity_service.start_activity_state_loop(activity_state_interval);
+
         monitor::initialize_callback(activity_service.clone())
             .expect("Failed to initialize callback");
         loop {

@@ -20,10 +20,10 @@ impl ActivityStateRepo {
     ) -> Result<sqlx::sqlite::SqliteQueryResult, sqlx::Error> {
         let mut conn = self.pool.acquire().await?;
         sqlx::query!(
-            r#"INSERT INTO activity_state (state, context_switches, start_time, end_time) 
+            r#"INSERT INTO activity_state (state, app_switches, start_time, end_time) 
         VALUES (?, ?, ?, ?)"#,
             activity_state.state as _, // Cast enum to database type
-            activity_state.context_switches,
+            activity_state.app_switches,
             activity_state.start_time,
             activity_state.end_time,
         )
@@ -96,16 +96,6 @@ impl ActivityStateRepo {
         .await
     }
 
-    pub async fn get_all_activity_states(&self) -> Result<Vec<ActivityState>, sqlx::Error> {
-        let mut conn = self.pool.acquire().await?;
-        sqlx::query_as!(
-            ActivityState,
-            "SELECT * FROM activity_state ORDER BY id DESC LIMIT 4"
-        )
-        .fetch_all(&mut *conn)
-        .await
-    }
-
     pub(crate) async fn create_idle_activity_state(
         &self,
         interval: Duration,
@@ -114,7 +104,7 @@ impl ActivityStateRepo {
         let mut conn = self.pool.acquire().await.unwrap();
 
         sqlx::query!(
-            r#"INSERT INTO activity_state (state, context_switches, start_time, end_time)
+            r#"INSERT INTO activity_state (state, app_switches, start_time, end_time)
         VALUES (?, ?, ?, ?)"#,
             ActivityStateType::Inactive as _,
             0,
@@ -127,16 +117,16 @@ impl ActivityStateRepo {
 
     pub(crate) async fn create_active_activity_state(
         &self,
-        context_switches: i64,
+        app_switches: i64,
         interval: Duration,
     ) -> Result<sqlx::sqlite::SqliteQueryResult, sqlx::Error> {
         let (start_time, end_time) = self.get_next_activity_state_times(interval).await;
         let mut conn = self.pool.acquire().await?;
         sqlx::query!(
-            r#"INSERT INTO activity_state (state, context_switches, start_time, end_time) 
+            r#"INSERT INTO activity_state (state, app_switches, start_time, end_time) 
         VALUES (?, ?, ?, ?)"#,
             ActivityStateType::Active as _,
-            context_switches,
+            app_switches,
             start_time,
             end_time,
         )
@@ -179,7 +169,7 @@ mod tests {
             .unwrap();
         let first_activity_state = activity_state_repo.get_last_activity_state().await.unwrap();
         assert_eq!(first_activity_state.state, ActivityStateType::Inactive);
-        assert_eq!(first_activity_state.context_switches, 0);
+        assert_eq!(first_activity_state.app_switches, 0);
     }
 
     #[tokio::test]
@@ -192,7 +182,7 @@ mod tests {
             .unwrap();
         let last_activity_state = activity_state_repo.get_last_activity_state().await.unwrap();
         assert_eq!(last_activity_state.state, ActivityStateType::Active);
-        assert_eq!(last_activity_state.context_switches, 5);
+        assert_eq!(last_activity_state.app_switches, 5);
     }
 
     #[tokio::test]

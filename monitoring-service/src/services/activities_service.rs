@@ -3,20 +3,22 @@ use std::time::Duration;
 use monitor::{EventCallback, KeyboardEvent, MouseEvent, WindowEvent};
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
-use time::OffsetDateTime;
 use tokio::sync::mpsc;
 
 use crate::db::{
-    activity_repo::ActivityRepo,
-    activity_state_repo::ActivityStateRepo,
-    db_manager,
-    models::{Activity, ActivityState},
+    activity_repo::ActivityRepo, activity_state_repo::ActivityStateRepo, db_manager,
+    models::Activity,
 };
 
-use super::context_switch::ContextSwitchState;
+use super::app_switch::AppSwitchState;
 
-static CONTEXT_SWITCH_STATE: Lazy<Mutex<ContextSwitchState>> =
-    Lazy::new(|| Mutex::new(ContextSwitchState::new(Duration::from_secs(2))));
+#[cfg(test)]
+use crate::db::models::ActivityState;
+#[cfg(test)]
+use time::OffsetDateTime;
+
+static APP_SWITCH_STATE: Lazy<Mutex<AppSwitchState>> =
+    Lazy::new(|| Mutex::new(AppSwitchState::new(Duration::from_secs(2))));
 
 #[derive(Clone)]
 pub struct ActivityService {
@@ -52,13 +54,10 @@ impl EventCallback for ActivityService {
 
     fn on_window_event(&self, event: WindowEvent) {
         println!("on_window_event: {:?}", event);
-        let mut context_switch_state = CONTEXT_SWITCH_STATE.lock();
+        let mut app_switch_state = APP_SWITCH_STATE.lock();
         let activity = Activity::create_window_activity(&event);
-        context_switch_state.new_window_activity(activity);
-        println!(
-            "context_switches: {}",
-            context_switch_state.context_switches
-        );
+        app_switch_state.new_window_activity(activity);
+        println!("app_switches: {}", app_switch_state.app_switches);
         if let Err(e) = self.event_sender.send(ActivityEvent::Window(event)) {
             eprintln!("Failed to send window event: {}", e);
         }
@@ -128,6 +127,7 @@ impl ActivityService {
         self.activities_repo.get_activity(id).await
     }
 
+    #[cfg(test)]
     async fn save_activity_state(
         &self,
         activity_state: &ActivityState,
@@ -166,8 +166,8 @@ impl ActivityService {
             println!("create_activity_state_from_activities: not empty");
             // First lock: Get the context switches
             let context_switches = {
-                let context_switch = CONTEXT_SWITCH_STATE.lock();
-                context_switch.context_switches.clone()
+                let app_switch = APP_SWITCH_STATE.lock();
+                app_switch.app_switches.clone()
             }; // lock is released here
             let result = self
                 .activity_state_repo
@@ -175,17 +175,19 @@ impl ActivityService {
                 .await;
 
             {
-                let mut context_switch = CONTEXT_SWITCH_STATE.lock();
-                context_switch.reset_context_switches();
+                let mut app_switch = APP_SWITCH_STATE.lock();
+                app_switch.reset_app_switches();
             } // lock is released here
             result
         }
     }
 
+    #[cfg(test)]
     async fn get_last_activity_state(&self) -> Result<ActivityState, sqlx::Error> {
         self.activity_state_repo.get_last_activity_state().await
     }
 
+    #[cfg(test)]
     async fn get_activity_starting_states_between(
         &self,
         start_time: OffsetDateTime,
@@ -194,10 +196,6 @@ impl ActivityService {
         self.activity_state_repo
             .get_activity_states_starting_between(start_time, end_time)
             .await
-    }
-
-    async fn get_all_activity_states(&self) -> Result<Vec<ActivityState>, sqlx::Error> {
-        self.activity_state_repo.get_all_activity_states().await
     }
 
     pub fn start_activity_state_loop(&self, activity_state_interval: Duration) {
@@ -224,8 +222,6 @@ impl ActivityService {
 }
 
 pub async fn start_monitoring() -> ActivityService {
-    println!("monitoring starting");
-
     let db_path = db_manager::get_db_path();
     let db_manager = db_manager::DbManager::new(&db_path).await.unwrap();
 
@@ -307,7 +303,7 @@ mod tests {
         assert!(result.is_ok());
         let activity_state = activity_service.get_last_activity_state().await.unwrap();
         assert_eq!(activity_state.state, ActivityStateType::Inactive);
-        assert_eq!(activity_state.context_switches, 0);
+        assert_eq!(activity_state.app_switches, 0);
     }
 
     #[tokio::test]
@@ -321,7 +317,7 @@ mod tests {
         assert!(result.is_ok());
         let activity_state = activity_service.get_last_activity_state().await.unwrap();
         assert_eq!(activity_state.state, ActivityStateType::Active);
-        assert_eq!(activity_state.context_switches, 0);
+        assert_eq!(activity_state.app_switches, 0);
     }
 
     #[tokio::test]
