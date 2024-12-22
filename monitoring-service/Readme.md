@@ -40,6 +40,7 @@ The monitoring service:
 6. Run the service:   ```bash
    cargo watch -x run  ```
 
+Refer to `main.rs` for more information on how the service is run.
 The service will create a SQLite database at `~/.codeclimbers/codeclimbers-desktop.sqlite`
 
 ## Architecture
