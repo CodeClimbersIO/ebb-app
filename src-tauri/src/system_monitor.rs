@@ -1,21 +1,13 @@
-use std::sync::Arc;
-
 use monitor;
-use monitoring_service::services::activities_service;
 use tauri::async_runtime;
 use tauri::AppHandle;
 use tokio::time::{sleep, Duration};
 
 pub fn start_monitoring(app: AppHandle) {
     async_runtime::spawn(async move {
-        let activity_service = Arc::new(activities_service::start_monitoring().await);
+        let callback = monitoring_service::get_callback().await;
+        monitor::initialize_callback(callback).expect("Failed to initialize callback");
 
-        let activity_state_interval = Duration::from_secs(30);
-
-        activity_service.start_activity_state_loop(activity_state_interval);
-
-        monitor::initialize_callback(activity_service.clone())
-            .expect("Failed to initialize callback");
         loop {
             sleep(Duration::from_secs(1)).await;
             let _ = app.run_on_main_thread(move || {

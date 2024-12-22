@@ -10,7 +10,7 @@ use crate::db::{
     models::Activity,
 };
 
-use super::app_switch::AppSwitchState;
+use super::app_switch_service::AppSwitchState;
 
 #[cfg(test)]
 use crate::db::models::ActivityState;
@@ -123,6 +123,7 @@ impl ActivityService {
         self.activities_repo.save_activity(activity).await
     }
 
+    #[cfg(test)]
     pub async fn get_activity(&self, id: i32) -> Result<Activity, sqlx::Error> {
         self.activities_repo.get_activity(id).await
     }
