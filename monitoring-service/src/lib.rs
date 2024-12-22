@@ -6,4 +6,4 @@ pub mod services;
 mod utils;
 
 pub use db::db_manager::DbManager;
-pub use monitor_callback::get_callback;
+pub use monitor_callback::{detect_changes, initialize_monitor};
