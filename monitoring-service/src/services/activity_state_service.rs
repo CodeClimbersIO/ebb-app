@@ -75,13 +75,28 @@ impl ActivityStateService {
         };
 
         // calculate the activity score
-        let activity_score = self.get_activity_score_for_activity_states(&activity_states);
-        let app_switch_score = self.get_app_switch_score_for_activity_states(&activity_states);
+        let (activity_score, inactive_states) =
+            self.get_activity_score_for_activity_states(&activity_states);
+        let (app_switch_score, app_switch_avg) =
+            self.get_app_switch_score_for_activity_states(&activity_states);
         let flow_streak_score =
             self.get_flow_streak_score_for_activity_states(&last_activity_flow_period);
 
-        let total_score = f64::min(activity_score + app_switch_score + flow_streak_score, 10.0);
+        let total_score: f64 =
+            f64::min(activity_score + app_switch_score + flow_streak_score, 10.0);
+
+        println!("total_score: {}", total_score);
+        println!("activity_score: {}", activity_score);
+        println!("app_switch_score: {}", app_switch_score);
+        println!("flow_streak_score: {}", flow_streak_score);
+        println!("inactive_states: {}", inactive_states);
+        println!("app_switch_avg: {}", app_switch_avg);
+        println!("inactive_states as i64: {}", inactive_states as i64);
+        println!("app_switch_avg as i64: {}", app_switch_avg as i64);
+
         flow_period.score = total_score;
+        flow_period.inactive_time = inactive_states as i64;
+        flow_period.app_switches = app_switch_avg as i64;
 
         self.activity_flow_period_repo
             .save_activity_flow_period(&flow_period)
@@ -136,13 +151,13 @@ impl ActivityStateService {
     pub fn get_activity_score_for_activity_states(
         &self,
         activity_states: &Vec<ActivityState>,
-    ) -> f64 {
+    ) -> (f64, i32) {
         let inactive_states = activity_states
             .iter()
             .filter(|state| state.state == ActivityStateType::Inactive)
             .count();
         let activity_score = std::cmp::max(0, 5 - inactive_states as i32);
-        activity_score as f64
+        (activity_score as f64, inactive_states as i32)
     }
 
     pub async fn get_next_activity_state_times(&self, interval: Duration) -> ActivityPeriod {
@@ -177,9 +192,9 @@ impl ActivityStateService {
     pub fn get_app_switch_score_for_activity_states(
         &self,
         activity_states: &Vec<ActivityState>,
-    ) -> f64 {
+    ) -> (f64, f64) {
         if activity_states.is_empty() {
-            return 0.0;
+            return (0.0, 0.0);
         } else {
             let app_switch_avg = activity_states
                 .iter()
@@ -187,9 +202,9 @@ impl ActivityStateService {
                 .sum::<i64>() as f64
                 / activity_states.len() as f64;
             match app_switch_avg {
-                0.0..=4.0 => 1.0,
-                5.0..=8.0 => 0.5,
-                _ => 0.0,
+                0.0..=4.0 => (1.0, app_switch_avg),
+                5.0..=8.0 => (0.5, app_switch_avg),
+                _ => (0.0, app_switch_avg),
             }
         }
     }
@@ -264,12 +279,13 @@ mod tests {
                 .unwrap();
         }
 
-        let activity_score = activity_state_service
+        let (activity_score, inactive_states) = activity_state_service
             .get_activity_score_for_activity_states(&activity_states_all_active);
         assert_eq!(
             activity_score, 5.0,
             "Score should be 5 when all states are active"
         );
+        assert_eq!(inactive_states, 0, "Inactive states should be 0");
     }
 
     #[tokio::test]
@@ -298,7 +314,7 @@ mod tests {
         ];
         assert_eq!(
             activity_state_service.get_app_switch_score_for_activity_states(&low_switches),
-            1.0,
+            (1.0, 1.5),
             "Score should be 1.0 for low app switches"
         );
 
@@ -323,7 +339,7 @@ mod tests {
         ];
         assert_eq!(
             activity_state_service.get_app_switch_score_for_activity_states(&medium_switches),
-            0.5,
+            (0.5, 6.5),
             "Score should be 0.5 for medium app switches"
         );
 
@@ -348,7 +364,7 @@ mod tests {
         ];
         assert_eq!(
             activity_state_service.get_app_switch_score_for_activity_states(&high_switches),
-            0.0,
+            (0.0, 11.0),
             "Score should be 0.0 for high app switches"
         );
     }

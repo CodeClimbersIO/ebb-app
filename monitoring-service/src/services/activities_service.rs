@@ -240,7 +240,9 @@ impl ActivityService {
         tokio::spawn(async move {
             let mut wait_interval = tokio::time::interval(activity_flow_period_interval);
             loop {
+                println!("tick");
                 wait_interval.tick().await;
+                println!("next activity flow period times");
                 let activity_period = activity_state_service_clone
                     .get_next_activity_flow_period_times(activity_flow_period_interval)
                     .await;
