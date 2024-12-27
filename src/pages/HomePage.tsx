@@ -1,4 +1,11 @@
 
+import { ThemeToggleComponent } from '../components/ThemeToggleComponent'
+
 export const HomePage = () => {
-  return <div>HomePage</div>
+  return (
+    <div>
+      HomePage
+      <ThemeToggleComponent />
+    </div>
+  )
 }
