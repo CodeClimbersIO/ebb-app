@@ -25,3 +25,4 @@ serde_json = "1"
 tokio = { version = "1.42.0", features = ["full"] }
 monitoring-service = { path = "../monitoring-service" }
 monitor = { path = "../monitor" }
+tauri-plugin-sql = { version = "2", features = ["sqlite"] }

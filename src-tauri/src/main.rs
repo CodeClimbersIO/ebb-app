@@ -21,6 +21,7 @@ async fn main() {
     println!("Main thread info: {}", get_thread_info());
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_sql::Builder::new().build())
         .setup(|app| {
             let app_handle = app.handle().clone();
             system_monitor::start_monitoring(app_handle);
