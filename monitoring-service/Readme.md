@@ -45,6 +45,15 @@ The service will create a SQLite database at `~/.codeclimbers/codeclimbers-deskt
 
 ## Architecture
 
+### Event Flow
+
+1. Monitor crate detects activity and sends events
+2. `ActivityService` receives events via callbacks
+3. Events are processed and stored in batches
+4. Activity states are updated every 30 seconds
+5. App switches are tracked and aggregated
+6. Activity flow periods are calculated and stored every 10 minutes
+
 ### Core Components
 
 1. **Activity Service** (`services/activities_service.rs`)
@@ -53,14 +62,15 @@ The service will create a SQLite database at `~/.codeclimbers/codeclimbers-deskt
    - Manages activity state transitions
    - Handles batch processing of events
 
-2. **Context Switch Tracking** (`services/context_switch.rs`)
+2. **App Switch Tracking** (`services/app_switch.rs`)
    - Tracks application switches
    - Implements debouncing to prevent rapid switching from skewing metrics
-   - Maintains context switch counts for activity states
+   - Maintains app switch counts for activity states
 
 3. **Database Layer** (`db/`)
    - `ActivityRepo`: Handles storage of individual activities
    - `ActivityStateRepo`: Manages activity state records
+   - `ActivityFlowPeriodRepo`: Manages activity flow period records
    - Uses SQLx for type-safe database operations
 
 ### Data Models
@@ -72,29 +82,15 @@ The service will create a SQLite database at `~/.codeclimbers/codeclimbers-deskt
 
 2. **Activity State** (`db/models/activity_state.rs`)
    - Represents periods of user activity/inactivity
-   - Tracks context switches within time periods
+   - Tracks app switches within time periods
    - Types: Active, Inactive
 
-### Event Flow
+3. **Activity Flow Period** (`db/models/activity_flow_period.rs`)
+   - Records 10-minute activity periods
+   - Provides a score for the period based on activity states and app switches
+   - Maintains start/end times
 
-1. Monitor crate detects activity and sends events
-2. `ActivityService` receives events via callbacks
-3. Events are processed and stored in batches
-4. Activity states are updated every 30 seconds
-5. Context switches are tracked and aggregated
 
-## Database Schema
-
-### Activities Table
-- Stores individual activity events
-- Records type, timestamp, and application context
-- Links to activity states
-
-### Activity States Table
-- Records 30-second activity periods
-- Tracks active/inactive status
-- Stores context switch counts
-- Maintains start/end times
 
 ## Privacy and Security
 
