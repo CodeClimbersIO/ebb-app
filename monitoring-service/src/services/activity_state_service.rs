@@ -4,7 +4,6 @@ use time::OffsetDateTime;
 
 use crate::db::{
     activity_flow_period_repo::ActivityFlowPeriodRepo,
-    activity_repo::ActivityRepo,
     activity_state_repo::ActivityStateRepo,
     models::{ActivityFlowPeriod, ActivityState, ActivityStateType},
 };
@@ -18,7 +17,6 @@ pub struct ActivityPeriod {
 #[derive(Clone)]
 pub struct ActivityStateService {
     activity_state_repo: ActivityStateRepo,
-    activity_repo: ActivityRepo,
     activity_flow_period_repo: ActivityFlowPeriodRepo,
 }
 
@@ -26,7 +24,6 @@ impl ActivityStateService {
     pub fn new(pool: sqlx::SqlitePool) -> Self {
         ActivityStateService {
             activity_state_repo: ActivityStateRepo::new(pool.clone()),
-            activity_repo: ActivityRepo::new(pool.clone()),
             activity_flow_period_repo: ActivityFlowPeriodRepo::new(pool.clone()),
         }
     }
@@ -125,6 +122,7 @@ impl ActivityStateService {
         }
     }
 
+    #[cfg(test)]
     pub async fn get_activity_flow_periods_between(
         &self,
         start_time: OffsetDateTime,

@@ -81,7 +81,9 @@ mod tests {
             inactive_time: 0,
             created_at: OffsetDateTime::now_utc(),
         };
-        repo.save_activity_flow_period(&activity_flow_period).await;
+        repo.save_activity_flow_period(&activity_flow_period)
+            .await
+            .expect("Failed to save activity flow period");
         let activity_flow_period = ActivityFlowPeriod {
             id: None,
             start_time: Some(OffsetDateTime::now_utc()),
@@ -91,7 +93,9 @@ mod tests {
             inactive_time: 0,
             created_at: OffsetDateTime::now_utc(),
         };
-        repo.save_activity_flow_period(&activity_flow_period).await;
+        repo.save_activity_flow_period(&activity_flow_period)
+            .await
+            .expect("Failed to save activity flow period");
 
         let activity_flow_period = repo
             .get_last_activity_flow_period()

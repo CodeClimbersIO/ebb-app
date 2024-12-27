@@ -3,7 +3,6 @@ use std::time::Duration;
 use monitor::{EventCallback, KeyboardEvent, MouseEvent, WindowEvent};
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
-use time::OffsetDateTime;
 use tokio::sync::mpsc;
 
 use crate::db::{
@@ -20,6 +19,8 @@ use super::{
 
 #[cfg(test)]
 use crate::db::models::ActivityState;
+#[cfg(test)]
+use time::OffsetDateTime;
 
 static APP_SWITCH_STATE: Lazy<Mutex<AppSwitchState>> =
     Lazy::new(|| Mutex::new(AppSwitchState::new(Duration::from_secs(2))));
