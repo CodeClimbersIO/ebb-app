@@ -3,6 +3,7 @@ use std::time::Duration;
 use monitor::{EventCallback, KeyboardEvent, MouseEvent, WindowEvent};
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
+use time::OffsetDateTime;
 use tokio::sync::mpsc;
 
 use crate::db::{
@@ -10,12 +11,15 @@ use crate::db::{
     models::Activity,
 };
 
-use super::app_switch_service::AppSwitchState;
+use self::activity_state_service::ActivityPeriod;
+
+use super::{
+    activity_state_service::{self, ActivityStateService},
+    app_switch_service::AppSwitchState,
+};
 
 #[cfg(test)]
 use crate::db::models::ActivityState;
-#[cfg(test)]
-use time::OffsetDateTime;
 
 static APP_SWITCH_STATE: Lazy<Mutex<AppSwitchState>> =
     Lazy::new(|| Mutex::new(AppSwitchState::new(Duration::from_secs(2))));
@@ -25,6 +29,7 @@ pub struct ActivityService {
     activities_repo: ActivityRepo,
     activity_state_repo: ActivityStateRepo,
     event_sender: mpsc::UnboundedSender<ActivityEvent>,
+    activity_state_service: ActivityStateService,
 }
 
 enum ActivityEvent {
@@ -91,9 +96,12 @@ impl ActivityService {
         let (sender, mut receiver) = mpsc::unbounded_channel();
         let activities_repo = ActivityRepo::new(pool.clone());
         let activity_state_repo = ActivityStateRepo::new(pool.clone());
+        let activity_state_service = ActivityStateService::new(pool.clone());
+
         let service = ActivityService {
             activities_repo,
             activity_state_repo,
+            activity_state_service,
             event_sender: sender,
         };
         let callback_service_clone = service.clone();
@@ -147,7 +155,7 @@ impl ActivityService {
     async fn create_activity_state_from_activities(
         &self,
         activities: Vec<Activity>,
-        interval: Duration,
+        activity_period: ActivityPeriod,
     ) -> Result<sqlx::sqlite::SqliteQueryResult, sqlx::Error> {
         // iterate over the activities to create the start, end, context_switches, and activity_state_type
         println!(
@@ -158,10 +166,11 @@ impl ActivityService {
             "create_activity_state_from_activities: {}",
             activities.len()
         );
+
         if activities.is_empty() {
             println!("create_activity_state_from_activities: empty");
             self.activity_state_repo
-                .create_idle_activity_state(interval)
+                .create_idle_activity_state(&activity_period)
                 .await
         } else {
             println!("create_activity_state_from_activities: not empty");
@@ -172,7 +181,7 @@ impl ActivityService {
             }; // lock is released here
             let result = self
                 .activity_state_repo
-                .create_active_activity_state(context_switches, interval)
+                .create_active_activity_state(context_switches, &activity_period)
                 .await;
 
             {
@@ -201,6 +210,7 @@ impl ActivityService {
 
     pub fn start_activity_state_loop(&self, activity_state_interval: Duration) {
         let activity_service_clone = self.clone();
+        let activity_state_service_clone = self.activity_state_service.clone();
         tokio::spawn(async move {
             let mut wait_interval = tokio::time::interval(activity_state_interval);
             loop {
@@ -210,13 +220,35 @@ impl ActivityService {
                     .get_activities_since_last_activity_state()
                     .await
                     .unwrap();
-
+                let activity_period = activity_state_service_clone
+                    .get_next_activity_state_times(activity_state_interval)
+                    .await;
                 activity_service_clone
-                    .create_activity_state_from_activities(activities, activity_state_interval)
+                    .create_activity_state_from_activities(activities, activity_period)
                     .await
                     .expect("Failed to create activity state");
 
                 println!("activity_state_created\n");
+            }
+        });
+    }
+
+    pub fn start_activity_flow_period_loop(&self, activity_flow_period_interval: Duration) {
+        let activity_state_service_clone = self.activity_state_service.clone();
+
+        tokio::spawn(async move {
+            let mut wait_interval = tokio::time::interval(activity_flow_period_interval);
+            loop {
+                wait_interval.tick().await;
+                let activity_period = activity_state_service_clone
+                    .get_next_activity_flow_period_times(activity_flow_period_interval)
+                    .await;
+                // todo: generate activity period
+                activity_state_service_clone
+                    .save_flow_period_for_activity_period(&activity_period)
+                    .await
+                    .expect("Failed to save activityflow period");
+                println!("activity_flow_period_created\n");
             }
         });
     }
@@ -299,7 +331,13 @@ mod tests {
         let activity_service = ActivityService::new(pool);
         let activities = vec![];
         let result = activity_service
-            .create_activity_state_from_activities(activities, Duration::from_secs(120))
+            .create_activity_state_from_activities(
+                activities,
+                ActivityPeriod {
+                    start_time: OffsetDateTime::now_utc(),
+                    end_time: OffsetDateTime::now_utc() + Duration::from_secs(120),
+                },
+            )
             .await;
         assert!(result.is_ok());
         let activity_state = activity_service.get_last_activity_state().await.unwrap();
@@ -313,7 +351,13 @@ mod tests {
         let activity_service = ActivityService::new(pool);
         let activities = vec![Activity::__create_test_window()];
         let result = activity_service
-            .create_activity_state_from_activities(activities, Duration::from_secs(120))
+            .create_activity_state_from_activities(
+                activities,
+                ActivityPeriod {
+                    start_time: OffsetDateTime::now_utc(),
+                    end_time: OffsetDateTime::now_utc() + Duration::from_secs(120),
+                },
+            )
             .await;
         assert!(result.is_ok());
         let activity_state = activity_service.get_last_activity_state().await.unwrap();
@@ -378,6 +422,23 @@ mod tests {
             .await
             .unwrap();
 
-        assert!(activity_states.len() >= 3);
+        assert_eq!(activity_states.len(), 3);
+    }
+
+    #[tokio::test]
+    async fn test_activity_flow_period_loop() {
+        let pool = db_manager::create_test_db().await;
+        let activity_service = ActivityService::new(pool);
+        activity_service.start_activity_flow_period_loop(Duration::from_millis(100));
+        let start = OffsetDateTime::now_utc();
+
+        tokio::time::sleep(Duration::from_millis(350)).await;
+
+        let activity_flow_periods = activity_service
+            .activity_state_service
+            .get_activity_flow_periods_between(start, OffsetDateTime::now_utc())
+            .await
+            .unwrap();
+        assert_eq!(activity_flow_periods.len(), 3);
     }
 }

@@ -1,3 +1,5 @@
+use time::OffsetDateTime;
+
 use super::models::ActivityFlowPeriod;
 
 #[derive(Clone)]
@@ -39,17 +41,22 @@ impl ActivityFlowPeriodRepo {
         .fetch_one(&mut *conn)
         .await
     }
-    // pub async fn get_activity_flow_period(
-    //     &self,
-    //     id: i32,
-    // ) -> Result<ActivityFlowPeriod, sqlx::Error> {
-    //     let mut conn = self.pool.acquire().await?;
-    //     sqlx::query_as!(
-    //         ActivityFlowPeriod,
-    //         "SELECT * FROM activity_flow_period WHERE id = ?",
-    //         id
-    //     )
-    // }
+
+    pub async fn get_activity_flow_periods_starting_between(
+        &self,
+        start_time: OffsetDateTime,
+        end_time: OffsetDateTime,
+    ) -> Result<Vec<ActivityFlowPeriod>, sqlx::Error> {
+        let mut conn = self.pool.acquire().await?;
+        sqlx::query_as!(
+            ActivityFlowPeriod,
+            "SELECT * FROM activity_flow_period WHERE start_time >= ? AND start_time <= ?",
+            start_time,
+            end_time,
+        )
+        .fetch_all(&mut *conn)
+        .await
+    }
 }
 
 #[cfg(test)]
@@ -67,8 +74,8 @@ mod tests {
         // save a test activity flow period
         let activity_flow_period = ActivityFlowPeriod {
             id: None,
-            start_time: OffsetDateTime::now_utc(),
-            end_time: OffsetDateTime::now_utc(),
+            start_time: Some(OffsetDateTime::now_utc()),
+            end_time: Some(OffsetDateTime::now_utc()),
             score: 1.0,
             app_switches: 0,
             inactive_time: 0,
@@ -77,8 +84,8 @@ mod tests {
         repo.save_activity_flow_period(&activity_flow_period).await;
         let activity_flow_period = ActivityFlowPeriod {
             id: None,
-            start_time: OffsetDateTime::now_utc(),
-            end_time: OffsetDateTime::now_utc(),
+            start_time: Some(OffsetDateTime::now_utc()),
+            end_time: Some(OffsetDateTime::now_utc()),
             score: 2.0,
             app_switches: 0,
             inactive_time: 0,
