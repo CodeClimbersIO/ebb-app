@@ -26,24 +26,25 @@ export const HomePage = () => {
   return (
     <div className="flex h-screen">
       <Sidebar />
-      <main className="flex-1 p-8 overflow-y-auto">
-        <div className="max-w-4xl">
-          <h1 className="text-2xl font-semibold mb-8">Welcome, Nathan</h1>
-          
-          <div className="mb-8">
-            <Button className="w-full max-w-md bg-purple-600 hover:bg-purple-700" size="lg">
-              <Activity className="mr-2 h-5 w-5" />
-              Enter Flow
-            </Button>
-          </div>
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-8">
+          <div className="max-w-5xl mx-auto">
+            <div className="flex justify-between items-center mb-8">
+              <h1 className="text-2xl font-semibold">Welcome, Nathan</h1>
+              <Button className="bg-purple-600 hover:bg-purple-700" size="lg">
+                <Activity className="mr-2 h-5 w-5" />
+                Enter Flow
+              </Button>
+            </div>
 
-          <StatsCards />
-          
-          <div className="mt-8">
-            <FlowSessions />
+            <StatsCards />
+            
+            <div className="mt-8">
+              <FlowSessions />
+            </div>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   )
 }
