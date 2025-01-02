@@ -1,11 +1,14 @@
 import "./App.css";
 import { AppRouter } from "./routes";
+import { ThemeProvider } from "@/components/ThemeProvider"
 
 function App() {
   return (
-    <main className="container">
-      <AppRouter />
-    </main>
+    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+      <main className="container">
+        <AppRouter />
+      </main>
+    </ThemeProvider>
   );
 }
 

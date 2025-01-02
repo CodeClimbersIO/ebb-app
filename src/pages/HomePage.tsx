@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import { ThemeToggleComponent } from '../components/ThemeToggleComponent'
 import Database from '@tauri-apps/plugin-sql';
 import { homeDir, join } from '@tauri-apps/api/path';
 import { Button } from "@/components/ui/button"
