@@ -12,7 +12,7 @@ export function Sidebar() {
       </div>
       <nav className="space-y-2 flex-1">
         <Button variant="ghost" className="w-full justify-start gap-2" asChild>
-          <Link to="/flow">
+          <Link to="/">
             <Activity className="h-4 w-4" />
             Flow
           </Link>
