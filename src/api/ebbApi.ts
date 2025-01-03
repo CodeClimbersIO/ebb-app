@@ -1,35 +1,20 @@
-import Database, { QueryResult } from '@tauri-apps/plugin-sql';
-import { homeDir, join } from '@tauri-apps/api/path';
-import { insert, update } from '../lib/sql.util';
-import { FlowSession } from '../models/flowSession';
+import  { QueryResult } from '@tauri-apps/plugin-sql';
+import { FlowSession, FlowSessionDb } from '../db/flowSession';
 
-let ebbDb: Database | null = null;
-
-const getEbbDb = async () => {
-  if (ebbDb) {
-    return ebbDb;
+/** Example usage
+ * 
+  const handleStartFlowSession = async () => {
+    await EbbApi.startFlowSession('Learn React');
   }
-  const homeDirectory = await homeDir();
-  const ebbDbPath = await join(homeDirectory, '.ebb', 'ebb-desktop.sqlite');
-  ebbDb = await Database.load(`sqlite:${ebbDbPath}`);
-  return ebbDb;
-}
-const getFlowSessions = async () => {
-  const ebbDb = await getEbbDb();
-  const flowSessions = await ebbDb.select('SELECT * FROM flow_session LIMIT 10;');
-  return flowSessions;
-}
 
-const createFlowSession = async (flowSession: FlowSession): Promise<QueryResult> => {
-  const ebbDb = await getEbbDb();
-  return insert(ebbDb, 'flow_session', flowSession);
-}
-
-const updateFlowSession = async (flowSession: Partial<FlowSession> & { id: string }): Promise<QueryResult> => {
-  const ebbDb = await getEbbDb();
-  return update(ebbDb, 'flow_session', flowSession, flowSession.id);
-}
-
+  const handleEndFlowSession = async () => {
+    const currentFlowSession = await EbbApi.getInProgressFlowSession();
+    if (!currentFlowSession) {
+      return;
+    }
+    const flowSession = await EbbApi.endFlowSession(currentFlowSession.id);
+  }
+ */
 const startFlowSession = async (objective: string): Promise<string> => {
   const flowSession: FlowSession = {
     id: self.crypto.randomUUID(),
@@ -37,7 +22,10 @@ const startFlowSession = async (objective: string): Promise<string> => {
     objective,
     self_score: 0,
   }
-  await createFlowSession(flowSession);
+  if (await FlowSessionDb.getInProgressFlowSession()) {
+    throw new Error('Flow session already in progress');
+  }
+  await FlowSessionDb.createFlowSession(flowSession);
   return flowSession.id;
 }
 
@@ -46,7 +34,7 @@ const endFlowSession = async (id: string): Promise<QueryResult> => {
     id,
     end: new Date().toISOString(),
   }
-  return updateFlowSession(flowSession);
+  return FlowSessionDb.updateFlowSession(flowSession);
 }
 
 const scoreFlowSession = async (id: string, score: number): Promise<QueryResult> => {
@@ -54,12 +42,16 @@ const scoreFlowSession = async (id: string, score: number): Promise<QueryResult>
     id,
     self_score: score,
   }
-  return updateFlowSession(flowSession);
+  return FlowSessionDb.updateFlowSession(flowSession);
+}
+
+const getInProgressFlowSession = async () => {
+  return FlowSessionDb.getInProgressFlowSession();
 }
 
 export const EbbApi = {
-  getFlowSessions,
   startFlowSession,
   endFlowSession,
   scoreFlowSession,
+  getInProgressFlowSession,
 }

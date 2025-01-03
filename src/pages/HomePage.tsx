@@ -14,16 +14,16 @@ export const HomePage = () => {
     const init = async () => {
       const activities = await MonitorApi.getActivities();
       console.log(activities)
-      const flowSessions = await EbbApi.getFlowSessions();
-      console.log(flowSessions)
+      const flowSession = await EbbApi.getInProgressFlowSession();
+      console.log(flowSession)
     }
     init()
   }, [])
 
   const handleStartFlowSession = async () => {
-    const flowSession = await EbbApi.startFlowSession('Learn React');
-    console.log(flowSession)
+    await EbbApi.startFlowSession('Learn React');
   }
+
 
 
   return (
