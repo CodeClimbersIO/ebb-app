@@ -1,25 +1,21 @@
 import { useEffect } from 'react';
-import Database from '@tauri-apps/plugin-sql';
-import { homeDir, join } from '@tauri-apps/api/path';
 import { Button } from "@/components/ui/button"
 import { Activity } from 'lucide-react'
 import { Sidebar } from "@/components/Sidebar"
 import { StatsCards } from "@/components/StatCard"
 import { FlowSessions } from "@/components/FlowSessions"
+import { EbbApi } from '../api/api';
+import { MonitorApi } from '../api/api';
+
+
 
 export const HomePage = () => {
   useEffect(() => {
     const init = async () => {
-      const homeDirectory = await homeDir();
-      const dbPath = await join(homeDirectory, '.codeclimbers', 'codeclimbers-desktop.sqlite');
-      console.log(dbPath)
-      const db = await Database.load(`sqlite:${dbPath}`);
-      const s = await db.select('SELECT * FROM activity LIMIT 10;');
-      console.log(s)
-
-      // const x = await db.execute('INSERT INTO activity (activity_type, app_name, app_window_title, timestamp) VALUES (?, ?, ?, ?)',
-      //   ['WINDOW', 'app', 'window', '2024-01-01 00:00:00']);
-      // console.log(x)
+      const activities = await MonitorApi.getActivities();
+      console.log(activities)
+      const flowSessions = await EbbApi.getFlowSessions();
+      console.log(flowSessions)
     }
     init()
   }, [])
@@ -38,7 +34,7 @@ export const HomePage = () => {
             </div>
 
             <StatsCards />
-            
+
             <div className="mt-8">
               <FlowSessions />
             </div>

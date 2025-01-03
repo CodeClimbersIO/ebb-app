@@ -11,7 +11,7 @@ export const insert = async (db: Database, table: string, record: Record<string,
 export const update = async (db: Database, table: string, record: Record<string, string>, id: string) => {
   const keys = Object.keys(record);
   const values = Object.values(record);
-  const query = `UPDATE ${table} SET ${keys.map((key, index) => `${key} = ?`).join(', ')} WHERE id = ?`;
+  const query = `UPDATE ${table} SET ${keys.map((key) => `${key} = ?`).join(', ')} WHERE id = ?`;
   const result = await db.execute(query, [...values, id]);
   return result;
 }
