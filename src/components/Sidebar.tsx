@@ -6,7 +6,7 @@ export function Sidebar() {
   return (
     <div className="w-64 border-r h-screen p-4 flex flex-col">
       <div className="mb-8">
-        <Link to="/" className="text-2xl font-bold text-purple-600">
+        <Link to="/" className="font-pacifico text-3xl font-bold text-violet-600 dark:text-violet-100 px-3 flex">
           ebb
         </Link>
       </div>

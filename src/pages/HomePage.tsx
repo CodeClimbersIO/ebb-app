@@ -31,7 +31,7 @@ export const HomePage = () => {
           <div className="max-w-5xl mx-auto">
             <div className="flex justify-between items-center mb-8">
               <h1 className="text-2xl font-semibold">Welcome, Nathan</h1>
-              <Button className="bg-purple-600 hover:bg-purple-700" size="lg">
+              <Button variant="default">
                 <Activity className="mr-2 h-5 w-5" />
                 Enter Flow
               </Button>
