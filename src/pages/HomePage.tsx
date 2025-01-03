@@ -1,9 +1,11 @@
-
 import { useEffect } from 'react';
-import { ThemeToggleComponent } from '../components/ThemeToggleComponent'
 import Database from '@tauri-apps/plugin-sql';
 import { homeDir, join } from '@tauri-apps/api/path';
-
+import { Button } from "@/components/ui/button"
+import { Activity } from 'lucide-react'
+import { Sidebar } from "@/components/Sidebar"
+import { StatsCards } from "@/components/StatCard"
+import { FlowSessions } from "@/components/FlowSessions"
 
 export const HomePage = () => {
   useEffect(() => {
@@ -22,9 +24,27 @@ export const HomePage = () => {
     init()
   }, [])
   return (
-    <div>
-      HomePage
-      <ThemeToggleComponent />
+    <div className="flex h-screen">
+      <Sidebar />
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-8">
+          <div className="max-w-5xl mx-auto">
+            <div className="flex justify-between items-center mb-8">
+              <h1 className="text-2xl font-semibold">Welcome, Nathan</h1>
+              <Button className="bg-purple-600 hover:bg-purple-700" size="lg">
+                <Activity className="mr-2 h-5 w-5" />
+                Enter Flow
+              </Button>
+            </div>
+
+            <StatsCards />
+            
+            <div className="mt-8">
+              <FlowSessions />
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
