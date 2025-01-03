@@ -4,8 +4,8 @@ import { Activity } from 'lucide-react'
 import { Sidebar } from "@/components/Sidebar"
 import { StatsCards } from "@/components/StatCard"
 import { FlowSessions } from "@/components/FlowSessions"
-import { EbbApi } from '../api/api';
-import { MonitorApi } from '../api/api';
+import { EbbApi } from '../api/ebbApi';
+import { MonitorApi } from '../api/monitorApi';
 
 
 
@@ -19,6 +19,13 @@ export const HomePage = () => {
     }
     init()
   }, [])
+
+  const handleStartFlowSession = async () => {
+    const flowSession = await EbbApi.startFlowSession('Learn React');
+    console.log(flowSession)
+  }
+
+
   return (
     <div className="flex h-screen">
       <Sidebar />
@@ -27,7 +34,7 @@ export const HomePage = () => {
           <div className="max-w-5xl mx-auto">
             <div className="flex justify-between items-center mb-8">
               <h1 className="text-2xl font-semibold">Welcome, Nathan</h1>
-              <Button variant="default">
+              <Button variant="default" onClick={handleStartFlowSession}>
                 <Activity className="mr-2 h-5 w-5" />
                 Enter Flow
               </Button>

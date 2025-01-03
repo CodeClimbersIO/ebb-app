@@ -17,11 +17,11 @@ pub fn get_migrations() -> Vec<Migration> {
         description: "create_flow_session",
         sql: r#"
           CREATE TABLE IF NOT EXISTS flow_session (
-              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              id TEXT PRIMARY KEY NOT NULL,
               objective TEXT NOT NULL,
-              self_score REAL NOT NULL,
+              self_score REAL,
               start DATETIME NOT NULL,
-              end DATETIME NOT NULL
+              end DATETIME
           );"#,
         kind: MigrationKind::Up,
     }]
