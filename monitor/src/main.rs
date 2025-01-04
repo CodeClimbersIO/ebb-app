@@ -4,7 +4,6 @@ use monitor::{
     detect_changes, initialize_callback, EventCallback, KeyboardEvent, MonitorError, MouseEvent,
     WindowEvent,
 };
-mod utils;
 
 struct MonitorCallback {}
 

@@ -1,6 +1,6 @@
 import Database, { QueryResult } from "@tauri-apps/plugin-sql";
 
-export const insert = async (db: Database, table: string, record: Record<string, string>): Promise<QueryResult> => {
+export const insert = async (db: Database, table: string, record: object): Promise<QueryResult> => {
   const keys = Object.keys(record);
   const values = Object.values(record);
   const query = `INSERT INTO ${table} (${keys.join(', ')}) VALUES (${values.map(() => '?').join(', ')})`;
@@ -8,10 +8,10 @@ export const insert = async (db: Database, table: string, record: Record<string,
   return result;
 }
 
-export const update = async (db: Database, table: string, record: Record<string, string>, id: string) => {
+export const update = async (db: Database, table: string, record: object, id: string) => {
   const keys = Object.keys(record);
   const values = Object.values(record);
-  const query = `UPDATE ${table} SET ${keys.map((key, index) => `${key} = ?`).join(', ')} WHERE id = ?`;
+  const query = `UPDATE ${table} SET ${keys.map((key) => `${key} = ?`).join(', ')} WHERE id = ?`;
   const result = await db.execute(query, [...values, id]);
   return result;
 }
