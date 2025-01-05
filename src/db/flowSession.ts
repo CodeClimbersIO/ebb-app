@@ -20,9 +20,9 @@ const updateFlowSession = async (flowSession: Partial<FlowSession> & { id: strin
   return update(ebbDb, 'flow_session', flowSession, flowSession.id);
 }
 
-const getFlowSessions = async () => {
+const getFlowSessions = async (limit: number = 10): Promise<FlowSession[]> => {
   const ebbDb = await getEbbDb();
-  const flowSessions = await ebbDb.select('SELECT * FROM flow_session LIMIT 10;');
+  const flowSessions = await ebbDb.select<FlowSession[]>(`SELECT * FROM flow_session LIMIT ${limit};`);
   return flowSessions;
 }
 

@@ -16,6 +16,8 @@ export const HomePage = () => {
       console.log(activities)
       const flowSession = await EbbApi.getInProgressFlowSession();
       console.log(flowSession)
+      const flowSessions = await EbbApi.getFlowSessions();
+      console.log(flowSessions)
     }
     init()
   }, [])

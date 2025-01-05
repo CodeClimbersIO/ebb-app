@@ -19,6 +19,7 @@
     "clsx": "^2.1.1",
     "firebase": "^11.1.0",
     "lucide-react": "^0.469.0",
+    "luxon": "^3.5.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^7.1.1",
@@ -27,6 +28,7 @@
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2",
+    "@types/luxon": "^3.4.2",
     "@types/node": "^22.10.2",
     "@types/react": "^18.2.15",
     "@types/react-dom": "^18.2.7",
