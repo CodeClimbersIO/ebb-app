@@ -2,6 +2,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { InfoIcon as InfoCircle } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { ChevronRight } from 'lucide-react'
+import { FlowChart } from "@/components/ui/flow-chart"
 
 interface FlowSessionProps {
   date: string
@@ -22,6 +23,32 @@ function FlowSession({
   objective,
   graphColor = "#9333EA",
 }: FlowSessionProps) {
+  // Handle relative dates
+  const getSessionDate = (dateStr: string) => {
+    if (dateStr === "Yesterday") {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      return yesterday.toISOString().split('T')[0];
+    }
+    return dateStr;
+  };
+
+  // Parse the timeRange to get start and end times
+  const sessionDate = getSessionDate(date);
+  const [startTime, endTime] = timeRange.split(' - ').map(t => new Date(`${sessionDate} ${t}`));
+  const totalMinutes = (endTime.getTime() - startTime.getTime()) / (1000 * 60);
+  const intervalMinutes = Math.floor(totalMinutes / 9); // 9 intervals = 10 points
+
+  // Generate mock data with proper time intervals
+  const mockData = Array.from({ length: 10 }, (_, i) => {
+    const pointTime = new Date(startTime.getTime() + (i * intervalMinutes * 60 * 1000));
+    return {
+      time: pointTime,
+      value: Math.sin(i * 0.5) * (flowScore / 2) + flowScore / 2,
+      appSwitches: Math.floor(Math.random() * 10)
+    };
+  });
+
   return (
     <Card className="mb-4">
       <CardContent className="p-6">
@@ -31,14 +58,8 @@ function FlowSession({
             <span className="text-muted-foreground"> · {timeRange}</span>
           </div>
         </div>
-        <div className="h-24 mb-4">
-          {/*Placeholder for the graph*/}
-          <div
-            className="w-full h-full rounded-lg"
-            style={{
-              background: `linear-gradient(90deg, ${graphColor}22 0%, ${graphColor}44 100%)`,
-            }}
-          />
+        <div className="h-40 my-8">
+          <FlowChart data={mockData} color={graphColor} />
         </div>
         <div className="grid grid-cols-3 gap-4">
           <div>
