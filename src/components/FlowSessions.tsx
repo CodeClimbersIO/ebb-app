@@ -26,8 +26,9 @@ function FlowSession({
     <Card className="mb-4">
       <CardContent className="p-6">
         <div className="mb-4">
-          <div className="text-sm text-muted-foreground">
-            {date} · {timeRange}
+          <div className="text-sm">
+            <span>{date}</span>
+            <span className="text-muted-foreground"> · {timeRange}</span>
           </div>
         </div>
         <div className="h-24 mb-4">
