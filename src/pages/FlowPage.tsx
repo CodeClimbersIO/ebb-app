@@ -2,10 +2,12 @@ import { useEffect, useState } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { EbbApi } from "../api/ebbApi"
+import { getFlowScoreTailwindColor, getFlowStatusText } from "@/lib/utils/flow"
+import { LiveFlowChart } from "@/components/ui/live-flow-chart"
 
 interface FlowData {
   flowScore: number
-  contextSwitches: number
+  appSwitches: number
   topActivity: string
   timestamp: string
 }
@@ -16,12 +18,35 @@ interface LocationState {
   startTime: number
 }
 
+interface ChartData {
+  time: Date
+  label: string
+  value: number
+  appSwitches: number
+  topActivity: string
+}
+
 export const FlowPage = () => {
   const location = useLocation()
   const navigate = useNavigate()
   const { sessionId, objective, startTime } = location.state as LocationState
   const [time, setTime] = useState<string>("00:00")
   const [flowData, setFlowData] = useState<FlowData | null>(null)
+  const [chartData, setChartData] = useState<ChartData[]>([])
+
+  const generateChartData = () => {
+    const now = new Date()
+    return Array(6).fill(null).map((_, i) => {
+      const time = new Date(now.getTime() - (50 - i * 10) * 60000)
+      return {
+        time,
+        label: i === 5 ? 'Live' : `${50 - i * 10}m ago`,
+        value: 5 + Math.sin(i) * 3,
+        appSwitches: Math.floor(Math.random() * 3),
+        topActivity: "Arc • Google meet call"
+      }
+    })
+  }
 
   useEffect(() => {
     if (!objective || !startTime || !sessionId) {
@@ -42,14 +67,40 @@ export const FlowPage = () => {
 
     // Simulate flow data for now
     setFlowData({
-      flowScore: 6,
-      contextSwitches: 2,
+      flowScore: 8,
+      appSwitches: 2,
       topActivity: "Code Editor",
       timestamp: new Date().toISOString()
     })
 
     return () => clearInterval(interval)
   }, [startTime, objective, sessionId, navigate])
+
+  useEffect(() => {
+    // Initial data generation
+    setChartData(generateChartData())
+  }, []) // Run once on mount
+
+  // Add new effect for flow score updates
+  useEffect(() => {
+    if (flowData?.flowScore) {
+      setChartData(prevData => {
+        const now = new Date()
+        const newData = [...prevData.slice(1), {
+          time: now,
+          label: 'Live',
+          value: flowData.flowScore,
+          appSwitches: Math.floor(Math.random() * 3),
+          topActivity: "Arc • Google meet call"
+        }]
+        // Update all labels
+        return newData.map((data, i) => ({
+          ...data,
+          label: i === newData.length - 1 ? 'Live' : `${50 - i * 10}m ago`
+        }))
+      })
+    }
+  }, [flowData?.flowScore])
 
   const handleEndSession = () => {
     navigate('/')
@@ -69,12 +120,14 @@ export const FlowPage = () => {
       <div className="flex-1 flex flex-col items-center justify-center">
         <div className="text-sm text-muted-foreground mb-4">{objective}</div>
         <div className="text-6xl font-bold mb-4">{time}</div>
-        {flowData?.flowScore < 7 && (
-          <div className="text-orange-500 bg-orange-100 px-4 py-2 rounded-full">
-            Ebbing · High Context Switching
+        {flowData && (
+          <div className={`px-4 py-2 rounded-full ${getFlowScoreTailwindColor(flowData.flowScore)}`}>
+            {getFlowStatusText(flowData.flowScore)}
           </div>
         )}
-        {/* Add your flow chart component here */}
+        <div className="w-full max-w-3xl mx-auto px-4 mb-8">
+          <LiveFlowChart data={chartData} flowScore={flowData?.flowScore || 0} />
+        </div>
       </div>
     </div>
   )
