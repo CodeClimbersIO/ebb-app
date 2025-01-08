@@ -12,10 +12,16 @@ export const StartFlowPage = () => {
   const [objective, setObjective] = useState("")
   const navigate = useNavigate()
 
-  const handleBegin = async () => {
+  const handleBegin = () => {
     if (!objective) return
-    await EbbApi.startFlowSession(objective)
-    navigate('/')
+    
+    navigate('/flow', { 
+      state: { 
+        sessionId: crypto.randomUUID(), // Generate temporary ID
+        objective,
+        startTime: new Date().getTime()
+      } 
+    })
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
