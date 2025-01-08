@@ -1,45 +1,45 @@
-import { useState } from 'react';
-import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState } from 'react'
+import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth'
+import { useNavigate, Link } from 'react-router-dom'
 
 export const SignupPage = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+  const navigate = useNavigate()
 
-  const isPasswordValid = (pass: string) => pass.length >= 8;
+  const isPasswordValid = (pass: string) => pass.length >= 8
 
   const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
+    e.preventDefault()
+    setLoading(true)
+    setError('')
 
     if (!isPasswordValid(password)) {
-      setError('Password must be at least 8 characters long');
-      setLoading(false);
-      return;
+      setError('Password must be at least 8 characters long')
+      setLoading(false)
+      return
     }
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      setLoading(false);
-      return;
+      setError('Passwords do not match')
+      setLoading(false)
+      return
     }
 
     try {
-      const auth = getAuth();
-      await createUserWithEmailAndPassword(auth, email, password);
-      navigate('/');
+      const auth = getAuth()
+      await createUserWithEmailAndPassword(auth, email, password)
+      navigate('/')
     } catch (err) {
-      setError('Failed to create an account. Please try again.');
-      console.error(err);
+      setError('Failed to create an account. Please try again.')
+      console.error(err)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center">
@@ -98,5 +98,5 @@ export const SignupPage = () => {
         </p>
       </div>
     </div>
-  );
-}; 
+  )
+} 

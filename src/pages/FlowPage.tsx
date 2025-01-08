@@ -1,9 +1,8 @@
-import { useEffect, useState } from "react"
-import { useLocation, useNavigate } from "react-router-dom"
-import { Button } from "@/components/ui/button"
-import { EbbApi } from "../api/ebbApi"
-import { getFlowScoreTailwindColor, getFlowStatusText } from "@/lib/utils/flow"
-import { LiveFlowChart } from "@/components/ui/live-flow-chart"
+import { useEffect, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { Button } from '@/components/ui/button'
+import { getFlowScoreTailwindColor, getFlowStatusText } from '@/lib/utils/flow'
+import { LiveFlowChart } from '@/components/ui/live-flow-chart'
 
 interface FlowData {
   flowScore: number
@@ -30,7 +29,7 @@ export const FlowPage = () => {
   const location = useLocation()
   const navigate = useNavigate()
   const { sessionId, objective, startTime } = location.state as LocationState
-  const [time, setTime] = useState<string>("00:00")
+  const [time, setTime] = useState<string>('00:00')
   const [flowData, setFlowData] = useState<FlowData | null>(null)
   const [chartData, setChartData] = useState<ChartData[]>([])
 
@@ -43,7 +42,7 @@ export const FlowPage = () => {
         label: i === 5 ? 'Live' : `${50 - i * 10}m ago`,
         value: 5 + Math.sin(i) * 3,
         appSwitches: Math.floor(Math.random() * 3),
-        topActivity: "Arc • Google meet call"
+        topActivity: 'Arc • Google meet call'
       }
     })
   }
@@ -69,7 +68,7 @@ export const FlowPage = () => {
     setFlowData({
       flowScore: 8,
       appSwitches: 2,
-      topActivity: "Code Editor",
+      topActivity: 'Code Editor',
       timestamp: new Date().toISOString()
     })
 
@@ -91,7 +90,7 @@ export const FlowPage = () => {
           label: 'Live',
           value: flowData.flowScore,
           appSwitches: Math.floor(Math.random() * 3),
-          topActivity: "Arc • Google meet call"
+          topActivity: 'Arc • Google meet call'
         }]
         // Update all labels
         return newData.map((data, i) => ({
@@ -109,14 +108,14 @@ export const FlowPage = () => {
   return (
     <div className="flex flex-col h-screen">
       <div className="flex justify-end p-4">
-        <Button 
+        <Button
           variant="destructive"
           onClick={handleEndSession}
         >
           End Session
         </Button>
       </div>
-      
+
       <div className="flex-1 flex flex-col items-center justify-center">
         <div className="text-sm text-muted-foreground mb-4">{objective}</div>
         <div className="text-6xl font-bold mb-4">{time}</div>

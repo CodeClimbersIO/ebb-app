@@ -1,7 +1,7 @@
-import { Button } from "@/components/ui/button"
+import { Button } from '@/components/ui/button'
 import { Activity, Users, Settings } from 'lucide-react'
-import { Link } from "react-router-dom"
-import { LogoContainer } from "./LogoContainer"
+import { Link } from 'react-router-dom'
+import { LogoContainer } from './LogoContainer'
 
 export function Sidebar() {
   return (

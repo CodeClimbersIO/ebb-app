@@ -1,28 +1,27 @@
-import { HashRouter } from 'react-router-dom'
-import { Route, Routes, Navigate, Outlet } from 'react-router-dom'
+import { HashRouter, Route, Routes, Navigate, Outlet } from 'react-router-dom'
 import { HomePage } from '@/pages/HomePage'
 import { LoginPage } from '@/pages/LoginPage'
 import { SignupPage } from '@/pages/SignupPage'
 import { FriendsPage } from '@/pages/FriendsPage'
 import { SettingsPage } from '@/pages/SettingsPage'
-import { StartFlowPage } from "./pages/StartFlowPage"
+import { StartFlowPage } from './pages/StartFlowPage'
 import { useAuth } from './hooks/useAuth'
 import { FlowPage } from '@/pages/FlowPage'
 
 // Protected Route wrapper component
 const ProtectedRoute = () => {
-  const { user, loading } = useAuth();
+  const { user, loading } = useAuth()
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <div>Loading...</div>
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" replace />
   }
 
-  return <Outlet />;
-};
+  return <Outlet />
+}
 
 export const AppRoutes = () => {
   return (

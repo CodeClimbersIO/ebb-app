@@ -1,6 +1,5 @@
-import { Area, AreaChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip, Dot } from "recharts"
-import { useEffect, useState } from "react"
-import { ChartContainer } from "@/components/ui/chart"
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts'
+import { ChartContainer } from '@/components/ui/chart'
 import { getFlowScoreColor } from '@/lib/utils/flow'
 
 interface LiveFlowChartProps {
@@ -17,15 +16,15 @@ export function LiveFlowChart({ data, flowScore }: LiveFlowChartProps) {
   const color = getFlowScoreColor(flowScore)
 
   return (
-    <ChartContainer 
+    <ChartContainer
       className="h-[300px] w-full"
       config={{
         value: {
-          label: "Flow Score",
+          label: 'Flow Score',
           color: color
         },
         appSwitches: {
-          label: "App Switches",
+          label: 'App Switches',
           color: color
         }
       }}
@@ -54,9 +53,9 @@ export function LiveFlowChart({ data, flowScore }: LiveFlowChartProps) {
             axisLine={false}
             tickLine={false}
             tick={{ fill: 'var(--muted-foreground)' }}
-            label={{ 
-              value: 'Flow Score', 
-              angle: -90, 
+            label={{
+              value: 'Flow Score',
+              angle: -90,
               position: 'insideLeft',
               style: { fill: 'var(--muted-foreground)' }
             }}
@@ -65,7 +64,7 @@ export function LiveFlowChart({ data, flowScore }: LiveFlowChartProps) {
             content={({ active, payload }) => {
               if (!active || !payload?.length) return null
               const currentData = payload[0].payload
-              
+
               // Special tooltip only for the rightmost (live) point
               if (currentData === data[data.length - 1]) {
                 return (
@@ -81,10 +80,10 @@ export function LiveFlowChart({ data, flowScore }: LiveFlowChartProps) {
               return (
                 <div className="rounded-lg border bg-background p-2 shadow-sm">
                   <div className="font-medium mb-2">
-                    {currentData.time.toLocaleTimeString([], { 
+                    {currentData.time.toLocaleTimeString([], {
                       hour: 'numeric',
                       minute: '2-digit',
-                      hour12: true 
+                      hour12: true
                     })}
                   </div>
                   <div className="flex flex-col gap-1">
@@ -112,9 +111,9 @@ export function LiveFlowChart({ data, flowScore }: LiveFlowChartProps) {
             fill={`url(#flowGradient-${flowScore})`}
             strokeWidth={2}
             dot={(props) => {
-              const isLast = props.index === data.length - 1;
-              if (!isLast) return false;
-              
+              const isLast = props.index === data.length - 1
+              if (!isLast) return false
+
               return (
                 <g>
                   <circle
@@ -150,7 +149,7 @@ export function LiveFlowChart({ data, flowScore }: LiveFlowChartProps) {
                     />
                   </circle>
                 </g>
-              );
+              )
             }}
             activeDot={(props) => (
               <circle

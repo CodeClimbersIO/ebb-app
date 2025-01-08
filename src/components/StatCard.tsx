@@ -1,4 +1,4 @@
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent } from '@/components/ui/card'
 import { InfoIcon as InfoCircle } from 'lucide-react'
 
 interface StatCardProps {
@@ -22,11 +22,10 @@ function StatCard({ title, value, change }: StatCardProps) {
           <span className="text-2xl font-semibold">{value}</span>
           {change && (
             <span
-              className={`text-sm ${
-                change.positive ? "text-green-500" : "text-red-500"
-              }`}
+              className={`text-sm  ${change.positive ? 'text-green-500' : 'text-red-500'
+                }`}
             >
-              {change.positive ? "↑" : "↓"} {Math.abs(change.value)}%
+              {change.positive ? '↑' : '↓'} {Math.abs(change.value)}%
             </span>
           )}
         </div>

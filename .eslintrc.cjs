@@ -12,22 +12,32 @@ module.exports = {
     'plugin:@typescript-eslint/recommended',
     'plugin:import/recommended',
     'plugin:import/typescript',
-    'plugin:prettier/recommended',
+    // 'plugin:prettier/recommended',
   ],
   ignorePatterns: ['.eslintrc.cjs'],
+  settings: {
+    "import/resolver": {
+      typescript: {},
+      alias: {
+        map: [["@", "./src"]],
+      },
+    },
+  },
   rules: {
-    'prettier/prettier': [
-      'error',
-      { semi: false, singleQuote: true, endOfLine: 'auto' },
-    ],
+    // 'prettier/prettier': [
+    //   'error',
+    //   { semi: false, singleQuote: true, endOfLine: 'auto' },
+    // ],
+
     '@typescript-eslint/interface-name-prefix': 'off',
     '@typescript-eslint/explicit-function-return-type': 'off',
     '@typescript-eslint/explicit-module-boundary-types': 'off',
     '@typescript-eslint/no-namespace': 'off',
     '@typescript-eslint/no-explicit-any': 'error',
     'prefer-arrow-callback': 'warn',
-    'func-style': ['warn', 'expression', { allowArrowFunctions: true }],
-    'import/no-default-export': 'error',
+    'semi': ['error', 'never'],
+    'quotes': ['error', 'single'],
+    'eol-last': ['error', 'always'],
   },
   overrides: [
     {

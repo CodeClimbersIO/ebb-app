@@ -1,7 +1,7 @@
-"use client"
+'use client'
 
-import { Area, AreaChart, CartesianGrid, ResponsiveContainer } from "recharts"
-import { ChartContainer, ChartTooltip } from "@/components/ui/chart"
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer } from 'recharts'
+import { ChartContainer, ChartTooltip } from '@/components/ui/chart'
 import { getFlowScoreColor } from '@/lib/utils/flow'
 
 interface FlowChartProps {
@@ -13,15 +13,15 @@ export function FlowChart({ data, flowScore }: FlowChartProps) {
   const color = getFlowScoreColor(flowScore)
 
   return (
-    <ChartContainer 
+    <ChartContainer
       className="h-full w-full"
       config={{
         value: {
-          label: "Flow Score",
+          label: 'Flow Score',
           color: color
         },
         appSwitches: {
-          label: "App Switches",
+          label: 'App Switches',
           color: color
         }
       }}
@@ -46,16 +46,16 @@ export function FlowChart({ data, flowScore }: FlowChartProps) {
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" opacity={0.1} vertical={false} />
-          <ChartTooltip 
+          <ChartTooltip
             content={({ active, payload }) => {
-              if (!active || !payload?.length) return null;
-              
-              const data = payload[0].payload;
-              const time = data.time.toLocaleTimeString([], { 
+              if (!active || !payload?.length) return null
+
+              const data = payload[0].payload
+              const time = data.time.toLocaleTimeString([], {
                 hour: 'numeric',
                 minute: '2-digit',
-                hour12: true 
-              });
+                hour12: true
+              })
 
               return (
                 <div className="rounded-lg border bg-background p-2 shadow-sm">
@@ -71,7 +71,7 @@ export function FlowChart({ data, flowScore }: FlowChartProps) {
                     </div>
                   </div>
                 </div>
-              );
+              )
             }}
           />
           <Area

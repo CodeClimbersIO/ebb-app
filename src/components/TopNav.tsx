@@ -1,6 +1,6 @@
-import { Button } from "@/components/ui/button"
+import { Button } from '@/components/ui/button'
 import { UserCircle, X } from 'lucide-react'
-import { useNavigate } from "react-router-dom"
+import { useNavigate } from 'react-router-dom'
 
 interface TopNavProps {
   variant?: 'default' | 'modal'

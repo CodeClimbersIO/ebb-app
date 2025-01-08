@@ -1,5 +1,5 @@
-import { Sidebar } from "./Sidebar"
-import { TopNav } from "./TopNav"
+import { Sidebar } from './Sidebar'
+import { TopNav } from './TopNav'
 
 interface LayoutProps {
   children: React.ReactNode

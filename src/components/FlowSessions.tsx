@@ -1,9 +1,8 @@
-import { Card, CardContent } from "@/components/ui/card"
-import { InfoIcon as InfoCircle } from 'lucide-react'
-import { Button } from "@/components/ui/button"
-import { ChevronRight } from 'lucide-react'
-import { FlowChart } from "@/components/ui/flow-chart"
-import { DateTime } from "luxon"
+import { Card, CardContent } from '@/components/ui/card'
+import { InfoIcon as InfoCircle, ChevronRight } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { FlowChart } from '@/components/ui/flow-chart'
+import { DateTime } from 'luxon'
 
 interface FlowSessionProps {
   startTime: string
@@ -24,35 +23,35 @@ function FlowSession({
   objective,
 }: FlowSessionProps) {
   // Convert strings to DateTime objects
-  const start = DateTime.fromISO(startTime);
-  const end = DateTime.fromISO(endTime);
-  
+  const start = DateTime.fromISO(startTime)
+  const end = DateTime.fromISO(endTime)
+
   // Get relative date display
   const getRelativeDate = (dateTime: DateTime) => {
-    const today = DateTime.now().startOf('day');
-    const sessionDate = dateTime.startOf('day');
-    
+    const today = DateTime.now().startOf('day')
+    const sessionDate = dateTime.startOf('day')
+
     if (sessionDate.hasSame(today, 'day')) {
-      return 'Today';
+      return 'Today'
     } else if (sessionDate.hasSame(today.minus({ days: 1 }), 'day')) {
-      return 'Yesterday';
+      return 'Yesterday'
     }
-    return dateTime.toFormat('LLL dd');
-  };
+    return dateTime.toFormat('LLL dd')
+  }
 
   // Calculate total minutes for graph intervals
-  const totalMinutes = end.diff(start, 'minutes').minutes;
-  const intervalMinutes = Math.floor(totalMinutes / 9); // 9 intervals = 10 points
+  const totalMinutes = end.diff(start, 'minutes').minutes
+  const intervalMinutes = Math.floor(totalMinutes / 9) // 9 intervals = 10 points
 
   // Generate mock data with proper time intervals
   const mockData = Array.from({ length: 10 }, (_, i) => {
-    const pointTime = start.plus({ minutes: i * intervalMinutes }).toJSDate();
+    const pointTime = start.plus({ minutes: i * intervalMinutes }).toJSDate()
     return {
       time: pointTime,
       value: Math.sin(i * 0.5) * (flowScore / 2) + flowScore / 2,
-      appSwitches: Math.floor(Math.random() * 10)
-    };
-  });
+      appSwitches: Math.floor(Math.random() * 10),
+    }
+  })
 
   return (
     <Card className="mb-4">
@@ -60,12 +59,15 @@ function FlowSession({
         <div className="mb-4">
           <div className="text-sm">
             <span>{getRelativeDate(start)}</span>
-            <span className="text-muted-foreground"> · {start.toFormat('h:mm a')} - {end.toFormat('h:mm a')}</span>
+            <span className="text-muted-foreground">
+              {' '}
+              · {start.toFormat('h:mm a')} - {end.toFormat('h:mm a')}
+            </span>
           </div>
         </div>
         <div className="h-40 my-8">
-          <FlowChart 
-            data={mockData} 
+          <FlowChart
+            data={mockData}
             flowScore={flowScore}
           />
         </div>
@@ -137,7 +139,7 @@ export function FlowSessions() {
         objective="Research docs for email API"
         graphColor="#EF4444"
       />
-       <FlowSession
+      <FlowSession
         startTime="2023-12-12T14:23:00"
         endTime="2023-12-12T15:54:00"
         flowScore={4.3}

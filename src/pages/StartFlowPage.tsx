@@ -1,26 +1,25 @@
-import { useState } from "react"
-import { useNavigate } from "react-router-dom"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { Activity } from 'lucide-react'
-import { EbbApi } from "../api/ebbApi"
-import { TopNav } from "@/components/TopNav"
-import { LogoContainer } from "@/components/LogoContainer"
+import { TopNav } from '@/components/TopNav'
+import { LogoContainer } from '@/components/LogoContainer'
 
 export const StartFlowPage = () => {
-  const [objective, setObjective] = useState("")
+  const [objective, setObjective] = useState('')
   const navigate = useNavigate()
 
   const handleBegin = () => {
     if (!objective) return
-    
-    navigate('/flow', { 
-      state: { 
+
+    navigate('/flow', {
+      state: {
         sessionId: crypto.randomUUID(), // Generate temporary ID
         objective,
         startTime: new Date().getTime()
-      } 
+      }
     })
   }
 
@@ -49,8 +48,8 @@ export const StartFlowPage = () => {
                 className="w-full"
               />
             </div>
-            <Button 
-              className="w-full" 
+            <Button
+              className="w-full"
               onClick={handleBegin}
               disabled={!objective}
             >

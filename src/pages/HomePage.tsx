@@ -1,12 +1,26 @@
-import { Button } from "@/components/ui/button"
+import { Layout } from '@/components/Layout'
+import { useNavigate } from 'react-router-dom'
+import { useEffect } from 'react'
+import { Button } from '@/components/ui/button'
 import { Activity } from 'lucide-react'
-import { StatsCards } from "@/components/StatCard"
-import { FlowSessions } from "@/components/FlowSessions"
-import { Layout } from "@/components/Layout"
-import { useNavigate } from "react-router-dom"
+import { StatsCards } from '@/components/StatCard'
+import { FlowSessions } from '@/components/FlowSessions'
+import { EbbApi } from '../api/ebbApi'
+import { MonitorApi } from '../api/monitorApi'
 
 export const HomePage = () => {
   const navigate = useNavigate()
+  useEffect(() => {
+    const init = async () => {
+      const activities = await MonitorApi.getActivities()
+      console.log(activities)
+      const flowSession = await EbbApi.getInProgressFlowSession()
+      console.log(flowSession)
+      const flowSessions = await EbbApi.getFlowSessions()
+      console.log(flowSessions)
+    }
+    init()
+  }, [])
 
   const handleStartFlowSession = () => {
     navigate('/start-flow')
