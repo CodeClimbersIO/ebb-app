@@ -1,11 +1,12 @@
+import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { Activity } from 'lucide-react'
 import { EbbApi } from "../api/ebbApi"
-import { Activity, X } from 'lucide-react'
-import { Logo } from "@/components/ui/logo"
+import { TopNav } from "@/components/TopNav"
+import { LogoContainer } from "@/components/LogoContainer"
 
 export const StartFlowPage = () => {
   const [objective, setObjective] = useState("")
@@ -24,15 +25,12 @@ export const StartFlowPage = () => {
   }
 
   return (
-    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm">
-      <div className="fixed top-0 left-0 right-0 flex justify-between items-center p-4">
-        <Logo className="px-3" />
-        <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
-          <X className="h-5 w-5" />
-        </Button>
+    <div className="flex flex-col h-screen">
+      <div className="flex">
+        <LogoContainer />
+        <TopNav variant="modal" />
       </div>
-
-      <div className="fixed left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%]">
+      <div className="flex-1 flex items-center justify-center bg-background/80 backdrop-blur-sm">
         <Card className="w-[400px]">
           <CardContent className="pt-6">
             <div className="mb-4">
