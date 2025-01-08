@@ -3,10 +3,11 @@ import { InfoIcon as InfoCircle } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { ChevronRight } from 'lucide-react'
 import { FlowChart } from "@/components/ui/flow-chart"
+import { DateTime } from "luxon"
 
 interface FlowSessionProps {
-  date: string
-  timeRange: string
+  startTime: string
+  endTime: string
   flowScore: number
   timeInFlow: string
   selfReport: number
@@ -15,33 +16,38 @@ interface FlowSessionProps {
 }
 
 function FlowSession({
-  date,
-  timeRange,
+  startTime,
+  endTime,
   flowScore,
   timeInFlow,
   selfReport,
   objective,
   graphColor = "#9333EA",
 }: FlowSessionProps) {
-  // Handle relative dates
-  const getSessionDate = (dateStr: string) => {
-    if (dateStr === "Yesterday") {
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      return yesterday.toISOString().split('T')[0];
+  // Convert strings to DateTime objects
+  const start = DateTime.fromISO(startTime);
+  const end = DateTime.fromISO(endTime);
+  
+  // Get relative date display
+  const getRelativeDate = (dateTime: DateTime) => {
+    const today = DateTime.now().startOf('day');
+    const sessionDate = dateTime.startOf('day');
+    
+    if (sessionDate.hasSame(today, 'day')) {
+      return 'Today';
+    } else if (sessionDate.hasSame(today.minus({ days: 1 }), 'day')) {
+      return 'Yesterday';
     }
-    return dateStr;
+    return dateTime.toFormat('LLL dd');
   };
 
-  // Parse the timeRange to get start and end times
-  const sessionDate = getSessionDate(date);
-  const [startTime, endTime] = timeRange.split(' - ').map(t => new Date(`${sessionDate} ${t}`));
-  const totalMinutes = (endTime.getTime() - startTime.getTime()) / (1000 * 60);
+  // Calculate total minutes for graph intervals
+  const totalMinutes = end.diff(start, 'minutes').minutes;
   const intervalMinutes = Math.floor(totalMinutes / 9); // 9 intervals = 10 points
 
   // Generate mock data with proper time intervals
   const mockData = Array.from({ length: 10 }, (_, i) => {
-    const pointTime = new Date(startTime.getTime() + (i * intervalMinutes * 60 * 1000));
+    const pointTime = start.plus({ minutes: i * intervalMinutes }).toJSDate();
     return {
       time: pointTime,
       value: Math.sin(i * 0.5) * (flowScore / 2) + flowScore / 2,
@@ -54,8 +60,8 @@ function FlowSession({
       <CardContent className="p-6">
         <div className="mb-4">
           <div className="text-sm">
-            <span>{date}</span>
-            <span className="text-muted-foreground"> · {timeRange}</span>
+            <span>{getRelativeDate(start)}</span>
+            <span className="text-muted-foreground"> · {start.toFormat('h:mm a')} - {end.toFormat('h:mm a')}</span>
           </div>
         </div>
         <div className="h-40 my-8">
@@ -103,8 +109,8 @@ export function FlowSessions() {
         </Button>
       </div>
       <FlowSession
-        date="Yesterday"
-        timeRange="11:23 AM - 4:22 PM"
+        startTime="2025-01-08T11:23:00"
+        endTime="2025-01-08T16:22:00"
         flowScore={7.8}
         timeInFlow="2h 23m"
         selfReport={6.5}
@@ -112,8 +118,8 @@ export function FlowSessions() {
         graphColor="#9333EA"
       />
       <FlowSession
-        date="Dec 12"
-        timeRange="2:23 PM - 3:54 PM"
+        startTime="2023-12-12T14:23:00"
+        endTime="2023-12-12T15:54:00"
         flowScore={2.2}
         timeInFlow="0h 34m"
         selfReport={3.5}
