@@ -2,13 +2,16 @@
 
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer } from "recharts"
 import { ChartContainer, ChartTooltip } from "@/components/ui/chart"
+import { getFlowScoreColor } from '@/lib/utils/flow'
 
 interface FlowChartProps {
   data: { time: Date; value: number; appSwitches?: number }[]
-  color?: string
+  flowScore: number
 }
 
-export function FlowChart({ data, color = "#9333EA" }: FlowChartProps) {
+export function FlowChart({ data, flowScore }: FlowChartProps) {
+  const color = getFlowScoreColor(flowScore)
+
   return (
     <ChartContainer 
       className="h-full w-full"
@@ -26,15 +29,10 @@ export function FlowChart({ data, color = "#9333EA" }: FlowChartProps) {
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart
           data={data}
-          margin={{
-            left: 0,
-            right: 0,
-            top: 5,
-            bottom: 5,
-          }}
+          margin={{ left: 0, right: 0, top: 5, bottom: 5 }}
         >
           <defs>
-            <linearGradient id="flowGradient" x1="0" y1="0" x2="0" y2="1">
+            <linearGradient id={`flowGradient-${flowScore}`} x1="0" y1="0" x2="0" y2="1">
               <stop
                 offset="5%"
                 stopColor={color}
@@ -80,7 +78,7 @@ export function FlowChart({ data, color = "#9333EA" }: FlowChartProps) {
             type="monotone"
             dataKey="value"
             stroke={color}
-            fill="url(#flowGradient)"
+            fill={`url(#flowGradient-${flowScore})`}
             strokeWidth={2}
           />
         </AreaChart>

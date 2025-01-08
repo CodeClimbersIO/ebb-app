@@ -22,7 +22,6 @@ function FlowSession({
   timeInFlow,
   selfReport,
   objective,
-  graphColor = "#9333EA",
 }: FlowSessionProps) {
   // Convert strings to DateTime objects
   const start = DateTime.fromISO(startTime);
@@ -65,7 +64,10 @@ function FlowSession({
           </div>
         </div>
         <div className="h-40 my-8">
-          <FlowChart data={mockData} color={graphColor} />
+          <FlowChart 
+            data={mockData} 
+            flowScore={flowScore}
+          />
         </div>
         <div className="grid grid-cols-3 gap-4">
           <div>
@@ -118,9 +120,27 @@ export function FlowSessions() {
         graphColor="#9333EA"
       />
       <FlowSession
+        startTime="2025-01-07T11:23:00"
+        endTime="2025-01-07T16:22:00"
+        flowScore={5.6}
+        timeInFlow="2h 23m"
+        selfReport={6.5}
+        objective="Code FlowState App"
+        graphColor="#9333EA"
+      />
+      <FlowSession
         startTime="2023-12-12T14:23:00"
         endTime="2023-12-12T15:54:00"
         flowScore={2.2}
+        timeInFlow="0h 34m"
+        selfReport={3.5}
+        objective="Research docs for email API"
+        graphColor="#EF4444"
+      />
+       <FlowSession
+        startTime="2023-12-12T14:23:00"
+        endTime="2023-12-12T15:54:00"
+        flowScore={4.3}
         timeInFlow="0h 34m"
         selfReport={3.5}
         objective="Research docs for email API"

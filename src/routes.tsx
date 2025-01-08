@@ -5,7 +5,9 @@ import { LoginPage } from '@/pages/LoginPage'
 import { SignupPage } from '@/pages/SignupPage'
 import { FriendsPage } from '@/pages/FriendsPage'
 import { SettingsPage } from '@/pages/SettingsPage'
+import { StartFlowPage } from "./pages/StartFlowPage"
 import { useAuth } from './hooks/useAuth'
+import { FlowPage } from '@/pages/FlowPage'
 
 // Protected Route wrapper component
 const ProtectedRoute = () => {
@@ -33,6 +35,8 @@ export const AppRoutes = () => {
         <Route path="/" element={<HomePage />} />
         <Route path="/friends" element={<FriendsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/start-flow" element={<StartFlowPage />} />
+        <Route path="/flow" element={<FlowPage />} />
       </Route>
     </Routes>
   )
