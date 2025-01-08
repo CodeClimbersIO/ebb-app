@@ -6,10 +6,13 @@ import { StatsCards } from "@/components/StatCard"
 import { FlowSessions } from "@/components/FlowSessions"
 import { EbbApi } from '../api/ebbApi';
 import { MonitorApi } from '../api/monitorApi';
+import { useNavigate } from "react-router-dom"
 
 
 
 export const HomePage = () => {
+  const navigate = useNavigate()
+
   useEffect(() => {
     const init = async () => {
       const activities = await MonitorApi.getActivities();
@@ -22,8 +25,8 @@ export const HomePage = () => {
     init()
   }, [])
 
-  const handleStartFlowSession = async () => {
-    await EbbApi.startFlowSession('Learn React');
+  const handleStartFlowSession = () => {
+    navigate('/start-flow')
   }
 
 

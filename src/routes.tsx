@@ -5,6 +5,7 @@ import { LoginPage } from '@/pages/LoginPage'
 import { SignupPage } from '@/pages/SignupPage'
 import { FriendsPage } from '@/pages/FriendsPage'
 import { SettingsPage } from '@/pages/SettingsPage'
+import { StartFlowPage } from "./pages/StartFlowPage"
 import { useAuth } from './hooks/useAuth'
 
 // Protected Route wrapper component
@@ -33,6 +34,7 @@ export const AppRoutes = () => {
         <Route path="/" element={<HomePage />} />
         <Route path="/friends" element={<FriendsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/start-flow" element={<StartFlowPage />} />
       </Route>
     </Routes>
   )
