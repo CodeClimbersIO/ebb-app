@@ -1,14 +1,13 @@
 import { Button } from "@/components/ui/button"
 import { Activity, Users, Settings } from 'lucide-react'
 import { Link } from "react-router-dom"
+import { Logo } from "@/components/ui/logo"
 
 export function Sidebar() {
   return (
     <div className="w-64 border-r h-screen p-4 flex flex-col">
       <div className="mb-8">
-        <Link to="/" className="font-pacifico text-3xl font-bold text-violet-600 dark:text-violet-100 px-3 flex">
-          ebb
-        </Link>
+        <Logo className="px-3" />
       </div>
       <nav className="space-y-2 flex-1">
         <Button variant="ghost" className="w-full justify-start gap-2" asChild>
