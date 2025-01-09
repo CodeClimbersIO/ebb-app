@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { getFlowScoreTailwindColor, getFlowStatusText } from '@/lib/utils/flow'
 import { LiveFlowChart } from '@/components/ui/live-flow-chart'
+import { EbbApi } from '../api/ebbApi/ebbApi'
 
 interface FlowData {
   flowScore: number
@@ -26,9 +27,7 @@ interface ChartData {
 }
 
 export const FlowPage = () => {
-  const location = useLocation()
   const navigate = useNavigate()
-  const { sessionId, objective, startTime } = location.state as LocationState
   const [time, setTime] = useState<string>('00:00')
   const [flowData, setFlowData] = useState<FlowData | null>(null)
   const [chartData, setChartData] = useState<ChartData[]>([])
@@ -48,10 +47,15 @@ export const FlowPage = () => {
   }
 
   useEffect(() => {
-    if (!objective || !startTime || !sessionId) {
-      navigate('/start-flow')
-      return
-    }
+    EbbApi.getInProgressFlowSession().then((flowSession) => {
+      if (!flowSession) {
+        navigate('/start-flow')
+        return
+      }
+
+      setFlowData(flowSession)
+    })
+
 
     const updateTimer = () => {
       const now = new Date().getTime()

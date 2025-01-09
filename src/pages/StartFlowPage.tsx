@@ -6,21 +6,23 @@ import { Input } from '@/components/ui/input'
 import { Activity } from 'lucide-react'
 import { TopNav } from '@/components/TopNav'
 import { LogoContainer } from '@/components/LogoContainer'
+import { EbbApi } from '../api/ebbApi/ebbApi'
 
 export const StartFlowPage = () => {
   const [objective, setObjective] = useState('')
   const navigate = useNavigate()
 
-  const handleBegin = () => {
+  const handleBegin = async () => {
     if (!objective) return
+
+    const sessionId = await EbbApi.startFlowSession(objective)
 
     navigate('/flow', {
       state: {
-        sessionId: crypto.randomUUID(), // Generate temporary ID
-        objective,
-        startTime: new Date().getTime()
+        sessionId,
       }
     })
+
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

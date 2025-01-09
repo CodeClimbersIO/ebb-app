@@ -1,9 +1,9 @@
 import { QueryResult } from '@tauri-apps/plugin-sql'
-import { FlowSession, FlowSessionDb } from '../db/flowSession'
-import { ActivityState } from '../db/activityState'
-import { MonitorApi } from './monitorApi'
+import { FlowSession, FlowSessionDb } from '../../db/flowSession'
+import { ActivityState } from '../../db/activityState'
+import { MonitorApi } from '../monitorApi'
 import { DateTime } from 'luxon'
-import { ActivityFlowPeriod } from '../db/activityFlowPeriod'
+import { FlowPeriod } from '../../db/flowPeriod'
 
 /** Example usage
  * 
@@ -60,13 +60,13 @@ type FlowSessionWithStats = FlowSession & {
   score: number
   timeInFlow: number
   activityStates: ActivityState[]
-  activityFlowPeriods: ActivityFlowPeriod[]
+  activityFlowPeriods: FlowPeriod[]
 }
 
 const calculateTimeAndScoreInFlow = async (
   flowSession: FlowSession & {
     activityStates: ActivityState[]
-    activityFlowPeriods: ActivityFlowPeriod[]
+    activityFlowPeriods: FlowPeriod[]
   },
 ): Promise<FlowSessionWithStats> => {
   console.log('flowSession', flowSession)

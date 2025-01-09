@@ -1,4 +1,4 @@
-import { ActivityFlowPeriodDb } from '../db/activityFlowPeriod'
+import { FlowPeriodDb } from '../db/flowPeriod'
 import { ActivityStateDb } from '../db/activityState'
 import { MonitorDb } from '../db/monitorDb'
 
@@ -17,7 +17,7 @@ const getActivityAndFlowPeriodsBetween = async (start: string, end: string) => {
     end,
   )
   const activityFlowPeriods =
-    await ActivityFlowPeriodDb.getActivityFlowPeriodsBetween(start, end)
+    await FlowPeriodDb.getFlowPeriodsBetween(start, end)
   return {
     activityStates,
     activityFlowPeriods,
