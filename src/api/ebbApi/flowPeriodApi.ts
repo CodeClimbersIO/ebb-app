@@ -2,7 +2,6 @@ import { QueryResult } from '@tauri-apps/plugin-sql'
 import { ActivityState, ActivityStateDb, ActivityStateType } from '../../db/activityState'
 import { FlowPeriod, FlowPeriodDb } from '../../db/flowPeriod'
 import { DateTime } from 'luxon'
-import assert from 'assert'
 
 interface Period {
   start: DateTime
@@ -130,7 +129,9 @@ const getNextFlowPeriod = async (lastFlowPeriod: FlowPeriod | undefined, interva
 const getFlowPeriodScoreForPeriod = async (period: Period): Promise<FlowPeriodScore> => {
   const start = period.start.toISO()
   const end = period.end.toISO()
-  assert(start && end, 'Start and end for period must be defined')
+  if(!start || !end) {
+    throw new Error('Start and end for period must be defined')
+  }
 
   console.log('Getting activity states between', start, end)
   const activityStates = await ActivityStateDb.getActivityStatesBetween(start, end)
@@ -154,13 +155,15 @@ const startFlowPeriodScoreJob = async (intervalMs = TEN_MINUTES): Promise<void> 
     return
   }
   isJobRunning = true
-  console.log('Starting flow period score job')
+  console.log('Starting flow period score job at', DateTime.now().toISO())
+  console.log('next run at', DateTime.now().plus({ milliseconds: intervalMs }).toISO())
   setInterval(async () => {
     console.log('Calculating flow period score')
     const lastFlowPeriod = await FlowPeriodDb.getLastFlowPeriod()
     const period = await getNextFlowPeriod(lastFlowPeriod, intervalMs)
     const flowPeriodScore = await getFlowPeriodScoreForPeriod(period)
     console.log('Flow period score', flowPeriodScore)
+    console.log('next run at', DateTime.now().plus({ milliseconds: intervalMs }).toISO())
   }, intervalMs)
 }
 
