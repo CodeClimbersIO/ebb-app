@@ -2,10 +2,7 @@ use std::time::Duration;
 
 use time::OffsetDateTime;
 
-use crate::db::{
-    activity_state_repo::ActivityStateRepo,
-    models::{ActivityState, ActivityStateType},
-};
+use crate::db::activity_state_repo::ActivityStateRepo;
 
 #[derive(Clone, Debug)]
 pub struct ActivityPeriod {
@@ -23,18 +20,6 @@ impl ActivityStateService {
         ActivityStateService {
             activity_state_repo: ActivityStateRepo::new(pool.clone()),
         }
-    }
-
-    pub fn get_activity_score_for_activity_states(
-        &self,
-        activity_states: &Vec<ActivityState>,
-    ) -> (f64, i32) {
-        let active_states = activity_states
-            .iter()
-            .filter(|state| state.state == ActivityStateType::Active)
-            .count();
-        let activity_score = std::cmp::max(0, 0 + active_states as i32);
-        (activity_score as f64, active_states as i32)
     }
 
     pub async fn get_next_activity_state_times(&self, interval: Duration) -> ActivityPeriod {
@@ -72,10 +57,7 @@ mod tests {
     use std::time::Duration;
 
     use crate::{
-        db::{
-            db_manager,
-            models::{ActivityState, ActivityStateType},
-        },
+        db::{db_manager, models::ActivityState},
         utils::test_utils::assert_datetime_eq,
     };
 
