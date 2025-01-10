@@ -61,22 +61,22 @@ export function StatsCards() {
     <TooltipProvider>
       <div className="grid grid-cols-3 gap-4">
         <StatCard
-          title="Flow Sessions (30d)"
+          title="Flow Sessions (7d)"
           value="52"
-          tooltipContent="Total number of flow sessions recorded in the last 30 days"
+          tooltipContent="Total number of flow sessions recorded in the last 7 days"
           change={{ value: 20.4, positive: true }}
         />
         <StatCard
-          title="Avg Flow Score (30d)"
+          title="Avg Flow Score (7d)"
           value="9.3"
           isFlowScore={true}
           tooltipContent="Average flow score recorded in the last 30 days"
           change={{ value: 20.4, positive: false }}
         />
         <StatCard
-          title="Time in Flow (30d)"
+          title="Time in Flow (7d)"
           value="140h"
-          tooltipContent="Total time spent with a Flow Score > 5 in the last 30 days"
+          tooltipContent="Total time spent with a Flow Score > 5 in the last 7 days"
           change={{ value: 5.4, positive: true }}
         />
       </div>
