@@ -3,6 +3,9 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { getFlowScoreTailwindColor, getFlowStatusText } from '@/lib/utils/flow'
 import { LiveFlowChart } from '@/components/ui/live-flow-chart'
+import { FlowSession } from '../db/flowSession'
+import { DateTime } from 'luxon'
+import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
 
 interface FlowData {
   flowScore: number
@@ -30,6 +33,7 @@ export const FlowPage = () => {
   const navigate = useNavigate()
   const { startTime, objective, sessionId } = location.state as LocationState
   const [time, setTime] = useState<string>('00:00')
+  const [flowSession, setFlowSession] = useState<FlowSession | null>(null)
   const [flowData, setFlowData] = useState<FlowData | null>(null)
   const [chartData, setChartData] = useState<ChartData[]>([])
 
@@ -48,29 +52,21 @@ export const FlowPage = () => {
   }
 
   useEffect(() => {
-    // Simulate fetching in-progress flow session
-    const mockFlowSession = {
-      flowScore: 8,
-      appSwitches: 2,
-      topActivity: 'Code Editor',
-      timestamp: new Date().toISOString()
+    const init = async () => {
+      const flowSession = await FlowSessionApi.getInProgressFlowSession()
+      if (!flowSession) {
+        navigate('/start-flow')
+      }
+      setFlowSession(flowSession)
     }
+    init()
+  }, [])
 
-    if (!mockFlowSession) {
-      navigate('/start-flow')
-      return
-    }
-
-    setFlowData({
-      flowScore: mockFlowSession.flowScore,
-      appSwitches: mockFlowSession.appSwitches,
-      topActivity: mockFlowSession.topActivity,
-      timestamp: mockFlowSession.timestamp
-    })
-
+  useEffect(() => {
+    if (!flowSession) return
     const updateTimer = () => {
       const now = new Date().getTime()
-      const diff = now - startTime
+      const diff = now - DateTime.fromISO(flowSession.start).toMillis()
       const minutes = Math.floor(diff / 60000)
       const seconds = Math.floor((diff % 60000) / 1000)
       setTime(`${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`)
@@ -88,7 +84,7 @@ export const FlowPage = () => {
     })
 
     return () => clearInterval(interval)
-  }, [startTime, objective, sessionId, navigate])
+  }, [flowSession, navigate])
 
   useEffect(() => {
     // Initial data generation
@@ -116,7 +112,9 @@ export const FlowPage = () => {
     }
   }, [flowData?.flowScore])
 
-  const handleEndSession = () => {
+  const handleEndSession = async () => {
+    if (!flowSession) return
+    await FlowSessionApi.endFlowSession(flowSession.id)
     navigate('/')
   }
 
@@ -132,7 +130,7 @@ export const FlowPage = () => {
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center">
-        <div className="text-sm text-muted-foreground mb-4">{objective}</div>
+        <div className="text-sm text-muted-foreground mb-4">{flowSession?.objective}</div>
         <div className="text-6xl font-bold mb-4">{time}</div>
         {flowData && (
           <div className={`px-4 py-2 rounded-full ${getFlowScoreTailwindColor(flowData.flowScore)}`}>

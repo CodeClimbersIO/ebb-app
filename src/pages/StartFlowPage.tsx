@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Activity } from 'lucide-react'
 import { TopNav } from '@/components/TopNav'
 import { LogoContainer } from '@/components/LogoContainer'
+import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
 
 export const StartFlowPage = () => {
   const [objective, setObjective] = useState('')
@@ -14,8 +15,7 @@ export const StartFlowPage = () => {
   const handleBegin = async () => {
     if (!objective) return
 
-    // Simulate starting a flow session and generating a dummy session ID
-    const sessionId = 'dummy-session-id-' + Date.now()
+    const sessionId = await FlowSessionApi.startFlowSession(objective)
 
     navigate('/breathing-exercise', {
       state: {

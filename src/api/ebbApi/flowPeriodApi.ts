@@ -193,7 +193,4 @@ export const FlowPeriodApi = {
   getNextFlowPeriod,
   createFlowPeriod,
   startFlowPeriodScoreJob,
-
 }
-
-
