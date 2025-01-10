@@ -6,18 +6,16 @@ import { Activity } from 'lucide-react'
 import { StatsCards } from '@/components/StatCard'
 import { FlowSessions } from '@/components/FlowSessions'
 import { EbbApi } from '../api/ebbApi/ebbApi'
-import { MonitorApi } from '../api/monitorApi'
 
 export const HomePage = () => {
   const navigate = useNavigate()
   useEffect(() => {
     const init = async () => {
-      const activities = await MonitorApi.getActivities()
-      console.log(activities)
+
       const flowSession = await EbbApi.getInProgressFlowSession()
-      console.log(flowSession)
-      const flowSessions = await EbbApi.getFlowSessions()
-      console.log(flowSessions)
+      if (flowSession) {
+        navigate('/flow')
+      }
     }
     init()
   }, [])
