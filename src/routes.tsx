@@ -9,6 +9,7 @@ import { useAuth } from './hooks/useAuth'
 import { FlowPage } from '@/pages/FlowPage'
 import { FlowPeriodApi } from './api/ebbApi/flowPeriodApi'
 import { BreathingExercisePage } from './pages/BreathingExercisePage'
+import { FlowRecapPage } from '@/pages/FlowRecapPage'
 
 // Protected Route wrapper component
 const ProtectedRoute = () => {
@@ -41,6 +42,7 @@ export const AppRoutes = () => {
         <Route path="/start-flow" element={<StartFlowPage />} />
         <Route path="/breathing-exercise" element={<BreathingExercisePage />} />
         <Route path="/flow" element={<FlowPage />} />
+        <Route path="/flow-recap" element={<FlowRecapPage />} />
       </Route>
     </Routes>
   )
