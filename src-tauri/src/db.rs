@@ -35,8 +35,7 @@ pub fn get_migrations() -> Vec<Migration> {
                 start_time TIMESTAMP NOT NULL,
                 end_time TIMESTAMP NOT NULL,
                 score REAL NOT NULL,
-                app_switches INTEGER NOT NULL,
-                active_time INTEGER NOT NULL,
+                details TEXT NOT NULL,
                 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
             );"#,
             kind: MigrationKind::Up,

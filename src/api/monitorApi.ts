@@ -1,6 +1,7 @@
 import { FlowPeriodDb } from '../db/flowPeriod'
 import { ActivityStateDb } from '../db/activityState'
 import { MonitorDb } from '../db/monitorDb'
+import { DateTime } from 'luxon'
 
 const getActivities = async () => {
   const monitorDb = await MonitorDb.getMonitorDb()
@@ -8,7 +9,7 @@ const getActivities = async () => {
   return activities
 }
 
-const getActivityAndFlowPeriodsBetween = async (start: string, end: string) => {
+const getActivityAndFlowPeriodsBetween = async (start: DateTime, end: DateTime) => {
   console.log('Between')
   console.log('start', start)
   console.log('end', end)

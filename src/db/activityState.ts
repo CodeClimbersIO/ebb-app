@@ -1,3 +1,4 @@
+import { DateTime } from 'luxon'
 import { MonitorDb } from './monitorDb'
 
 export enum ActivityStateType {
@@ -14,9 +15,10 @@ export interface ActivityState {
   created_at: string
 }
 
-export const getActivityStatesBetween = async (start: string, end: string) => {
+export const getActivityStatesBetween = async (start: DateTime, end: DateTime) => {
   const monitorDb = await MonitorDb.getMonitorDb()
-  const query = `SELECT * FROM activity_state WHERE start_time >= '${start}' AND end_time <= '${end}';`
+  const query = `SELECT * FROM activity_state WHERE start_time >= '${start.toUTC().toISO()}' AND end_time <= '${end.toUTC().toISO()}';`
+  console.log(query)
   const activityStates = await monitorDb.select<ActivityState[]>(query)
   return activityStates
 }

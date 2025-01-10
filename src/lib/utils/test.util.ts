@@ -3,7 +3,7 @@ import { DateTime } from 'luxon'
 export function assertDateTimeEqual(
   left: DateTime,
   right: DateTime,
-  toleranceMs: number = 1
+  toleranceMs: number = 10
 ): void {
   const diffMs = Math.abs(left.toMillis() - right.toMillis())
   

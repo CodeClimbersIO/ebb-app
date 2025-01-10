@@ -1,21 +1,21 @@
 import { QueryResult } from '@tauri-apps/plugin-sql'
 import { insert } from '../lib/sql.util'
 import { getEbbDb } from './ebbDb'
+import { DateTime } from 'luxon'
 
 export interface FlowPeriod {
-  id: number
+  id?: number
   start_time: string
   end_time: string
   score: number
-  app_switches: number
-  active_time: number
+  details: string // JSON string
   created_at: string
 }
 
-const getFlowPeriodsBetween = async (start: string, end: string) => {
+const getFlowPeriodsBetween = async (start: DateTime, end: DateTime) => {
   const ebbDb = await getEbbDb()
   const flowPeriods = await ebbDb.select<FlowPeriod[]>(
-    `SELECT * FROM flow_period WHERE start_time >= '${start}' AND end_time <= '${end}';`,
+    `SELECT * FROM flow_period WHERE start_time >= '${start.toUTC().toISO()}' AND end_time <= '${end.toUTC().toISO()}';`,
   )
   return flowPeriods
 }

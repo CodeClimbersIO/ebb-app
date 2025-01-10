@@ -59,7 +59,7 @@ describe('FlowPeriodApi', () => {
         { state: ActivityStateType.Active, app_switches: 4 } as ActivityState,
       ]
       const result = FlowPeriodApi.getAppSwitchScoreForActivityStates(states)
-      expect(result).toEqual([1.0, 3.0])
+      expect(result).toEqual([1.0, 6.0])
     })
 
     it('should return score 0.5 for average switches between 4 and 8', () => {
@@ -68,7 +68,7 @@ describe('FlowPeriodApi', () => {
         { state: ActivityStateType.Active, app_switches: 8 } as ActivityState,
       ]
       const result = FlowPeriodApi.getAppSwitchScoreForActivityStates(states)
-      expect(result).toEqual([0.5, 6.0])
+      expect(result).toEqual([0.5, 12.0])
     })
 
     it('should return score 0.0 for average switches > 8', () => {
@@ -77,7 +77,7 @@ describe('FlowPeriodApi', () => {
         { state: ActivityStateType.Active, app_switches: 12 } as ActivityState,
       ]
       const result = FlowPeriodApi.getAppSwitchScoreForActivityStates(states)
-      expect(result).toEqual([0.0, 10.0])
+      expect(result).toEqual([0.0, 20.0])
     })
   })
 
@@ -118,59 +118,53 @@ describe('FlowPeriodApi', () => {
     })
   })
 
-  describe('getNextActivityFlowPeriod', () => {
-    it('should start from last activity end time when within 5 seconds of now', async () => {
-      const startTime = DateTime.now().minus({seconds: 122})
-      const endTime = DateTime.now().plus({seconds: 1})
+  describe('getNextActivityFlowPeriod', async () => {
+    const INTERVAL_MS = 2 * 60 * 1000 // 2 minutes
+    it('should start from last activity end time, if new end time would be within 5 seconds of now', async () => {
+      const startTime = DateTime.now().minus({seconds: 242}) // 4 minutes 2 seconds ago
+      const endTime = DateTime.now().minus({seconds: 121}) // 2 minutes 1 second ago
       const flowPeriod = {
         id: 1,
         start_time: startTime.toISO(),
         end_time: endTime.toISO(),
         score: 0,
-        app_switches: 0,
-        active_time: 0,
+        details: JSON.stringify({
+          app_switches: 0,
+          active_time: 0,
+        }),
         created_at: DateTime.now().toISO(),
       } as FlowPeriod
 
-      const result = await FlowPeriodApi.getNextFlowPeriod(
-        flowPeriod,
-        120 * 1000
-      )
-
+      const result = await FlowPeriodApi.getNextFlowPeriod(flowPeriod, INTERVAL_MS)
       expect(() => assertDateTimeEqual(result.start, endTime)).not.toThrow()
-      expect(() => assertDateTimeEqual(result.end, endTime.plus({milliseconds: 120000}))).not.toThrow()
+      expect(() => assertDateTimeEqual(result.end, endTime.plus({milliseconds: INTERVAL_MS}))).not.toThrow()
     })
 
-    it('should start from now when last activity is not within 5 seconds', async () => {
-      const startTime = DateTime.now().minus({seconds: 130})
-      const endTime = startTime.minus({seconds: 10})
+    it('should start from now minus the interval time (i.e 10 minutes ago), if the new end time would be outside of 5 seconds of now', async () => {
+      const startTime = DateTime.now().minus({seconds: 250}) // 4 minutes 10 seconds ago
+      const endTime = DateTime.now().minus({seconds: 131}) // 2 minutes 11 seconds ago
       const flowPeriod = {
         id: 1,
         start_time: startTime.toISO(),
         end_time: endTime.toISO(),
         score: 0,
-        app_switches: 0,
-        active_time: 0,
+        details: JSON.stringify({
+          app_switches: 0,
+          active_time: 0,
+        }),
         created_at: DateTime.now().toISO(),
       } as FlowPeriod
 
-      const result = await FlowPeriodApi.getNextFlowPeriod(
-        flowPeriod,
-        120 * 1000
-      )
-      
-      expect(() => assertDateTimeEqual(result.start, DateTime.now())).not.toThrow()
-      expect(() => assertDateTimeEqual(result.end, DateTime.now().plus({seconds: 120}))).not.toThrow()
+      const result = await FlowPeriodApi.getNextFlowPeriod(flowPeriod, INTERVAL_MS)
+
+      expect(() => assertDateTimeEqual(result.start, DateTime.now().minus({milliseconds: INTERVAL_MS}))).not.toThrow()
+      expect(() => assertDateTimeEqual(result.end, DateTime.now())).not.toThrow()
     })
 
-    it('should start from now when no last flow period', async () => {
-      const result = await FlowPeriodApi.getNextFlowPeriod(
-        undefined,
-        120 * 1000
-      )
-
-      expect(() => assertDateTimeEqual(result.start, DateTime.now())).not.toThrow()
-      expect(() => assertDateTimeEqual(result.end, DateTime.now().plus({seconds: 120}))).not.toThrow()
+    it('should start from now minus the interval time (i.e 10 minutes ago), if there is no last activity', async () => {
+      const result = await FlowPeriodApi.getNextFlowPeriod(undefined, INTERVAL_MS)
+      expect(() => assertDateTimeEqual(result.start, DateTime.now().minus({milliseconds: INTERVAL_MS}), 10)).not.toThrow()
+      expect(() => assertDateTimeEqual(result.end, DateTime.now(), 10)).not.toThrow()
     })
   })
 
@@ -183,8 +177,10 @@ describe('FlowPeriodApi', () => {
 
       const mockFlowPeriods: FlowPeriod[] = Array(5).fill(null).map(() => ({
         score: 3,
-        app_switches: 0,
-        active_time: 0,
+        details: JSON.stringify({
+          app_switches: 0,
+          active_time: 0,
+        }),
         created_at: DateTime.now().toISO(),
       } as FlowPeriod))
       
@@ -219,8 +215,10 @@ describe('FlowPeriodApi', () => {
 
       const mockFlowPeriods: FlowPeriod[] = Array(5).fill(null).map(() => ({
         score: 6,
-        app_switches: 0,
-        active_time: 0,
+        details: JSON.stringify({
+          app_switches: 0,
+          active_time: 0,
+        }),
         created_at: DateTime.now().toISO(),
       } as FlowPeriod))
       
@@ -228,7 +226,7 @@ describe('FlowPeriodApi', () => {
         .mockResolvedValue(mockActivityStates)
       
       const getFlowPeriodsSpy = vi.spyOn(FlowPeriodDb, 'getFlowPeriodsBetween')
-        .mockResolvedValue(mockFlowPeriods)
+          .mockResolvedValue(mockFlowPeriods)
 
       const lastFlowPeriod = {
         start: DateTime.now().minus({seconds: 120}),
