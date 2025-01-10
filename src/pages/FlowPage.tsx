@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { getFlowScoreTailwindColor, getFlowStatusText } from '@/lib/utils/flow'
 import { LiveFlowChart } from '@/components/ui/live-flow-chart'
@@ -22,16 +22,8 @@ interface ChartData {
   topActivity: string
 }
 
-interface LocationState {
-  startTime: number
-  objective: string
-  sessionId: string
-}
-
 export const FlowPage = () => {
-  const location = useLocation()
   const navigate = useNavigate()
-  const { startTime, objective, sessionId } = location.state as LocationState
   const [time, setTime] = useState<string>('00:00')
   const [flowSession, setFlowSession] = useState<FlowSession | null>(null)
   const [flowData, setFlowData] = useState<FlowData | null>(null)
@@ -75,7 +67,7 @@ export const FlowPage = () => {
     updateTimer()
     const interval = setInterval(updateTimer, 1000)
 
-    // Simulate flow data update
+    // Simulate flow data for now
     setFlowData({
       flowScore: 8,
       appSwitches: 2,
