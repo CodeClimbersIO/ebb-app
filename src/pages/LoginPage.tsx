@@ -1,9 +1,17 @@
 import { useState } from 'react'
 import {
-  getAuth, signInWithEmailAndPassword, setPersistence, browserLocalPersistence,
-  browserSessionPersistence, sendPasswordResetEmail
+  getAuth,
+  signInWithEmailAndPassword,
+  setPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence,
+  sendPasswordResetEmail
 } from 'firebase/auth'
 import { useNavigate, Link } from 'react-router-dom'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Logo } from '@/components/ui/logo'
 
 export const LoginPage = () => {
   const [email, setEmail] = useState('')
@@ -22,7 +30,6 @@ export const LoginPage = () => {
 
     try {
       const auth = getAuth()
-      // Set persistence based on remember me checkbox
       await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence)
       await signInWithEmailAndPassword(auth, email, password)
       navigate('/')
@@ -54,82 +61,89 @@ export const LoginPage = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="max-w-md w-full p-6 bg-white rounded-lg shadow-lg">
-        <h2 className="text-2xl font-bold mb-6 text-center">Ebb</h2>
-        {error && <p className="text-red-500 mb-4">{error}</p>}
-        {resetSuccess && <p className="text-green-500 mb-4">{resetSuccess}</p>}
-
-        <form onSubmit={handleLogin}>
-          <div className="mb-4">
-            <label className="block mb-2">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full p-2 border rounded"
-              required
-            />
-          </div>
-          <div className="mb-6">
-            <label className="block mb-2">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-2 border rounded"
-              required
-            />
-          </div>
-          <div className="mb-4">
-            <label className="flex items-center">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background">
+      <div className="mb-8">
+        <Logo className="text-4xl" />
+      </div>
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>Welcome back</CardTitle>
+          <CardDescription>Enter your credentials to access your account</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {error && <p className="text-sm text-destructive mb-4">{error}</p>}
+          {resetSuccess && <p className="text-sm text-green-500 mb-4">{resetSuccess}</p>}
+          
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium" htmlFor="email">Email</label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium" htmlFor="password">Password</label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+            <div className="flex items-center space-x-2">
               <input
                 type="checkbox"
+                id="remember"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="mr-2"
+                className="rounded border-input"
               />
-              <span>Remember me</span>
-            </label>
-          </div>
-          <button
-            type="submit"
-            className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 disabled:bg-blue-300"
-            disabled={loading}
-          >
-            {loading ? 'Logging in...' : 'Login'}
-          </button>
-        </form>
-
-        <p className="mt-4 text-center text-sm text-gray-600">
-          Don't have an account?{' '}
-          <Link to="/signup" className="text-blue-500 hover:text-blue-600">
-            Sign up here
-          </Link>
-        </p>
-
-        {/* Password Reset Form */}
-        <div className="mt-4">
-          <p className="text-center text-sm text-gray-600 mb-2">Forgot your password?</p>
-          <form onSubmit={handlePasswordReset} className="space-y-2">
-            <input
-              type="email"
-              value={resetEmail}
-              onChange={(e) => setResetEmail(e.target.value)}
-              placeholder="Enter your email"
-              className="w-full p-2 border rounded text-sm"
-              required
-            />
-            <button
-              type="submit"
-              className="w-full bg-gray-500 text-white p-2 rounded hover:bg-gray-600 disabled:bg-gray-300 text-sm"
-              disabled={loading}
-            >
-              Send Reset Link
-            </button>
+              <label htmlFor="remember" className="text-sm text-muted-foreground">
+                Remember me
+              </label>
+            </div>
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? 'Signing in...' : 'Sign in'}
+            </Button>
           </form>
-        </div>
-      </div>
+        </CardContent>
+        <CardFooter className="flex flex-col space-y-4">
+          <div className="text-sm text-center text-muted-foreground">
+            Don't have an account?{' '}
+            <Link to="/signup" className="text-primary hover:underline">
+              Sign up
+            </Link>
+          </div>
+          
+          <div className="w-full">
+            <p className="text-sm text-center text-muted-foreground mb-2">
+              Forgot your password?
+            </p>
+            <form onSubmit={handlePasswordReset} className="space-y-2">
+              <Input
+                type="email"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                placeholder="Enter your email"
+                required
+              />
+              <Button 
+                type="submit" 
+                variant="outline" 
+                className="w-full"
+                disabled={loading}
+              >
+                Reset Password
+              </Button>
+            </form>
+          </div>
+        </CardFooter>
+      </Card>
     </div>
   )
 }

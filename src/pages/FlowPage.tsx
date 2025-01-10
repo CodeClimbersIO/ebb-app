@@ -6,6 +6,14 @@ import { LiveFlowChart } from '@/components/ui/live-flow-chart'
 import { FlowSession } from '../db/flowSession'
 import { DateTime } from 'luxon'
 import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 
 interface FlowData {
   flowScore: number
@@ -28,6 +36,7 @@ export const FlowPage = () => {
   const [flowSession, setFlowSession] = useState<FlowSession | null>(null)
   const [flowData, setFlowData] = useState<FlowData | null>(null)
   const [chartData, setChartData] = useState<ChartData[]>([])
+  const [showEndDialog, setShowEndDialog] = useState(false)
 
   const generateChartData = () => {
     const now = new Date()
@@ -107,18 +116,36 @@ export const FlowPage = () => {
   const handleEndSession = async () => {
     if (!flowSession) return
     await FlowSessionApi.endFlowSession(flowSession.id)
+    setShowEndDialog(false)
     navigate('/')
   }
 
   return (
     <div className="flex flex-col h-screen">
       <div className="flex justify-end p-4">
-        <Button
-          variant="destructive"
-          onClick={handleEndSession}
-        >
-          End Session
-        </Button>
+        <Dialog open={showEndDialog} onOpenChange={setShowEndDialog}>
+          <DialogTrigger asChild>
+            <Button variant="destructive">
+              End Session
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>End Flow Session</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to end this flow session? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setShowEndDialog(false)}>
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={handleEndSession}>
+                End Session
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center">
