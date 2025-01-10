@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { getFlowScoreTailwindColor, getFlowStatusText } from '@/lib/utils/flow'
 import { LiveFlowChart } from '@/components/ui/live-flow-chart'
-import { EbbApi } from '../api/ebbApi/ebbApi'
 import { FlowSession } from '../db/flowSession'
 import { DateTime } from 'luxon'
+import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
 
 interface FlowData {
   flowScore: number
@@ -45,7 +45,7 @@ export const FlowPage = () => {
 
   useEffect(() => {
     const init = async () => {
-      const flowSession = await EbbApi.getInProgressFlowSession()
+      const flowSession = await FlowSessionApi.getInProgressFlowSession()
       if (!flowSession) {
         navigate('/start-flow')
       }
@@ -106,7 +106,7 @@ export const FlowPage = () => {
 
   const handleEndSession = async () => {
     if (!flowSession) return
-    await EbbApi.endFlowSession(flowSession.id)
+    await FlowSessionApi.endFlowSession(flowSession.id)
     navigate('/')
   }
 

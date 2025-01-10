@@ -102,8 +102,8 @@ const getFlowSessions = async (limit = 10): Promise<FlowSessionWithStats[]> => {
     flowSessions.map(async (flowSession) => {
       const { activityStates, activityFlowPeriods } =
         await MonitorApi.getActivityAndFlowPeriodsBetween(
-          flowSession.start,
-          flowSession.end || new Date().toISOString(),
+          DateTime.fromISO(flowSession.start),
+          DateTime.fromISO(flowSession.end || new Date().toISOString()),
         )
       return {
         ...flowSession,
@@ -122,7 +122,7 @@ const getFlowSessions = async (limit = 10): Promise<FlowSessionWithStats[]> => {
   return flowSessionsWithStats
 }
 
-export const EbbApi = {
+export const FlowSessionApi = {
   startFlowSession,
   endFlowSession,
   scoreFlowSession,

@@ -5,14 +5,13 @@ import { Button } from '@/components/ui/button'
 import { Activity } from 'lucide-react'
 import { StatsCards } from '@/components/StatCard'
 import { FlowSessions } from '@/components/FlowSessions'
-import { EbbApi } from '../api/ebbApi/ebbApi'
+import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
 
 export const HomePage = () => {
   const navigate = useNavigate()
   useEffect(() => {
     const init = async () => {
-
-      const flowSession = await EbbApi.getInProgressFlowSession()
+      const flowSession = await FlowSessionApi.getInProgressFlowSession()
       if (flowSession) {
         navigate('/flow')
       }
