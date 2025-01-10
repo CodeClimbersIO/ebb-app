@@ -42,12 +42,13 @@ export const StartFlowPage = () => {
         <Card className="w-[400px]">
           <CardContent className="pt-6">
             <div className="mb-4">
-              <h2 className="text-lg font-semibold mb-2">What is your main objective for this session?</h2>
+              <h2 className="text-lg font-semibold mb-4">What is your main objective for this session?</h2>
               <Input
                 placeholder="💡 Code new side project"
                 value={objective}
                 onChange={(e) => setObjective(e.target.value)}
                 onKeyDown={handleKeyDown}
+                maxLength={50}
                 className="w-full"
               />
             </div>

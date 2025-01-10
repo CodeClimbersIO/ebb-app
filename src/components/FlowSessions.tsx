@@ -18,6 +18,7 @@ interface FlowSessionProps {
   selfReport: number
   objective: string
   graphColor?: string
+  idleTime: string
 }
 
 function FlowSession({
@@ -27,6 +28,7 @@ function FlowSession({
   timeInFlow,
   selfReport,
   objective,
+  idleTime,
 }: FlowSessionProps) {
   // Convert strings to DateTime objects
   const start = DateTime.fromISO(startTime)
@@ -62,22 +64,21 @@ function FlowSession({
   return (
     <Card className="mb-4">
       <CardContent className="p-6">
-        <div className="mb-4">
-          <div className="text-sm">
-            <span>{getRelativeDate(start)}</span>
-            <span className="text-muted-foreground">
-              {' '}
-              · {start.toFormat('h:mm a')} - {end.toFormat('h:mm a')}
-            </span>
+        <div className="mb-4 flex justify-between items-center">
+          <div className="text-sm font-medium">"{objective}"</div>
+          <div className="text-sm text-muted-foreground">
+            {getRelativeDate(start)} · {start.toFormat('h:mm a')} - {end.toFormat('h:mm a')}
           </div>
         </div>
+
         <div className="h-40 my-8">
           <FlowChart
             data={mockData}
             flowScore={flowScore}
           />
         </div>
-        <div className="grid grid-cols-3 gap-4">
+
+        <div className="grid grid-cols-4 gap-4">
           <div>
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
               Flow Score
@@ -126,10 +127,22 @@ function FlowSession({
             </div>
             <div className="text-xl font-semibold">{selfReport}</div>
           </div>
-        </div>
-        <div className="mt-4">
-          <div className="text-sm font-medium">Main Objective</div>
-          <div className="text-sm text-muted-foreground">{objective}</div>
+          <div>
+            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+              Idle Time
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <InfoCircle className="h-4 w-4" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Total time spent inactive during the session</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            <div className="text-xl font-semibold">{idleTime}</div>
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -153,6 +166,7 @@ export function FlowSessions() {
         selfReport={6.5}
         objective="Code FlowState App"
         graphColor="#9333EA"
+        idleTime="0h 23m"
       />
       <FlowSession
         startTime="2025-01-07T11:23:00"
@@ -162,6 +176,7 @@ export function FlowSessions() {
         selfReport={6.5}
         objective="Code FlowState App"
         graphColor="#9333EA"
+        idleTime="0h 23m"
       />
       <FlowSession
         startTime="2023-12-12T14:23:00"
@@ -171,6 +186,7 @@ export function FlowSessions() {
         selfReport={3.5}
         objective="Research docs for email API"
         graphColor="#EF4444"
+        idleTime="0h 34m"
       />
       <FlowSession
         startTime="2023-12-12T14:23:00"
@@ -180,6 +196,7 @@ export function FlowSessions() {
         selfReport={3.5}
         objective="Research docs for email API"
         graphColor="#EF4444"
+        idleTime="0h 34m"
       />
     </div>
   )
