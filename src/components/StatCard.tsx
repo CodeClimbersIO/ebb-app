@@ -1,28 +1,50 @@
 import { Card, CardContent } from '@/components/ui/card'
-import { InfoIcon as InfoCircle } from 'lucide-react'
+import { Info } from 'lucide-react'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import { getFlowScoreTailwindColor } from '@/lib/utils/flow'
 
 interface StatCardProps {
   title: string
   value: string | number
+  tooltipContent: string
+  isFlowScore?: boolean
   change?: {
     value: number
     positive: boolean
   }
 }
 
-function StatCard({ title, value, change }: StatCardProps) {
+function StatCard({ title, value, tooltipContent, isFlowScore, change }: StatCardProps) {
   return (
     <Card>
       <CardContent className="p-6">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm text-muted-foreground">{title}</span>
-          <InfoCircle className="h-4 w-4 text-muted-foreground" />
+          <div className="flex items-center gap-1">
+            <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
+            <Tooltip>
+              <TooltipTrigger>
+                <Info className="h-4 w-4 text-muted-foreground" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{tooltipContent}</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
         </div>
         <div className="flex items-baseline gap-2">
-          <span className="text-2xl font-semibold">{value}</span>
+          <span className={`text-2xl font-semibold ${
+            isFlowScore ? getFlowScoreTailwindColor(Number(value)).split(' ')[0] : ''
+          }`}>
+            {value}
+          </span>
           {change && (
             <span
-              className={`text-sm  ${change.positive ? 'text-green-500' : 'text-red-500'
+              className={`text-sm  ${change.positive ? 'text-green-500' : 'text-gray-500'
                 }`}
             >
               {change.positive ? '↑' : '↓'} {Math.abs(change.value)}%
@@ -36,22 +58,28 @@ function StatCard({ title, value, change }: StatCardProps) {
 
 export function StatsCards() {
   return (
-    <div className="grid grid-cols-3 gap-4">
-      <StatCard
-        title="Flow Sessions (30d)"
-        value="52"
-        change={{ value: 20.4, positive: true }}
-      />
-      <StatCard
-        title="Avg Flow Score (30d)"
-        value="5.3"
-        change={{ value: 20.4, positive: false }}
-      />
-      <StatCard
-        title="Time in Flow (30d)"
-        value="140h"
-        change={{ value: 5.4, positive: true }}
-      />
-    </div>
+    <TooltipProvider>
+      <div className="grid grid-cols-3 gap-4">
+        <StatCard
+          title="Flow Sessions (30d)"
+          value="52"
+          tooltipContent="Total number of flow sessions recorded in the last 30 days"
+          change={{ value: 20.4, positive: true }}
+        />
+        <StatCard
+          title="Avg Flow Score (30d)"
+          value="9.3"
+          isFlowScore={true}
+          tooltipContent="Average flow score recorded in the last 30 days"
+          change={{ value: 20.4, positive: false }}
+        />
+        <StatCard
+          title="Time in Flow (30d)"
+          value="140h"
+          tooltipContent="Total time spent with a Flow Score > 5 in the last 30 days"
+          change={{ value: 5.4, positive: true }}
+        />
+      </div>
+    </TooltipProvider>
   )
 }

@@ -1,21 +1,14 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { getFlowScoreTailwindColor, getFlowStatusText } from '@/lib/utils/flow'
 import { LiveFlowChart } from '@/components/ui/live-flow-chart'
-import { EbbApi } from '../api/ebbApi/ebbApi'
 
 interface FlowData {
   flowScore: number
   appSwitches: number
   topActivity: string
   timestamp: string
-}
-
-interface LocationState {
-  sessionId: string
-  objective: string
-  startTime: number
 }
 
 interface ChartData {
@@ -26,8 +19,16 @@ interface ChartData {
   topActivity: string
 }
 
+interface LocationState {
+  startTime: number
+  objective: string
+  sessionId: string
+}
+
 export const FlowPage = () => {
+  const location = useLocation()
   const navigate = useNavigate()
+  const { startTime, objective, sessionId } = location.state as LocationState
   const [time, setTime] = useState<string>('00:00')
   const [flowData, setFlowData] = useState<FlowData | null>(null)
   const [chartData, setChartData] = useState<ChartData[]>([])
@@ -47,15 +48,25 @@ export const FlowPage = () => {
   }
 
   useEffect(() => {
-    EbbApi.getInProgressFlowSession().then((flowSession) => {
-      if (!flowSession) {
-        navigate('/start-flow')
-        return
-      }
+    // Simulate fetching in-progress flow session
+    const mockFlowSession = {
+      flowScore: 8,
+      appSwitches: 2,
+      topActivity: 'Code Editor',
+      timestamp: new Date().toISOString()
+    }
 
-      setFlowData(flowSession)
+    if (!mockFlowSession) {
+      navigate('/start-flow')
+      return
+    }
+
+    setFlowData({
+      flowScore: mockFlowSession.flowScore,
+      appSwitches: mockFlowSession.appSwitches,
+      topActivity: mockFlowSession.topActivity,
+      timestamp: mockFlowSession.timestamp
     })
-
 
     const updateTimer = () => {
       const now = new Date().getTime()
@@ -68,7 +79,7 @@ export const FlowPage = () => {
     updateTimer()
     const interval = setInterval(updateTimer, 1000)
 
-    // Simulate flow data for now
+    // Simulate flow data update
     setFlowData({
       flowScore: 8,
       appSwitches: 2,

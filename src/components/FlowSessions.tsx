@@ -3,6 +3,12 @@ import { InfoIcon as InfoCircle, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { FlowChart } from '@/components/ui/flow-chart'
 import { DateTime } from 'luxon'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 
 interface FlowSessionProps {
   startTime: string
@@ -75,21 +81,48 @@ function FlowSession({
           <div>
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
               Flow Score
-              <InfoCircle className="h-4 w-4" />
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <InfoCircle className="h-4 w-4" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>A measure of your focus and productivity during the session</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
             <div className="text-xl font-semibold">{flowScore}</div>
           </div>
           <div>
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
               Time in Flow
-              <InfoCircle className="h-4 w-4" />
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <InfoCircle className="h-4 w-4" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Total time spent with a Flow Score {'>'} 5</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
             <div className="text-xl font-semibold">{timeInFlow}</div>
           </div>
           <div>
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
               Self Report
-              <InfoCircle className="h-4 w-4" />
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <InfoCircle className="h-4 w-4" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Your self-reported productivity score for this session</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
             <div className="text-xl font-semibold">{selfReport}</div>
           </div>
