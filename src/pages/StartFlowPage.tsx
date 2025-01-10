@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Activity } from 'lucide-react'
 import { TopNav } from '@/components/TopNav'
 import { LogoContainer } from '@/components/LogoContainer'
-import { EbbApi } from '../api/ebbApi/ebbApi'
+import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
 
 export const StartFlowPage = () => {
   const [objective, setObjective] = useState('')
@@ -15,7 +15,7 @@ export const StartFlowPage = () => {
   const handleBegin = async () => {
     if (!objective) return
 
-    const sessionId = await EbbApi.startFlowSession(objective)
+    const sessionId = await FlowSessionApi.startFlowSession(objective)
 
     navigate('/flow', {
       state: {
