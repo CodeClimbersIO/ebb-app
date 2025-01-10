@@ -16,6 +16,19 @@ export const BreathingExercisePage = () => {
   const state = location.state as LocationState
 
   useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        navigate('/flow', { 
+          state: {
+            ...state,
+            startTime: Date.now()
+          }
+        })
+      }
+    }
+
+    window.addEventListener('keydown', handleEscape)
+    
     let timeout: NodeJS.Timeout
 
     const breathingCycle = () => {
@@ -44,8 +57,11 @@ export const BreathingExercisePage = () => {
 
     breathingCycle()
 
-    return () => clearTimeout(timeout)
-  }, [isBreathingIn, cycleCount, navigate, state])
+    return () => {
+      clearTimeout(timeout)
+      window.removeEventListener('keydown', handleEscape)
+    }
+  }, [navigate, state])
 
   const getBreathText = () => {
     if (cycleCount === 1 && !isBreathingIn) {
