@@ -65,9 +65,12 @@ function FlowSession({
     <Card className="mb-4">
       <CardContent className="p-6">
         <div className="mb-4 flex justify-between items-center">
-          <div className="text-sm font-medium">"{objective}"</div>
+          <div className="text-sm">
+            <span className="font-medium">"{objective}"</span>
+            <span className="text-muted-foreground"> · {getRelativeDate(start)}</span>
+          </div>
           <div className="text-sm text-muted-foreground">
-            {getRelativeDate(start)} · {start.toFormat('h:mm a')} - {end.toFormat('h:mm a')}
+            {start.toFormat('h:mm a')} - {end.toFormat('h:mm a')}
           </div>
         </div>
 
