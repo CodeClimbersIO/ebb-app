@@ -17,7 +17,7 @@ export const StartFlowPage = () => {
     // Simulate starting a flow session and generating a dummy session ID
     const sessionId = 'dummy-session-id-' + Date.now()
 
-    navigate('/flow', {
+    navigate('/breathing-exercise', {
       state: {
         startTime: Date.now(),
         objective,
