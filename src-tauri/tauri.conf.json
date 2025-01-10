@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "app-codeclimbers",
+  "productName": "Ebb",
   "version": "0.1.0",
-  "identifier": "com.codeclimbers.app",
+  "identifier": "com.ebb.app",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "app-codeclimbers",
+        "title": "Ebb",
         "width": 1100,
         "height": 750,
         "minWidth": 1000,
