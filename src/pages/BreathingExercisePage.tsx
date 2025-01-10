@@ -32,39 +32,33 @@ export const BreathingExercisePage = () => {
     let timeout: NodeJS.Timeout
 
     const breathingCycle = () => {
-      // If we've completed both cycles, navigate to flow page
-      if (cycleCount >= 2) {
+      if (cycleCount === 1 && !isBreathingIn) {
         navigate('/flow', { 
           state: {
             ...state,
-            startTime: Date.now() // Reset the start time when navigating to flow page
+            startTime: Date.now()
           }
         })
         return
       }
 
-      // Toggle breathing state every 5 seconds
-      timeout = setTimeout(() => {
-        setIsBreathingIn(prev => {
-          const newState = !prev
-          if (!prev) { // If switching to breathing in
-            setCycleCount(c => c + 1)
-          }
-          return newState
-        })
-      }, 5000)
+      setIsBreathingIn(prev => !prev)
+      if (!isBreathingIn) {
+        setCycleCount(c => c + 1)
+      }
+      timeout = setTimeout(breathingCycle, 5000)
     }
 
-    breathingCycle()
+    timeout = setTimeout(breathingCycle, 5000)
 
     return () => {
       clearTimeout(timeout)
       window.removeEventListener('keydown', handleEscape)
     }
-  }, [navigate, state])
+  }, [navigate, state, cycleCount, isBreathingIn])
 
   const getBreathText = () => {
-    if (cycleCount === 1 && !isBreathingIn) {
+    if (cycleCount === 2 && !isBreathingIn) {
       return 'Get Ready to Lock In'
     }
     return isBreathingIn ? 'Breathe In' : 'Breathe Out'
