@@ -119,7 +119,20 @@ export const FlowPage = () => {
     if (!flowSession) return
     await FlowSessionApi.endFlowSession(flowSession.id)
     setShowEndDialog(false)
-    navigate('/')
+    
+    // Navigate to recap page with session data
+    navigate('/flow-recap', {
+      state: {
+        sessionId: flowSession.id,
+        startTime: flowSession.start,
+        endTime: new Date().toISOString(),
+        flowScore: flowData?.flowScore || 0,
+        timeInFlow: time,
+        contextSwitches: chartData.reduce((sum, data) => sum + data.appSwitches, 0),
+        idleTime: '0h 34m', // You'll need to calculate this properly
+        objective: flowSession.objective
+      }
+    })
   }
 
   return (
