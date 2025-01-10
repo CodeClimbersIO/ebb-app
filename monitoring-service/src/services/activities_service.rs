@@ -233,28 +233,6 @@ impl ActivityService {
             }
         });
     }
-
-    pub fn start_activity_flow_period_loop(&self, activity_flow_period_interval: Duration) {
-        let activity_state_service_clone = self.activity_state_service.clone();
-
-        tokio::spawn(async move {
-            let mut wait_interval = tokio::time::interval(activity_flow_period_interval);
-            loop {
-                println!("tick");
-                wait_interval.tick().await;
-                println!("next activity flow period times");
-                let activity_period = activity_state_service_clone
-                    .get_next_activity_flow_period_times(activity_flow_period_interval)
-                    .await;
-                // todo: generate activity period
-                activity_state_service_clone
-                    .save_flow_period_for_activity_period(&activity_period)
-                    .await
-                    .expect("Failed to save activityflow period");
-                println!("activity_flow_period_created\n");
-            }
-        });
-    }
 }
 
 pub async fn start_monitoring() -> ActivityService {
@@ -426,22 +404,5 @@ mod tests {
             .unwrap();
 
         assert_eq!(activity_states.len(), 3);
-    }
-
-    #[tokio::test]
-    async fn test_activity_flow_period_loop() {
-        let pool = db_manager::create_test_db().await;
-        let activity_service = ActivityService::new(pool);
-        activity_service.start_activity_flow_period_loop(Duration::from_millis(100));
-        let start = OffsetDateTime::now_utc();
-
-        tokio::time::sleep(Duration::from_millis(350)).await;
-
-        let activity_flow_periods = activity_service
-            .activity_state_service
-            .get_activity_flow_periods_between(start, OffsetDateTime::now_utc())
-            .await
-            .unwrap();
-        assert_eq!(activity_flow_periods.len(), 3);
     }
 }

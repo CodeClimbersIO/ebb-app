@@ -7,6 +7,7 @@ const getMonitorDb = async () => {
   if (monitorDb) {
     return monitorDb
   }
+
   const homeDirectory = await homeDir()
   const monitorDbPath = await join(
     homeDirectory,

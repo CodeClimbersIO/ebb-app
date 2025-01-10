@@ -7,6 +7,7 @@ import { SettingsPage } from '@/pages/SettingsPage'
 import { StartFlowPage } from './pages/StartFlowPage'
 import { useAuth } from './hooks/useAuth'
 import { FlowPage } from '@/pages/FlowPage'
+import { FlowPeriodApi } from './api/ebbApi/flowPeriodApi'
 
 // Protected Route wrapper component
 const ProtectedRoute = () => {
@@ -19,6 +20,8 @@ const ProtectedRoute = () => {
   if (!user) {
     return <Navigate to="/login" replace />
   }
+
+  FlowPeriodApi.startFlowPeriodScoreJob()
 
   return <Outlet />
 }

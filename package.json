@@ -9,7 +9,8 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
-    "format": "eslint --fix src"
+    "format": "eslint --fix src",
+    "test": "vitest"
   },
   "dependencies": {
     "@radix-ui/react-dropdown-menu": "^2.1.4",
@@ -47,6 +48,7 @@
     "tailwindcss": "^3.4.17",
     "typescript": "^5.4.5",
     "typescript-eslint": "^8.19.1",
-    "vite": "^5.3.1"
+    "vite": "^5.3.1",
+    "vitest": "^1.6.0"
   }
 }

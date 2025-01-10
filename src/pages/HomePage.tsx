@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Activity } from 'lucide-react'
 import { StatsCards } from '@/components/StatCard'
 import { FlowSessions } from '@/components/FlowSessions'
-import { EbbApi } from '../api/ebbApi'
+import { EbbApi } from '../api/ebbApi/ebbApi'
 import { MonitorApi } from '../api/monitorApi'
 
 export const HomePage = () => {
