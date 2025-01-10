@@ -37,6 +37,7 @@ export const FlowPage = () => {
   const [flowData, setFlowData] = useState<FlowData | null>(null)
   const [chartData, setChartData] = useState<ChartData[]>([])
   const [showEndDialog, setShowEndDialog] = useState(false)
+  const [isShortSession, setIsShortSession] = useState(false)
 
   const generateChartData = () => {
     const now = new Date()
@@ -71,6 +72,7 @@ export const FlowPage = () => {
       const minutes = Math.floor(diff / 60000)
       const seconds = Math.floor((diff % 60000) / 1000)
       setTime(`${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`)
+      setIsShortSession(minutes < 20)
     }
 
     updateTimer()
@@ -126,14 +128,16 @@ export const FlowPage = () => {
         <Dialog open={showEndDialog} onOpenChange={setShowEndDialog}>
           <DialogTrigger asChild>
             <Button variant="destructive">
-              End Session
+              {isShortSession ? 'Cancel Session' : 'End Session'}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>End Flow Session</DialogTitle>
+              <DialogTitle>{isShortSession ? 'Cancel Flow Session' : 'End Flow Session'}</DialogTitle>
               <DialogDescription>
-                Are you sure you want to end this flow session? This action cannot be undone.
+                {isShortSession 
+                  ? 'Are you sure you want to end this flow session? Sessions less than 20 minutes are canceled and not added to your history.'
+                  : 'Are you sure you want to end this flow session? This action cannot be undone.'}
               </DialogDescription>
             </DialogHeader>
             <div className="flex justify-end gap-3">
@@ -141,7 +145,7 @@ export const FlowPage = () => {
                 Cancel
               </Button>
               <Button variant="destructive" onClick={handleEndSession}>
-                End Session
+                {isShortSession ? 'Cancel Session' : 'End Session'}
               </Button>
             </div>
           </DialogContent>
