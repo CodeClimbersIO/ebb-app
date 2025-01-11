@@ -17,8 +17,9 @@ export interface ActivityState {
 
 export const getActivityStatesBetween = async (start: DateTime, end: DateTime) => {
   const monitorDb = await MonitorDb.getMonitorDb()
-  const query = `SELECT * FROM activity_state WHERE start_time >= '${start.toUTC().toISO()}' AND end_time <= '${end.toUTC().toISO()}';`
-  console.log(query)
+  const startUtc = start.toUTC().toISO()
+  const endUtc = end.toUTC().toISO()
+  const query = `SELECT * FROM activity_state WHERE start_time >= '${startUtc}' AND end_time <= '${endUtc}';`
   const activityStates = await monitorDb.select<ActivityState[]>(query)
   return activityStates
 }

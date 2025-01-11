@@ -1,6 +1,6 @@
 import { QueryResult } from '@tauri-apps/plugin-sql'
-import { FlowSession, FlowSessionDb } from '../../db/flowSession'
-import { ActivityState } from '../../db/activityState'
+import { FlowSession, FlowSessionDb, FlowSessionWithStats } from '../../db/flowSession'
+import { ActivityState, ActivityStateType } from '../../db/activityState'
 import { MonitorApi } from '../monitorApi'
 import { DateTime } from 'luxon'
 import { FlowPeriod } from '../../db/flowPeriod'
@@ -56,20 +56,12 @@ const getInProgressFlowSession = async () => {
   return FlowSessionDb.getInProgressFlowSession()
 }
 
-type FlowSessionWithStats = FlowSession & {
-  score: number
-  timeInFlow: number
-  activityStates: ActivityState[]
-  activityFlowPeriods: FlowPeriod[]
-}
-
 const calculateTimeAndScoreInFlow = async (
   flowSession: FlowSession & {
     activityStates: ActivityState[]
     activityFlowPeriods: FlowPeriod[]
   },
 ): Promise<FlowSessionWithStats> => {
-  console.log('flowSession', flowSession)
   const timeInFlow = flowSession.activityFlowPeriods.reduce(
     (acc, activityFlowPeriod) => {
       if (activityFlowPeriod.score > 5) {
@@ -87,14 +79,27 @@ const calculateTimeAndScoreInFlow = async (
       return acc + activityFlowPeriod.score
     }, 0) / flowSession.activityFlowPeriods.length
 
+  const activeSeconds = flowSession.activityStates.reduce((acc, activityState) => {
+    return acc + (activityState.state === ActivityStateType.Active ? 30 : 0)
+  }, 0)
+
+  const totalSeconds = flowSession.activityStates.reduce((acc) => {
+    return acc + 30
+  }, 0)
+
+  const inactiveTime = totalSeconds - activeSeconds
+
   return {
     ...flowSession,
     timeInFlow,
     score: avgScore,
     activityStates: flowSession.activityStates,
     activityFlowPeriods: flowSession.activityFlowPeriods,
+    inactiveTime,
+    activeTime: activeSeconds,
   }
 }
+
 const getFlowSessions = async (limit = 10): Promise<FlowSessionWithStats[]> => {
   const flowSessions = await FlowSessionDb.getFlowSessions(limit)
 

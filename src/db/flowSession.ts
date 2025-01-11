@@ -1,6 +1,8 @@
 import { QueryResult } from '@tauri-apps/plugin-sql'
 import { insert, update } from '../lib/sql.util'
 import { getEbbDb } from './ebbDb'
+import { ActivityState } from './activityState'
+import { FlowPeriod } from './flowPeriod'
 
 export interface FlowSession {
   id: string
@@ -8,6 +10,16 @@ export interface FlowSession {
   end?: string
   objective: string
   self_score?: number
+}
+
+
+export type FlowSessionWithStats = FlowSession & {
+  score: number
+  timeInFlow: number
+  activityStates: ActivityState[]
+  activityFlowPeriods: FlowPeriod[]
+  inactiveTime: number
+  activeTime: number
 }
 
 const createFlowSession = async (

@@ -2,23 +2,29 @@ import { Card, CardContent } from '@/components/ui/card'
 import { InfoIcon as InfoCircle, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { FlowChart } from '@/components/ui/flow-chart'
-import { DateTime } from 'luxon'
+import { DateTime, Duration } from 'luxon'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
+import { FlowSessionWithStats } from '../db/flowSession'
+import { getFlowScoreTailwindColor } from '../lib/utils/flow'
+import { useState, useEffect } from 'react'
+import { FlowPeriod } from '../db/flowPeriod'
 
 interface FlowSessionProps {
   startTime: string
   endTime: string
   flowScore: number
-  timeInFlow: string
+  timeInFlow: number
   selfReport: number
   objective: string
   graphColor?: string
-  idleTime: string
+  inactiveTime: number
+  flowPeriods: FlowPeriod[]
 }
 
 function FlowSession({
@@ -28,12 +34,16 @@ function FlowSession({
   timeInFlow,
   selfReport,
   objective,
-  idleTime,
+  inactiveTime,
+  flowPeriods,
 }: FlowSessionProps) {
   // Convert strings to DateTime objects
   const start = DateTime.fromISO(startTime)
   const end = DateTime.fromISO(endTime)
-
+  const formatDuration = (milliseconds: number) => {
+    const duration = Duration.fromMillis(milliseconds)
+    return duration.toFormat('h\'h\' mm\'m\'')
+  }
   // Get relative date display
   const getRelativeDate = (dateTime: DateTime) => {
     const today = DateTime.now().startOf('day')
@@ -47,17 +57,11 @@ function FlowSession({
     return dateTime.toFormat('LLL dd')
   }
 
-  // Calculate total minutes for graph intervals
-  const totalMinutes = end.diff(start, 'minutes').minutes
-  const intervalMinutes = Math.floor(totalMinutes / 9) // 9 intervals = 10 points
 
-  // Generate mock data with proper time intervals
-  const mockData = Array.from({ length: 10 }, (_, i) => {
-    const pointTime = start.plus({ minutes: i * intervalMinutes }).toJSDate()
+  const timeData = flowPeriods.map((flowPeriod) => {
     return {
-      time: pointTime,
-      value: Math.sin(i * 0.5) * (flowScore / 2) + flowScore / 2,
-      appSwitches: Math.floor(Math.random() * 10),
+      time: flowPeriod.end_time,
+      value: flowPeriod.score,
     }
   })
 
@@ -76,7 +80,7 @@ function FlowSession({
 
         <div className="h-40 my-8">
           <FlowChart
-            data={mockData}
+            data={timeData}
             flowScore={flowScore}
           />
         </div>
@@ -96,7 +100,7 @@ function FlowSession({
                 </Tooltip>
               </TooltipProvider>
             </div>
-            <div className="text-xl font-semibold">{flowScore}</div>
+            <div className="text-xl font-semibold">{flowScore.toFixed(2)}</div>
           </div>
           <div>
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -112,7 +116,7 @@ function FlowSession({
                 </Tooltip>
               </TooltipProvider>
             </div>
-            <div className="text-xl font-semibold">{timeInFlow}</div>
+            <div className="text-xl font-semibold">{formatDuration(timeInFlow)}</div>
           </div>
           <div>
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -144,7 +148,7 @@ function FlowSession({
                 </Tooltip>
               </TooltipProvider>
             </div>
-            <div className="text-xl font-semibold">{idleTime}</div>
+            <div className="text-xl font-semibold">{formatDuration(inactiveTime * 1000)}</div>
           </div>
         </div>
       </CardContent>
@@ -153,6 +157,16 @@ function FlowSession({
 }
 
 export function FlowSessions() {
+  const [flowSessions, setFlowSessions] = useState<FlowSessionWithStats[]>([])
+  useEffect(() => {
+    const init = async () => {
+      const flowSessions = await FlowSessionApi.getFlowSessions()
+      setFlowSessions(flowSessions)
+    }
+    init()
+
+  }, [])
+
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
@@ -161,46 +175,20 @@ export function FlowSessions() {
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
-      <FlowSession
-        startTime="2025-01-08T11:23:00"
-        endTime="2025-01-08T16:22:00"
-        flowScore={7.8}
-        timeInFlow="2h 23m"
-        selfReport={6.5}
-        objective="Code FlowState App"
-        graphColor="#9333EA"
-        idleTime="0h 23m"
-      />
-      <FlowSession
-        startTime="2025-01-07T11:23:00"
-        endTime="2025-01-07T16:22:00"
-        flowScore={5.6}
-        timeInFlow="2h 23m"
-        selfReport={6.5}
-        objective="Code FlowState App"
-        graphColor="#9333EA"
-        idleTime="0h 23m"
-      />
-      <FlowSession
-        startTime="2023-12-12T14:23:00"
-        endTime="2023-12-12T15:54:00"
-        flowScore={2.2}
-        timeInFlow="0h 34m"
-        selfReport={3.5}
-        objective="Research docs for email API"
-        graphColor="#EF4444"
-        idleTime="0h 34m"
-      />
-      <FlowSession
-        startTime="2023-12-12T14:23:00"
-        endTime="2023-12-12T15:54:00"
-        flowScore={4.3}
-        timeInFlow="0h 34m"
-        selfReport={3.5}
-        objective="Research docs for email API"
-        graphColor="#EF4444"
-        idleTime="0h 34m"
-      />
+      {flowSessions.map((flowSession) => (
+        <FlowSession
+          key={flowSession.id}
+          startTime={flowSession.start}
+          endTime={flowSession.end || ''}
+          flowScore={flowSession.score}
+          timeInFlow={flowSession.timeInFlow}
+          selfReport={flowSession.self_score || 0}
+          objective={flowSession.objective}
+          graphColor={getFlowScoreTailwindColor(flowSession.score)}
+          inactiveTime={flowSession.inactiveTime}
+          flowPeriods={flowSession.activityFlowPeriods}
+        />
+      ))}
     </div>
   )
 }

@@ -3,9 +3,10 @@
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer } from 'recharts'
 import { ChartContainer, ChartTooltip } from '@/components/ui/chart'
 import { getFlowScoreColor } from '@/lib/utils/flow'
+import { DateTime } from 'luxon'
 
 interface FlowChartProps {
-  data: { time: Date; value: number; appSwitches?: number }[]
+  data: { time: string; value: number; appSwitches?: number }[]
   flowScore: number
 }
 
@@ -51,11 +52,7 @@ export function FlowChart({ data, flowScore }: FlowChartProps) {
               if (!active || !payload?.length) return null
 
               const data = payload[0].payload
-              const time = data.time.toLocaleTimeString([], {
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true
-              })
+              const time = DateTime.fromISO(data.time).toFormat('h:mm a')
 
               return (
                 <div className="rounded-lg border bg-background p-2 shadow-sm">

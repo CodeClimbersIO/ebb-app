@@ -171,11 +171,11 @@ const startFlowPeriodScoreJob = async (intervalMs = TEN_MINUTES): Promise<void> 
     const flowPeriodScore = await getFlowPeriodScoreForPeriod(period)
     if (SHOULD_SAVE_FLOW_PERIOD) {
       await createFlowPeriod({
-        start_time: period.start.toISO()!,
-        end_time: period.end.toISO()!,
+        start_time: period.start.toUTC().toISO()!,
+        end_time: period.end.toUTC().toISO()!,
         score: flowPeriodScore.totalScore,
         details: JSON.stringify(flowPeriodScore),
-        created_at: DateTime.now().toISO()!
+        created_at: DateTime.now().toUTC().toISO()!
       })
     }
     console.log('next run at', DateTime.now().plus({ milliseconds: intervalMs }).toISO())
