@@ -194,7 +194,11 @@ describe('FlowPeriodApi', () => {
         start: DateTime.now().minus({seconds: 120}),
         end: DateTime.now(),
       }
-      const result = await FlowPeriodApi.getFlowPeriodScoreForPeriod(lastFlowPeriod)
+      const sessionPeriod = {
+        start: DateTime.now().minus({seconds: 120}),
+        end: DateTime.now(),
+      }
+      const result = await FlowPeriodApi.getFlowPeriodScoreForPeriod(lastFlowPeriod, sessionPeriod)
 
       expect(getActivityStatesSpy).toHaveBeenCalled()
       expect(getFlowPeriodsSpy).toHaveBeenCalled()
@@ -232,7 +236,11 @@ describe('FlowPeriodApi', () => {
         start: DateTime.now().minus({seconds: 120}),
         end: DateTime.now(),
       }
-      const result = await FlowPeriodApi.getFlowPeriodScoreForPeriod(lastFlowPeriod)
+      const sessionPeriod = {
+        start: DateTime.now().minus({seconds: 120}),
+        end: DateTime.now(),
+      }
+      const result = await FlowPeriodApi.getFlowPeriodScoreForPeriod(lastFlowPeriod, sessionPeriod)
 
       expect(getActivityStatesSpy).toHaveBeenCalled()
       expect(getFlowPeriodsSpy).toHaveBeenCalled()

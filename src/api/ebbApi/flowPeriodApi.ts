@@ -2,6 +2,7 @@ import { QueryResult } from '@tauri-apps/plugin-sql'
 import { ActivityState, ActivityStateDb, ActivityStateType } from '../../db/activityState'
 import { FlowPeriod, FlowPeriodDb } from '../../db/flowPeriod'
 import { DateTime } from 'luxon'
+import { FlowSessionDb } from '../../db/flowSession'
 
 const SHOULD_SAVE_FLOW_PERIOD = true
 interface Period {
@@ -61,7 +62,9 @@ const getAppSwitchScoreForActivityStates = (
 
 const getFlowStreakScoreForPeriod = (flowPeriods: FlowPeriod[]): [number,number] => {
   let streak = 0
-  for (const flowPeriod of flowPeriods) {
+  // assumes flow periods are order by start time ascending
+  const flowPeriodsDesc = flowPeriods.reverse()
+  for (const flowPeriod of flowPeriodsDesc) {
     if (flowPeriod.score > 5) {
       streak += 1
     } else {
@@ -134,17 +137,16 @@ const getNextFlowPeriod = async (lastFlowPeriod: FlowPeriod | undefined, interva
   }
 }
 
-const getFlowPeriodScoreForPeriod = async (period: Period): Promise<FlowPeriodScore> => {
-  if(!period.start.toISO() || !period.end.toISO()) {
-    throw new Error('Start and end for period must be defined')
+const getFlowPeriodScoreForPeriod = async (flowPeriod: Period, sessionPeriod: Period): Promise<FlowPeriodScore> => {
+  if(!flowPeriod.start.toISO() || !flowPeriod.end.toISO()) {
+    throw new Error('Start and end for flow period must be defined')
+  }
+  if(!sessionPeriod.start.toISO() || !sessionPeriod.end.toISO()) {
+    throw new Error('Start and end for session period must be defined')
   }
 
-  console.log('Getting activity states between', period.start, period.end)
-  const activityStates = await ActivityStateDb.getActivityStatesBetween(period.start, period.end)
-  console.log('Getting flow periods between', period.start, period.end)
-  const flowPeriods = await FlowPeriodDb.getFlowPeriodsBetween(period.start, period.end)
-  console.log('Activity states', activityStates)
-  console.log('Flow periods', flowPeriods)
+  const activityStates = await ActivityStateDb.getActivityStatesBetween(flowPeriod.start, flowPeriod.end)
+  const flowPeriods = await FlowPeriodDb.getFlowPeriodsBetween(sessionPeriod.start, sessionPeriod.end)
   const flowPeriodScore = getFlowPeriodScore(activityStates, flowPeriods)
   return flowPeriodScore
 }
@@ -166,9 +168,14 @@ const startFlowPeriodScoreJob = async (intervalMs = TEN_MINUTES): Promise<void> 
   console.log('next run at', DateTime.now().plus({ milliseconds: intervalMs }).toISO())
   setInterval(async () => {
     console.log('Calculating flow period score')
+    const session = await FlowSessionDb.getInProgressFlowSession()
+    const sessionPeriod = {
+      start: DateTime.fromISO(session.start),
+      end: DateTime.now()
+    }
     const lastFlowPeriod = await FlowPeriodDb.getLastFlowPeriod()
     const period = await getNextFlowPeriod(lastFlowPeriod, intervalMs)
-    const flowPeriodScore = await getFlowPeriodScoreForPeriod(period)
+    const flowPeriodScore = await getFlowPeriodScoreForPeriod(period, sessionPeriod)
     if (SHOULD_SAVE_FLOW_PERIOD) {
       await createFlowPeriod({
         start_time: period.start.toUTC().toISO()!,

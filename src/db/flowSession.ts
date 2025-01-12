@@ -39,7 +39,7 @@ const updateFlowSession = async (
 const getFlowSessions = async (limit = 10): Promise<FlowSession[]> => {
   const ebbDb = await getEbbDb()
   const flowSessions = await ebbDb.select<FlowSession[]>(
-    `SELECT * FROM flow_session LIMIT ${limit};`,
+    `SELECT * FROM flow_session ORDER BY start DESC LIMIT ${limit};`,
   )
   return flowSessions
 }
