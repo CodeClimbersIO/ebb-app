@@ -1,29 +1,33 @@
 import { QueryResult } from '@tauri-apps/plugin-sql'
 import { insert, update } from '../lib/sql.util'
 import { getEbbDb } from './ebbDb'
-import { ActivityState } from './activityState'
 import { FlowPeriod } from './flowPeriod'
 
-export interface FlowSession {
+export type FlowSessionStats = {
+  time_in_flow?: number
+  inactive_time?: number
+  active_time?: number
+  avg_score?: number
+}
+
+export interface FlowSessionDb {
   id: string
   start: string
   end?: string
   objective: string
   self_score?: number
+  stats?: string
+  flow_periods?: string
+}
+export type FlowSession = FlowSessionDb & {
+  stats_json: FlowSessionStats
+  flow_periods_json: FlowPeriod[]
 }
 
 
-export type FlowSessionWithStats = FlowSession & {
-  score: number
-  timeInFlow: number
-  activityStates: ActivityState[]
-  activityFlowPeriods: FlowPeriod[]
-  inactiveTime: number
-  activeTime: number
-}
 
 const createFlowSession = async (
-  flowSession: FlowSession,
+  flowSession: FlowSessionDb,
 ): Promise<QueryResult> => {
   const ebbDb = await getEbbDb()
   return insert(ebbDb, 'flow_session', flowSession)
@@ -38,15 +42,35 @@ const updateFlowSession = async (
 
 const getFlowSessions = async (limit = 10): Promise<FlowSession[]> => {
   const ebbDb = await getEbbDb()
-  const flowSessions = await ebbDb.select<FlowSession[]>(
-    `SELECT * FROM flow_session ORDER BY start DESC LIMIT ${limit};`,
-  )
-  return flowSessions
+  const query = `SELECT 
+      fs.*,
+      CASE
+      WHEN MAX(fp.id) IS NULL THEN NULL
+      ELSE json_group_array(
+              json_object(
+                      'start_time', fp.start_time,
+                      'end_time', fp.end_time,
+                      'score', fp.score,
+                      'details', fp.details
+              )
+            )
+      END as flow_periods
+    FROM flow_session fs
+      LEFT JOIN flow_period fp ON fs.start <= fp.start_time AND fs.end >= fp.end_time
+    GROUP BY fs.id, fs.objective, fs.self_score, fs.start, fs.end
+    ORDER BY start DESC LIMIT ${limit};`
+  const flowSessions = await ebbDb.select<FlowSessionDb[]>(query) 
+
+  return flowSessions.map((flowSession) => ({
+    ...flowSession,
+    flow_periods_json: flowSession.flow_periods ? JSON.parse(flowSession.flow_periods) : [],
+    stats_json: flowSession.stats ? JSON.parse(flowSession.stats) : {},
+  }))
 }
 
-const getFlowSessionById = async (id: string) => {
+const getFlowSessionById = async (id: string): Promise<FlowSession | undefined> => {
   const ebbDb = await getEbbDb()
-  const flowSession = await ebbDb.select(
+  const [flowSession] = await ebbDb.select<FlowSession[]>(
     `SELECT * FROM flow_session WHERE id = ${id};`,
   )
   return flowSession

@@ -40,5 +40,13 @@ pub fn get_migrations() -> Vec<Migration> {
             );"#,
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 3,
+            description: "add_stats_to_flow_session",
+            sql: r#"
+            ALTER TABLE flow_session
+            ADD COLUMN stats TEXT NOT NULL DEFAULT '{}';"#,
+            kind: MigrationKind::Up,
+        },
     ]
 }

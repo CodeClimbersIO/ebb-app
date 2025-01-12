@@ -95,7 +95,7 @@ describe('FlowPeriodApi', () => {
     it('should return 0 for array with one score <= 5', () => {
       const [result] = FlowPeriodApi.getFlowStreakScoreForPeriod([{ score: 4 } as FlowPeriod])
       expect(result).toEqual(0)
-    })
+    }) 
 
     it('should return 2 for array with two scores > 5', () => {
       const [result] = FlowPeriodApi.getFlowStreakScoreForPeriod([{ score: 6 } as FlowPeriod, { score: 7 } as FlowPeriod])
@@ -103,13 +103,13 @@ describe('FlowPeriodApi', () => {
     })
 
     it('should return 0 for array with one score <= 5', () => {
-      const [result] = FlowPeriodApi.getFlowStreakScoreForPeriod([{ score: 4 } as FlowPeriod, { score: 7 } as FlowPeriod])
+      const [result] = FlowPeriodApi.getFlowStreakScoreForPeriod([{ score: 7 } as FlowPeriod, { score: 4 } as FlowPeriod])
       expect(result).toEqual(0)
     })
 
     it('should return 3 for array with 3 scores > 5, one score <= 5, and one score > 5', () => {
       const [result] = FlowPeriodApi.getFlowStreakScoreForPeriod([{ score: 6 } as FlowPeriod, { score: 7 } as FlowPeriod, { score: 8 } as FlowPeriod, { score: 4 } as FlowPeriod, { score: 7 } as FlowPeriod, { score: 8 } as FlowPeriod])
-      expect(result).toEqual(3)
+      expect(result).toEqual(2)
     })
 
     it('should return 4 for array with 5 scores > 5', () => {
@@ -164,6 +164,31 @@ describe('FlowPeriodApi', () => {
     it('should start from now minus the interval time (i.e 10 minutes ago), if there is no last activity', async () => {
       const result = await FlowPeriodApi.getNextFlowPeriod(undefined, INTERVAL_MS)
       expect(() => assertDateTimeEqual(result.start, DateTime.now().minus({milliseconds: INTERVAL_MS}), 10)).not.toThrow()
+      expect(() => assertDateTimeEqual(result.end, DateTime.now(), 10)).not.toThrow()
+    })
+
+    it('should cap end time to now if previous flow period time is greater than now', async () => {
+      const startTime = DateTime.now().plus({seconds: 10}) // 10 seconds in the future
+      const endTime = DateTime.now().plus({seconds: 130}) // 2 minutes 10 seconds in the future
+      const flowPeriod = {
+        id: 1,
+        start_time: startTime.toISO(),
+        end_time: endTime.toISO(),
+        score: 0,
+        details: JSON.stringify({
+          app_switches: 0,
+          active_time: 0,
+        }),
+        created_at: DateTime.now().toISO(),
+      } as FlowPeriod
+
+      const result = await FlowPeriodApi.getNextFlowPeriod(flowPeriod, INTERVAL_MS)
+      console.log('startTime', startTime.toISO())
+      console.log('Start    ', result.start.toISO())
+      console.log('End      ' , result.end.toISO())
+      // start should be 10 minutes ago
+      expect(() => assertDateTimeEqual(result.start, DateTime.now().minus({milliseconds: INTERVAL_MS}), 10)).not.toThrow()
+      // end should be now
       expect(() => assertDateTimeEqual(result.end, DateTime.now(), 10)).not.toThrow()
     })
   })

@@ -1,9 +1,9 @@
 import { QueryResult } from '@tauri-apps/plugin-sql'
-import { FlowSession, FlowSessionDb, FlowSessionWithStats } from '../../db/flowSession'
+import { FlowSession, FlowSessionDb } from '../../db/flowSession'
 import { ActivityState, ActivityStateType } from '../../db/activityState'
-import { MonitorApi } from '../monitorApi'
-import { DateTime } from 'luxon'
 import { FlowPeriod } from '../../db/flowPeriod'
+import { DateTime } from 'luxon'
+import { MonitorApi } from '../monitorApi'
 
 /** Example usage
  * 
@@ -20,7 +20,7 @@ import { FlowPeriod } from '../../db/flowPeriod'
   }
  */
 const startFlowSession = async (objective: string): Promise<string> => {
-  const flowSession: FlowSession = {
+  const flowSession: FlowSessionDb = {
     id: self.crypto.randomUUID(),
     start: new Date().toISOString(),
     objective,
@@ -34,11 +34,33 @@ const startFlowSession = async (objective: string): Promise<string> => {
 }
 
 const endFlowSession = async (id: string): Promise<QueryResult> => {
-  const flowSession: Partial<FlowSession> & { id: string } = {
+  const flowSession = await FlowSessionDb.getInProgressFlowSession()
+  if (!flowSession) {
+    throw new Error('Flow session not found')
+  }
+  console.log('In progress flow session', flowSession)
+
+  const { activityStates, activityFlowPeriods } =
+    await MonitorApi.getActivityAndFlowPeriodsBetween(
+      DateTime.fromISO(flowSession.start),
+      DateTime.fromISO(flowSession.end || new Date().toISOString()),
+    )
+
+  const flowSessionWithActivitiesAndPeriods = {
+    ...flowSession,
+    activityStates,
+    activityFlowPeriods,
+  }
+
+  const flowSessionWithStats = await calculateTimeAndScoreInFlow(flowSessionWithActivitiesAndPeriods)
+
+  const flowSessionUpdated: Partial<FlowSession> & { id: string } = {
     id,
     end: new Date().toISOString(),
+    stats: flowSessionWithStats.stats,
   }
-  return FlowSessionDb.updateFlowSession(flowSession)
+
+  return FlowSessionDb.updateFlowSession(flowSessionUpdated)
 }
 
 const scoreFlowSession = async (
@@ -58,10 +80,10 @@ const getInProgressFlowSession = async () => {
 
 const calculateTimeAndScoreInFlow = async (
   flowSession: FlowSession & {
-    activityStates: ActivityState[]
     activityFlowPeriods: FlowPeriod[]
+    activityStates: ActivityState[]
   },
-): Promise<FlowSessionWithStats> => {
+): Promise<FlowSession> => {
   const timeInFlow = flowSession.activityFlowPeriods.reduce(
     (acc, activityFlowPeriod) => {
       if (activityFlowPeriod.score > 5) {
@@ -88,43 +110,21 @@ const calculateTimeAndScoreInFlow = async (
   }, 0)
 
   const inactiveTime = totalSeconds - activeSeconds
-
+  const stats = {
+    time_in_flow: timeInFlow,
+    inactive_time: inactiveTime,
+    active_time: activeSeconds,
+    avg_score: avgScore,
+  }
   return {
     ...flowSession,
-    timeInFlow,
-    score: avgScore,
-    activityStates: flowSession.activityStates,
-    activityFlowPeriods: flowSession.activityFlowPeriods,
-    inactiveTime,
-    activeTime: activeSeconds,
+    stats: JSON.stringify(stats),
   }
 }
 
-const getFlowSessions = async (limit = 10): Promise<FlowSessionWithStats[]> => {
+const getFlowSessions = async (limit = 10): Promise<FlowSession[]> => {
   const flowSessions = await FlowSessionDb.getFlowSessions(limit)
-
-  const preCalculatedFlowSessions = await Promise.all(
-    flowSessions.map(async (flowSession) => {
-      const { activityStates, activityFlowPeriods } =
-        await MonitorApi.getActivityAndFlowPeriodsBetween(
-          DateTime.fromISO(flowSession.start),
-          DateTime.fromISO(flowSession.end || new Date().toISOString()),
-        )
-      return {
-        ...flowSession,
-        activityStates,
-        activityFlowPeriods,
-      }
-    }),
-  )
-
-  const flowSessionsWithStats = await Promise.all(
-    preCalculatedFlowSessions.map(async (flowSession) => {
-      return calculateTimeAndScoreInFlow(flowSession)
-    }),
-  )
-
-  return flowSessionsWithStats
+  return flowSessions
 }
 
 export const FlowSessionApi = {
@@ -133,4 +133,5 @@ export const FlowSessionApi = {
   scoreFlowSession,
   getInProgressFlowSession,
   getFlowSessions,
+  // getFlowSessions,
 }

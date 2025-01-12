@@ -9,7 +9,10 @@ export function assertDateTimeEqual(
   
   if (diffMs > toleranceMs) {
     throw new Error(
-      `Times differ by more than ${toleranceMs}ms: left=${left.toISO()}, right=${right.toISO()}`
+      `Times differ by more than ${toleranceMs}ms: 
+        l=${left.toISO()}, 
+        r=${right.toISO()}, 
+        diff=${diffMs}ms`
     )
   }
 }

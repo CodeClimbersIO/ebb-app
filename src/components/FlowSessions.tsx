@@ -10,10 +10,10 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
-import { FlowSessionWithStats } from '../db/flowSession'
 import { getFlowScoreTailwindColor } from '../lib/utils/flow'
 import { useState, useEffect } from 'react'
 import { FlowPeriod } from '../db/flowPeriod'
+import { FlowSession as FlowSessionType } from '../db/flowSession'
 
 interface FlowSessionProps {
   startTime: string
@@ -37,7 +37,6 @@ function FlowSession({
   inactiveTime,
   flowPeriods,
 }: FlowSessionProps) {
-  // Convert strings to DateTime objects
   const start = DateTime.fromISO(startTime)
   const end = DateTime.fromISO(endTime)
   const formatDuration = (milliseconds: number) => {
@@ -157,7 +156,7 @@ function FlowSession({
 }
 
 export function FlowSessions() {
-  const [flowSessions, setFlowSessions] = useState<FlowSessionWithStats[]>([])
+  const [flowSessions, setFlowSessions] = useState<FlowSessionType[]>([])
   useEffect(() => {
     const init = async () => {
       const flowSessions = await FlowSessionApi.getFlowSessions()
@@ -180,13 +179,13 @@ export function FlowSessions() {
           key={flowSession.id}
           startTime={flowSession.start}
           endTime={flowSession.end || ''}
-          flowScore={flowSession.score}
-          timeInFlow={flowSession.timeInFlow}
+          flowScore={flowSession.stats_json.avg_score || 0}
+          timeInFlow={flowSession.stats_json.time_in_flow || 0}
           selfReport={flowSession.self_score || 0}
           objective={flowSession.objective}
-          graphColor={getFlowScoreTailwindColor(flowSession.score)}
-          inactiveTime={flowSession.inactiveTime}
-          flowPeriods={flowSession.activityFlowPeriods}
+          graphColor={getFlowScoreTailwindColor(flowSession.stats_json.avg_score || 0)}
+          inactiveTime={flowSession.stats_json.inactive_time || 0}
+          flowPeriods={flowSession.flow_periods_json || []}
         />
       ))}
     </div>

@@ -126,7 +126,10 @@ const getNextFlowPeriod = async (lastFlowPeriod: FlowPeriod | undefined, interva
       }
     }
 
-    const lastEndTime = DateTime.fromISO(lastFlowPeriod.end_time)
+    let lastEndTime = DateTime.fromISO(lastFlowPeriod.end_time)
+    if (lastEndTime > now) {
+      lastEndTime = now.minus({ milliseconds: intervalMs })
+    }
     return { // |  A |  B  |
       start: lastEndTime,
       end: lastEndTime.plus({ milliseconds: intervalMs })
