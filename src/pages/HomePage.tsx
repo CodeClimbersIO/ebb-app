@@ -58,10 +58,10 @@ export const HomePage = () => {
               Enter Flow
             </Button>
           </div>
-            <StatsCards />
-            <div className="mt-8">
-              <FlowSessions />
-            </div>
+          <StatsCards />
+          <div className="mt-8">
+            <FlowSessions />
+          </div>
         </div>
       </div>
     </Layout>

@@ -1,5 +1,5 @@
 import { QueryResult } from '@tauri-apps/plugin-sql'
-import { FlowSession, FlowSessionDb } from '../../db/flowSession'
+import { FlowSession, FlowSessionDb, FlowSessionStats, FlowSessionPeriodComparison } from '../../db/flowSession'
 import { ActivityState, ActivityStateType } from '../../db/activityState'
 import { FlowPeriod } from '../../db/flowPeriod'
 import { DateTime } from 'luxon'
@@ -122,9 +122,49 @@ const calculateTimeAndScoreInFlow = async (
   }
 }
 
+const calculateStatsFromFlowSessions = async (flowSessions: FlowSession[]): Promise<FlowSessionStats> => {
+  const stats = flowSessions.map((flowSession) => JSON.parse(flowSession.stats || '{}'))
+  const timeInFlow = stats.reduce((acc, flowSession) => {
+    return acc + (flowSession.time_in_flow || 0)
+  }, 0)
+  const avgScore = flowSessions.length > 0 
+    ? stats.reduce((acc, flowSession) => {
+        return acc + (flowSession.avg_score || 0)
+      }, 0) / flowSessions.length
+    : 0
+  const inactiveTime = stats.reduce((acc, flowSession) => {
+    return acc + (flowSession.inactive_time || 0)
+  }, 0)
+  const activeTime = stats.reduce((acc, flowSession) => {
+    return acc + (flowSession.active_time || 0)
+  }, 0)
+  return {
+    time_in_flow: timeInFlow,
+    avg_score: avgScore,
+    inactive_time: inactiveTime,
+    active_time: activeTime,
+  }
+}
+
 const getFlowSessions = async (limit = 10): Promise<FlowSession[]> => {
   const flowSessions = await FlowSessionDb.getFlowSessions(limit)
   return flowSessions
+}
+
+const getFlowSessionPeriodComparisons = async (period: 'day' | 'week' | 'month' | 'year'): Promise<FlowSessionPeriodComparison> => {
+  const [current, previous] = await FlowSessionDb.getFlowSessionPeriodComparisons(period)
+  const currentStats = await calculateStatsFromFlowSessions(current)
+  const previousStats = await calculateStatsFromFlowSessions(previous)
+  return {
+    current: {
+      sessions: current,
+      stats: currentStats,
+    },
+    previous: {
+      sessions: previous,
+      stats: previousStats,
+    },
+  }
 }
 
 export const FlowSessionApi = {
@@ -133,5 +173,5 @@ export const FlowSessionApi = {
   scoreFlowSession,
   getInProgressFlowSession,
   getFlowSessions,
-  // getFlowSessions,
+  getFlowSessionPeriodComparisons,
 }
