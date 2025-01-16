@@ -10,7 +10,7 @@ import { getFlowScoreTailwindColor } from '@/lib/utils/flow'
 import { useEffect, useState } from 'react'
 import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
 import { FlowSessionPeriodComparison } from '../db/flowSession'
-import { DateTime } from 'luxon'
+import { Duration } from 'luxon'
 
 interface StatCardProps {
   title: string
@@ -75,7 +75,6 @@ export function StatsCards() {
   const previousAvgScore = flowSessionPeriodComparisons?.previous.stats.avg_score || 0
   const currentTimeInFlow = flowSessionPeriodComparisons?.current.stats.time_in_flow || 0
   const previousTimeInFlow = flowSessionPeriodComparisons?.previous.stats.time_in_flow || 0
-
   const sessionChangePercentage = (currentSessions - previousSessions) / previousSessions * 100
   const avgScoreChangePercentage = (currentAvgScore - previousAvgScore) / previousAvgScore * 100
   const timeInFlowChangePercentage = (currentTimeInFlow - previousTimeInFlow) / previousTimeInFlow * 100
@@ -97,7 +96,7 @@ export function StatsCards() {
         />
         <StatCard
           title="Time in Flow (7d)"
-          value={DateTime.fromSeconds(currentTimeInFlow).toFormat('h\'h\' mm\'m\'')}
+          value={Duration.fromMillis(currentTimeInFlow * 1000).toFormat('h\'h\' mm\'m\'')}
           tooltipContent="Total time spent with a Flow Score > 5 in the last 7 days"
           change={{ value: timeInFlowChangePercentage }}
         />
