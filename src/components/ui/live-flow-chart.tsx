@@ -65,18 +65,6 @@ export function LiveFlowChart({ data, flowScore }: LiveFlowChartProps) {
               if (!active || !payload?.length) return null
               const currentData = payload[0].payload
 
-              // Special tooltip only for the rightmost (live) point
-              if (currentData === data[data.length - 1]) {
-                return (
-                  <div className="rounded-lg border bg-background p-2 shadow-sm">
-                    <div className="text-sm text-muted-foreground">
-                      Calculating new flow score every 10 minutes...
-                    </div>
-                  </div>
-                )
-              }
-
-              // Regular tooltip content for all other points
               return (
                 <div className="rounded-lg border bg-background p-2 shadow-sm">
                   <div className="font-medium mb-2">
