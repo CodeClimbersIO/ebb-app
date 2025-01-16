@@ -1,6 +1,6 @@
 import { Layout } from '@/components/Layout'
 import { useNavigate } from 'react-router-dom'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Activity } from 'lucide-react'
 import { StatsCards } from '@/components/StatCard'
@@ -11,12 +11,16 @@ import { useSettings } from '../hooks/useSettings'
 export const HomePage = () => {
   const { showZeroState } = useSettings()
   const navigate = useNavigate()
+  const [hasNoSessions, setHasNoSessions] = useState(true)
+
   useEffect(() => {
     const init = async () => {
       const flowSession = await FlowSessionApi.getInProgressFlowSession()
       if (flowSession) {
         navigate('/flow')
       }
+      const sessions = await FlowSessionApi.getFlowSessions()
+      setHasNoSessions(sessions.length === 0)
     }
     init()
   }, [])
@@ -25,7 +29,7 @@ export const HomePage = () => {
     navigate('/start-flow')
   }
 
-  if (showZeroState) {
+  if (showZeroState || hasNoSessions) {
     return (
       <Layout>
         <div className="p-8">
@@ -34,7 +38,7 @@ export const HomePage = () => {
             <div className="border rounded-lg p-8 text-center">
               <h2 className="text-xl font-medium mb-4">Ready to start your flow journey?</h2>
               <p className="text-muted-foreground mb-6">
-                When it's time to lock in and improve your focus
+                It's time to lock in and improve your focus
               </p>
               <Button size="lg" onClick={handleStartFlowSession}>
                 <Activity className="mr-2 h-5 w-5" />
