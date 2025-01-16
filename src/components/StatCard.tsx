@@ -96,7 +96,7 @@ export function StatsCards() {
         />
         <StatCard
           title="Time in Flow (7d)"
-          value={Duration.fromMillis(currentTimeInFlow * 1000).toFormat('h\'h\' mm\'m\'')}
+          value={Duration.fromMillis(currentTimeInFlow).toFormat('h\'h\' mm\'m\'')}
           tooltipContent="Total time spent with a Flow Score > 5 in the last 7 days"
           change={{ value: timeInFlowChangePercentage }}
         />
