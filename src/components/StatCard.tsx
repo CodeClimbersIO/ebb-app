@@ -19,6 +19,7 @@ interface StatCardProps {
   isFlowScore?: boolean
   change?: {
     value: number
+    shouldShow: boolean
   }
 }
 
@@ -45,7 +46,7 @@ function StatCard({ title, value, tooltipContent, isFlowScore, change }: StatCar
             }`}>
             {value}
           </span>
-          {change && (
+          {change && change.shouldShow && (
             <span
               className={`text-sm  ${change.value > 0 ? 'text-green-500' : 'text-gray-500'
                 }`}
@@ -78,6 +79,9 @@ export function StatsCards() {
   const sessionChangePercentage = (currentSessions - previousSessions) / previousSessions * 100
   const avgScoreChangePercentage = (currentAvgScore - previousAvgScore) / previousAvgScore * 100
   const timeInFlowChangePercentage = (currentTimeInFlow - previousTimeInFlow) / previousTimeInFlow * 100
+
+  const hasValidComparison = previousSessions > 0 && currentSessions > 0
+  
   return (
     <TooltipProvider>
       <div className="grid grid-cols-3 gap-4">
@@ -85,20 +89,29 @@ export function StatsCards() {
           title="Flow Sessions (7d)"
           value={currentSessions}
           tooltipContent="Total number of flow sessions recorded in the last 7 days"
-          change={{ value: sessionChangePercentage }}
+          change={{ 
+            value: sessionChangePercentage,
+            shouldShow: hasValidComparison
+          }}
         />
         <StatCard
           title="Avg Flow Score (7d)"
           value={currentAvgScore.toFixed(2)}
           isFlowScore={true}
           tooltipContent="Average flow score recorded in the last 30 days"
-          change={{ value: avgScoreChangePercentage }}
+          change={{ 
+            value: avgScoreChangePercentage,
+            shouldShow: hasValidComparison
+          }}
         />
         <StatCard
           title="Time in Flow (7d)"
           value={Duration.fromMillis(currentTimeInFlow).toFormat('h\'h\' mm\'m\'')}
           tooltipContent="Total time spent with a Flow Score > 5 in the last 7 days"
-          change={{ value: timeInFlowChangePercentage }}
+          change={{ 
+            value: timeInFlowChangePercentage,
+            shouldShow: hasValidComparison
+          }}
         />
       </div>
     </TooltipProvider>
