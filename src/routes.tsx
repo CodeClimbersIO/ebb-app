@@ -10,13 +10,14 @@ import { FlowPage } from '@/pages/FlowPage'
 import { FlowPeriodApi } from './api/ebbApi/flowPeriodApi'
 import { BreathingExercisePage } from './pages/BreathingExercisePage'
 import { FlowRecapPage } from '@/pages/FlowRecapPage'
+import { LoadingScreen } from '@/components/LoadingScreen'
 
 // Protected Route wrapper component
 const ProtectedRoute = () => {
   const { user, loading } = useAuth()
 
   if (loading) {
-    return <div>Loading...</div>
+    return <LoadingScreen />
   }
 
   if (!user) {
