@@ -1,7 +1,8 @@
 import { QueryResult } from '@tauri-apps/plugin-sql'
-import { ActivityState, ActivityStateDb, ActivityStateType } from '../../db/activityState'
+import { Activity, ActivityState, ActivityStateType, ActivityType } from '../../db/activityState'
 import { FlowPeriod, FlowPeriodDb } from '../../db/flowPeriod'
-import { DateTime } from 'luxon'
+import { DateTime, Duration } from 'luxon'
+import { MonitorApi } from '../monitorApi'
 import { FlowSessionDb } from '../../db/flowSession'
 
 const SHOULD_SAVE_FLOW_PERIOD = true
@@ -22,6 +23,10 @@ interface FlowPeriodScore {
   flowStreakScore: {
     score: number
     detail: number
+  }
+  topActivity: {
+    score: string
+    detail: Activity[]
   }
   totalScore: number
 }
@@ -48,6 +53,8 @@ const getAppSwitchScoreForActivityStates = (
   if (activityStates.length === 0) {
     return [0.0, 0.0]
   }
+
+
   const appSwitchTotal = activityStates.reduce((sum, state) => sum + state.app_switches, 0)
   const appSwitchAvg = appSwitchTotal / activityStates.length
 
@@ -62,8 +69,8 @@ const getAppSwitchScoreForActivityStates = (
 
 const getFlowStreakScoreForPeriod = (flowPeriods: FlowPeriod[]): [number,number] => {
   let streak = 0
-  // assumes flow periods are order by start time ascending
   const flowPeriodsDesc = flowPeriods.reverse()
+  // assumes flow periods are order by start time ascending
   for (const flowPeriod of flowPeriodsDesc) {
     if (flowPeriod.score > 5) {
       streak += 1
@@ -75,9 +82,19 @@ const getFlowStreakScoreForPeriod = (flowPeriods: FlowPeriod[]): [number,number]
   return [score, streak]
 }
 
+const getTopActivity = (activityStates: ActivityState[]): [string, Activity[]] => {
+  const activities = activityStates.flatMap(state => state.activities_json).filter(activity => activity.activity_type === ActivityType.Window)
+  const topActivity = activities.reduce((acc, activity) => {
+    acc[activity.app_name] = (acc[activity.app_name] || 0) + 1
+    return acc
+  }, {} as Record<string, number>)
+  const sortedActivities = Object.keys(topActivity).sort((a, b) => topActivity[b] - topActivity[a])
+  return [sortedActivities[0], activities]
+}
 
 const getFlowPeriodScore = (activityStates: ActivityState[], flowPeriods: FlowPeriod[]): FlowPeriodScore => {
   const [activityScore, activityDetail] = getActivityScoreForActivityStates(activityStates)
+  const [topActivity, topActivityDetail] = getTopActivity(activityStates)
   const [appSwitchScore, appSwitchDetail] = getAppSwitchScoreForActivityStates(activityStates)
   const [flowStreakScore, flowStreakDetail] = getFlowStreakScoreForPeriod(flowPeriods)
   return {
@@ -93,50 +110,46 @@ const getFlowPeriodScore = (activityStates: ActivityState[], flowPeriods: FlowPe
       score: flowStreakScore,
       detail: flowStreakDetail
     },
+    topActivity: {
+      score: topActivity,
+      detail: topActivityDetail
+    },
     totalScore: activityScore + appSwitchScore + flowStreakScore
   }
 }
 
+
 /**
- * Takes the last flow period and returns the next activity flow period. 
- * If the last flow period is not within 2 seconds of now, it will start from now, which will create a gap between the last flow period and the new flow period.
- * This allows for an exact match to the last flow period.
- * If no interval is found, create a period as though the last flow period ended now.
- * |  A |  B   |  C  | This is the effect we are trying to achieve. That there is some elasticity in the flow period to connecting the last flow period to the new flow period. The elasticity accounts for variance in program execution
- * |  A  |      |  B  | We will do this if outside of +/- 2 seconds of the last flow period end time.
+ * Get next period to run the interval job
+ * If there is no last flow period, then the start of the next period is the current time
+ * If the end of the last flow period + the interval is greater than the current time, then the end of the last flow period is the start of the next period
+ * If the end of the last flow period + the interval is less than the current time, then the start of the next period is the current time
+ * If the end of the last flow period is after now, then the start of the next period is now
  */
-const getNextFlowPeriod = async (lastFlowPeriod: FlowPeriod | undefined, intervalMs: number): Promise<Period> => {
-  try {
-    const now = DateTime.now()
-    const defaultStart = now.minus({ milliseconds: intervalMs })
-    const defaultEnd = now
-
-    if (!lastFlowPeriod) { // |  A  |
-      return {
-        start: defaultStart,
-        end: defaultEnd
-      }
+const getNextFlowPeriod = (lastFlowPeriod: FlowPeriod | undefined, intervalMs: number): Period => {
+  if(!lastFlowPeriod) {
+    return {
+      start: DateTime.now(),
+      end: DateTime.now().plus({ milliseconds: intervalMs })
     }
-
-
-    if (now.minus({ milliseconds: intervalMs}) >= DateTime.fromISO(lastFlowPeriod.end_time).plus({ seconds: 2})) {
-      return {  // |  A  |     |  B  |
-        start: defaultStart,
-        end: defaultEnd
-      }
+  }
+  const lastFlowPeriodEnd = DateTime.fromISO(lastFlowPeriod.end_time)
+  if(lastFlowPeriodEnd.toMillis() > DateTime.now().toMillis()) {
+    return {
+      start: DateTime.now(),
+      end: DateTime.now().plus({ milliseconds: intervalMs })
     }
-
-    let lastEndTime = DateTime.fromISO(lastFlowPeriod.end_time)
-    if (lastEndTime > now) {
-      lastEndTime = now.minus({ milliseconds: intervalMs })
+  }
+  if(lastFlowPeriodEnd.plus({ milliseconds: intervalMs }).toMillis() > DateTime.now().toMillis()) {
+    return {
+      start: lastFlowPeriodEnd,
+      end: lastFlowPeriodEnd.plus({ milliseconds: intervalMs })
     }
-    return { // |  A |  B  |
-      start: lastEndTime,
-      end: lastEndTime.plus({ milliseconds: intervalMs })
+  } else {
+    return {
+      start: DateTime.now(),
+      end: DateTime.now().plus({ milliseconds: intervalMs })
     }
-  } catch (error) {
-    console.error('Error getting next activity flow period:', error)
-    throw error
   }
 }
 
@@ -148,7 +161,7 @@ const getFlowPeriodScoreForPeriod = async (flowPeriod: Period, sessionPeriod: Pe
     throw new Error('Start and end for session period must be defined')
   }
 
-  const activityStates = await ActivityStateDb.getActivityStatesBetween(flowPeriod.start, flowPeriod.end)
+  const activityStates = await MonitorApi.getActivityStatesBetween(flowPeriod.start, flowPeriod.end)
   const flowPeriods = await FlowPeriodDb.getFlowPeriodsBetween(sessionPeriod.start, sessionPeriod.end)
   const flowPeriodScore = getFlowPeriodScore(activityStates, flowPeriods)
   return flowPeriodScore
@@ -158,46 +171,86 @@ const createFlowPeriod = async (period: FlowPeriod): Promise<QueryResult> => {
   return FlowPeriodDb.createFlowPeriod(period)
 }
 
+const calculateFlowPeriodScore = async (period: Period, previousFlowPeriodId: number | undefined)=>{
+  console.log('Calculating flow period score')
+  const session = await FlowSessionDb.getInProgressFlowSession()
+  if(!session) {
+    return
+  }
+  const sessionPeriod = {
+    start: DateTime.fromISO(session.start),
+    end: DateTime.now()
+  }
+  
+  const flowPeriodScore = await getFlowPeriodScoreForPeriod(period, sessionPeriod)
+
+
+  console.log('period', period)
+  console.log('flowPeriodScore', flowPeriodScore)
+  console.log('sessionPeriod', sessionPeriod)
+  console.log('previousFlowPeriodId', previousFlowPeriodId)
+
+
+  if (SHOULD_SAVE_FLOW_PERIOD) {
+    await createFlowPeriod({
+      start_time: period.start.toUTC().toISO()!,
+      end_time: period.end.toUTC().toISO()!,
+      score: flowPeriodScore.totalScore,
+      details: JSON.stringify(flowPeriodScore),
+      created_at: DateTime.now().toUTC().toISO()!,
+      previous_flow_period_id: previousFlowPeriodId
+    })
+  }
+}
+
 let isJobRunning = false
 const TEN_MINUTES = 10 * 60 * 1000
 
-// every 10 minutes, calculate the flow period score for the last 10 minutes
 const startFlowPeriodScoreJob = async (intervalMs = TEN_MINUTES): Promise<void> => {
   if (isJobRunning) {
     return
   }
   isJobRunning = true
-  console.log('Starting flow period score job at', DateTime.now().toISO())
-  console.log('next run at', DateTime.now().plus({ milliseconds: intervalMs }).toISO())
-  setInterval(async () => {
-    console.log('Calculating flow period score')
-    const session = await FlowSessionDb.getInProgressFlowSession()
-    const sessionPeriod = {
-      start: DateTime.fromISO(session.start),
-      end: DateTime.now()
+    // First determine when we should start
+  const lastFlowPeriod = await FlowPeriodDb.getLastFlowPeriod()
+  const nextPeriod = getNextFlowPeriod(lastFlowPeriod, intervalMs)
+  const initialWait = nextPeriod.end.diff(DateTime.now()).milliseconds
+  console.table([
+    {
+      event: 'Last started at',
+      time: DateTime.fromISO(lastFlowPeriod?.start_time || '').toISO()
+    },
+    {
+      event: 'Last ended at',
+      time: DateTime.fromISO(lastFlowPeriod?.end_time || '').toISO()
+    },
+    {
+      event: 'Next starts at',
+      time: nextPeriod.start.toISO()
+    },
+    {
+      event: 'Next ends at',
+      time: nextPeriod.end.toISO()
     }
-    const lastFlowPeriod = await FlowPeriodDb.getLastFlowPeriod()
-    const period = await getNextFlowPeriod(lastFlowPeriod, intervalMs)
-    const flowPeriodScore = await getFlowPeriodScoreForPeriod(period, sessionPeriod)
-    if (SHOULD_SAVE_FLOW_PERIOD) {
-      await createFlowPeriod({
-        start_time: period.start.toUTC().toISO()!,
-        end_time: period.end.toUTC().toISO()!,
-        score: flowPeriodScore.totalScore,
-        details: JSON.stringify(flowPeriodScore),
-        created_at: DateTime.now().toUTC().toISO()!
-      })
-    }
-    console.log('next run at', DateTime.now().plus({ milliseconds: intervalMs }).toISO())
-  }, intervalMs)
+  ], ['event', 'time'])
+  console.log('Remaining time:', Duration.fromMillis(initialWait).toFormat('hh:mm:ss'))
+
+  setTimeout(async () => {
+    await calculateFlowPeriodScore(nextPeriod, lastFlowPeriod?.id)
+    // Start the recurring interval after the first calculation
+    setInterval(async () => {
+      const lastFlowPeriod = await FlowPeriodDb.getLastFlowPeriod()
+      const period = getNextFlowPeriod(lastFlowPeriod, intervalMs)
+      await calculateFlowPeriodScore(period, lastFlowPeriod?.id)
+    }, intervalMs)
+  }, initialWait)
 }
-
-
 
 export const FlowPeriodApi = {
   getActivityScoreForActivityStates,
   getAppSwitchScoreForActivityStates,
   getFlowStreakScoreForPeriod,
+  getTopActivity,
   getFlowPeriodScore,
   getFlowPeriodScoreForPeriod,
   getNextFlowPeriod,

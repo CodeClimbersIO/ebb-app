@@ -10,6 +10,7 @@ export interface FlowPeriod {
   score: number
   details: string // JSON string
   created_at: string
+  previous_flow_period_id?: number
 }
 
 const getFlowPeriodsBetween = async (start: DateTime, end: DateTime) => {

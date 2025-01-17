@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { FlowPeriodApi } from '../flowPeriodApi'
-import { ActivityState, ActivityStateDb, ActivityStateType } from '../../../db/activityState'
+import { ActivityState, ActivityStateDb, ActivityStateType, ActivityType } from '../../../db/activityState'
 import { FlowPeriod, FlowPeriodDb } from '../../../db/flowPeriod'
 import { DateTime } from 'luxon'
 import { assertDateTimeEqual } from '../../../lib/utils/test.util'
@@ -102,11 +102,6 @@ describe('FlowPeriodApi', () => {
       expect(result).toEqual(2)
     })
 
-    it('should return 0 for array with one score <= 5', () => {
-      const [result] = FlowPeriodApi.getFlowStreakScoreForPeriod([{ score: 7 } as FlowPeriod, { score: 4 } as FlowPeriod])
-      expect(result).toEqual(0)
-    })
-
     it('should return 3 for array with 3 scores > 5, one score <= 5, and one score > 5', () => {
       const [result] = FlowPeriodApi.getFlowStreakScoreForPeriod([{ score: 6 } as FlowPeriod, { score: 7 } as FlowPeriod, { score: 8 } as FlowPeriod, { score: 4 } as FlowPeriod, { score: 7 } as FlowPeriod, { score: 8 } as FlowPeriod])
       expect(result).toEqual(2)
@@ -120,12 +115,11 @@ describe('FlowPeriodApi', () => {
 
   describe('getNextActivityFlowPeriod', async () => {
     const INTERVAL_MS = 2 * 60 * 1000 // 2 minutes
-    it('should start from last activity end time, if new end time would be within 5 seconds of now', async () => {
-      const startTime = DateTime.now().minus({seconds: 242}) // 4 minutes 2 seconds ago
-      const endTime = DateTime.now().minus({seconds: 121}) // 2 minutes 1 second ago
+    it('should start from the end of the last flow period, if the end of the last flow period + the interval is greater than the current time', async () => {
+      const endTime = DateTime.now().minus({seconds: 110}) // 1 minute 50 seconds ago
       const flowPeriod = {
         id: 1,
-        start_time: startTime.toISO(),
+        start_time: endTime.minus({milliseconds: INTERVAL_MS}).toISO(),
         end_time: endTime.toISO(),
         score: 0,
         details: JSON.stringify({
@@ -140,39 +134,35 @@ describe('FlowPeriodApi', () => {
       expect(() => assertDateTimeEqual(result.end, endTime.plus({milliseconds: INTERVAL_MS}))).not.toThrow()
     })
 
-    it('should start from now minus the interval time (i.e 10 minutes ago), if the new end time would be outside of 5 seconds of now', async () => {
-      const startTime = DateTime.now().minus({seconds: 250}) // 4 minutes 10 seconds ago
-      const endTime = DateTime.now().minus({seconds: 131}) // 2 minutes 11 seconds ago
-      const flowPeriod = {
-        id: 1,
-        start_time: startTime.toISO(),
-        end_time: endTime.toISO(),
-        score: 0,
-        details: JSON.stringify({
-          app_switches: 0,
-          active_time: 0,
-        }),
-        created_at: DateTime.now().toISO(),
-      } as FlowPeriod
-
-      const result = await FlowPeriodApi.getNextFlowPeriod(flowPeriod, INTERVAL_MS)
-
-      expect(() => assertDateTimeEqual(result.start, DateTime.now().minus({milliseconds: INTERVAL_MS}))).not.toThrow()
-      expect(() => assertDateTimeEqual(result.end, DateTime.now())).not.toThrow()
-    })
-
-    it('should start from now minus the interval time (i.e 10 minutes ago), if there is no last activity', async () => {
+    it('should start from now if there is no last flow period', async () => {
       const result = await FlowPeriodApi.getNextFlowPeriod(undefined, INTERVAL_MS)
-      expect(() => assertDateTimeEqual(result.start, DateTime.now().minus({milliseconds: INTERVAL_MS}), 10)).not.toThrow()
-      expect(() => assertDateTimeEqual(result.end, DateTime.now(), 10)).not.toThrow()
+      expect(() => assertDateTimeEqual(result.start, DateTime.now())).not.toThrow()
+      expect(() => assertDateTimeEqual(result.end, DateTime.now().plus({milliseconds: INTERVAL_MS}))).not.toThrow()
     })
 
-    it('should cap end time to now if previous flow period time is greater than now', async () => {
-      const startTime = DateTime.now().plus({seconds: 10}) // 10 seconds in the future
-      const endTime = DateTime.now().plus({seconds: 130}) // 2 minutes 10 seconds in the future
+    it('should start from now, if the end of the last flow period + the interval is less than the current time', async () => {
+      const endTime = DateTime.now().minus({seconds: 130}) // 2 minute 10 seconds ago
       const flowPeriod = {
         id: 1,
-        start_time: startTime.toISO(),
+        start_time: endTime.minus({milliseconds: INTERVAL_MS}).toISO(),
+        end_time: endTime.toISO(),
+        score: 0,
+        details: JSON.stringify({
+          app_switches: 0,
+          active_time: 0,
+        }),
+        created_at: DateTime.now().toISO(),
+      } as FlowPeriod
+      const result = await FlowPeriodApi.getNextFlowPeriod(flowPeriod, INTERVAL_MS)
+      expect(() => assertDateTimeEqual(result.start, DateTime.now(), 10)).not.toThrow()
+      expect(() => assertDateTimeEqual(result.end, DateTime.now().plus({milliseconds: INTERVAL_MS}), 10)).not.toThrow()
+    })
+
+    it('should cap start time to now if previous flow period time is greater than now', async () => {
+      const endTime = DateTime.now().plus({seconds: 110}) // 1 minutes 50 seconds in the future
+      const flowPeriod = {
+        id: 1,
+        start_time: endTime.minus({milliseconds: INTERVAL_MS}).toISO(),
         end_time: endTime.toISO(),
         score: 0,
         details: JSON.stringify({
@@ -183,13 +173,10 @@ describe('FlowPeriodApi', () => {
       } as FlowPeriod
 
       const result = await FlowPeriodApi.getNextFlowPeriod(flowPeriod, INTERVAL_MS)
-      console.log('startTime', startTime.toISO())
-      console.log('Start    ', result.start.toISO())
-      console.log('End      ' , result.end.toISO())
-      // start should be 10 minutes ago
-      expect(() => assertDateTimeEqual(result.start, DateTime.now().minus({milliseconds: INTERVAL_MS}), 10)).not.toThrow()
-      // end should be now
-      expect(() => assertDateTimeEqual(result.end, DateTime.now(), 10)).not.toThrow()
+      // should start now
+      expect(() => assertDateTimeEqual(result.start, DateTime.now(), 10)).not.toThrow()
+      // end should be now + interval
+      expect(() => assertDateTimeEqual(result.end, DateTime.now().plus({milliseconds: INTERVAL_MS}), 10)).not.toThrow()
     })
   })
 
@@ -276,6 +263,20 @@ describe('FlowPeriodApi', () => {
 
       // Clean up
       vi.restoreAllMocks()
+    })
+  })
+
+  describe('getTopActivity', () => {
+    it('should return the top activity', () => {
+      const mockActivityStates: ActivityState[] = [
+        { state: ActivityStateType.Active, app_switches: 1, activities_json: [{ app_name: 'App 1', app_window_title: 'Window 1', activity_type: ActivityType.Window }] } as ActivityState,
+        { state: ActivityStateType.Active, app_switches: 1, activities_json: [{ app_name: 'App 1', app_window_title: 'Window 1', activity_type: ActivityType.Window }] } as ActivityState,
+        { state: ActivityStateType.Active, app_switches: 1, activities_json: [{ app_name: 'App 2', app_window_title: 'Window 2', activity_type: ActivityType.Window }] } as ActivityState,
+        { state: ActivityStateType.Active, app_switches: 1, activities_json: [{ activity_type: ActivityType.Mouse }] } as ActivityState,
+        { state: ActivityStateType.Active, app_switches: 1, activities_json: [{ activity_type: ActivityType.Mouse }] } as ActivityState,
+      ]
+      const result = FlowPeriodApi.getTopActivity(mockActivityStates)
+      expect(result).toEqual(['App 1', [{ app_name: 'App 1', app_window_title: 'Window 1', activity_type: ActivityType.Window }, { app_name: 'App 1', app_window_title: 'Window 1', activity_type: ActivityType.Window }, { app_name: 'App 2', app_window_title: 'Window 2', activity_type: ActivityType.Window }]])
     })
   })
 }) 

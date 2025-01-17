@@ -48,5 +48,17 @@ pub fn get_migrations() -> Vec<Migration> {
             ADD COLUMN stats TEXT NOT NULL DEFAULT '{}';"#,
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 4,
+            description: "add_previous_flow_period_id_to_flow_period",
+            sql: r#"
+            ALTER TABLE flow_period
+            ADD COLUMN previous_flow_period_id INTEGER;
+            CREATE UNIQUE INDEX idx_previous_flow_period
+            ON flow_period(previous_flow_period_id)
+            WHERE previous_flow_period_id IS NOT NULL;
+            "#,
+            kind: MigrationKind::Up,
+        },
     ]
 }

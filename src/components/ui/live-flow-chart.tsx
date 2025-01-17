@@ -112,10 +112,10 @@ export function LiveFlowChart({ data, flowScore }: LiveFlowChartProps) {
             strokeWidth={2}
             dot={(props) => {
               const isLast = props.index === data.length - 1
-              if (!isLast) return false
+              if (!isLast) return <g key={`empty-dot-${props.index}`} />
 
               return (
-                <g>
+                <g key={`dot-${props.index}`}>
                   <circle
                     cx={props.cx}
                     cy={props.cy}

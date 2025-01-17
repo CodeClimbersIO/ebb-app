@@ -1,5 +1,5 @@
-import { FlowPeriodDb } from '../db/flowPeriod'
-import { ActivityStateDb } from '../db/activityState'
+import { FlowPeriod, FlowPeriodDb } from '../db/flowPeriod'
+import { ActivityState, ActivityStateDb } from '../db/activityState'
 import { MonitorDb } from '../db/monitorDb'
 import { DateTime } from 'luxon'
 
@@ -9,11 +9,11 @@ const getActivities = async () => {
   return activities
 }
 
-const getActivityAndFlowPeriodsBetween = async (start: DateTime, end: DateTime) => {
+const getActivityAndFlowPeriodsBetween = async (start: DateTime, end: DateTime): Promise<{activityStates: ActivityState[], activityFlowPeriods: FlowPeriod[]}> => {
   console.log('Between')
   console.log('start', start)
   console.log('end', end)
-  const activityStates = await ActivityStateDb.getActivityStatesBetween(
+  const activityStates = await getActivityStatesBetween(
     start,
     end,
   )
@@ -25,7 +25,16 @@ const getActivityAndFlowPeriodsBetween = async (start: DateTime, end: DateTime) 
   }
 }
 
+const getActivityStatesBetween = async (start: DateTime, end: DateTime): Promise<ActivityState[]> => {
+  const activityStates = await ActivityStateDb.getActivityStatesBetween(start, end)
+  return activityStates.map((activityState) => ({
+    ...activityState,
+    activities_json: activityState.activities ? JSON.parse(activityState.activities) : [],
+  }))
+}
+
 export const MonitorApi = {
   getActivities,
   getActivityAndFlowPeriodsBetween,
+  getActivityStatesBetween,
 }

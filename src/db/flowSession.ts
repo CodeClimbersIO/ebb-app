@@ -35,8 +35,6 @@ export type FlowSessionPeriodComparison = {
   }
 }
 
-
-
 const createFlowSession = async (
   flowSession: FlowSessionDb,
 ): Promise<QueryResult> => {
@@ -82,7 +80,23 @@ const getFlowSessions = async (limit = 10): Promise<FlowSession[]> => {
 const getFlowSessionById = async (id: string): Promise<FlowSession | undefined> => {
   const ebbDb = await getEbbDb()
   const [flowSession] = await ebbDb.select<FlowSession[]>(
-    `SELECT * FROM flow_session WHERE id = ${id};`,
+    `SELECT 
+      fs.*,
+      CASE
+      WHEN MAX(fp.id) IS NULL THEN NULL
+      ELSE json_group_array(
+              json_object(
+                      'start_time', fp.start_time,
+                      'end_time', fp.end_time,
+                      'score', fp.score,
+                      'details', fp.details
+              )
+            )
+      END as flow_periods
+    FROM flow_session fs 
+    LEFT JOIN flow_period fp ON fs.start <= fp.start_time AND fs.end >= fp.end_time
+    WHERE fs.id = ${id}
+    GROUP BY fs.id, fs.objective, fs.self_score, fs.start, fs.end;`,
   )
   return flowSession
 }
@@ -90,7 +104,24 @@ const getFlowSessionById = async (id: string): Promise<FlowSession | undefined> 
 const getInProgressFlowSession = async () => {
   const ebbDb = await getEbbDb()
   const [flowSession] = await ebbDb.select<FlowSession[]>(
-    'SELECT * FROM flow_session WHERE end IS NULL LIMIT 1;',
+    `SELECT 
+      fs.*,
+      CASE
+      WHEN MAX(fp.id) IS NULL THEN NULL
+      ELSE json_group_array(
+              json_object(
+                      'start_time', fp.start_time,
+                      'end_time', fp.end_time,
+                      'score', fp.score,
+                      'details', fp.details
+              )
+            )
+      END as flow_periods
+    FROM flow_session fs
+    LEFT JOIN flow_period fp ON fs.start <= fp.start_time
+    WHERE fs.end IS NULL
+    GROUP BY fs.id, fs.objective, fs.self_score, fs.start, fs.end
+    LIMIT 1;`,
   )
   return flowSession
 }
