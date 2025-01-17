@@ -19,7 +19,7 @@ export const auth = getAuth(app)
 
 const App = () => {
   return (
-    <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
+    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
       <main>
         <AppRouter />
       </main>

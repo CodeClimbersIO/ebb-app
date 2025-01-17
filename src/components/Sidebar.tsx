@@ -34,7 +34,7 @@ export function Sidebar() {
         <div className="rounded-lg p-4 bg-muted/50">
           <h3 className="font-semibold text-lg">Upgrade to Pro</h3>
           <p className="text-sm text-muted-foreground mt-1">
-            Sync across all your devices and get a full picture of your flow state
+            Listen to music while in flow and block distracting apps.
           </p>
           <Button className="w-full mt-4 bg-gray-500 hover:bg-gray-600" disabled>
             Coming Soon

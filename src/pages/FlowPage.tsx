@@ -14,6 +14,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 
 interface FlowData {
   flowScore: number
@@ -38,6 +44,7 @@ export const FlowPage = () => {
   const [chartData, setChartData] = useState<ChartData[]>([])
   const [showEndDialog, setShowEndDialog] = useState(false)
   const [isShortSession, setIsShortSession] = useState(false)
+  const [isInitialPeriod, setIsInitialPeriod] = useState(true)
 
   const generateChartData = () => {
     const now = new Date()
@@ -45,7 +52,7 @@ export const FlowPage = () => {
       const time = new Date(now.getTime() - (50 - i * 10) * 60000)
       return {
         time,
-        label: i === 5 ? 'Live' : `${50 - i * 10}m ago`,
+        label: `${60 - i * 10}m ago`,
         value: 5 + Math.sin(i) * 3,
         appSwitches: Math.floor(Math.random() * 3),
         topActivity: 'Arc • Google meet call'
@@ -73,6 +80,7 @@ export const FlowPage = () => {
       const seconds = Math.floor((diff % 60000) / 1000)
       setTime(`${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`)
       setIsShortSession(minutes < 20)
+      setIsInitialPeriod(minutes < 10)
     }
 
     updateTimer()
@@ -87,7 +95,7 @@ export const FlowPage = () => {
     })
 
     return () => clearInterval(interval)
-  }, [flowSession, navigate])
+  }, [flowSession])
 
   useEffect(() => {
     // Initial data generation
@@ -101,15 +109,15 @@ export const FlowPage = () => {
         const now = new Date()
         const newData = [...prevData.slice(1), {
           time: now,
-          label: 'Live',
+          label: '10m',
           value: flowData.flowScore,
           appSwitches: Math.floor(Math.random() * 3),
           topActivity: 'Arc • Google meet call'
         }]
-        // Update all labels
+        // Update all labels to show minutes
         return newData.map((data, i) => ({
           ...data,
-          label: i === newData.length - 1 ? 'Live' : `${50 - i * 10}m ago`
+          label: `${60 - i * 10}m ago`
         }))
       })
     }
@@ -166,17 +174,36 @@ export const FlowPage = () => {
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center">
-        <div className="text-sm text-muted-foreground mb-4">{flowSession?.objective}</div>
-        <div className="text-6xl font-bold mb-4">{time}</div>
-        {flowData && (
-          <div className={`px-4 py-2 rounded-full ${getFlowScoreTailwindColor(flowData.flowScore)}`}>
-            {getFlowStatusText(flowData.flowScore)}
-          </div>
+        <div className="text-sm text-muted-foreground mb-2">{flowSession?.objective}</div>
+        <div className="text-6xl font-bold mb-2">{time}</div>
+        {flowData && !isInitialPeriod && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger>
+                <div className={`px-4 py-2 rounded-full ${getFlowScoreTailwindColor(flowData.flowScore)}`}>
+                  {getFlowStatusText(flowData.flowScore)}
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>A flow score above 5 counts as "in flow"</p>
+                <p className="mt-2">New flow score calculated every 10 min</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         )}
-        <div className="w-full max-w-3xl mx-auto px-4 mb-8">
-          <LiveFlowChart data={chartData} flowScore={flowData?.flowScore || 0} />
+        <div className="w-full max-w-3xl mx-auto px-4 mb-4 mt-4">
+          {isInitialPeriod ? (
+            <div className="flex flex-col items-center justify-center h-[300px]">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-primary"></div>
+              <p className="mt-4 text-muted-foreground">
+                Calculating flow... ready in 10 min
+              </p>
+            </div>
+          ) : (
+            <LiveFlowChart data={chartData} flowScore={flowData?.flowScore || 0} />
+          )}
         </div>
       </div>
     </div>
   )
-} 
+}

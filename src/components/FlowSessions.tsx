@@ -119,7 +119,7 @@ function FlowSession({
           </div>
           <div>
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
-              Self Report
+              Self Rating
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger>
