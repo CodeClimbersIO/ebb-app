@@ -1,6 +1,6 @@
 import { Layout } from '@/components/Layout'
 import { useNavigate } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Activity, Flame, Code2, ChevronDown, Palette, Wand2 } from 'lucide-react'
 import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
@@ -28,6 +28,8 @@ import {
 } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
 import { Progress } from '@/components/ui/progress'
+import { apps } from '@/lib/app-directory/apps-list'
+import { categoryEmojis, AppDefinition } from '@/lib/app-directory/apps-types'
 
 const generateHourlyData = () => {
   const data = []
@@ -91,50 +93,20 @@ type AppUsage = {
   category: 'Creating' | 'Consuming' | 'Neutral'
 }
 
-const mockAppUsage: AppUsage[] = [
-  {
-    name: 'Figma',
-    icon: '🎨',
-    timeSpent: 180, // 3 hours
-    category: 'Creating'
-  },
-  {
-    name: 'Discord',
-    icon: '💬',
-    timeSpent: 90, // 1.5 hours
-    category: 'Consuming'
-  },
-  {
-    name: 'x.com',
-    icon: '𝕏',
-    timeSpent: 45, // 45 minutes
-    category: 'Consuming'
-  },
-  {
-    name: 'linkedin.com',
-    icon: '💼',
-    timeSpent: 30, // 30 minutes
-    category: 'Consuming'
-  },
-  {
-    name: 'shadcn.com',
-    icon: '📚',
-    timeSpent: 60, // 1 hour
-    category: 'Creating'
-  },
-  {
-    name: 'Ebb',
-    icon: '⏱️',
-    timeSpent: 120, // 2 hours
-    category: 'Neutral'
-  },
-  {
-    name: 'Cursor',
-    icon: '👨‍💻',
-    timeSpent: 150, // 2.5 hours
-    category: 'Creating'
-  }
-]
+// Helper function to get random items from array
+const getRandomItems = (array: AppDefinition[], count: number) => {
+  const shuffled = [...array].sort(() => 0.5 - Math.random())
+  return shuffled.slice(0, count)
+}
+
+// Get random apps for display
+const topApps = getRandomItems(apps, 3)
+const usageApps = getRandomItems(apps, 6).map(app => ({
+  name: app.type === 'application' ? app.name : app.websiteUrl,
+  icon: app.icon,
+  timeSpent: Math.floor(Math.random() * 180) + 30, // Random time between 30-210 minutes
+  category: app.defaultRating
+}))
 
 export const HomePage = () => {
   const { showZeroState, userRole } = useSettings()
@@ -142,7 +114,8 @@ export const HomePage = () => {
   const [hasNoSessions, setHasNoSessions] = useState(true)
   const [streak, setStreak] = useState(0)
   const [date, setDate] = useState<Date>(new Date())
-  const [appUsage, setAppUsage] = useState(mockAppUsage)
+  const [appUsage, setAppUsage] = useState(usageApps)
+  const appUsageRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const init = async () => {
@@ -202,6 +175,10 @@ export const HomePage = () => {
     setAppUsage(prev => prev.map(app => 
       app.name === appName ? { ...app, category: newCategory } : app
     ))
+  }
+
+  const scrollToAppUsage = () => {
+    appUsageRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
   if (showZeroState || hasNoSessions) {
@@ -330,10 +307,34 @@ export const HomePage = () => {
                   <CardTitle className="text-sm font-medium text-muted-foreground">Top Apps/Websites</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center space-x-4">
-                    <div className="h-6 w-6 rounded bg-muted">VS</div>
-                    <div className="h-6 w-6 rounded bg-muted">Fi</div>
-                    <div className="h-6 w-6 rounded bg-muted">Sl</div>
+                  <div className="flex items-center space-x-2">
+                    {topApps.map((app, index) => (
+                      <Button
+                        key={index}
+                        variant="ghost"
+                        className="w-8 h-8 p-0"
+                        onClick={scrollToAppUsage}
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
+                          {app.icon ? (
+                            <img 
+                              src={`/src/lib/app-directory/icons/${app.icon}`} 
+                              alt={app.type === 'application' ? app.name : app.websiteUrl} 
+                              className="h-5 w-5"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement
+                                const parent = target.parentElement
+                                if (parent) {
+                                  parent.textContent = categoryEmojis[app.category]
+                                }
+                              }}
+                            />
+                          ) : (
+                            <span className="text-muted-foreground">{categoryEmojis[app.category]}</span>
+                          )}
+                        </div>
+                      </Button>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
@@ -403,16 +404,42 @@ export const HomePage = () => {
             </CardContent>
           </Card>
 
-          <Card className="mt-4">
+          <Card className="mt-4" ref={appUsageRef}>
             <CardHeader>
-              <CardTitle>App Usage</CardTitle>
+              <CardTitle>App/Website Usage</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
                 {sortedAppUsage.map((app) => (
                   <div key={app.name} className="flex items-center gap-4">
-                    <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-lg">
-                      {app.icon}
+                    <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
+                      {app.icon ? (
+                        <img 
+                          src={`/src/lib/app-directory/icons/${app.icon}`} 
+                          alt={app.name}
+                          className="h-5 w-5"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement
+                            const parent = target.parentElement
+                            const appDef = apps.find(a => 
+                              (a.type === 'application' && a.name === app.name) || 
+                              (a.type === 'website' && a.websiteUrl === app.name)
+                            )
+                            if (parent && appDef) {
+                              parent.textContent = categoryEmojis[appDef.category]
+                            } else if (parent) {
+                              // Fallback to using the app's category that we already have
+                              const foundApp = apps.find(a => 
+                                (a.type === 'application' && a.name === app.name) || 
+                                (a.type === 'website' && a.websiteUrl === app.name)
+                              )
+                              parent.textContent = foundApp ? categoryEmojis[foundApp.category] : '❓'
+                            }
+                          }}
+                        />
+                      ) : (
+                        <span className="text-muted-foreground">❓</span>
+                      )}
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-1">

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { X, Music, Info } from 'lucide-react'
+import { X, Music, Info, Plus, Minus } from 'lucide-react'
 import { TopNav } from '@/components/TopNav'
 import { LogoContainer } from '@/components/LogoContainer'
 import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
@@ -22,8 +22,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { getAppsByCategory } from '@/lib/app-directory/apps-list'
+import { useSettings } from '@/hooks/useSettings'
+import { AppCategory, categoryEmojis } from '@/lib/app-directory/apps-types'
 
 export const StartFocusPage = () => {
+  const { userRole } = useSettings()
   const [objective, setObjective] = useState('')
   const [selectedTime, setSelectedTime] = useState('no-limit')
   const [customMinutes, setCustomMinutes] = useState('')
@@ -43,14 +47,26 @@ export const StartFocusPage = () => {
     ]
   })
   const [onlyAllowCreating, setOnlyAllowCreating] = useState(false)
+  const [showBlockingSection, setShowBlockingSection] = useState(false)
+  const [showMusicSection, setShowMusicSection] = useState(false)
   const navigate = useNavigate()
 
   const blockCategories = [
-    { id: 'gaming', label: 'Gaming', icon: '🎮' },
-    { id: 'social', label: 'Social Media', icon: '📱' },
-    { id: 'entertainment', label: 'Entertainment', icon: '🎬' },
-    { id: 'news', label: 'News', icon: '📰' },
-    { id: 'custom', label: 'Custom', icon: '⚙️' },
+    ...(['Gaming', 'Social Media', 'Communication', 'Entertainment', 'News', 'Shopping', 'Travel'] as AppCategory[])
+      .map(category => ({
+        id: category.toLowerCase().replace(' ', ''),
+        label: category,
+        icon: categoryEmojis[category],
+        tooltip: getAppsByCategory(category)
+          .map(app => app.type === 'website' ? app.websiteUrl : app.name)
+          .join(', ')
+      })),
+    { 
+      id: 'custom', 
+      label: 'Custom', 
+      icon: '⚙️', 
+      tooltip: 'Add your own websites to block'
+    },
   ]
 
   const timePresets = [
@@ -61,6 +77,19 @@ export const StartFocusPage = () => {
     { value: '60', label: '60 minutes' },
     { value: 'custom', label: 'Custom' },
   ]
+
+  const getPlaceholderByRole = () => {
+    switch (userRole) {
+      case 'developer':
+        return '💻 Build new feature...'
+      case 'designer':
+        return '🎨 Design landing page...'
+      case 'creator':
+        return '🎥 Create new content...'
+      default:
+        return '💡 Enter your goal...'
+    }
+  }
 
   const handleBegin = async () => {
     if (!objective) return
@@ -93,6 +122,40 @@ export const StartFocusPage = () => {
     )
   }
 
+  const CollapsibleSectionHeader = ({ 
+    title, 
+    isExpanded, 
+    onToggle,
+    type
+  }: { 
+    title: string, 
+    isExpanded: boolean, 
+    onToggle: () => void,
+    type: 'blocking' | 'music'
+  }) => (
+    <div 
+      className="flex items-center justify-between cursor-pointer" 
+      onClick={onToggle}
+    >
+      <h2 className="text-lg font-semibold">{title}</h2>
+      <div className="flex items-center gap-2">
+        {!isExpanded && (
+          <span className="text-sm text-muted-foreground">
+            {type === 'music' 
+              ? `Playing ${musicService.type === 'spotify' ? 'Spotify' : 'Apple Music'}`
+              : 'Applying last used'
+            }
+          </span>
+        )}
+        {isExpanded ? (
+          <Minus className="h-4 w-4 text-muted-foreground" />
+        ) : (
+          <Plus className="h-4 w-4 text-muted-foreground" />
+        )}
+      </div>
+    </div>
+  )
+
   return (
     <div className="flex flex-col h-screen">
       <div className="flex">
@@ -105,7 +168,7 @@ export const StartFocusPage = () => {
             <div>
               <h2 className="text-lg font-semibold mb-4">Goal</h2>
               <Input
-                placeholder="💡 Code new side project"
+                placeholder={getPlaceholderByRole()}
                 value={objective}
                 onChange={(e) => setObjective(e.target.value)}
                 maxLength={50}
@@ -139,87 +202,113 @@ export const StartFocusPage = () => {
             </div>
 
             <div>
-              <h2 className="text-lg font-semibold mb-4">Apps to Block</h2>
-              <div className="space-y-4">
-                <div className="flex flex-wrap gap-2">
-                  {blockCategories.map(category => (
-                    <Badge
-                      key={category.id}
-                      variant={selectedBlocks.includes(category.id) ? 'default' : 'outline'}
-                      className={`cursor-pointer ${onlyAllowCreating ? 'opacity-50 pointer-events-none' : ''}`}
-                      onClick={() => toggleBlock(category.id)}
-                    >
-                      {category.icon} {category.label}
-                      {selectedBlocks.includes(category.id) && (
-                        <X className="ml-1 h-3 w-3" />
-                      )}
-                    </Badge>
-                  ))}
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={onlyAllowCreating}
-                      onCheckedChange={(checked) => {
-                        setOnlyAllowCreating(checked)
-                        if (checked) {
-                          setSelectedBlocks([]) // Clear all selected blocks when enabling Creation Only Mode
-                        }
-                      }}
-                    />
-                    <span className="text-sm text-muted-foreground">Creation Only Mode</span>
+              <CollapsibleSectionHeader 
+                title="Blocking"
+                isExpanded={showBlockingSection}
+                onToggle={() => setShowBlockingSection(!showBlockingSection)}
+                type="blocking"
+              />
+              {showBlockingSection && (
+                <div className="mt-4 space-y-4">
+                  <div className="flex flex-wrap gap-2">
+                    {blockCategories.map(category => (
+                      <TooltipProvider key={category.id}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span>
+                              <Badge
+                                variant={selectedBlocks.includes(category.id) ? 'default' : 'outline'}
+                                className={`cursor-pointer ${onlyAllowCreating ? 'opacity-50 pointer-events-none' : ''}`}
+                                onClick={() => toggleBlock(category.id)}
+                              >
+                                {category.icon} {category.label}
+                                {selectedBlocks.includes(category.id) && (
+                                  <X className="ml-1 h-3 w-3" />
+                                )}
+                              </Badge>
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-[300px]">
+                            <p>{category.tooltip}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    ))}
                   </div>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <Info className="h-4 w-4 text-muted-foreground" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>This will block every website and app categorized as consumption</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        checked={onlyAllowCreating}
+                        onCheckedChange={(checked) => {
+                          setOnlyAllowCreating(checked)
+                          if (checked) {
+                            setSelectedBlocks([]) // Clear all selected blocks when enabling Creation Only Mode
+                          }
+                        }}
+                      />
+                      <span className="text-sm text-muted-foreground">Creation Only Mode</span>
+                    </div>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Info className="h-4 w-4 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>This will block every website and app not categorized as creating</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             <div>
-              <div className="flex items-center gap-2 mb-4">
-                <h2 className="text-lg font-semibold">Music</h2>
-                <div className="flex items-center gap-2 text-sm">
-                  <span className={`h-2 w-2 rounded-full ${musicService.connected ? 'bg-green-500' : 'bg-red-500'}`} />
-                  <span className="text-muted-foreground">
-                    {musicService.type === 'spotify' ? 'Spotify' : 'Apple Music'} 
-                    {musicService.connected ? ' Connected' : ' Disconnected'}
-                  </span>
-                </div>
-              </div>
-              
-              {musicService.connected ? (
-                <Select value={selectedPlaylist} onValueChange={setSelectedPlaylist}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a playlist" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {musicService.playlists.map(playlist => (
-                      <SelectItem key={playlist.id} value={playlist.id}>
-                        <div className="flex items-center">
-                          <Music className="h-4 w-4 mr-2" />
-                          {playlist.name}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Button 
-                  variant="outline" 
-                  className="w-full"
-                  onClick={() => {/* Handle connection */}}
-                >
-                  Connect {musicService.type === 'spotify' ? 'Spotify' : 'Apple Music'}
-                </Button>
+              <CollapsibleSectionHeader 
+                title="Music"
+                isExpanded={showMusicSection}
+                onToggle={() => setShowMusicSection(!showMusicSection)}
+                type="music"
+              />
+              {showMusicSection && (
+                <>
+                  <div className="flex items-center gap-2 mt-4 mb-4">
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className={`h-2 w-2 rounded-full ${musicService.connected ? 'bg-green-500' : 'bg-red-500'}`} />
+                      <span className="text-muted-foreground">
+                        {musicService.type === 'spotify' ? 'Spotify' : 'Apple Music'} 
+                        {musicService.connected ? ' Connected' : ' Disconnected'}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {musicService.connected ? (
+                    <Select value={selectedPlaylist} onValueChange={setSelectedPlaylist}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a playlist" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {musicService.playlists.map(playlist => (
+                          <SelectItem key={playlist.id} value={playlist.id}>
+                            <div className="flex items-center">
+                              <Music className="h-4 w-4 mr-2" />
+                              {playlist.name}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={() => {/* Handle connection */}}
+                    >
+                      Connect {musicService.type === 'spotify' ? 'Spotify' : 'Apple Music'}
+                    </Button>
+                  )}
+                </>
               )}
             </div>
 
