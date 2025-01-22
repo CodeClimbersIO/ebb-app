@@ -28,17 +28,19 @@ export const SettingsPage = () => {
 
             <div className="border rounded-lg p-6">
               <h2 className="text-lg font-semibold mb-4">Developer Settings</h2>
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium">Show Zero State</div>
-                  <div className="text-sm text-muted-foreground">
-                    Toggle zero state UI for testing
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium">Show Zero State</div>
+                    <div className="text-sm text-muted-foreground">
+                      Toggle zero state UI for testing
+                    </div>
                   </div>
+                  <Switch
+                    checked={showZeroState}
+                    onCheckedChange={toggleZeroState}
+                  />
                 </div>
-                <Switch
-                  checked={showZeroState}
-                  onCheckedChange={toggleZeroState}
-                />
               </div>
             </div>
           </div>

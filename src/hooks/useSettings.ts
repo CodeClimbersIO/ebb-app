@@ -2,13 +2,31 @@ import { useState, useEffect } from 'react'
 
 interface Settings {
   showZeroState: boolean
+  toggleZeroState: () => void
 }
 
 const defaultSettings: Settings = {
-  showZeroState: false
+  showZeroState: false,
+  toggleZeroState: () => {}
 }
 
-export function useSettings() {
+export const useSettings = () => {
+  const [showZeroState, setShowZeroState] = useState<boolean>(() => {
+    const saved = localStorage.getItem('showZeroState')
+    return saved ? JSON.parse(saved) : false
+  })
+
+  useEffect(() => {
+    localStorage.setItem('showZeroState', JSON.stringify(showZeroState))
+  }, [showZeroState])
+
+  return {
+    showZeroState,
+    toggleZeroState: () => setShowZeroState(!showZeroState)
+  }
+}
+
+export function useSettingsOld() {
   const [settings, setSettings] = useState<Settings>(() => {
     const saved = localStorage.getItem('app-settings')
     if (saved) {
