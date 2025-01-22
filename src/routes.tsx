@@ -4,13 +4,14 @@ import { LoginPage } from '@/pages/LoginPage'
 import { SignupPage } from '@/pages/SignupPage'
 import { FriendsPage } from '@/pages/FriendsPage'
 import { SettingsPage } from '@/pages/SettingsPage'
-import { StartFlowPage } from './pages/StartFlowPage'
+import { StartFocusPage } from './pages/StartFocusPage'
 import { useAuth } from './hooks/useAuth'
 import { FlowPage } from '@/pages/FlowPage'
 import { FlowPeriodApi } from './api/ebbApi/flowPeriodApi'
 import { BreathingExercisePage } from './pages/BreathingExercisePage'
 import { FlowRecapPage } from '@/pages/FlowRecapPage'
 import { LoadingScreen } from '@/components/LoadingScreen'
+import { OnboardingPage } from '@/pages/OnboardingPage'
 
 // Protected Route wrapper component
 const ProtectedRoute = () => {
@@ -40,10 +41,11 @@ export const AppRoutes = () => {
         <Route path="/" element={<HomePage />} />
         <Route path="/friends" element={<FriendsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/start-flow" element={<StartFlowPage />} />
+        <Route path="/start-flow" element={<StartFocusPage />} />
         <Route path="/breathing-exercise" element={<BreathingExercisePage />} />
         <Route path="/flow" element={<FlowPage />} />
         <Route path="/flow-recap" element={<FlowRecapPage />} />
+        <Route path="/onboarding" element={<OnboardingPage />} />
       </Route>
     </Routes>
   )
