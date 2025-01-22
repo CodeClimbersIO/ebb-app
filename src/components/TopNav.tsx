@@ -22,7 +22,7 @@ export function TopNav({ variant = 'default' }: TopNavProps) {
             size="sm" 
             onClick={handleStartFlowSession}
           >
-            Enter Focus
+            Start Focus
             <kbd className="ml-2 rounded bg-violet-900 px-1.5 font-mono text-xs">
               F6
             </kbd>

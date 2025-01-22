@@ -2,7 +2,7 @@ import { Layout } from '@/components/Layout'
 import { useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Activity, Flame, Code2, ChevronDown } from 'lucide-react'
+import { Activity, Flame, Code2, ChevronDown, Palette, Wand2 } from 'lucide-react'
 import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
 import { useSettings } from '../hooks/useSettings'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
@@ -27,6 +27,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
+import { Progress } from '@/components/ui/progress'
 
 const generateHourlyData = () => {
   const data = []
@@ -83,12 +84,65 @@ const calculateFlowScore = (creating: number, consuming: number, offline: number
   return total > 0 ? Math.round(((creating + offline) / total) * 100) : 0
 }
 
+type AppUsage = {
+  name: string
+  icon: string // This would be a path to the icon or an emoji as placeholder
+  timeSpent: number // in minutes
+  category: 'Creating' | 'Consuming' | 'Neutral'
+}
+
+const mockAppUsage: AppUsage[] = [
+  {
+    name: 'Figma',
+    icon: '🎨',
+    timeSpent: 180, // 3 hours
+    category: 'Creating'
+  },
+  {
+    name: 'Discord',
+    icon: '💬',
+    timeSpent: 90, // 1.5 hours
+    category: 'Consuming'
+  },
+  {
+    name: 'x.com',
+    icon: '𝕏',
+    timeSpent: 45, // 45 minutes
+    category: 'Consuming'
+  },
+  {
+    name: 'linkedin.com',
+    icon: '💼',
+    timeSpent: 30, // 30 minutes
+    category: 'Consuming'
+  },
+  {
+    name: 'shadcn.com',
+    icon: '📚',
+    timeSpent: 60, // 1 hour
+    category: 'Creating'
+  },
+  {
+    name: 'Ebb',
+    icon: '⏱️',
+    timeSpent: 120, // 2 hours
+    category: 'Neutral'
+  },
+  {
+    name: 'Cursor',
+    icon: '👨‍💻',
+    timeSpent: 150, // 2.5 hours
+    category: 'Creating'
+  }
+]
+
 export const HomePage = () => {
-  const { showZeroState } = useSettings()
+  const { showZeroState, userRole } = useSettings()
   const navigate = useNavigate()
   const [hasNoSessions, setHasNoSessions] = useState(true)
   const [streak, setStreak] = useState(0)
   const [date, setDate] = useState<Date>(new Date())
+  const [appUsage, setAppUsage] = useState(mockAppUsage)
 
   useEffect(() => {
     const init = async () => {
@@ -131,6 +185,25 @@ export const HomePage = () => {
     navigate('/start-flow')
   }
 
+  const getTimeSpentLabel = () => {
+    switch(userRole) {
+      case 'developer':
+        return 'Time Spent Coding'
+      case 'designer':
+        return 'Time Spent Designing'
+      case 'creator':
+        return 'Time Spent Creating'
+      default:
+        return 'Time Spent Coding'
+    }
+  }
+
+  const updateAppCategory = (appName: string, newCategory: AppUsage['category']) => {
+    setAppUsage(prev => prev.map(app => 
+      app.name === appName ? { ...app, category: newCategory } : app
+    ))
+  }
+
   if (showZeroState || hasNoSessions) {
     return (
       <Layout>
@@ -152,6 +225,9 @@ export const HomePage = () => {
       </Layout>
     )
   }
+
+  // Sort app usage in the render section, before mapping
+  const sortedAppUsage = [...appUsage].sort((a, b) => b.timeSpent - a.timeSpent)
 
   return (
     <Layout>
@@ -207,8 +283,16 @@ export const HomePage = () => {
             <TooltipProvider>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Time Spent Coding</CardTitle>
-                  <Code2 className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    {getTimeSpentLabel()}
+                  </CardTitle>
+                  {userRole === 'developer' ? (
+                    <Code2 className="h-4 w-4 text-muted-foreground" />
+                  ) : userRole === 'designer' ? (
+                    <Palette className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <Wand2 className="h-4 w-4 text-muted-foreground" />
+                  )}
                 </CardHeader>
                 <CardContent>
                   <Tooltip>
@@ -216,7 +300,7 @@ export const HomePage = () => {
                       <div className="text-2xl font-bold">3h 45m</div>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Total time spent coding today</p>
+                      <p>Total time spent {userRole === 'developer' ? 'coding' : userRole === 'designer' ? 'designing' : 'creating'} today</p>
                     </TooltipContent>
                   </Tooltip>
                 </CardContent>
@@ -243,7 +327,7 @@ export const HomePage = () => {
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Top Used Apps</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Top Apps/Websites</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center space-x-4">
@@ -259,7 +343,7 @@ export const HomePage = () => {
           <Card>
             <CardContent className="pt-6">
               <ChartContainer config={chartConfig}>
-                <BarChart height={300} data={chartData}>
+                <BarChart height={200} data={chartData}>
                   <defs>
                     <linearGradient id="creatingGradient" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="rgb(124 58 237)" stopOpacity={1} />
@@ -316,6 +400,81 @@ export const HomePage = () => {
                   />
                 </BarChart>
               </ChartContainer>
+            </CardContent>
+          </Card>
+
+          <Card className="mt-4">
+            <CardHeader>
+              <CardTitle>App Usage</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {sortedAppUsage.map((app) => (
+                  <div key={app.name} className="flex items-center gap-4">
+                    <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-lg">
+                      {app.icon}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-1">
+                          <span className="font-medium">{app.name}</span>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button 
+                                variant="ghost"
+                                size="sm"
+                                className={`h-6 px-2 py-0 text-xs font-medium ${
+                                  app.category === 'Creating' ? 'text-[rgb(124,58,237)] hover:bg-primary/10' :
+                                  app.category === 'Consuming' ? 'text-[rgb(239,68,68)] hover:bg-destructive/10' :
+                                  'text-gray-500 hover:bg-muted'
+                                }`}
+                              >
+                                {app.category}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-fit p-1">
+                              <div className="flex flex-col gap-1.5">
+                                {(['Creating', 'Consuming', 'Neutral'] as const).map((category) => (
+                                  <Button
+                                    key={category}
+                                    variant="ghost"
+                                    size="sm"
+                                    className={`h-6 px-2 py-0 text-xs font-medium justify-start ${
+                                      category === 'Creating' ? 'text-[rgb(124,58,237)] hover:bg-primary/10' :
+                                      category === 'Consuming' ? 'text-[rgb(239,68,68)] hover:bg-destructive/10' :
+                                      'text-gray-500 hover:bg-muted'
+                                    }`}
+                                    onClick={() => {
+                                      updateAppCategory(app.name, category)
+                                      const button = document.activeElement as HTMLElement
+                                      button?.blur()
+                                    }}
+                                  >
+                                    {category}
+                                  </Button>
+                                ))}
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                        <span className="text-sm text-muted-foreground">
+                          {Math.floor(app.timeSpent / 60)}h {app.timeSpent % 60}m
+                        </span>
+                      </div>
+                      <Progress 
+                        value={(app.timeSpent / (6 * 60)) * 100} 
+                        className={
+                          app.category === 'Creating' || app.category === 'Neutral'
+                            ? 'bg-[rgb(124,58,237)]/20 [&>div]:bg-[rgb(124,58,237)]' :
+                          app.category === 'Consuming' 
+                            ? 'bg-[rgb(239,68,68)]/20 [&>div]:bg-[rgb(239,68,68)]' : 
+                            'bg-gray-500/20 [&>div]:bg-gray-500'
+                        }
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         </div>
