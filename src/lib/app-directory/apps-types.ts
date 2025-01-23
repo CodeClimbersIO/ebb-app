@@ -21,8 +21,8 @@ export const categoryEmojis: Record<AppCategory, string> = {
   'Travel': '✈️',
   'Coding': '💻',
   'Designing': '🎨',
-  'Creating': '🎯',
-  'Other': '🔮'
+  'Creating': '🪄',
+  'Other': '⚙️'
 }
 
 export type ActivityRating = 'Consuming' | 'Creating' | 'Neutral'
