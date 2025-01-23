@@ -25,12 +25,12 @@ import {
 import { getAppsByCategory } from '../lib/app-directory/apps-list'
 import { useSettings } from '../hooks/useSettings'
 import { AppCategory, categoryEmojis } from '../lib/app-directory/apps-types'
+import { TimeSelector } from '@/components/TimeSelector'
 
 export const StartFocusPage = () => {
   const { userRole } = useSettings()
   const [objective, setObjective] = useState('')
-  const [selectedTime, setSelectedTime] = useState('no-limit')
-  const [customMinutes, setCustomMinutes] = useState('')
+  const [duration, setDuration] = useState<number | null>(null)
   const [selectedBlocks, setSelectedBlocks] = useState<string[]>([])
   const [selectedPlaylist, setSelectedPlaylist] = useState('')
   const [musicService, setMusicService] = useState<{
@@ -69,15 +69,6 @@ export const StartFocusPage = () => {
     },
   ]
 
-  const timePresets = [
-    { value: 'no-limit', label: 'No time limit' },
-    { value: '15', label: '15 minutes' },
-    { value: '30', label: '30 minutes' },
-    { value: '45', label: '45 minutes' },
-    { value: '60', label: '60 minutes' },
-    { value: 'custom', label: 'Custom' },
-  ]
-
   const getPlaceholderByRole = () => {
     switch (userRole) {
       case 'developer':
@@ -95,8 +86,6 @@ export const StartFocusPage = () => {
     if (!objective) return
 
     const sessionId = await FlowSessionApi.startFlowSession(objective)
-    const duration = selectedTime === 'custom' ? parseInt(customMinutes) : 
-                    selectedTime === 'no-limit' ? null : parseInt(selectedTime)
 
     navigate('/breathing-exercise', {
       state: {
@@ -178,27 +167,10 @@ export const StartFocusPage = () => {
 
             <div>
               <h2 className="text-lg font-semibold mb-4">Session Duration</h2>
-              <Select value={selectedTime} onValueChange={setSelectedTime}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select duration" />
-                </SelectTrigger>
-                <SelectContent>
-                  {timePresets.map(preset => (
-                    <SelectItem key={preset.value} value={preset.value}>
-                      {preset.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {selectedTime === 'custom' && (
-                <Input
-                  type="number"
-                  placeholder="Enter minutes"
-                  value={customMinutes}
-                  onChange={(e) => setCustomMinutes(e.target.value)}
-                  className="mt-2"
-                />
-              )}
+              <TimeSelector
+                value={duration}
+                onChange={setDuration}
+              />
             </div>
 
             <div>
@@ -315,7 +287,7 @@ export const StartFocusPage = () => {
             <Button
               className="w-full"
               onClick={handleBegin}
-              disabled={!objective || (selectedTime === 'custom' && !customMinutes)}
+              disabled={!objective}
             >
               Start Focus Session
             </Button>
