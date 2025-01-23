@@ -1,39 +1,30 @@
 import { useState, useEffect } from 'react'
 
-interface Settings {
-  showZeroState: boolean
-}
+export const useSettings = () => {
+  const [showZeroState, setShowZeroState] = useState(() => {
+    const saved = localStorage.getItem('settings.showZeroState')
+    return saved ? JSON.parse(saved) : false
+  })
 
-const defaultSettings: Settings = {
-  showZeroState: false
-}
-
-export function useSettings() {
-  const [settings, setSettings] = useState<Settings>(() => {
-    const saved = localStorage.getItem('app-settings')
-    if (saved) {
-      try {
-        return JSON.parse(saved)
-      } catch {
-        return defaultSettings
-      }
-    }
-    return defaultSettings
+  const [userRole, setUserRole] = useState<'developer' | 'designer' | 'creator'>(() => {
+    const saved = localStorage.getItem('settings.userRole')
+    return saved ? (saved as 'developer' | 'designer' | 'creator') : 'developer'
   })
 
   useEffect(() => {
-    localStorage.setItem('app-settings', JSON.stringify(settings))
-  }, [settings])
+    localStorage.setItem('settings.showZeroState', JSON.stringify(showZeroState))
+  }, [showZeroState])
 
-  const toggleZeroState = () => {
-    setSettings(prev => ({
-      ...prev,
-      showZeroState: !prev.showZeroState
-    }))
-  }
+  useEffect(() => {
+    localStorage.setItem('settings.userRole', userRole)
+  }, [userRole])
+
+  const toggleZeroState = (): void => setShowZeroState((prev: boolean): boolean => !prev)
 
   return {
-    showZeroState: settings.showZeroState,
-    toggleZeroState
+    showZeroState,
+    toggleZeroState,
+    userRole,
+    setUserRole
   }
 } 
