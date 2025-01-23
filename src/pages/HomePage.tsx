@@ -100,7 +100,6 @@ const getRandomItems = (array: AppDefinition[], count: number) => {
 }
 
 // Get random apps for display
-const topApps = getRandomItems(apps, 3)
 const usageApps = getRandomItems(apps, 6).map(app => ({
   name: app.type === 'application' ? app.name : app.websiteUrl,
   icon: app.icon,
@@ -308,7 +307,7 @@ export const HomePage = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center space-x-2">
-                    {topApps.map((app, index) => (
+                    {sortedAppUsage.slice(0, 3).map((app, index) => (
                       <Button
                         key={index}
                         variant="ghost"
@@ -319,18 +318,22 @@ export const HomePage = () => {
                           {app.icon ? (
                             <img 
                               src={`/src/lib/app-directory/icons/${app.icon}`} 
-                              alt={app.type === 'application' ? app.name : app.websiteUrl} 
+                              alt={app.name}
                               className="h-5 w-5"
                               onError={(e) => {
                                 const target = e.target as HTMLImageElement
                                 const parent = target.parentElement
-                                if (parent) {
-                                  parent.textContent = categoryEmojis[app.category]
+                                const appDef = apps.find(a => 
+                                  (a.type === 'application' && a.name === app.name) || 
+                                  (a.type === 'website' && a.websiteUrl === app.name)
+                                )
+                                if (parent && appDef) {
+                                  parent.textContent = categoryEmojis[appDef.category]
                                 }
                               }}
                             />
                           ) : (
-                            <span className="text-muted-foreground">{categoryEmojis[app.category]}</span>
+                            <span className="text-muted-foreground">❓</span>
                           )}
                         </div>
                       </Button>

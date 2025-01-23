@@ -22,9 +22,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { getAppsByCategory } from '@/lib/app-directory/apps-list'
-import { useSettings } from '@/hooks/useSettings'
-import { AppCategory, categoryEmojis } from '@/lib/app-directory/apps-types'
+import { getAppsByCategory } from '../lib/app-directory/apps-list'
+import { useSettings } from '../hooks/useSettings'
+import { AppCategory, categoryEmojis } from '../lib/app-directory/apps-types'
 
 export const StartFocusPage = () => {
   const { userRole } = useSettings()

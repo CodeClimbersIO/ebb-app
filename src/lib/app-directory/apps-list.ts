@@ -296,7 +296,7 @@ export const apps: AppDefinition[] = [
     name: 'TV',
     category: 'Entertainment',
     defaultRating: 'Consuming',
-    icon: 'tv.svg'
+    icon: 'appletv.svg'
   },
   {
     type: 'website',
@@ -502,22 +502,6 @@ export const apps: AppDefinition[] = [
     icon: 'zee5.svg'
   },
 
-  // Coding
-  {
-    type: 'application',
-    name: 'Visual Studio Code',
-    category: 'Coding',
-    defaultRating: 'Creating',
-    icon: 'vscode.svg'
-  },
-  {
-    type: 'website',
-    websiteUrl: 'github.com',
-    category: 'Coding',
-    defaultRating: 'Creating',
-    icon: 'github.svg'
-  },
-
   // Social Media
   {
     type: 'website',
@@ -608,7 +592,7 @@ export const apps: AppDefinition[] = [
     websiteUrl: 'twitter.com',
     category: 'Social Media',
     defaultRating: 'Consuming',
-    icon: 'twitter.svg'
+    icon: 'x.svg'
   },
   {
     type: 'website',
@@ -644,6 +628,204 @@ export const apps: AppDefinition[] = [
     category: 'Social Media',
     defaultRating: 'Consuming',
     icon: 'bsky.svg'
+  },
+
+  // Communication
+  {
+    type: 'application',
+    name: 'Discord',
+    category: 'Communication',
+    defaultRating: 'Neutral',
+    icon: 'discord.svg'
+  },
+  {
+    type: 'application',
+    name: 'Messages',
+    category: 'Communication',
+    defaultRating: 'Consuming',
+    icon: 'messages.svg'
+  },
+  {
+    type: 'application',
+    name: 'Slack',
+    category: 'Communication',
+    defaultRating: 'Neutral',
+    icon: 'slack.svg'
+  },
+  {
+    type: 'application',
+    name: 'Mail',
+    category: 'Communication',
+    defaultRating: 'Consuming',
+    icon: 'mail.svg'
+  },
+  {
+    type: 'application',
+    name: 'Outlook',
+    category: 'Communication',
+    defaultRating: 'Consuming',
+    icon: 'outlook.svg'
+  },
+  {
+    type: 'website',
+    websiteUrl: 'web.whatsapp.com',
+    category: 'Communication',
+    defaultRating: 'Consuming',
+    icon: 'whatsapp.svg'
+  },
+  {
+    type: 'website',
+    websiteUrl: 'web.telegram.org',
+    category: 'Communication',
+    defaultRating: 'Consuming',
+    icon: 'telegram.svg'
+  },
+  {
+    type: 'website',
+    websiteUrl: 'messenger.com',
+    category: 'Communication',
+    defaultRating: 'Consuming',
+    icon: 'messenger.svg'
+  },
+  {
+    type: 'website',
+    websiteUrl: 'discord.com',
+    category: 'Communication',
+    defaultRating: 'Neutral',
+    icon: 'discord.svg'
+  },
+  {
+    type: 'website',
+    websiteUrl: 'slack.com',
+    category: 'Communication',
+    defaultRating: 'Neutral',
+    icon: 'slack.svg'
+  },
+  {
+    type: 'website',
+    websiteUrl: 'signal.org',
+    category: 'Communication',
+    defaultRating: 'Consuming',
+    icon: 'signal.svg'
+  },
+  {
+    type: 'website',
+    websiteUrl: 'wechat.com',
+    category: 'Communication',
+    defaultRating: 'Consuming',
+    icon: 'wechat.svg'
+  },
+  {
+    type: 'website',
+    websiteUrl: 'skype.com',
+    category: 'Communication',
+    defaultRating: 'Consuming',
+    icon: 'skype.svg'
+  },
+  {
+    type: 'website',
+    websiteUrl: 'viber.com',
+    category: 'Communication',
+    defaultRating: 'Consuming',
+    icon: 'viber.svg'
+  },
+  {
+    type: 'website',
+    websiteUrl: 'line.me',
+    category: 'Communication',
+    defaultRating: 'Consuming',
+    icon: 'line.svg'
+  },
+  {
+    type: 'website',
+    websiteUrl: 'chat.google.com',
+    category: 'Communication',
+    defaultRating: 'Neutral',
+    icon: 'googlechat.svg'
+  },
+  {
+    type: 'website',
+    websiteUrl: 'teams.microsoft.com',
+    category: 'Communication',
+    defaultRating: 'Neutral',
+    icon: 'teams.svg'
+  },
+  {
+    type: 'website',
+    websiteUrl: 'zoom.us',
+    category: 'Communication',
+    defaultRating: 'Neutral',
+    icon: 'zoom.svg'
+  },
+  {
+    type: 'website',
+    websiteUrl: 'icq.com',
+    category: 'Communication',
+    defaultRating: 'Consuming',
+    icon: 'icq.svg'
+  },
+  {
+    type: 'website',
+    websiteUrl: 'wire.com',
+    category: 'Communication',
+    defaultRating: 'Consuming',
+    icon: 'wire.svg'
+  },
+  {
+    type: 'website',
+    websiteUrl: 'element.io',
+    category: 'Communication',
+    defaultRating: 'Consuming',
+    icon: 'element.svg'
+  },
+  {
+    type: 'website',
+    websiteUrl: 'threema.ch',
+    category: 'Communication',
+    defaultRating: 'Consuming',
+    icon: 'threema.svg'
+  },
+  {
+    type: 'website',
+    websiteUrl: 'chatwork.com',
+    category: 'Communication',
+    defaultRating: 'Consuming',
+    icon: 'chatwork.svg'
+  },
+  {
+    type: 'website',
+    websiteUrl: 'kik.com',
+    category: 'Communication',
+    defaultRating: 'Consuming',
+    icon: 'kik.svg'
+  },
+  {
+    type: 'website',
+    websiteUrl: 'mail.google.com',
+    category: 'Communication',
+    defaultRating: 'Consuming',
+    icon: 'gmail.svg'
+  },
+  {
+    type: 'website',
+    websiteUrl: 'gmail.com',
+    category: 'Communication',
+    defaultRating: 'Consuming',
+    icon: 'gmail.svg'
+  },
+  {
+    type: 'website',
+    websiteUrl: 'outlook.live.com',
+    category: 'Communication',
+    defaultRating: 'Consuming',
+    icon: 'outlook.svg'
+  },
+  {
+    type: 'website',
+    websiteUrl: 'proton.me',
+    category: 'Communication',
+    defaultRating: 'Consuming',
+    icon: 'proton.svg'
   },
 
   // Shopping
@@ -1004,7 +1186,7 @@ export const apps: AppDefinition[] = [
     websiteUrl: 'news.ycombinator.com',
     category: 'News',
     defaultRating: 'Consuming',
-    icon: 'hackernews.svg'
+    icon: 'yc.svg'
   },
   {
     type: 'website',
@@ -1423,6 +1605,69 @@ export const apps: AppDefinition[] = [
   },
 
   // Coding
+  {
+    type: 'application',
+    name: 'Visual Studio Code',
+    category: 'Coding',
+    defaultRating: 'Creating',
+    icon: 'vscode.svg'
+  },
+  {
+    type: 'application',
+    name: 'Intellij IDEA',
+    category: 'Coding',
+    defaultRating: 'Creating',
+    icon: 'intellij.svg'
+  },  
+  {
+    type: 'application',
+    name: 'WebStorm',
+    category: 'Coding',
+    defaultRating: 'Creating',
+    icon: 'webstorm.svg'
+  },  
+  {
+    type: 'application',
+    name: 'PyCharm',
+    category: 'Coding',
+    defaultRating: 'Creating',
+    icon: 'pycharm.svg'
+  },  
+  {
+    type: 'application',
+    name: 'Atom',
+    category: 'Coding',
+    defaultRating: 'Creating',
+    icon: 'atom.svg'
+  },    
+  {
+    type: 'application',
+    name: 'Sublime Text',
+    category: 'Coding',
+    defaultRating: 'Creating',
+    icon: 'sublime.svg'
+  },  
+  {
+    type: 'application',
+    name: 'Notepad++',
+    category: 'Coding',
+    defaultRating: 'Creating',
+    icon: 'notepad.svg'
+  },  
+  {
+    type: 'application',
+    name: 'Cursor',
+    category: 'Coding',
+    defaultRating: 'Creating',
+    icon: 'cursor.svg'
+  },
+  {
+    type: 'website',
+    websiteUrl: 'github.com',
+    category: 'Coding',
+    defaultRating: 'Creating',
+    icon: 'github.svg'
+  },
 
   // Designing
   {
