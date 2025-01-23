@@ -426,6 +426,13 @@ export const apps: AppDefinition[] = [
   },
   {
     type: 'website',
+    websiteUrl: 'amazon.com/gp/video',
+    category: 'Entertainment',
+    defaultRating: 'Consuming',
+    icon: 'primevideo.svg'
+  },
+  {
+    type: 'website',
     websiteUrl: 'rakuten.tv',
     category: 'Entertainment',
     defaultRating: 'Consuming',
@@ -746,6 +753,13 @@ export const apps: AppDefinition[] = [
   {
     type: 'website',
     websiteUrl: 'teams.microsoft.com',
+    category: 'Communication',
+    defaultRating: 'Neutral',
+    icon: 'teams.svg'
+  },
+  {
+    type: 'application',
+    name: 'Microsoft Teams',
     category: 'Communication',
     defaultRating: 'Neutral',
     icon: 'teams.svg'
@@ -1613,6 +1627,20 @@ export const apps: AppDefinition[] = [
     icon: 'vscode.svg'
   },
   {
+    type: 'website',
+    websiteUrl: 'daily.dev',
+    category: 'Coding',
+    defaultRating: 'Neutral',
+    icon: 'dailydev.svg'
+  },
+  {
+    type: 'application',
+    name: 'Terminal',
+    category: 'Coding',
+    defaultRating: 'Creating',
+    icon: 'terminal.svg'
+  },
+  {
     type: 'application',
     name: 'Intellij IDEA',
     category: 'Coding',
@@ -1662,6 +1690,13 @@ export const apps: AppDefinition[] = [
     icon: 'cursor.svg'
   },
   {
+    type: 'application',
+    name: 'Neovim',
+    category: 'Coding',
+    defaultRating: 'Creating',
+    icon: 'neovim.svg'
+  },
+  {
     type: 'website',
     websiteUrl: 'github.com',
     category: 'Coding',
@@ -1679,6 +1714,13 @@ export const apps: AppDefinition[] = [
   },
   {
     type: 'website',
+    websiteUrl: 'behance.net',
+    category: 'Designing',
+    defaultRating: 'Creating',
+    icon: 'behance.svg'
+  },
+  {
+    type: 'website',
     websiteUrl: 'canva.com',
     category: 'Designing',
     defaultRating: 'Creating',
@@ -1693,6 +1735,43 @@ export const apps: AppDefinition[] = [
   },
 
   // Creating
+
+  // Other
+  {
+    type: 'application',
+    name: 'Ebb',
+    category: 'Other',
+    defaultRating: 'Neutral',
+    icon: 'ebb.svg'
+  },
+  {
+    type: 'application',
+    name: 'Notes',
+    category: 'Other',
+    defaultRating: 'Creating',
+    icon: 'applenotes.svg'
+  },
+  {
+    type: 'application',
+    name: 'Music',
+    category: 'Other',
+    defaultRating: 'Neutral',
+    icon: 'applemusic.svg'
+  },
+  {
+    type: 'application',
+    name: 'Spotify',
+    category: 'Other',
+    defaultRating: 'Neutral',
+    icon: 'spotify.svg'
+  },
+  {
+    type: 'website',
+    websiteUrl: 'spotify.com',
+    category: 'Other',
+    defaultRating: 'Neutral',
+    icon: 'spotify.svg'
+  }
 ]
 
 // Helper functions
