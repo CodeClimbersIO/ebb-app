@@ -1,30 +1,32 @@
 use std::sync::Arc;
 
 use monitor::{
-    detect_changes, initialize_callback, EventCallback, KeyboardEvent, MonitorError, MouseEvent,
+    detect_changes, initialize_callback, KeyboardEvent, Monitor, MonitorError, MouseEvent,
     WindowEvent,
 };
 
-struct MonitorCallback {}
+fn on_keyboard_events(events: Vec<KeyboardEvent>) {
+    println!("Keyboard event: {:?}", events);
+}
 
-impl EventCallback for MonitorCallback {
-    fn on_keyboard_events(&self, events: Vec<KeyboardEvent>) {
-        println!("Keyboard event: {:?}", events);
-    }
+fn on_mouse_events(events: Vec<MouseEvent>) {
+    println!("Mouse event: {:?}", events);
+}
 
-    fn on_mouse_events(&self, events: Vec<MouseEvent>) {
-        println!("Mouse event: {:?}", events);
-    }
-
-    fn on_window_event(&self, event: WindowEvent) {
-        println!("Window event: {:?}", event);
-    }
+fn on_window_event(event: WindowEvent) {
+    println!("Window event: {:?}", event);
 }
 
 fn main() -> Result<(), MonitorError> {
     println!("main.rs starting");
 
-    initialize_callback(Arc::new(MonitorCallback {})).expect("Failed to initialize callback");
+    let monitor = Monitor::new();
+
+    monitor.register_keyboard_callback(Box::new(on_keyboard_events));
+    monitor.register_mouse_callback(Box::new(on_mouse_events));
+    monitor.register_window_callback(Box::new(on_window_event));
+
+    initialize_callback(Arc::new(monitor)).expect("Failed to initialize callback");
     loop {
         detect_changes().expect("Failed to detect changes");
         std::thread::sleep(std::time::Duration::from_secs(1));

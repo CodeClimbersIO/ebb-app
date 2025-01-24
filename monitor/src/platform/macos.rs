@@ -1,5 +1,5 @@
 use crate::event::WindowEvent;
-use crate::{bindings, event::EventCallback};
+use crate::{bindings, event::EventCallback, Monitor};
 use crate::{KeyboardEvent, MonitorError, MouseEvent, MouseEventType};
 use once_cell::sync::Lazy;
 use std::sync::{Arc, Mutex};
@@ -10,7 +10,7 @@ struct WindowTitle {
     title: String,
 }
 
-static CALLBACK: Lazy<Mutex<Option<Arc<dyn EventCallback>>>> = Lazy::new(|| Mutex::new(None));
+static CALLBACK: Lazy<Mutex<Option<Arc<Monitor>>>> = Lazy::new(|| Mutex::new(None));
 
 static MOUSE_EVENTS: Mutex<Vec<MouseEvent>> = Mutex::new(Vec::new());
 static KEYBOARD_EVENTS: Mutex<Vec<KeyboardEvent>> = Mutex::new(Vec::new());
@@ -87,9 +87,7 @@ fn send_buffered_events() {
     }
 }
 
-pub(crate) fn platform_initialize_callback(
-    callback: Arc<dyn EventCallback>,
-) -> Result<(), MonitorError> {
+pub(crate) fn platform_initialize_callback(callback: Arc<Monitor>) -> Result<(), MonitorError> {
     let mut callback_guard = CALLBACK.lock().unwrap();
     *callback_guard = Some(callback);
 

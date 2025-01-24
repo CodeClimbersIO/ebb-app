@@ -3,7 +3,8 @@ use std::time::Duration;
 
 use dotenv::dotenv;
 
-use monitoring_service::{detect_changes, initialize_monitor};
+use monitor::detect_changes;
+use monitoring_service::initialize_monitor;
 use tokio::{self, time::sleep};
 
 #[tokio::main]
