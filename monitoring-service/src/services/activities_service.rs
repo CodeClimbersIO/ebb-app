@@ -88,7 +88,6 @@ impl ActivityService {
 
     async fn handle_window_activity(&self, event: WindowEvent) {
         let activity = Activity::create_window_activity(&event);
-
         if let Err(err) = self.save_activity(&activity).await {
             eprintln!("Failed to save window activity: {}", err);
         }
@@ -272,7 +271,8 @@ mod tests {
         let activity_service = ActivityService::new(pool);
         let event = WindowEvent {
             app_name: "Cursor".to_string(),
-            title: "main.rs - app-codeclimbers".to_string(),
+            window_title: "main.rs - app-codeclimbers".to_string(),
+            url: None,
         };
         activity_service.handle_window_activity(event).await;
 

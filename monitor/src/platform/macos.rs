@@ -29,12 +29,14 @@ fn detect_focused_window() {
             return;
         }
 
-        let title = std::ffi::CStr::from_ptr((*window_title).title)
+        let title = std::ffi::CStr::from_ptr((*window_title).window_title)
             .to_str()
             .unwrap();
         let app_name = std::ffi::CStr::from_ptr((*window_title).app_name)
             .to_str()
             .unwrap();
+
+        let url = (*window_title).get_url();
 
         {
             let mut window_title_guard = FOCUSED_WINDOW.lock().unwrap();
@@ -44,8 +46,9 @@ fn detect_focused_window() {
             {
                 if let Some(monitor) = monitor_guard.as_ref() {
                     monitor.on_window_event(WindowEvent {
-                        title: title.to_string(),
+                        window_title: title.to_string(),
                         app_name: app_name.to_string(),
+                        url: url,
                     });
                 }
             }

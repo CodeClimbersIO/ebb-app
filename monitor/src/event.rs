@@ -53,7 +53,8 @@ pub struct KeyboardEvent {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WindowEvent {
     pub app_name: String,
-    pub title: String,
+    pub window_title: String,
+    pub url: Option<String>,
 }
 
 pub trait EventCallback: Send + Sync {
