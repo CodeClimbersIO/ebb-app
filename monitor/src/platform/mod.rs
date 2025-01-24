@@ -15,6 +15,6 @@ pub fn detect_changes() -> Result<(), MonitorError> {
     platform_detect_changes()
 }
 
-pub fn initialize_callback(callback: Arc<Monitor>) -> Result<(), MonitorError> {
-    platform_initialize_callback(callback)
+pub fn initialize_monitor(monitor: Arc<Monitor>) -> Result<(), MonitorError> {
+    platform_initialize_monitor(monitor)
 }

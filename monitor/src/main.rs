@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use monitor::{
-    detect_changes, initialize_callback, KeyboardEvent, Monitor, MonitorError, MouseEvent,
+    detect_changes, initialize_monitor, KeyboardEvent, Monitor, MonitorError, MouseEvent,
     WindowEvent,
 };
 
@@ -26,7 +26,7 @@ fn main() -> Result<(), MonitorError> {
     monitor.register_mouse_callback(Box::new(on_mouse_events));
     monitor.register_window_callback(Box::new(on_window_event));
 
-    initialize_callback(Arc::new(monitor)).expect("Failed to initialize callback");
+    initialize_monitor(Arc::new(monitor)).expect("Failed to initialize monitor");
     loop {
         detect_changes().expect("Failed to detect changes");
         std::thread::sleep(std::time::Duration::from_secs(1));
