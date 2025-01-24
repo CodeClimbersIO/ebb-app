@@ -6,8 +6,10 @@ import { useSettings } from '../hooks/useSettings'
 import { Card } from '@/components/ui/card'
 import { Code2, Palette, Wand2 } from 'lucide-react'
 import { AppSelector } from '@/components/AppSelector'
-import { AppDefinition } from '@/lib/app-directory/apps-types'
 import { apps } from '@/lib/app-directory/apps-list'
+import { AppCategory, AppDefinition } from '@/lib/app-directory/apps-types'
+
+type SearchOption = AppDefinition | { type: 'category', category: AppCategory, count: number }
 
 // Get creative apps as presets, organized by role
 const appsByRole = {
@@ -18,15 +20,7 @@ const appsByRole = {
 
 export const SettingsPage = () => {
   const { showZeroState, toggleZeroState, userRole, setUserRole } = useSettings()
-  const roleRef = React.useRef<HTMLDivElement>(null)
   
-  // Add effect to handle hash-based scrolling
-  React.useEffect(() => {
-    if (window.location.hash === '#role' && roleRef.current) {
-      roleRef.current.scrollIntoView({ behavior: 'smooth' })
-    }
-  }, [])
-
   const roleOptions = [
     { id: 'developer', title: 'Developer', icon: <Code2 className="h-6 w-6" />, statLabel: 'Time Spent Coding' },
     { id: 'designer', title: 'Designer', icon: <Palette className="h-6 w-6" />, statLabel: 'Time Spent Designing' },
@@ -34,9 +28,19 @@ export const SettingsPage = () => {
   ]
 
   // Initialize selectedApps from localStorage or fall back to defaults
-  const [selectedApps, setSelectedApps] = React.useState<AppDefinition[]>(() => {
+  const [selectedApps, setSelectedApps] = React.useState<SearchOption[]>(() => {
     const saved = localStorage.getItem(`selectedApps_${userRole}`)
-    return saved ? JSON.parse(saved) : appsByRole[userRole]
+    if (saved) {
+      return JSON.parse(saved)
+    }
+    // Instead of returning individual apps, return the category
+    return [{
+      type: 'category',
+      category: userRole === 'developer' ? 'Coding' : 
+                userRole === 'designer' ? 'Designing' : 
+                'Creating',
+      count: appsByRole[userRole].length
+    }]
   })
 
   // Load saved apps when role changes
@@ -45,8 +49,14 @@ export const SettingsPage = () => {
     if (saved) {
       setSelectedApps(JSON.parse(saved))
     } else {
-      // Fall back to defaults if no saved data
-      setSelectedApps(appsByRole[userRole])
+      // Same default as above
+      setSelectedApps([{
+        type: 'category',
+        category: userRole === 'developer' ? 'Coding' : 
+                  userRole === 'designer' ? 'Designing' : 
+                  'Creating',
+        count: appsByRole[userRole].length
+      }])
     }
   }, [userRole])
 
@@ -55,23 +65,32 @@ export const SettingsPage = () => {
     localStorage.setItem(`selectedApps_${userRole}`, JSON.stringify(selectedApps))
   }, [selectedApps, userRole])
 
-  const handleAppSelect = (app: AppDefinition) => {
-    setSelectedApps(prev => [...prev, app])
+  const handleAppSelect = (option: SearchOption) => {
+    setSelectedApps((prev: SearchOption[]) => {
+      const newApps = [...prev, option]
+      localStorage.setItem(`selectedApps_${userRole}`, JSON.stringify(newApps))
+      return newApps
+    })
   }
 
-  const handleAppRemove = (app: AppDefinition) => {
-    setSelectedApps(prev => {
-      // Create new filtered array - only remove the exact app that was clicked
-      const newApps = prev.filter(a => {
-        if (app.type === 'application' && a.type === 'application') {
-          return app.name !== a.name
+  const handleAppRemove = (option: SearchOption) => {
+    setSelectedApps((prev: SearchOption[]) => {
+      const newApps = prev.filter(app => {
+        // For categories, only remove if it's the exact same category
+        if ('category' in option && 'category' in app && option.type === 'category' && app.type === 'category') {
+          return app.category !== option.category
         }
-        if (app.type === 'website' && a.type === 'website') {
-          return app.websiteUrl !== a.websiteUrl
+        // For apps/websites, only remove if it's the exact same app/website
+        if ('type' in option && 'type' in app) {
+          if (option.type === 'application' && app.type === 'application') {
+            return app.name !== option.name
+          }
+          if (option.type === 'website' && app.type === 'website') {
+            return app.websiteUrl !== option.websiteUrl
+          }
         }
-        return true // Keep items of different types
+        return true
       })
-      
       localStorage.setItem(`selectedApps_${userRole}`, JSON.stringify(newApps))
       return newApps
     })
@@ -99,7 +118,7 @@ export const SettingsPage = () => {
               </div>
             </div>
 
-            <div className="border rounded-lg p-6" ref={roleRef}>
+            <div className="border rounded-lg p-6">
               <h2 className="text-lg font-semibold mb-4">Role</h2>
               <div className="space-y-4">
                 <div>
@@ -158,6 +177,11 @@ export const SettingsPage = () => {
                 </div>
               </div>
             </div>
+          </div>
+          
+          <div className="mt-12 flex justify-between text-sm text-muted-foreground/50">
+            <div>Ebb Version 1.0.0</div>
+            <div>Created with ♡ by Paul Hovley and Nathan Covey</div>
           </div>
         </div>
       </div>
