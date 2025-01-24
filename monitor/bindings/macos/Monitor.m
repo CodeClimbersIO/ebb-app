@@ -38,11 +38,80 @@ static NSString* getAXErrorDescription(AXError error) {
     }
 }
 
+
+BOOL isDomain(NSString *str) {
+    NSString *pattern = @"^(?:https?:\\/\\/)?(?:www\\.)?[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*\\.[a-zA-Z]{2,}(?:\\/[^\\s]*)?(?:\\?[^\\s]*)?$";
+    NSError *error = nil;
+    NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:pattern
+                                                                         options:0
+                                                                           error:&error];
+    if (error) {
+        return NO;
+    }
+    
+    NSRange range = NSMakeRange(0, [str length]);
+    NSArray *matches = [regex matchesInString:str options:0 range:range];
+    
+    return matches.count > 0;
+}
+
+/**
+* Find the URL element in the given accessibility element. Recursively searches through children.
+* Assumes that the URL element is a static text or a text field. 
+* TODO: future versions might need to search specifically based on the browser
+* @param element The accessibility element to search
+* @return The URL element if found, otherwise NULL
+*/
+AXUIElementRef findUrlElement(AXUIElementRef element) {
+    if (!element) return NULL;
+    
+    CFStringRef roleRef;
+    AXUIElementCopyAttributeValue(element, kAXRoleAttribute, (CFTypeRef *)&roleRef);
+    NSString *role = (__bridge_transfer NSString *)roleRef;
+    
+    if ([role isEqualToString:NSAccessibilityStaticTextRole] || [role isEqualToString:NSAccessibilityTextFieldRole]) {
+        CFTypeRef valueRef;
+        AXError error = AXUIElementCopyAttributeValue(element, kAXValueAttribute, &valueRef);
+        if (error == kAXErrorSuccess) {
+            NSString *value = (__bridge_transfer NSString *)valueRef;
+            if (isDomain(value)) {
+                CFRetain(element);
+                return element;
+            }
+        }
+    }
+    
+    CFArrayRef childrenRef;
+    AXError childrenError = AXUIElementCopyAttributeValue(element, kAXChildrenAttribute, (CFTypeRef *)&childrenRef);
+    
+    if (childrenError == kAXErrorSuccess) {
+        NSArray *children = (__bridge_transfer NSArray *)childrenRef;
+        for (id child in children) {
+            AXUIElementRef urlElement = findUrlElement((__bridge AXUIElementRef)child);
+            if (urlElement != NULL) {
+                return urlElement;
+            }
+        }
+    }
+    
+    return NULL;
+}
+
 BOOL checkAccessibilityPermissions(void) {
     NSDictionary *options = @{(__bridge id)kAXTrustedCheckOptionPrompt: @YES};
     BOOL trusted = AXIsProcessTrustedWithOptions((__bridge CFDictionaryRef)options);
     
     return trusted;
+}
+
+BOOL isSupportedBrowser(NSString *bundleId) {
+    // return true;
+    return [bundleId isEqualToString:@"com.apple.Safari"] ||
+           [bundleId isEqualToString:@"com.google.Chrome"] ||
+           [bundleId isEqualToString:@"com.microsoft.Edge"] ||
+           [bundleId isEqualToString:@"com.google.Chrome.canary"] ||
+           [bundleId isEqualToString:@"com.google.Chrome.beta"] ||
+           [bundleId isEqualToString:@"company.thebrowser.Browser"];
 }
 
 WindowTitle* detect_focused_window(void) {
@@ -54,10 +123,12 @@ WindowTitle* detect_focused_window(void) {
     // Create system-wide accessibility element
     // Get the frontmost application process first
     NSRunningApplication *frontmostApp = [[NSWorkspace sharedWorkspace] frontmostApplication];
+    
     if (!frontmostApp) {
         NSLog(@"Failed to get frontmost application");
         return nil;
     }
+    NSString *bundleId = frontmostApp.bundleIdentifier;
     
     // Create an accessibility element for the specific application
     AXUIElementRef appRef = AXUIElementCreateApplication(frontmostApp.processIdentifier);
@@ -90,14 +161,24 @@ WindowTitle* detect_focused_window(void) {
         kAXTitleAttribute,
         &windowTitle
     );
+
+    NSString *url = nil;
+    if (isSupportedBrowser(bundleId)) {
+        AXUIElementRef urlElement = findUrlElement(focusedWindow);
+        if (urlElement) {
+            CFTypeRef valueRef;
+            AXUIElementCopyAttributeValue(urlElement, kAXValueAttribute, &valueRef);
+            url = (__bridge_transfer NSString *)valueRef;
+        }
+    }
     
     if (result == kAXErrorSuccess) {
         NSString *title = (__bridge_transfer NSString *)windowTitle;
-        NSString *applicationName = frontmostApp.localizedName;  // Get the app name
-        
+        NSString *applicationName = frontmostApp.localizedName; 
         WindowTitle* windowTitleStruct = malloc(sizeof(WindowTitle));
-        windowTitleStruct->title = strdup([title UTF8String]);
+        windowTitleStruct->window_title = strdup([title UTF8String]);
         windowTitleStruct->app_name = strdup([applicationName UTF8String]);
+        windowTitleStruct->url = url ? strdup([url UTF8String]) : NULL;
         
         // Clean up
         CFRelease(focusedWindow);

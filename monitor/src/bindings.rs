@@ -3,7 +3,26 @@ use std::ffi::c_char;
 #[repr(C)]
 pub struct RawWindowTitle {
     pub app_name: *const c_char,
-    pub title: *const c_char,
+    pub window_title: *const c_char,
+    url: *const c_char,
+}
+
+impl RawWindowTitle {
+    pub fn get_url(&self) -> Option<String> {
+        if self.url.is_null() {
+            None
+        } else {
+            // Safe conversion from raw pointer to Option<&str>
+            unsafe {
+                Some(
+                    std::ffi::CStr::from_ptr(self.url)
+                        .to_str()
+                        .ok()?
+                        .to_string(),
+                )
+            }
+        }
+    }
 }
 
 #[cfg(target_os = "macos")]

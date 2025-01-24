@@ -1,6 +1,6 @@
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
-use monitor::{EventCallback, KeyboardEvent, MouseEvent, WindowEvent};
+use monitor::{Monitor, WindowEvent};
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use tokio::sync::mpsc;
@@ -39,60 +39,7 @@ enum ActivityEvent {
     Window(WindowEvent),
 }
 
-impl EventCallback for ActivityService {
-    fn on_keyboard_events(&self, events: Vec<KeyboardEvent>) {
-        if events.is_empty() {
-            return;
-        }
-        if let Err(e) = self.event_sender.send(ActivityEvent::Keyboard()) {
-            eprintln!("Failed to send keyboard event: {}", e);
-        }
-    }
-
-    fn on_mouse_events(&self, events: Vec<MouseEvent>) {
-        if events.is_empty() {
-            return;
-        }
-        if let Err(e) = self.event_sender.send(ActivityEvent::Mouse()) {
-            eprintln!("Failed to send mouse event: {}", e);
-        }
-    }
-
-    fn on_window_event(&self, event: WindowEvent) {
-        println!("on_window_event: {:?}", event);
-        let mut app_switch_state = APP_SWITCH_STATE.lock();
-        let activity = Activity::create_window_activity(&event);
-        app_switch_state.new_window_activity(activity);
-        println!("app_switches: {}", app_switch_state.app_switches);
-        if let Err(e) = self.event_sender.send(ActivityEvent::Window(event)) {
-            eprintln!("Failed to send window event: {}", e);
-        }
-    }
-}
 impl ActivityService {
-    async fn handle_keyboard_activity(&self) {
-        let activity = Activity::create_keyboard_activity();
-        if let Err(err) = self.save_activity(&activity).await {
-            eprintln!("Failed to save keyboard activity: {}", err);
-        }
-    }
-
-    async fn handle_mouse_activity(&self) {
-        println!("handle_mouse_activity");
-        let activity = Activity::create_mouse_activity();
-        if let Err(err) = self.save_activity(&activity).await {
-            eprintln!("Failed to save mouse activity: {}", err);
-        }
-    }
-
-    async fn handle_window_activity(&self, event: WindowEvent) {
-        let activity = Activity::create_window_activity(&event);
-
-        if let Err(err) = self.save_activity(&activity).await {
-            eprintln!("Failed to save window activity: {}", err);
-        }
-    }
-
     pub fn new(pool: sqlx::SqlitePool) -> Self {
         let (sender, mut receiver) = mpsc::unbounded_channel();
         let activities_repo = ActivityRepo::new(pool.clone());
@@ -123,6 +70,47 @@ impl ActivityService {
         });
 
         service
+    }
+
+    async fn handle_keyboard_activity(&self) {
+        let activity = Activity::create_keyboard_activity();
+        if let Err(err) = self.save_activity(&activity).await {
+            eprintln!("Failed to save keyboard activity: {}", err);
+        }
+    }
+
+    async fn handle_mouse_activity(&self) {
+        let activity = Activity::create_mouse_activity();
+        if let Err(err) = self.save_activity(&activity).await {
+            eprintln!("Failed to save mouse activity: {}", err);
+        }
+    }
+
+    async fn handle_window_activity(&self, event: WindowEvent) {
+        let activity = Activity::create_window_activity(&event);
+        if let Err(err) = self.save_activity(&activity).await {
+            eprintln!("Failed to save window activity: {}", err);
+        }
+    }
+
+    pub fn register_callbacks(&self, event_callback_service: &Arc<Monitor>) {
+        let sender = self.event_sender.clone();
+        event_callback_service.register_keyboard_callback(Box::new(move |_| {
+            let _ = sender.send(ActivityEvent::Keyboard());
+        }));
+
+        let sender = self.event_sender.clone();
+        event_callback_service.register_mouse_callback(Box::new(move |_| {
+            let _ = sender.send(ActivityEvent::Mouse());
+        }));
+
+        let sender = self.event_sender.clone();
+        event_callback_service.register_window_callback(Box::new(move |event| {
+            let mut app_switch_state = APP_SWITCH_STATE.lock();
+            let activity = Activity::create_window_activity(&event);
+            app_switch_state.new_window_activity(activity);
+            let _ = sender.send(ActivityEvent::Window(event));
+        }));
     }
 
     pub async fn save_activity(
@@ -283,9 +271,10 @@ mod tests {
         let activity_service = ActivityService::new(pool);
         let event = WindowEvent {
             app_name: "Cursor".to_string(),
-            title: "main.rs - app-codeclimbers".to_string(),
+            window_title: "main.rs - app-codeclimbers".to_string(),
+            url: None,
         };
-        activity_service.on_window_event(event);
+        activity_service.handle_window_activity(event).await;
 
         tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
 
@@ -297,8 +286,7 @@ mod tests {
     async fn test_on_keyboard_event() {
         let pool = db_manager::create_test_db().await;
         let activity_service = ActivityService::new(pool);
-        let event = KeyboardEvent { key_code: 65 };
-        activity_service.on_keyboard_events(vec![event]);
+        activity_service.handle_keyboard_activity().await;
 
         tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
 
