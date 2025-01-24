@@ -10,7 +10,7 @@ struct WindowTitle {
     title: String,
 }
 
-static CALLBACK: Lazy<Mutex<Option<Arc<Monitor>>>> = Lazy::new(|| Mutex::new(None));
+static MONITOR: Lazy<Mutex<Option<Arc<Monitor>>>> = Lazy::new(|| Mutex::new(None));
 
 static MOUSE_EVENTS: Mutex<Vec<MouseEvent>> = Mutex::new(Vec::new());
 static KEYBOARD_EVENTS: Mutex<Vec<KeyboardEvent>> = Mutex::new(Vec::new());
@@ -38,12 +38,12 @@ fn detect_focused_window() {
 
         {
             let mut window_title_guard = FOCUSED_WINDOW.lock().unwrap();
-            let callback_guard = CALLBACK.lock().unwrap();
+            let monitor_guard = MONITOR.lock().unwrap();
             if app_name.to_string() != window_title_guard.app_name
                 || title.to_string() != window_title_guard.title
             {
-                if let Some(callback) = callback_guard.as_ref() {
-                    callback.on_window_event(WindowEvent {
+                if let Some(monitor) = monitor_guard.as_ref() {
+                    monitor.on_window_event(WindowEvent {
                         title: title.to_string(),
                         app_name: app_name.to_string(),
                     });
@@ -75,21 +75,22 @@ extern "C" fn keyboard_event_callback(key_code: i32) {
 }
 
 fn send_buffered_events() {
-    let callback_guard = CALLBACK.lock().unwrap();
-    if let Some(callback) = callback_guard.as_ref() {
+    let monitor_guard = MONITOR.lock().unwrap();
+    if let Some(monitor) = monitor_guard.as_ref() {
         // Send mouse events
         let mut mouse_events = MOUSE_EVENTS.lock().unwrap();
-        callback.on_mouse_events(mouse_events.drain(..).collect());
+        monitor.on_mouse_events(mouse_events.drain(..).collect());
 
         // Send keyboard events
         let mut keyboard_events = KEYBOARD_EVENTS.lock().unwrap();
-        callback.on_keyboard_events(keyboard_events.drain(..).collect());
+        monitor.on_keyboard_events(keyboard_events.drain(..).collect());
     }
 }
 
-pub(crate) fn platform_initialize_callback(callback: Arc<Monitor>) -> Result<(), MonitorError> {
-    let mut callback_guard = CALLBACK.lock().unwrap();
-    *callback_guard = Some(callback);
+pub(crate) fn platform_initialize_monitor(monitor: Arc<Monitor>) -> Result<(), MonitorError> {
+    let mut monitor_guard = MONITOR.lock().unwrap();
+
+    *monitor_guard = Some(monitor);
 
     unsafe {
         bindings::start_mouse_monitoring(mouse_event_callback);
