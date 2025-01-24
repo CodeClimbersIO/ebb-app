@@ -1728,40 +1728,40 @@ export const apps: AppDefinition[] = [
   },
 
   // Creating
+  {
+    type: 'application',
+    name: 'Notes',
+    category: 'Creating',
+    defaultRating: 'Creating',
+    icon: 'applenotes.svg'
+  },
 
-  // Other
+  // Utilities
   {
     type: 'application',
     name: 'Ebb',
-    category: 'Other',
+    category: 'Utilities',
     defaultRating: 'Neutral',
     icon: 'ebb.svg'
   },
   {
     type: 'application',
-    name: 'Notes',
-    category: 'Other',
-    defaultRating: 'Creating',
-    icon: 'applenotes.svg'
-  },
-  {
-    type: 'application',
     name: 'Music',
-    category: 'Other',
+    category: 'Utilities',
     defaultRating: 'Neutral',
     icon: 'applemusic.svg'
   },
   {
     type: 'application',
     name: 'Spotify',
-    category: 'Other',
+    category: 'Utilities',
     defaultRating: 'Neutral',
     icon: 'spotify.svg'
   },
   {
     type: 'website',
     websiteUrl: 'spotify.com',
-    category: 'Other',
+    category: 'Utilities',
     defaultRating: 'Neutral',
     icon: 'spotify.svg'
   }
