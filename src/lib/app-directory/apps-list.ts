@@ -603,13 +603,6 @@ export const apps: AppDefinition[] = [
   },
   {
     type: 'website',
-    websiteUrl: 'viber.com',
-    category: 'Social Media',
-    defaultRating: 'Consuming',
-    icon: 'viber.svg'
-  },
-  {
-    type: 'website',
     websiteUrl: 'vimeo.com',
     category: 'Social Media',
     defaultRating: 'Consuming',
@@ -1773,7 +1766,6 @@ export const apps: AppDefinition[] = [
     icon: 'spotify.svg'
   }
 ]
-
 // Helper functions
 export const getAppByName = (name: string): AppDefinition | undefined => {
   return apps.find(
@@ -1792,3 +1784,4 @@ export const getAppByUrl = (url: string): AppDefinition | undefined => {
 export const getAppsByCategory = (category: AppCategory): AppDefinition[] => {
   return apps.filter(app => app.category === category)
 }
+

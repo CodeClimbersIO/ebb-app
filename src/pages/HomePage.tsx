@@ -2,7 +2,7 @@ import { Layout } from '@/components/Layout'
 import { useNavigate } from 'react-router-dom'
 import { useEffect, useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
-import { Activity, Flame, Code2, ChevronDown, Palette, Wand2 } from 'lucide-react'
+import { Activity, Flame, Code2, ChevronDown, Palette, Wand2, Pencil } from 'lucide-react'
 import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
 import { useSettings } from '../hooks/useSettings'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
@@ -115,6 +115,7 @@ export const HomePage = () => {
   const [date, setDate] = useState<Date>(new Date())
   const [appUsage, setAppUsage] = useState(usageApps)
   const appUsageRef = useRef<HTMLDivElement>(null)
+  const [isRoleIconHovered, setIsRoleIconHovered] = useState(false)
 
   useEffect(() => {
     const init = async () => {
@@ -178,6 +179,10 @@ export const HomePage = () => {
 
   const scrollToAppUsage = () => {
     appUsageRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  const handleRoleIconClick = () => {
+    navigate('/settings#role')
   }
 
   if (showZeroState || hasNoSessions) {
@@ -262,13 +267,22 @@ export const HomePage = () => {
                   <CardTitle className="text-sm font-medium text-muted-foreground">
                     {getTimeSpentLabel()}
                   </CardTitle>
-                  {userRole === 'developer' ? (
-                    <Code2 className="h-4 w-4 text-muted-foreground" />
-                  ) : userRole === 'designer' ? (
-                    <Palette className="h-4 w-4 text-muted-foreground" />
-                  ) : (
-                    <Wand2 className="h-4 w-4 text-muted-foreground" />
-                  )}
+                  <div
+                    className="cursor-pointer"
+                    onMouseEnter={() => setIsRoleIconHovered(true)}
+                    onMouseLeave={() => setIsRoleIconHovered(false)}
+                    onClick={handleRoleIconClick}
+                  >
+                    {isRoleIconHovered ? (
+                      <Pencil className="h-4 w-4 text-muted-foreground" />
+                    ) : userRole === 'developer' ? (
+                      <Code2 className="h-4 w-4 text-muted-foreground" />
+                    ) : userRole === 'designer' ? (
+                      <Palette className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <Wand2 className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <Tooltip>
