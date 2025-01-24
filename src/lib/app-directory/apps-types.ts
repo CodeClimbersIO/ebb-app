@@ -9,7 +9,7 @@ export type AppCategory =
   | 'Coding'
   | 'Designing'
   | 'Creating'
-  | 'Other'
+  | 'Utilities'
 
 export const categoryEmojis: Record<AppCategory, string> = {
   'News': '📰',
@@ -22,7 +22,7 @@ export const categoryEmojis: Record<AppCategory, string> = {
   'Coding': '💻',
   'Designing': '🎨',
   'Creating': '🪄',
-  'Other': '⚙️'
+  'Utilities': '⚙️'
 }
 
 export type ActivityRating = 'Consuming' | 'Creating' | 'Neutral'
