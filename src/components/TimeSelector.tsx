@@ -26,6 +26,11 @@ const presetTimes = [
 
 const parseTimeInput = (input: string): number | null => {
   const cleaned = input.toLowerCase().replace(/\s+/g, ' ').trim()
+
+  // Special case for "quick call" :)
+  if (cleaned === 'quick call') {
+    return 260
+  }
   
   // Handle hour:minute format (e.g., 1:15)
   if (cleaned.includes(':')) {
