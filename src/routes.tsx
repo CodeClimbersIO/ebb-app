@@ -4,9 +4,9 @@ import { LoginPage } from '@/pages/LoginPage'
 import { SignupPage } from '@/pages/SignupPage'
 import { FriendsPage } from '@/pages/FriendsPage'
 import { SettingsPage } from '@/pages/SettingsPage'
-import { StartFocusPage } from './pages/StartFocusPage'
+import { StartFlowPage } from './pages/StartFlowPage'
 import { useAuth } from './hooks/useAuth'
-import { FlowPage } from '@/pages/FlowPage'
+import { FlowPage } from './pages/FlowPage'
 import { FlowPeriodApi } from './api/ebbApi/flowPeriodApi'
 import { BreathingExercisePage } from './pages/BreathingExercisePage'
 import { FlowRecapPage } from '@/pages/FlowRecapPage'
@@ -41,7 +41,7 @@ export const AppRoutes = () => {
         <Route path="/" element={<HomePage />} />
         <Route path="/friends" element={<FriendsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/start-flow" element={<StartFocusPage />} />
+        <Route path="/start-flow" element={<StartFlowPage />} />
         <Route path="/breathing-exercise" element={<BreathingExercisePage />} />
         <Route path="/flow" element={<FlowPage />} />
         <Route path="/flow-recap" element={<FlowRecapPage />} />

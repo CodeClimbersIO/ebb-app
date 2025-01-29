@@ -29,7 +29,7 @@ import type { AppDefinition } from '@/lib/app-directory/apps-types'
 
 type SearchOption = AppDefinition | { type: 'category', category: AppCategory, count: number }
 
-export const StartFocusPage = () => {
+export const StartFlowPage = () => {
   const { userRole } = useSettings()
   const [objective, setObjective] = useState('')
   const [duration, setDuration] = useState<number | null>(null)
@@ -76,22 +76,31 @@ export const StartFocusPage = () => {
   const handleBegin = async () => {
     if (!objective) return
 
-    const sessionId = await FlowSessionApi.startFlowSession(objective)
-
-    navigate('/breathing-exercise', {
-      state: {
-        startTime: Date.now(),
-        objective,
-        sessionId,
-        duration,
-        blocks: onlyAllowCreating ? 'all' : selectedBlocks,
-        onlyAllowCreating,
-        playlist: selectedPlaylist ? {
-          id: selectedPlaylist,
-          service: musicService.type
-        } : null
+    try {
+      const sessionId = await FlowSessionApi.startFlowSession(objective, duration || undefined)
+      
+      if (!sessionId) {
+        console.error('No session ID returned from API')
+        return
       }
-    })
+
+      navigate('/breathing-exercise', { 
+        state: {
+          startTime: Date.now(),
+          objective,
+          sessionId,
+          duration: duration || undefined,
+          blocks: onlyAllowCreating ? 'all' : selectedBlocks,
+          onlyAllowCreating,
+          playlist: selectedPlaylist ? {
+            id: selectedPlaylist,
+            service: musicService.type
+          } : null
+        }
+      })
+    } catch (error) {
+      console.error('Failed to start flow session:', error)
+    }
   }
 
   const handleAppSelect = (option: SearchOption) => {
