@@ -2,7 +2,7 @@ import { Layout } from '@/components/Layout'
 import { useNavigate } from 'react-router-dom'
 import { useEffect, useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
-import { Activity, Flame, Code2, ChevronDown, Palette, Wand2, Pencil } from 'lucide-react'
+import { Wand, Flame, ChevronDown } from 'lucide-react'
 import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
 import { useSettings } from '../hooks/useSettings'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
@@ -29,7 +29,8 @@ import {
 import { Calendar } from '@/components/ui/calendar'
 import { Progress } from '@/components/ui/progress'
 import { apps } from '@/lib/app-directory/apps-list'
-import { categoryEmojis, AppDefinition } from '@/lib/app-directory/apps-types'
+import { categoryEmojis, AppDefinition, ActivityRating } from '@/lib/app-directory/apps-types'
+import { Slider } from '@/components/ui/slider'
 
 const generateHourlyData = () => {
   const data = []
@@ -88,9 +89,9 @@ const calculateFlowScore = (creating: number, consuming: number, offline: number
 
 type AppUsage = {
   name: string
-  icon: string // This would be a path to the icon or an emoji as placeholder
+  icon: string
   timeSpent: number // in minutes
-  category: 'Creating' | 'Consuming' | 'Neutral'
+  rating: ActivityRating // Using rating (1-5) instead of category
 }
 
 // Helper function to get random items from array
@@ -99,23 +100,22 @@ const getRandomItems = (array: AppDefinition[], count: number) => {
   return shuffled.slice(0, count)
 }
 
-// Get random apps for display
+// Update the usage apps to use ratings
 const usageApps = getRandomItems(apps, 6).map(app => ({
   name: app.type === 'application' ? app.name : app.websiteUrl,
   icon: app.icon,
-  timeSpent: Math.floor(Math.random() * 180) + 30, // Random time between 30-210 minutes
-  category: app.defaultRating
+  timeSpent: Math.floor(Math.random() * 180) + 30,
+  rating: app.defaultRating
 }))
 
 export const HomePage = () => {
-  const { showZeroState, userRole } = useSettings()
+  const { showZeroState } = useSettings()
   const navigate = useNavigate()
   const [hasNoSessions, setHasNoSessions] = useState(true)
   const [streak, setStreak] = useState(0)
   const [date, setDate] = useState<Date>(new Date())
-  const [appUsage, setAppUsage] = useState(usageApps)
+  const [appUsage, setAppUsage] = useState<AppUsage[]>(usageApps)
   const appUsageRef = useRef<HTMLDivElement>(null)
-  const [isRoleIconHovered, setIsRoleIconHovered] = useState(false)
 
   useEffect(() => {
     const init = async () => {
@@ -158,31 +158,8 @@ export const HomePage = () => {
     navigate('/start-flow')
   }
 
-  const getTimeSpentLabel = () => {
-    switch(userRole) {
-      case 'developer':
-        return 'Time Spent Coding'
-      case 'designer':
-        return 'Time Spent Designing'
-      case 'creator':
-        return 'Time Spent Creating'
-      default:
-        return 'Time Spent Coding'
-    }
-  }
-
-  const updateAppCategory = (appName: string, newCategory: AppUsage['category']) => {
-    setAppUsage(prev => prev.map(app => 
-      app.name === appName ? { ...app, category: newCategory } : app
-    ))
-  }
-
   const scrollToAppUsage = () => {
     appUsageRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
-
-  const handleRoleIconClick = () => {
-    navigate('/settings#role')
   }
 
   if (showZeroState || hasNoSessions) {
@@ -197,7 +174,7 @@ export const HomePage = () => {
                 It's time to lock in and improve your focus
               </p>
               <Button size="lg" onClick={handleStartFlowSession}>
-                <Activity className="mr-2 h-5 w-5" />
+                <Wand className="mr-2 h-5 w-5" />
                 Start Focus Session
               </Button>
             </div>
@@ -265,24 +242,9 @@ export const HomePage = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
-                    {getTimeSpentLabel()}
+                    Time Spent Creating
                   </CardTitle>
-                  <div
-                    className="cursor-pointer"
-                    onMouseEnter={() => setIsRoleIconHovered(true)}
-                    onMouseLeave={() => setIsRoleIconHovered(false)}
-                    onClick={handleRoleIconClick}
-                  >
-                    {isRoleIconHovered ? (
-                      <Pencil className="h-4 w-4 text-muted-foreground" />
-                    ) : userRole === 'developer' ? (
-                      <Code2 className="h-4 w-4 text-muted-foreground" />
-                    ) : userRole === 'designer' ? (
-                      <Palette className="h-4 w-4 text-muted-foreground" />
-                    ) : (
-                      <Wand2 className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </div>
+                  <Wand className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                   <Tooltip>
@@ -290,7 +252,7 @@ export const HomePage = () => {
                       <div className="text-2xl font-bold">3h 45m</div>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Total time spent {userRole === 'developer' ? 'coding' : userRole === 'designer' ? 'designing' : 'creating'} today</p>
+                      <p>Total time spent creating today</p>
                     </TooltipContent>
                   </Tooltip>
                 </CardContent>
@@ -299,7 +261,7 @@ export const HomePage = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Flow Score</CardTitle>
-                  <Activity className="h-4 w-4 text-muted-foreground" />
+                  <Flame className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                   <Tooltip>
@@ -464,39 +426,61 @@ export const HomePage = () => {
                           <span className="font-medium">{app.name}</span>
                           <Popover>
                             <PopoverTrigger asChild>
-                              <Button 
-                                variant="ghost"
-                                size="sm"
-                                className={`h-6 px-2 py-0 text-xs font-medium ${
-                                  app.category === 'Creating' ? 'text-[rgb(124,58,237)] hover:bg-primary/10' :
-                                  app.category === 'Consuming' ? 'text-[rgb(239,68,68)] hover:bg-destructive/10' :
-                                  'text-gray-500 hover:bg-muted'
-                                }`}
-                              >
-                                {app.category}
-                              </Button>
+                              <div className="w-[80px]">
+                                <Button 
+                                  variant="ghost"
+                                  size="sm"
+                                  className={`h-6 px-2 py-0 text-xs font-medium justify-start ${
+                                    app.rating >= 4 ? 'text-[rgb(124,58,237)] hover:bg-primary/10' :
+                                    app.rating <= 2 ? 'text-[rgb(239,68,68)] hover:bg-destructive/10' :
+                                    'text-gray-500 hover:bg-muted'
+                                  }`}
+                                >
+                                  {app.rating === 5 ? 'High Creation' :
+                                   app.rating === 4 ? 'Creation' :
+                                   app.rating === 3 ? 'Neutral' :
+                                   app.rating === 2 ? 'Consumption' :
+                                   'High Consumption'}
+                                </Button>
+                              </div>
                             </PopoverTrigger>
-                            <PopoverContent className="w-fit p-1">
-                              <div className="flex flex-col gap-1.5">
-                                {(['Creating', 'Consuming', 'Neutral'] as const).map((category) => (
-                                  <Button
-                                    key={category}
-                                    variant="ghost"
-                                    size="sm"
-                                    className={`h-6 px-2 py-0 text-xs font-medium justify-start ${
-                                      category === 'Creating' ? 'text-[rgb(124,58,237)] hover:bg-primary/10' :
-                                      category === 'Consuming' ? 'text-[rgb(239,68,68)] hover:bg-destructive/10' :
-                                      'text-gray-500 hover:bg-muted'
-                                    }`}
-                                    onClick={() => {
-                                      updateAppCategory(app.name, category)
-                                      const button = document.activeElement as HTMLElement
-                                      button?.blur()
+                            <PopoverContent className="w-[280px] p-4">
+                              <div className="space-y-4">
+                                <div className="relative">
+                                  <Slider
+                                    defaultValue={[app.rating]}
+                                    max={5}
+                                    min={1}
+                                    step={1}
+                                    trackColor={
+                                      app.rating >= 4 
+                                        ? 'bg-[rgb(124,58,237)]/20'
+                                        : app.rating <= 2 
+                                        ? 'bg-[rgb(239,68,68)]/20'
+                                        : 'bg-gray-500/20'
+                                    }
+                                    rangeColor={
+                                      app.rating >= 4 
+                                        ? 'bg-[rgb(124,58,237)]'
+                                        : app.rating <= 2 
+                                        ? 'bg-[rgb(239,68,68)]'
+                                        : 'bg-gray-500'
+                                    }
+                                    thumbBorderColor={
+                                      app.rating >= 4 
+                                        ? 'border-[rgb(124,58,237)]'
+                                        : app.rating <= 2 
+                                        ? 'border-[rgb(239,68,68)]'
+                                        : 'border-gray-500'
+                                    }
+                                    onValueChange={([value]) => {
+                                      setAppUsage(prev => prev.map(a => 
+                                        a.name === app.name ? { ...a, rating: value as ActivityRating } : a
+                                      ))
                                     }}
-                                  >
-                                    {category}
-                                  </Button>
-                                ))}
+                                    className="[&_[role=slider]]:h-4 [&_[role=slider]]:w-4 [&_[role=slider]]:bg-background"
+                                  />
+                                </div>
                               </div>
                             </PopoverContent>
                           </Popover>
@@ -508,11 +492,11 @@ export const HomePage = () => {
                       <Progress 
                         value={(app.timeSpent / (6 * 60)) * 100} 
                         className={
-                          app.category === 'Creating' || app.category === 'Neutral'
+                          app.rating >= 4
                             ? 'bg-[rgb(124,58,237)]/20 [&>div]:bg-[rgb(124,58,237)]' :
-                          app.category === 'Consuming' 
-                            ? 'bg-[rgb(239,68,68)]/20 [&>div]:bg-[rgb(239,68,68)]' : 
-                            'bg-gray-500/20 [&>div]:bg-gray-500'
+                          app.rating <= 2
+                            ? 'bg-[rgb(239,68,68)]/20 [&>div]:bg-[rgb(239,68,68)]' :
+                          'bg-gray-500/20 [&>div]:bg-gray-500'
                         }
                       />
                     </div>
