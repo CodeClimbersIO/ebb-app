@@ -9,7 +9,7 @@ export type AppCategory =
   | 'Coding'
   | 'Designing'
   | 'Creating'
-  | 'Other'
+  | 'Utilities'
 
 export const categoryEmojis: Record<AppCategory, string> = {
   'News': '📰',
@@ -22,10 +22,16 @@ export const categoryEmojis: Record<AppCategory, string> = {
   'Coding': '💻',
   'Designing': '🎨',
   'Creating': '🪄',
-  'Other': '⚙️'
+  'Utilities': '⚙️'
 }
 
-export type ActivityRating = 'Consuming' | 'Creating' | 'Neutral'
+// Replace ActivityRating type with numeric scale
+export type ActivityRating = 1 | 2 | 3 | 4 | 5
+// 1 = High Consumption
+// 2 = Consumption
+// 3 = Neutral
+// 4 = Creation
+// 5 = High Creation
 
 // Base interface for common properties
 export interface BaseAppDefinition {

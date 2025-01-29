@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { X, Music, Info, Plus, Minus } from 'lucide-react'
+import { Music, Info, Plus, Minus } from 'lucide-react'
 import { TopNav } from '@/components/TopNav'
 import { LogoContainer } from '@/components/LogoContainer'
 import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
@@ -14,7 +14,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import {
   Tooltip,
@@ -22,16 +21,22 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { getAppsByCategory } from '../lib/app-directory/apps-list'
 import { useSettings } from '../hooks/useSettings'
-import { AppCategory, categoryEmojis } from '../lib/app-directory/apps-types'
+import { AppCategory } from '../lib/app-directory/apps-types'
 import { TimeSelector } from '@/components/TimeSelector'
+import { AppSelector } from '@/components/AppSelector'
+import type { AppDefinition } from '@/lib/app-directory/apps-types'
 
-export const StartFocusPage = () => {
+type SearchOption = AppDefinition | { type: 'category', category: AppCategory, count: number }
+
+export const StartFlowPage = () => {
   const { userRole } = useSettings()
   const [objective, setObjective] = useState('')
   const [duration, setDuration] = useState<number | null>(null)
-  const [selectedBlocks, setSelectedBlocks] = useState<string[]>([])
+  const [selectedBlocks, setSelectedBlocks] = useState<SearchOption[]>(() => {
+    const saved = localStorage.getItem('selectedBlocks')
+    return saved ? JSON.parse(saved) : []
+  })
   const [selectedPlaylist, setSelectedPlaylist] = useState('')
   const [musicService, setMusicService] = useState<{
     type: 'spotify' | 'apple' | null,
@@ -51,23 +56,9 @@ export const StartFocusPage = () => {
   const [showMusicSection, setShowMusicSection] = useState(false)
   const navigate = useNavigate()
 
-  const blockCategories = [
-    ...(['Gaming', 'Social Media', 'Communication', 'Entertainment', 'News', 'Shopping', 'Travel'] as AppCategory[])
-      .map(category => ({
-        id: category.toLowerCase().replace(' ', ''),
-        label: category,
-        icon: categoryEmojis[category],
-        tooltip: getAppsByCategory(category)
-          .map(app => app.type === 'website' ? app.websiteUrl : app.name)
-          .join(', ')
-      })),
-    { 
-      id: 'custom', 
-      label: 'Custom', 
-      icon: '⚙️', 
-      tooltip: 'Add your own websites to block'
-    },
-  ]
+  useEffect(() => {
+    localStorage.setItem('selectedBlocks', JSON.stringify(selectedBlocks))
+  }, [selectedBlocks])
 
   const getPlaceholderByRole = () => {
     switch (userRole) {
@@ -85,30 +76,60 @@ export const StartFocusPage = () => {
   const handleBegin = async () => {
     if (!objective) return
 
-    const sessionId = await FlowSessionApi.startFlowSession(objective)
-
-    navigate('/breathing-exercise', {
-      state: {
-        startTime: Date.now(),
-        objective,
-        sessionId,
-        duration,
-        blocks: onlyAllowCreating ? 'all' : selectedBlocks,
-        onlyAllowCreating,
-        playlist: selectedPlaylist ? {
-          id: selectedPlaylist,
-          service: musicService.type
-        } : null
+    try {
+      const sessionId = await FlowSessionApi.startFlowSession(objective, duration || undefined)
+      
+      if (!sessionId) {
+        console.error('No session ID returned from API')
+        return
       }
+
+      navigate('/breathing-exercise', { 
+        state: {
+          startTime: Date.now(),
+          objective,
+          sessionId,
+          duration: duration || undefined,
+          blocks: onlyAllowCreating ? 'all' : selectedBlocks,
+          onlyAllowCreating,
+          playlist: selectedPlaylist ? {
+            id: selectedPlaylist,
+            service: musicService.type
+          } : null
+        }
+      })
+    } catch (error) {
+      console.error('Failed to start flow session:', error)
+    }
+  }
+
+  const handleAppSelect = (option: SearchOption) => {
+    setSelectedBlocks((prev: SearchOption[]) => {
+      const newBlocks = [...prev, option]
+      localStorage.setItem('selectedBlocks', JSON.stringify(newBlocks))
+      return newBlocks
     })
   }
 
-  const toggleBlock = (blockId: string) => {
-    setSelectedBlocks(prev => 
-      prev.includes(blockId) 
-        ? prev.filter(id => id !== blockId)
-        : [...prev, blockId]
-    )
+  const handleAppRemove = (option: SearchOption) => {
+    setSelectedBlocks((prev: SearchOption[]) => {
+      const newBlocks = prev.filter(app => {
+        if ('category' in option && 'category' in app && option.type === 'category' && app.type === 'category') {
+          return app.category !== option.category
+        }
+        if ('type' in option && 'type' in app) {
+          if (option.type === 'application' && app.type === 'application') {
+            return app.name !== option.name
+          }
+          if (option.type === 'website' && app.type === 'website') {
+            return app.websiteUrl !== option.websiteUrl
+          }
+        }
+        return true
+      })
+      localStorage.setItem('selectedBlocks', JSON.stringify(newBlocks))
+      return newBlocks
+    })
   }
 
   const CollapsibleSectionHeader = ({ 
@@ -182,31 +203,13 @@ export const StartFocusPage = () => {
               />
               {showBlockingSection && (
                 <div className="mt-4 space-y-4">
-                  <div className="flex flex-wrap gap-2">
-                    {blockCategories.map(category => (
-                      <TooltipProvider key={category.id}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span>
-                              <Badge
-                                variant={selectedBlocks.includes(category.id) ? 'default' : 'outline'}
-                                className={`cursor-pointer ${onlyAllowCreating ? 'opacity-50 pointer-events-none' : ''}`}
-                                onClick={() => toggleBlock(category.id)}
-                              >
-                                {category.icon} {category.label}
-                                {selectedBlocks.includes(category.id) && (
-                                  <X className="ml-1 h-3 w-3" />
-                                )}
-                              </Badge>
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-[300px]">
-                            <p>{category.tooltip}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    ))}
-                  </div>
+                  <AppSelector
+                    placeholder="Search apps & websites to block..."
+                    emptyText="No apps or websites found."
+                    selectedApps={selectedBlocks}
+                    onAppSelect={handleAppSelect}
+                    onAppRemove={handleAppRemove}
+                  />
 
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
@@ -219,7 +222,7 @@ export const StartFocusPage = () => {
                           }
                         }}
                       />
-                      <span className="text-sm text-muted-foreground">Creation Only Mode</span>
+                      <span className="text-sm text-muted-foreground">Allow List</span>
                     </div>
                     <TooltipProvider>
                       <Tooltip>
@@ -227,7 +230,7 @@ export const StartFocusPage = () => {
                           <Info className="h-4 w-4 text-muted-foreground" />
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>This will block every website and app not categorized as creating</p>
+                          <p>Only allow what's on this list and block everything else</p>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>

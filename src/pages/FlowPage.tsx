@@ -73,14 +73,31 @@ export const FlowPage = () => {
 
   useEffect(() => {
     if (!flowSession) return
+    
     const updateTimer = () => {
       const now = new Date().getTime()
-      const diff = now - DateTime.fromISO(flowSession.start).toMillis()
-      const minutes = Math.floor(diff / 60000)
-      const seconds = Math.floor((diff % 60000) / 1000)
-      setTime(`${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`)
-      setIsShortSession(minutes < 20)
-      setIsInitialPeriod(minutes < 10)
+      const startTime = DateTime.fromISO(flowSession.start).toMillis()
+      const diff = now - startTime
+      
+      // If duration is set (in minutes), do countdown
+      if (flowSession.duration) {
+        const remaining = (flowSession.duration * 60 * 1000) - diff
+        if (remaining <= 0) {
+          handleEndSession()
+          return
+        }
+        const minutes = Math.floor(remaining / 60000)
+        const seconds = Math.floor((remaining % 60000) / 1000)
+        setTime(`${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`)
+      } else {
+        // Count up if no duration set
+        const minutes = Math.floor(diff / 60000)
+        const seconds = Math.floor((diff % 60000) / 1000)
+        setTime(`${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`)
+      }
+      
+      setIsShortSession(diff < 20 * 60 * 1000) // Less than 20 minutes
+      setIsInitialPeriod(diff < 10 * 60 * 1000) // Less than 10 minutes
     }
 
     updateTimer()
@@ -175,7 +192,14 @@ export const FlowPage = () => {
 
       <div className="flex-1 flex flex-col items-center justify-center">
         <div className="text-sm text-muted-foreground mb-2">{flowSession?.objective}</div>
-        <div className="text-6xl font-bold mb-2">{time}</div>
+        <div className="text-6xl font-bold mb-2">
+          {time}
+          {flowSession?.duration && (
+            <span className="text-sm text-muted-foreground ml-2">
+              / {flowSession.duration}:00
+            </span>
+          )}
+        </div>
         {flowData && !isInitialPeriod && (
           <TooltipProvider>
             <Tooltip>
