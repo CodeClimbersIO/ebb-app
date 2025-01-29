@@ -66,7 +66,6 @@ export function AppSelector({
 }: AppSelectorProps) {
   const [open, setOpen] = React.useState(false)
   const [search, setSearch] = React.useState('')
-  const [duplicateKey, setDuplicateKey] = React.useState<string>('')
   const inputRef = React.useRef<HTMLDivElement>(null)
   const [selected, setSelected] = React.useState(0)
 
@@ -112,12 +111,11 @@ export function AppSelector({
         )
       )
 
-    // Modified this section to only filter out exact duplicates
+    // Modified to only check for exact duplicates of the same app/website, not category
     results = results.concat(
       apps.filter(app => {
-        // Check only for exact duplicates of the same app/website
         const isDuplicate = selectedApps.some(selected => {
-          if (!('type' in selected) || !('type' in app)) return false
+          if (!('type' in selected)) return false
           
           if (app.type === 'application' && selected.type === 'application') {
             return app.name === selected.name
@@ -197,28 +195,45 @@ export function AppSelector({
   const handleSelect = (option: SearchOption) => {
     const { key } = getOptionDetails(option)
     
+    // For non-category options, check if they belong to an already selected category
+    if (!('category' in option) || !('count' in option)) {
+      const category = ('type' in option) ? option.category : null
+      const categoryAlreadySelected = selectedApps.some(selected => 
+        'category' in selected && selected.category === category
+      )
+
+      if (categoryAlreadySelected) {
+        // Add the item even if its category is already selected
+        const exactDuplicate = selectedApps.find(selected => 
+          'type' in selected && 'type' in option &&
+          getOptionDetails(selected).key === key
+        )
+
+        if (!exactDuplicate) {
+          onAppSelect(option)
+        }
+        setSearch('')
+        setSelected(0)
+        return
+      }
+    }
+
+    // Rest of the existing selection logic
     if ('category' in option) {
       const categoryExists = selectedApps.some(selected => 
         'category' in selected && selected.category === option.category
       )
 
-      if (categoryExists) {
-        setDuplicateKey(option.category)
-        setTimeout(() => setDuplicateKey(''), 2000)
-        return
+      if (!categoryExists) {
+        onAppSelect(option)
       }
-
-      onAppSelect(option)
     } else {
       const exactDuplicate = selectedApps.find(selected => 
         'type' in selected && 'type' in option &&
         getOptionDetails(selected).key === key
       )
 
-      if (exactDuplicate) {
-        setDuplicateKey(key)
-        setTimeout(() => setDuplicateKey(''), 2000)
-      } else {
+      if (!exactDuplicate) {
         onAppSelect(option)
       }
     }
@@ -227,40 +242,63 @@ export function AppSelector({
     setSelected(0)
   }
 
-  // Add function to check if search matches any selected item
-  const isAlreadySelected = (searchTerm: string): boolean => {
+  // Update isAlreadySelected function
+  const isAlreadySelected = (searchTerm: string): { isSelected: boolean; message?: string } => {
     const searchLower = searchTerm.toLowerCase()
-    return selectedApps.some(selected => 
+    
+    // First check direct matches
+    const directMatch = selectedApps.some(selected => 
       getOptionDetails(selected).text.toLowerCase().includes(searchLower)
     )
+    if (directMatch) {
+      return { isSelected: true, message: 'Already added' }
+    }
+
+    // Then check if the search matches any app/website that belongs to a selected category
+    const searchMatchingApp = apps.find(app => {
+      const appText = app.type === 'application' ? app.name : app.websiteUrl
+      return appText.toLowerCase().includes(searchLower)
+    })
+
+    if (searchMatchingApp) {
+      const selectedCategory = selectedApps.find(selected => 
+        'category' in selected && selected.category === searchMatchingApp.category
+      )
+      
+      if (selectedCategory) {
+        return { 
+          isSelected: true, 
+          message: `Already included in ${selectedCategory.category} list`
+        }
+      }
+    }
+
+    return { isSelected: false }
   }
 
   return (
     <div className="relative w-full" ref={inputRef}>
       <div className="relative min-h-[100px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         onClick={() => setOpen(true)}>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 items-start">
           {selectedApps.map((option) => {
             const key = getOptionDetails(option).key
-            const isCategory = 'type' in option && option.type === 'category'
+            const isCategory = 'category' in option && 'count' in option
             return (
               <TooltipProvider key={key}>
                 <Tooltip>
-                  <Badge 
-                    variant="secondary"
-                    className={cn(
-                      'flex items-center gap-1 cursor-default select-none',
-                      duplicateKey === key && 'outline outline-1 outline-violet-500'
-                    )}
-                  >
-                    <TooltipTrigger asChild>
-                      <div className="flex items-center gap-1">
-                        <span className="w-4 h-4 flex items-center justify-center">
+                  <TooltipTrigger>
+                    <div className="flex items-center">
+                      <Badge 
+                        variant="secondary" 
+                        className="flex items-center gap-1 h-6"
+                      >
+                        <span className="w-4 h-4 flex items-center justify-center shrink-0">
                           {('type' in option && 'icon' in option) ? (
                             <img 
                               src={`/src/lib/app-directory/icons/${option.icon}`} 
                               alt="" 
-                              className="w-4 h-4"
+                              className="w-4 h-4 object-contain"
                               onError={(e) => {
                                 const target = e.target as HTMLImageElement
                                 const category = ('type' in option && (option.type === 'application' || option.type === 'website')) 
@@ -273,17 +311,17 @@ export function AppSelector({
                             'category' in option ? categoryEmojis[option.category] : '❓'
                           )}
                         </span>
-                        <span>{getOptionDetails(option).text}</span>
+                        <span className="truncate">{getOptionDetails(option).text}</span>
                         <X 
-                          className="h-3 w-3 cursor-pointer" 
+                          className="h-3 w-3 cursor-pointer shrink-0"
                           onClick={(e) => {
                             e.stopPropagation()
                             onAppRemove(option)
                           }}
                         />
-                      </div>
-                    </TooltipTrigger>
-                  </Badge>
+                      </Badge>
+                    </div>
+                  </TooltipTrigger>
                   {isCategory && (
                     <TooltipContent className="max-w-[300px]">
                       {getCategoryTooltipContent(option.category)}
@@ -304,11 +342,13 @@ export function AppSelector({
               className="w-full outline-none border-0 bg-transparent focus:border-0 focus:outline-none focus:ring-0 p-0"
             />
             {open && (
-              <Command className="absolute left-0 top-full z-50 max-w-[250px] rounded-md border bg-popover shadow-md h-fit">
+              <Command className="absolute left-0 top-full z-50 max-w-[250px] rounded-md border bg-popover shadow-md h-fit mt-2">
                 <CommandList className="max-h-fit">
                   {filteredOptions.length === 0 ? (
                     <CommandEmpty>
-                      {search && isAlreadySelected(search) ? 'Already added' : emptyText}
+                      {search && isAlreadySelected(search).isSelected 
+                        ? isAlreadySelected(search).message 
+                        : emptyText}
                     </CommandEmpty>
                   ) : (
                     <CommandGroup>
@@ -330,7 +370,7 @@ export function AppSelector({
                                       <img 
                                         src={`/src/lib/app-directory/icons/${option.icon}`} 
                                         alt="" 
-                                        className="w-4 h-4"
+                                        className="w-4 h-4 object-contain"
                                         onError={(e) => {
                                           const target = e.target as HTMLImageElement
                                           const category = ('type' in option && (option.type === 'application' || option.type === 'website')) 
@@ -347,7 +387,7 @@ export function AppSelector({
                                 </CommandItem>
                               </div>
                             </TooltipTrigger>
-                            {'category' in option && (
+                            {'category' in option && 'count' in option && (
                               <TooltipContent side="right" align="start" className="max-w-[300px]">
                                 {getCategoryTooltipContent(option.category)}
                               </TooltipContent>
