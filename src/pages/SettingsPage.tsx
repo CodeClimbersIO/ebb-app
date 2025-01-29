@@ -1,11 +1,12 @@
-import { Layout } from '@/components/Layout'
-import { ModeToggle } from '@/components/ModeToggle'
-import { Switch } from '@/components/ui/switch'
-import { useSettings } from '../hooks/useSettings'
+import { Layout } from "@/components/Layout";
+import { ModeToggle } from "@/components/ModeToggle";
+import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
+import { useSettings } from "../hooks/useSettings";
 
 export const SettingsPage = () => {
-  const { showZeroState, toggleZeroState } = useSettings()
-  
+  const { showZeroState, toggleZeroState } = useSettings();
+
   return (
     <Layout>
       <div className="p-8">
@@ -41,9 +42,21 @@ export const SettingsPage = () => {
                 />
               </div>
             </div>
+
+            <div className="border rounded-lg p-6">
+              <h2 className="text-lg font-semibold mb-4">CSV Import</h2>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-medium">
+                    Import Data From Codeclimbers CLI
+                  </div>
+                </div>
+                <Button>Import</Button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </Layout>
-  )
-} 
+  );
+};
