@@ -2,7 +2,7 @@ import { Layout } from '@/components/Layout'
 import { useNavigate } from 'react-router-dom'
 import { useEffect, useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
-import { Wand, Flame, ChevronDown } from 'lucide-react'
+import { WandSparkles, Flame, ChevronDown, Diff } from 'lucide-react'
 import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
 import { useSettings } from '../hooks/useSettings'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
@@ -82,11 +82,6 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-const calculateFlowScore = (creating: number, consuming: number, offline: number) => {
-  const total = creating + consuming + offline
-  return total > 0 ? Math.round(((creating + offline) / total) * 100) : 0
-}
-
 type AppUsage = {
   name: string
   icon: string
@@ -107,6 +102,24 @@ const usageApps = getRandomItems(apps, 6).map(app => ({
   timeSpent: Math.floor(Math.random() * 180) + 30,
   rating: app.defaultRating
 }))
+
+const calculateNetCreationScore = (apps: AppUsage[]): number => {
+  return Number(apps.reduce((score, app) => {
+    const minutes = app.timeSpent
+    switch (app.rating) {
+      case 5: // High Creation
+        return score + minutes * 0.1
+      case 4: // Creation
+        return score + minutes * 0.05
+      case 2: // Consumption
+        return score - minutes * 0.05
+      case 1: // High Consumption
+        return score - minutes * 0.1
+      default: // Neutral (3)
+        return score
+    }
+  }, 0).toFixed(1))
+}
 
 export const HomePage = () => {
   const { showZeroState } = useSettings()
@@ -174,7 +187,7 @@ export const HomePage = () => {
                 It's time to lock in and improve your focus
               </p>
               <Button size="lg" onClick={handleStartFlowSession}>
-                <Wand className="mr-2 h-5 w-5" />
+                <WandSparkles className="mr-2 h-5 w-5" />
                 Start Focus Session
               </Button>
             </div>
@@ -244,7 +257,7 @@ export const HomePage = () => {
                   <CardTitle className="text-sm font-medium text-muted-foreground">
                     Time Spent Creating
                   </CardTitle>
-                  <Wand className="h-4 w-4 text-muted-foreground" />
+                  <WandSparkles className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                   <Tooltip>
@@ -260,18 +273,19 @@ export const HomePage = () => {
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Flow Score</CardTitle>
-                  <Flame className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Net Creation</CardTitle>
+                  <Diff className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                   <Tooltip>
                     <TooltipTrigger>
                       <div className="text-2xl font-bold">
-                        {calculateFlowScore(25, 15, 20)}%
+                        {calculateNetCreationScore(appUsage) > 0 ? '+' : ''}
+                        {calculateNetCreationScore(appUsage)}
                       </div>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Percentage of time spent creating today (including offline time)</p>
+                      <p>Positive = more creation, Negative = more consumption</p>
                     </TooltipContent>
                   </Tooltip>
                 </CardContent>
