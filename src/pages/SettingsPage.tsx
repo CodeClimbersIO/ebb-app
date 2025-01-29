@@ -181,7 +181,7 @@ export const SettingsPage = () => {
           
           <div className="mt-12 flex justify-between text-sm text-muted-foreground/50">
             <div>Ebb Version 1.0.0</div>
-            <div>Created with ♡ by Paul Hovley and Nathan Covey</div>
+            <div>Slop by Paul Hovley and Nathan Covey</div>
           </div>
         </div>
       </div>
