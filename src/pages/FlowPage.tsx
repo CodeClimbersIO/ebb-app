@@ -5,7 +5,6 @@ import { getFlowScoreTailwindColor, getFlowStatusText } from '@/lib/utils/flow'
 import { LiveFlowChart } from '@/components/ui/live-flow-chart'
 import { FlowSession } from '../db/flowSession'
 import { DateTime } from 'luxon'
-import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
 import {
   Dialog,
   DialogContent,
@@ -20,6 +19,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
 
 interface FlowData {
   flowScore: number
@@ -73,12 +73,12 @@ export const FlowPage = () => {
 
   useEffect(() => {
     if (!flowSession) return
-    
+
     const updateTimer = () => {
       const now = new Date().getTime()
       const startTime = DateTime.fromISO(flowSession.start).toMillis()
       const diff = now - startTime
-      
+
       // If duration is set (in minutes), do countdown
       if (flowSession.duration) {
         const remaining = (flowSession.duration * 60 * 1000) - diff
@@ -95,7 +95,7 @@ export const FlowPage = () => {
         const seconds = Math.floor((diff % 60000) / 1000)
         setTime(`${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`)
       }
-      
+
       setIsShortSession(diff < 20 * 60 * 1000) // Less than 20 minutes
       setIsInitialPeriod(diff < 10 * 60 * 1000) // Less than 10 minutes
     }
@@ -144,7 +144,7 @@ export const FlowPage = () => {
     if (!flowSession) return
     await FlowSessionApi.endFlowSession(flowSession.id)
     setShowEndDialog(false)
-    
+
     // Navigate to recap page with session data
     navigate('/flow-recap', {
       state: {
@@ -173,7 +173,7 @@ export const FlowPage = () => {
             <DialogHeader>
               <DialogTitle>{isShortSession ? 'Cancel Flow Session' : 'End Flow Session'}</DialogTitle>
               <DialogDescription>
-                {isShortSession 
+                {isShortSession
                   ? 'Are you sure you want to end this flow session? Sessions less than 20 minutes are canceled and not added to your history.'
                   : 'Are you sure you want to end this flow session? This action cannot be undone.'}
               </DialogDescription>
