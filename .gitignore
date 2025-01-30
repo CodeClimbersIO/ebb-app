@@ -28,7 +28,8 @@ dist-ssr
 .DS_Store
 
 # monitor
-/target
+os-monitor
+os-monitor-service
 
 *.dylib
 *.dll
