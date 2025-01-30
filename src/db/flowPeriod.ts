@@ -1,5 +1,5 @@
 import { QueryResult } from '@tauri-apps/plugin-sql'
-import { insert } from '../lib/sql.util'
+import { insert } from '../lib/utils/sql.util'
 import { getEbbDb } from './ebbDb'
 import { DateTime } from 'luxon'
 
