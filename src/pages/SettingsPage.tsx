@@ -3,6 +3,23 @@ import { ModeToggle } from "@/components/ModeToggle";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { useSettings } from "../hooks/useSettings";
+import { open } from "@tauri-apps/plugin-dialog";
+import { info } from "@tauri-apps/plugin-log";
+
+async function handleImportClick() {
+  try {
+    const selectedFiles = await open({
+      filters: [{ name: "CSV Files", extensions: ["csv"] }],
+      multiple: false,
+    });
+
+    if (selectedFiles) {
+      info(selectedFiles);
+    } else {
+      info("No file selected");
+    }
+  } catch (error) {}
+}
 
 export const SettingsPage = () => {
   const { showZeroState, toggleZeroState } = useSettings();
@@ -51,7 +68,7 @@ export const SettingsPage = () => {
                     Import Data From Codeclimbers CLI
                   </div>
                 </div>
-                <Button>Import</Button>
+                <Button onClick={handleImportClick}>Import</Button>
               </div>
             </div>
           </div>
