@@ -1,4 +1,4 @@
-use monitor::Monitor;
+use os_monitor::Monitor;
 use std::sync::Arc;
 use std::time::Duration;
 

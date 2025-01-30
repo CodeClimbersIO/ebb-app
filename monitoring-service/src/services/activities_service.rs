@@ -1,7 +1,7 @@
 use std::{sync::Arc, time::Duration};
 
-use monitor::{Monitor, WindowEvent};
 use once_cell::sync::Lazy;
+use os_monitor::{Monitor, WindowEvent};
 use parking_lot::Mutex;
 use tokio::sync::mpsc;
 
@@ -233,7 +233,7 @@ pub async fn start_monitoring() -> ActivityService {
 #[cfg(test)]
 mod tests {
 
-    use monitor::WindowEvent;
+    use os_monitor::WindowEvent;
     use time::OffsetDateTime;
 
     use super::*;

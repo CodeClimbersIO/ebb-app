@@ -1,4 +1,4 @@
-use monitor::WindowEvent;
+use os_monitor::WindowEvent;
 use sqlx::Row;
 use time::OffsetDateTime;
 
