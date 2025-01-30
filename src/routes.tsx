@@ -30,7 +30,7 @@ const ProtectedRoute = () => {
   return <Outlet />
 }
 
-export const AppRoutes = () => {
+const Router = () => {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
@@ -54,7 +54,8 @@ export const AppRoutes = () => {
 export const AppRouter = () => {
   return (
     <HashRouter>
-      <AppRoutes />
+      <Router />
     </HashRouter>
   )
 }
+
