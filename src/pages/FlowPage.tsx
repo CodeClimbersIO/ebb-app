@@ -25,13 +25,6 @@ import {
 } from '@/components/ui/select'
 import { Music } from 'lucide-react'
 
-interface FlowData {
-  flowScore: number
-  appSwitches: number
-  topActivity: string
-  timestamp: string
-}
-
 const getDurationFormatFromSeconds = (seconds: number) => {
   const duration = Duration.fromMillis(seconds * 1000)
   const format = duration.as('minutes') >= 60 ? 'hh:mm:ss' : 'mm:ss'
@@ -42,7 +35,6 @@ export const FlowPage = () => {
   const navigate = useNavigate()
   const [time, setTime] = useState<string>('00:00')
   const [flowSession, setFlowSession] = useState<FlowSession | null>(null)
-  const [flowData, setFlowData] = useState<FlowData | null>(null)
   const [showEndDialog, setShowEndDialog] = useState(false)
 
   useEffect(() => {
@@ -87,14 +79,6 @@ export const FlowPage = () => {
     updateTimer()
     const interval = setInterval(updateTimer, 1000)
 
-    // Simulate flow data for now
-    setFlowData({
-      flowScore: 8,
-      appSwitches: 2,
-      topActivity: 'Code Editor',
-      timestamp: new Date().toISOString()
-    })
-
     return () => clearInterval(interval)
   }, [flowSession])
 
@@ -109,9 +93,7 @@ export const FlowPage = () => {
         sessionId: flowSession.id,
         startTime: flowSession.start,
         endTime: new Date().toISOString(),
-        flowScore: flowData?.flowScore || 0,
         timeInFlow: time,
-        contextSwitches: flowData?.appSwitches || 0,
         idleTime: '0h 34m', // You'll need to calculate this properly
         objective: flowSession.objective
       }
@@ -128,10 +110,10 @@ export const FlowPage = () => {
             </Button>
           </DialogTrigger>
           <DialogContent>
-            <DialogHeader>
-              <DialogTitle>End Flow Session</DialogTitle>
+            <DialogHeader className='gap-y-4'>
+              <DialogTitle>End Focus Session</DialogTitle>
               <DialogDescription>
-                Are you sure you want to end this flow session? This action cannot be undone.
+                Are you sure you want to end this focus session? This action cannot be undone.
               </DialogDescription>
             </DialogHeader>
             <div className="flex justify-end gap-3">
