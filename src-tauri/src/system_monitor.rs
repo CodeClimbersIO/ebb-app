@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
-use monitoring_service::initialize_monitoring_service;
 use os_monitor::detect_changes;
 use os_monitor::initialize_monitor;
 use os_monitor::Monitor;
+use os_monitor_service::initialize_monitoring_service;
 use tauri::async_runtime;
 use tauri::AppHandle;
 use tokio::time::{sleep, Duration};
