@@ -87,19 +87,10 @@ export const FlowRecapPage = () => {
     if (effectRan.current) return
     effectRan.current = true
 
-    console.log('State:', state)
-    if (!state?.sessionId) {
-      console.log('No session ID found')
-      navigate('/')
-      return
-    }
-
     // Add random 50/50 chance
     const isPositive = Math.random() >= 0.5
-    console.log('Is positive:', isPositive)
 
     if (isPositive) {
-      console.log('Playing positive effects')
       const duration = 1000
       const animationEnd = Date.now() + duration
       const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 }
@@ -131,9 +122,7 @@ export const FlowRecapPage = () => {
         })
       }, 250)
     } else {
-      console.log('Playing negative effects')
       const card = document.querySelector('.recap-card')
-      console.log('Found card:', card)
       card?.classList.add('negative-score')
       
       setTimeout(() => {
@@ -143,7 +132,6 @@ export const FlowRecapPage = () => {
   }, [state, navigate])
 
   if (!state) {
-    console.log('No state available')
     return <div>Loading...</div>
   }
 
