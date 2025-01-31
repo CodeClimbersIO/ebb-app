@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Clock, WandSparkles, Diff } from 'lucide-react'
@@ -81,8 +81,12 @@ export const FlowRecapPage = () => {
   const location = useLocation()
   const navigate = useNavigate()
   const state = location.state as LocationState
+  const effectRan = useRef(false)
 
   useEffect(() => {
+    if (effectRan.current) return
+    effectRan.current = true
+
     console.log('State:', state)
     if (!state?.sessionId) {
       console.log('No session ID found')
