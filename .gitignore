@@ -30,6 +30,8 @@ dist-ssr
 # monitor
 os-monitor
 os-monitor-service
+monitor
+monitoring-service
 
 *.dylib
 *.dll
