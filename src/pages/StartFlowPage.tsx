@@ -51,7 +51,7 @@ export const StartFlowPage = () => {
       { id: '3', name: 'Coding Mode' },
     ]
   })
-  const [onlyAllowCreating, setOnlyAllowCreating] = useState(false)
+  const [allowList, setAllowList] = useState(false)
   const [showBlockingSection, setShowBlockingSection] = useState(false)
   const [showMusicSection, setShowMusicSection] = useState(false)
   const navigate = useNavigate()
@@ -214,12 +214,9 @@ export const StartFlowPage = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       <Switch
-                        checked={onlyAllowCreating}
+                        checked={allowList}
                         onCheckedChange={(checked) => {
-                          setOnlyAllowCreating(checked)
-                          if (checked) {
-                            setSelectedBlocks([]) // Clear all selected blocks when enabling Creation Only Mode
-                          }
+                          setAllowList(checked)
                         }}
                       />
                       <span className="text-sm text-muted-foreground">Allow List</span>
