@@ -10,6 +10,7 @@ export interface FlowSessionDb {
   self_score?: number
   stats?: string
   flow_periods?: string
+  duration?: number
 }
 
 export type FlowSession = FlowSessionDb & {

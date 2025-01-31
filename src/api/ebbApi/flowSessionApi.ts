@@ -1,12 +1,13 @@
 import { QueryResult } from '@tauri-apps/plugin-sql'
 import { FlowSession, FlowSessionDb } from '../../db/flowSession'
 
-const startFlowSession = async (objective: string): Promise<string> => {
+const startFlowSession = async (objective: string, duration?: number): Promise<string> => {
   const flowSession: FlowSessionDb = {
     id: self.crypto.randomUUID(),
     start: new Date().toISOString(),
     objective,
     self_score: 0,
+    duration: duration ? duration * 60 : undefined,
   }
   if (await FlowSessionDb.getInProgressFlowSession()) {
     throw new Error('Flow session already in progress')
