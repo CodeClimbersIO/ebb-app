@@ -60,5 +60,14 @@ pub fn get_migrations() -> Vec<Migration> {
             "#,
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 5,
+            description: "add_duration_to_flow_session",
+            sql: r#"
+            ALTER TABLE flow_session
+            ADD COLUMN duration INTEGER;
+            "#,
+            kind: MigrationKind::Up,
+        },
     ]
 }
