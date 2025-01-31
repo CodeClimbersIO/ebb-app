@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/chart'
 import { TopNav } from '@/components/TopNav'
 import { LogoContainer } from '@/components/LogoContainer'
+import confetti from 'canvas-confetti'
 
 interface LocationState {
   sessionId: string
@@ -65,10 +66,6 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-const calculateNetCreationScore = (timeCreating: number, timeConsuming: number): number => {
-  return Number((timeCreating * 0.1 - timeConsuming * 0.05).toFixed(1))
-}
-
 const formatDuration = (startTime: string, endTime: string): string => {
   const start = DateTime.fromISO(startTime)
   const end = DateTime.fromISO(endTime)
@@ -86,22 +83,76 @@ export const FlowRecapPage = () => {
   const state = location.state as LocationState
 
   useEffect(() => {
+    console.log('State:', state)
     if (!state?.sessionId) {
+      console.log('No session ID found')
       navigate('/')
+      return
+    }
+
+    // Add random 50/50 chance
+    const isPositive = Math.random() >= 0.5
+    console.log('Is positive:', isPositive)
+
+    if (isPositive) {
+      console.log('Playing positive effects')
+      const duration = 1000
+      const animationEnd = Date.now() + duration
+      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 }
+
+      const randomInRange = (min: number, max: number) => {
+        return Math.random() * (max - min) + min
+      }
+
+      const interval = setInterval(() => {
+        const timeLeft = animationEnd - Date.now()
+
+        if (timeLeft <= 0) {
+          return clearInterval(interval)
+        }
+
+        const particleCount = 50 * (timeLeft / duration)
+
+        confetti({
+          ...defaults,
+          particleCount,
+          origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+          colors: ['#7c3aed', '#4c1d95', '#6d28d9'], // Purple shades
+        })
+        confetti({
+          ...defaults,
+          particleCount,
+          origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+          colors: ['#7c3aed', '#4c1d95', '#6d28d9'], // Purple shades
+        })
+      }, 250)
+    } else {
+      console.log('Playing negative effects')
+      const card = document.querySelector('.recap-card')
+      console.log('Found card:', card)
+      card?.classList.add('negative-score')
+      
+      setTimeout(() => {
+        card?.classList.remove('negative-score')
+      }, 1000)
     }
   }, [state, navigate])
 
+  if (!state) {
+    console.log('No state available')
+    return <div>Loading...</div>
+  }
+
   const formatTimeRange = () => {
-    const start = DateTime.fromISO(state?.startTime)
-    const end = DateTime.fromISO(state?.endTime)
+    if (!state.startTime || !state.endTime) return ''
+    const start = DateTime.fromISO(state.startTime)
+    const end = DateTime.fromISO(state.endTime)
     return `${start.toFormat('h:mm a')} - ${end.toFormat('h:mm a')}`
   }
 
-  const chartData = generateSessionData(state?.startTime, state?.endTime)
+  const chartData = generateSessionData(state.startTime, state.endTime)
 
   // Mock data for demonstration - replace with real data later
-  const timeCreating = 225 // 3h 45m in minutes
-  const timeConsuming = 120 // 2h in minutes
   const topApps = ['VS Code', 'Chrome', 'Slack'].map(name => ({
     name,
     icon: '', // This would come from your apps directory
@@ -114,7 +165,7 @@ export const FlowRecapPage = () => {
         <TopNav variant="modal" />
       </div>
       <div className="flex-1 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-        <Card className="w-full max-w-3xl">
+        <Card className="recap-card w-full max-w-3xl transition-all duration-300">
           <CardContent className="p-6 space-y-8">
             <div className="mb-4 flex justify-between items-center">
               <div className="text-sm">
@@ -161,7 +212,7 @@ export const FlowRecapPage = () => {
                     <Tooltip>
                       <TooltipTrigger>
                         <div className="text-2xl font-bold">
-                          {Math.floor(timeCreating / 60)}h {timeCreating % 60}m
+                          5h 3m
                         </div>
                       </TooltipTrigger>
                       <TooltipContent>
@@ -184,8 +235,7 @@ export const FlowRecapPage = () => {
                     <Tooltip>
                       <TooltipTrigger>
                         <div className="text-2xl font-bold">
-                          {calculateNetCreationScore(timeCreating, timeConsuming) > 0 ? '+' : ''}
-                          {calculateNetCreationScore(timeCreating, timeConsuming)}
+                          22.1
                         </div>
                       </TooltipTrigger>
                       <TooltipContent>

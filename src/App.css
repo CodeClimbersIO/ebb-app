@@ -79,3 +79,16 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Add these animation styles */
+@keyframes negativeScoreShake {
+  0%, 100% { transform: translateX(0); border-color: hsl(var(--destructive)); }
+  25% { transform: translateX(5px); }
+  75% { transform: translateX(-5px); }
+}
+
+.negative-score {
+  animation: negativeScoreShake 0.5s ease-in-out;
+  border-width: 2px;
+  border-color: hsl(var(--destructive));
+}
