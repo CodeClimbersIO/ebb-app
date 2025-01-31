@@ -1,5 +1,5 @@
 import { QueryResult } from '@tauri-apps/plugin-sql'
-import { insert, update } from '../lib/sql.util'
+import { insert, update } from '../lib/utils/sql.util'
 import { getEbbDb } from './ebbDb'
 
 export interface FlowSessionDb {

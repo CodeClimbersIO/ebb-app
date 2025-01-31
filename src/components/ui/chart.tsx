@@ -1,7 +1,7 @@
 import * as React from 'react'
 import * as RechartsPrimitive from 'recharts'
 
-import { cn } from '@/lib/tailwind.util'
+import { cn } from '@/lib/utils/tailwind.util'
 
 const THEMES = { light: '', dark: '.dark' } as const
 

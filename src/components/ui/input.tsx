@@ -1,6 +1,6 @@
 import * as React from 'react'
 
-import { cn } from '@/lib/tailwind.util'
+import { cn } from '@/lib/utils/tailwind.util'
 
 const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<'input'>>(
   ({ className, type, ...props }, ref) => {

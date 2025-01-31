@@ -31,6 +31,7 @@ import { Progress } from '@/components/ui/progress'
 import { apps } from '@/lib/app-directory/apps-list'
 import { categoryEmojis, AppDefinition, ActivityRating } from '@/lib/app-directory/apps-types'
 import { Slider } from '@/components/ui/slider'
+import { useAuth } from '../hooks/useAuth'
 
 const generateHourlyData = () => {
   const data = []
@@ -122,6 +123,7 @@ const calculateNetCreationScore = (apps: AppUsage[]): number => {
 }
 
 export const HomePage = () => {
+  const { user } = useAuth()
   const { showZeroState } = useSettings()
   const navigate = useNavigate()
   const [hasNoSessions, setHasNoSessions] = useState(true)
@@ -129,6 +131,11 @@ export const HomePage = () => {
   const [date, setDate] = useState<Date>(new Date())
   const [appUsage, setAppUsage] = useState<AppUsage[]>(usageApps)
   const appUsageRef = useRef<HTMLDivElement>(null)
+
+  // Get first name from user metadata
+  const firstName = user?.user_metadata?.full_name?.split(' ')[0] || 
+                   user?.user_metadata?.name?.split(' ')[0] || 
+                   user?.email?.split('@')[0]
 
   useEffect(() => {
     const init = async () => {
@@ -173,7 +180,9 @@ export const HomePage = () => {
       <Layout>
         <div className="p-8">
           <div className="max-w-5xl mx-auto">
-            <h1 className="text-2xl font-semibold mb-8">Welcome, Nathan</h1>
+            <h1 className="text-2xl font-semibold mb-8">
+              {firstName ? `Welcome, ${firstName}` : 'Welcome'}
+            </h1>
             <div className="border rounded-lg p-8 text-center">
               <h2 className="text-xl font-medium mb-4">Ready to start your flow journey?</h2>
               <p className="text-muted-foreground mb-6">
@@ -199,7 +208,9 @@ export const HomePage = () => {
         <div className="max-w-5xl mx-auto">
           <div className="mb-8 flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <h1 className="text-2xl font-semibold">Welcome, Nathan</h1>
+              <h1 className="text-2xl font-semibold">
+                {firstName ? `Welcome, ${firstName}` : 'Welcome'}
+              </h1>
               {streak > 0 && (
                 <TooltipProvider>
                   <Tooltip>

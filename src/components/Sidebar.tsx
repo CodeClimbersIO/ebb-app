@@ -8,21 +8,28 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { auth } from '../App'
-import { signOut } from 'firebase/auth'
+import supabase from '@/lib/utils/supabase'
+import { useAuth } from '@/hooks/useAuth'
 
 export function Sidebar() {
   const navigate = useNavigate()
   const location = useLocation()
+  const { user } = useAuth()
 
   const handleLogout = async () => {
     try {
-      await signOut(auth)
+      const { error } = await supabase.auth.signOut()
+      if (error) throw error
       navigate('/login')
     } catch (error) {
       console.error('Failed to logout:', error)
     }
   }
+
+  const displayName = user?.user_metadata?.full_name || 
+                     user?.user_metadata?.name || 
+                     user?.email?.split('@')[0] || 
+                     'User'
 
   return (
     <div className="w-64 border-r h-screen flex flex-col">
@@ -84,7 +91,7 @@ export function Sidebar() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="w-full justify-start gap-3 px-3 text-muted-foreground [&>svg]:text-muted-foreground">
               <UserCircle className="h-5 w-5" />
-              Nathan Covey
+              {displayName}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
