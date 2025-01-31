@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
-import { getFlowScoreTailwindColor, getFlowStatusText } from '@/lib/utils/flow'
-import { LiveFlowChart } from '@/components/ui/live-flow-chart'
 import { FlowSession } from '../db/flowSession'
 import { DateTime, Duration } from 'luxon'
 import {
@@ -13,32 +11,23 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
 import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
-
-interface FlowData {
-  flowScore: number
-  appSwitches: number
-  topActivity: string
-  timestamp: string
-}
-
-interface ChartData {
-  time: Date
-  label: string
-  value: number
-  appSwitches: number
-  topActivity: string
-}
+import {
+  Card,
+  CardContent,
+} from '@/components/ui/card'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Music } from 'lucide-react'
 
 const getDurationFormatFromSeconds = (seconds: number) => {
   const duration = Duration.fromMillis(seconds * 1000)
-  const format = duration.as('hours') > 0 ? 'hh:mm:ss' : 'mm:ss'
+  const format = duration.as('minutes') >= 60 ? 'hh:mm:ss' : 'mm:ss'
   return duration.toFormat(format)
 }
 
@@ -46,25 +35,7 @@ export const FlowPage = () => {
   const navigate = useNavigate()
   const [time, setTime] = useState<string>('00:00')
   const [flowSession, setFlowSession] = useState<FlowSession | null>(null)
-  const [flowData, setFlowData] = useState<FlowData | null>(null)
-  const [chartData, setChartData] = useState<ChartData[]>([])
   const [showEndDialog, setShowEndDialog] = useState(false)
-  const [isShortSession, setIsShortSession] = useState(false)
-  const [isInitialPeriod, setIsInitialPeriod] = useState(true)
-
-  const generateChartData = () => {
-    const now = new Date()
-    return Array(6).fill(null).map((_, i) => {
-      const time = new Date(now.getTime() - (50 - i * 10) * 60000)
-      return {
-        time,
-        label: `${60 - i * 10}m ago`,
-        value: 5 + Math.sin(i) * 3,
-        appSwitches: Math.floor(Math.random() * 3),
-        topActivity: 'Arc • Google meet call'
-      }
-    })
-  }
 
   useEffect(() => {
     const init = async () => {
@@ -85,11 +56,11 @@ export const FlowPage = () => {
       const nowAsSeconds = now.toSeconds()
       const startTime = DateTime.fromISO(flowSession.start).toSeconds()
 
-      const diff = nowAsSeconds - startTime // how long we've been in the session
+      const diff = nowAsSeconds - startTime
 
       // If duration is set (in minutes), do countdown
       if (flowSession.duration) {
-        const remaining = (flowSession.duration) - diff // how long is left
+        const remaining = (flowSession.duration) - diff
         if (remaining <= 0) {
           handleEndSession()
           return
@@ -103,49 +74,13 @@ export const FlowPage = () => {
         setTime(duration)
       }
 
-      setIsShortSession(diff < 20 * 60) // Less than 20 minutes
-      setIsInitialPeriod(diff < 10 * 60) // Less than 10 minutes
     }
 
     updateTimer()
     const interval = setInterval(updateTimer, 1000)
 
-    // Simulate flow data for now
-    setFlowData({
-      flowScore: 8,
-      appSwitches: 2,
-      topActivity: 'Code Editor',
-      timestamp: new Date().toISOString()
-    })
-
     return () => clearInterval(interval)
   }, [flowSession])
-
-  useEffect(() => {
-    // Initial data generation
-    setChartData(generateChartData())
-  }, []) // Run once on mount
-
-  // Add new effect for flow score updates
-  useEffect(() => {
-    if (flowData?.flowScore) {
-      setChartData(prevData => {
-        const now = new Date()
-        const newData = [...prevData.slice(1), {
-          time: now,
-          label: '10m',
-          value: flowData.flowScore,
-          appSwitches: Math.floor(Math.random() * 3),
-          topActivity: 'Arc • Google meet call'
-        }]
-        // Update all labels to show minutes
-        return newData.map((data, i) => ({
-          ...data,
-          label: `${60 - i * 10}m ago`
-        }))
-      })
-    }
-  }, [flowData?.flowScore])
 
   const handleEndSession = async () => {
     if (!flowSession) return
@@ -158,9 +93,7 @@ export const FlowPage = () => {
         sessionId: flowSession.id,
         startTime: flowSession.start,
         endTime: new Date().toISOString(),
-        flowScore: flowData?.flowScore || 0,
         timeInFlow: time,
-        contextSwitches: chartData.reduce((sum, data) => sum + data.appSwitches, 0),
         idleTime: '0h 34m', // You'll need to calculate this properly
         objective: flowSession.objective
       }
@@ -173,16 +106,14 @@ export const FlowPage = () => {
         <Dialog open={showEndDialog} onOpenChange={setShowEndDialog}>
           <DialogTrigger asChild>
             <Button variant="destructive">
-              {isShortSession ? 'Cancel Session' : 'End Session'}
+              End Session
             </Button>
           </DialogTrigger>
           <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{isShortSession ? 'Cancel Flow Session' : 'End Flow Session'}</DialogTitle>
+            <DialogHeader className='gap-y-4'>
+              <DialogTitle>End Focus Session</DialogTitle>
               <DialogDescription>
-                {isShortSession
-                  ? 'Are you sure you want to end this flow session? Sessions less than 20 minutes are canceled and not added to your history.'
-                  : 'Are you sure you want to end this flow session? This action cannot be undone.'}
+                Are you sure you want to end this focus session? This action cannot be undone.
               </DialogDescription>
             </DialogHeader>
             <div className="flex justify-end gap-3">
@@ -190,7 +121,7 @@ export const FlowPage = () => {
                 Cancel
               </Button>
               <Button variant="destructive" onClick={handleEndSession}>
-                {isShortSession ? 'Cancel Session' : 'End Session'}
+                End Session
               </Button>
             </div>
           </DialogContent>
@@ -201,38 +132,74 @@ export const FlowPage = () => {
         <div className="text-sm text-muted-foreground mb-2">{flowSession?.objective}</div>
         <div className="text-6xl font-bold mb-2">
           {time}
-          {flowSession?.duration && (
-            <span className="text-sm text-muted-foreground ml-2">
-              / {getDurationFormatFromSeconds(flowSession.duration)}
-            </span>
-          )}
         </div>
-        {flowData && !isInitialPeriod && (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger>
-                <div className={`px-4 py-2 rounded-full ${getFlowScoreTailwindColor(flowData.flowScore)}`}>
-                  {getFlowStatusText(flowData.flowScore)}
+        <div className="w-full max-w-2xl mx-auto px-4 mb-4 mt-12">
+          <Card className="p-6">
+            <CardContent className="space-y-12">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 rounded-full bg-green-500" />
+                  <span className="text-sm text-muted-foreground">
+                    Connected to Spotify
+                  </span>
                 </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>A flow score above 5 counts as "in flow"</p>
-                <p className="mt-2">New flow score calculated every 10 min</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        )}
-        <div className="w-full max-w-3xl mx-auto px-4 mb-4 mt-4">
-          {isInitialPeriod ? (
-            <div className="flex flex-col items-center justify-center h-[300px]">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-primary"></div>
-              <p className="mt-4 text-muted-foreground">
-                Calculating flow... ready in 10 min
-              </p>
-            </div>
-          ) : (
-            <LiveFlowChart data={chartData} flowScore={flowData?.flowScore || 0} />
-          )}
+                <Select defaultValue="playlist1">
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Select playlist" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="playlist1">
+                      <div className="flex items-center">
+                        <Music className="h-4 w-4 mr-2" />
+                        Deep Focus Playlist
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="playlist2">
+                      <div className="flex items-center">
+                        <Music className="h-4 w-4 mr-2" />
+                        Coding Mode
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="playlist3">
+                      <div className="flex items-center">
+                        <Music className="h-4 w-4 mr-2" />
+                        Flow State
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex flex-col items-center space-y-6">
+                <div className="text-center">
+                  <h3 className="text-2xl font-semibold">Midnight Rain</h3>
+                  <p className="text-sm text-muted-foreground">Taylor Swift</p>
+                </div>
+                
+                <div className="w-full space-y-2">
+                  <div className="relative w-full h-1 bg-secondary rounded-full overflow-hidden">
+                    <div className="absolute h-full w-1/3 bg-primary rounded-full" />
+                  </div>
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>1:23</span>
+                    <span>3:45</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-4">
+                  <Button variant="ghost" size="icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="19 20 9 12 19 4 19 20"></polygon><line x1="5" y1="19" x2="5" y2="5"></line></svg>
+                  </Button>
+                  <Button size="icon" className="h-12 w-12">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
+                  </Button>
+                  <Button variant="ghost" size="icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg>
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
