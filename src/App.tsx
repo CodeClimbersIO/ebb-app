@@ -7,10 +7,7 @@ import supabase from '@/lib/utils/supabase'
 const App = () => {
   useEffect(() => {
     const initAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session) {
-        console.log('User is logged in:', session.user)
-      }
+      await supabase.auth.getSession()
     }
 
     initAuth()
