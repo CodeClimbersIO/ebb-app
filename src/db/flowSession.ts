@@ -1,15 +1,7 @@
 import { QueryResult } from '@tauri-apps/plugin-sql'
 import { insert, update } from '../lib/utils/sql.util'
 import { getEbbDb } from './ebbDb'
-import { FlowPeriod } from './flowPeriod'
-import { DateTime } from 'luxon'
 
-export type FlowSessionStats = {
-  time_in_flow?: number
-  inactive_time?: number
-  active_time?: number
-  avg_score?: number
-}
 export interface FlowSessionDb {
   id: string
   start: string
@@ -18,22 +10,12 @@ export interface FlowSessionDb {
   self_score?: number
   stats?: string
   flow_periods?: string
-}
-export type FlowSession = FlowSessionDb & {
-  stats_json: FlowSessionStats
-  flow_periods_json: FlowPeriod[]
+  duration?: number
 }
 
-export type FlowSessionPeriodComparison = {
-  current: {
-    sessions: FlowSession[]
-    stats: FlowSessionStats
-  }
-  previous: {
-    sessions: FlowSession[]
-    stats: FlowSessionStats
-  }
+export type FlowSession = FlowSessionDb & {
 }
+
 
 const createFlowSession = async (
   flowSession: FlowSessionDb,
@@ -126,20 +108,6 @@ const getInProgressFlowSession = async () => {
   return flowSession
 }
 
-const getFlowSessionPeriodComparisons = async (period: 'day' | 'week' | 'month' | 'year'): Promise<[FlowSession[], FlowSession[]]> => {
-  const ebbDb = await getEbbDb()
-  const start = DateTime.now().minus({[period]: 1}).toUTC().toISO()
-  const end = DateTime.now().toUTC().toISO()
-  const query = `SELECT * FROM flow_session WHERE start >= '${start}' AND end <= '${end}';`
-  const flowSessionPeriodComparisons = await ebbDb.select<FlowSession[]>(query)
-
-  const previousStart = DateTime.now().minus({[period]: 2}).toUTC().toISO()
-  const previousEnd = DateTime.now().minus({[period]: 1}).toUTC().toISO()
-  const previousQuery = `SELECT * FROM flow_session WHERE start >= '${previousStart}' AND end <= '${previousEnd}';`
-  const previousFlowSessionPeriodComparisons = await ebbDb.select<FlowSession[]>(previousQuery)
-
-  return [flowSessionPeriodComparisons, previousFlowSessionPeriodComparisons]
-}
 
 export const FlowSessionDb = {
   createFlowSession,
@@ -147,5 +115,4 @@ export const FlowSessionDb = {
   getFlowSessions,
   getFlowSessionById,
   getInProgressFlowSession,
-  getFlowSessionPeriodComparisons,
 }

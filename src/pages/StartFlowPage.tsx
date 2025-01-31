@@ -78,13 +78,13 @@ export const StartFlowPage = () => {
 
     try {
       const sessionId = await FlowSessionApi.startFlowSession(objective, duration || undefined)
-      
+
       if (!sessionId) {
         console.error('No session ID returned from API')
         return
       }
 
-      navigate('/breathing-exercise', { 
+      navigate('/breathing-exercise', {
         state: {
           startTime: Date.now(),
           objective,
@@ -132,26 +132,26 @@ export const StartFlowPage = () => {
     })
   }
 
-  const CollapsibleSectionHeader = ({ 
-    title, 
-    isExpanded, 
+  const CollapsibleSectionHeader = ({
+    title,
+    isExpanded,
     onToggle,
     type
-  }: { 
-    title: string, 
-    isExpanded: boolean, 
+  }: {
+    title: string,
+    isExpanded: boolean,
     onToggle: () => void,
     type: 'blocking' | 'music'
   }) => (
-    <div 
-      className="flex items-center justify-between cursor-pointer" 
+    <div
+      className="flex items-center justify-between cursor-pointer"
       onClick={onToggle}
     >
       <h2 className="text-lg font-semibold">{title}</h2>
       <div className="flex items-center gap-2">
         {!isExpanded && (
           <span className="text-sm text-muted-foreground">
-            {type === 'music' 
+            {type === 'music'
               ? `Playing ${musicService.type === 'spotify' ? 'Spotify' : 'Apple Music'}`
               : 'Applying last used'
             }
@@ -195,7 +195,7 @@ export const StartFlowPage = () => {
             </div>
 
             <div>
-              <CollapsibleSectionHeader 
+              <CollapsibleSectionHeader
                 title="Blocking"
                 isExpanded={showBlockingSection}
                 onToggle={() => setShowBlockingSection(!showBlockingSection)}
@@ -237,7 +237,7 @@ export const StartFlowPage = () => {
             </div>
 
             <div>
-              <CollapsibleSectionHeader 
+              <CollapsibleSectionHeader
                 title="Music"
                 isExpanded={showMusicSection}
                 onToggle={() => setShowMusicSection(!showMusicSection)}
@@ -249,12 +249,12 @@ export const StartFlowPage = () => {
                     <div className="flex items-center gap-2 text-sm">
                       <span className={`h-2 w-2 rounded-full ${musicService.connected ? 'bg-green-500' : 'bg-red-500'}`} />
                       <span className="text-muted-foreground">
-                        {musicService.type === 'spotify' ? 'Spotify' : 'Apple Music'} 
+                        {musicService.type === 'spotify' ? 'Spotify' : 'Apple Music'}
                         {musicService.connected ? ' Connected' : ' Disconnected'}
                       </span>
                     </div>
                   </div>
-                  
+
                   {musicService.connected ? (
                     <Select value={selectedPlaylist} onValueChange={setSelectedPlaylist}>
                       <SelectTrigger>
@@ -272,10 +272,10 @@ export const StartFlowPage = () => {
                       </SelectContent>
                     </Select>
                   ) : (
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       className="w-full"
-                      onClick={() => {/* Handle connection */}}
+                      onClick={() => {/* Handle connection */ }}
                     >
                       Connect {musicService.type === 'spotify' ? 'Spotify' : 'Apple Music'}
                     </Button>

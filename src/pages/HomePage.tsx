@@ -36,28 +36,28 @@ import { useAuth } from '../hooks/useAuth'
 const generateHourlyData = () => {
   const data = []
   const currentHour = DateTime.now().hour
-  
+
   // Always show structure from 6 AM to midnight
   for (let hour = 6; hour < 24; hour++) {
     const time = `${hour}:00`
     const displayTime = DateTime.now().set({ hour, minute: 0 }).toFormat('h:mm a')
     const nextHour = DateTime.now().set({ hour: hour + 1, minute: 0 }).toFormat('h:mm a')
     const timeRange = `${displayTime} - ${nextHour}`
-    
+
     const showLabel = [6, 10, 14, 18, 22].includes(hour)
     const xAxisLabel = showLabel ? DateTime.now().set({ hour }).toFormat('h a') : ''
-    
+
     // Only generate data for hours up to current hour
     let creating = 0
     let consuming = 0
     let offline = 0
-    
+
     if (hour <= currentHour) {
       creating = Math.floor(Math.random() * 40)
       consuming = Math.floor(Math.random() * (60 - creating))
       offline = 60 - creating - consuming
     }
-    
+
     data.push({
       time,
       timeRange,
@@ -145,25 +145,18 @@ export const HomePage = () => {
       }
       const sessions = await FlowSessionApi.getFlowSessions()
       setHasNoSessions(sessions.length === 0)
-      
+
       // Get streak data
-      const flowSessionPeriodComparisons = await FlowSessionApi.getFlowSessionPeriodComparisons('week')
       let currentStreak = 0
       let currentDate = DateTime.now().startOf('day')
       let daysToCheck = 30
-      
+
       while (daysToCheck > 0) {
         if (currentDate.weekday >= 6) {
           currentDate = currentDate.minus({ days: 1 })
           continue
         }
 
-        const hasSessionOnDay = flowSessionPeriodComparisons.current.sessions.some(session => {
-          const sessionDate = DateTime.fromISO(session.start).startOf('day')
-          return sessionDate.hasSame(currentDate, 'day')
-        })
-
-        if (!hasSessionOnDay) break
         currentStreak++
         currentDate = currentDate.minus({ days: 1 })
         daysToCheck--
@@ -234,7 +227,7 @@ export const HomePage = () => {
                 </TooltipProvider>
               )}
             </div>
-            
+
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -242,7 +235,7 @@ export const HomePage = () => {
                   className="justify-start text-left font-normal"
                 >
                   <div className="flex items-center gap-2">
-                    {date.toLocaleDateString() === new Date().toLocaleDateString() 
+                    {date.toLocaleDateString() === new Date().toLocaleDateString()
                       ? 'Today'
                       : DateTime.fromJSDate(date).toFormat('LLL dd, yyyy')}
                     <ChevronDown className="h-4 w-4" />
@@ -317,15 +310,15 @@ export const HomePage = () => {
                       >
                         <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
                           {app.icon ? (
-                            <img 
-                              src={`/src/lib/app-directory/icons/${app.icon}`} 
+                            <img
+                              src={`/src/lib/app-directory/icons/${app.icon}`}
                               alt={app.name}
                               className="h-5 w-5"
                               onError={(e) => {
                                 const target = e.target as HTMLImageElement
                                 const parent = target.parentElement
-                                const appDef = apps.find(a => 
-                                  (a.type === 'application' && a.name === app.name) || 
+                                const appDef = apps.find(a =>
+                                  (a.type === 'application' && a.name === app.name) ||
                                   (a.type === 'website' && a.websiteUrl === app.name)
                                 )
                                 if (parent && appDef) {
@@ -359,8 +352,8 @@ export const HomePage = () => {
                       <stop offset="100%" stopColor="rgb(239 68 68)" stopOpacity={0.8} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid 
-                    vertical={false} 
+                  <CartesianGrid
+                    vertical={false}
                     stroke="hsl(var(--border))"
                     strokeOpacity={0.8}
                   />
@@ -371,10 +364,10 @@ export const HomePage = () => {
                     axisLine={false}
                     interval={0}
                   />
-                  <ChartTooltip 
+                  <ChartTooltip
                     content={({ active, payload }) => {
                       if (!active || !payload?.length) return null
-                      
+
                       const data = payload[0].payload
                       return (
                         <div className="rounded-lg border bg-background p-2 shadow-md">
@@ -418,23 +411,23 @@ export const HomePage = () => {
                   <div key={app.name} className="flex items-center gap-4">
                     <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
                       {app.icon ? (
-                        <img 
-                          src={`/src/lib/app-directory/icons/${app.icon}`} 
+                        <img
+                          src={`/src/lib/app-directory/icons/${app.icon}`}
                           alt={app.name}
                           className="h-5 w-5"
                           onError={(e) => {
                             const target = e.target as HTMLImageElement
                             const parent = target.parentElement
-                            const appDef = apps.find(a => 
-                              (a.type === 'application' && a.name === app.name) || 
+                            const appDef = apps.find(a =>
+                              (a.type === 'application' && a.name === app.name) ||
                               (a.type === 'website' && a.websiteUrl === app.name)
                             )
                             if (parent && appDef) {
                               parent.textContent = categoryEmojis[appDef.category]
                             } else if (parent) {
                               // Fallback to using the app's category that we already have
-                              const foundApp = apps.find(a => 
-                                (a.type === 'application' && a.name === app.name) || 
+                              const foundApp = apps.find(a =>
+                                (a.type === 'application' && a.name === app.name) ||
                                 (a.type === 'website' && a.websiteUrl === app.name)
                               )
                               parent.textContent = foundApp ? categoryEmojis[foundApp.category] : '❓'
@@ -452,20 +445,19 @@ export const HomePage = () => {
                           <Popover>
                             <PopoverTrigger asChild>
                               <div className="w-[80px]">
-                                <Button 
+                                <Button
                                   variant="ghost"
                                   size="sm"
-                                  className={`h-6 px-2 py-0 text-xs font-medium justify-start ${
-                                    app.rating >= 4 ? 'text-[rgb(124,58,237)] hover:bg-primary/10' :
-                                    app.rating <= 2 ? 'text-[rgb(239,68,68)] hover:bg-destructive/10' :
-                                    'text-gray-500 hover:bg-muted'
-                                  }`}
+                                  className={`h-6 px-2 py-0 text-xs font-medium justify-start ${app.rating >= 4 ? 'text-[rgb(124,58,237)] hover:bg-primary/10' :
+                                      app.rating <= 2 ? 'text-[rgb(239,68,68)] hover:bg-destructive/10' :
+                                        'text-gray-500 hover:bg-muted'
+                                    }`}
                                 >
                                   {app.rating === 5 ? 'High Creation' :
-                                   app.rating === 4 ? 'Creation' :
-                                   app.rating === 3 ? 'Neutral' :
-                                   app.rating === 2 ? 'Consumption' :
-                                   'High Consumption'}
+                                    app.rating === 4 ? 'Creation' :
+                                      app.rating === 3 ? 'Neutral' :
+                                        app.rating === 2 ? 'Consumption' :
+                                          'High Consumption'}
                                 </Button>
                               </div>
                             </PopoverTrigger>
@@ -478,28 +470,28 @@ export const HomePage = () => {
                                     min={1}
                                     step={1}
                                     trackColor={
-                                      app.rating >= 4 
+                                      app.rating >= 4
                                         ? 'bg-[rgb(124,58,237)]/20'
-                                        : app.rating <= 2 
-                                        ? 'bg-[rgb(239,68,68)]/20'
-                                        : 'bg-gray-500/20'
+                                        : app.rating <= 2
+                                          ? 'bg-[rgb(239,68,68)]/20'
+                                          : 'bg-gray-500/20'
                                     }
                                     rangeColor={
-                                      app.rating >= 4 
+                                      app.rating >= 4
                                         ? 'bg-[rgb(124,58,237)]'
-                                        : app.rating <= 2 
-                                        ? 'bg-[rgb(239,68,68)]'
-                                        : 'bg-gray-500'
+                                        : app.rating <= 2
+                                          ? 'bg-[rgb(239,68,68)]'
+                                          : 'bg-gray-500'
                                     }
                                     thumbBorderColor={
-                                      app.rating >= 4 
+                                      app.rating >= 4
                                         ? 'border-[rgb(124,58,237)]'
-                                        : app.rating <= 2 
-                                        ? 'border-[rgb(239,68,68)]'
-                                        : 'border-gray-500'
+                                        : app.rating <= 2
+                                          ? 'border-[rgb(239,68,68)]'
+                                          : 'border-gray-500'
                                     }
                                     onValueChange={([value]) => {
-                                      setAppUsage(prev => prev.map(a => 
+                                      setAppUsage(prev => prev.map(a =>
                                         a.name === app.name ? { ...a, rating: value as ActivityRating } : a
                                       ))
                                     }}
@@ -514,14 +506,14 @@ export const HomePage = () => {
                           {Math.floor(app.timeSpent / 60)}h {app.timeSpent % 60}m
                         </span>
                       </div>
-                      <Progress 
-                        value={(app.timeSpent / (6 * 60)) * 100} 
+                      <Progress
+                        value={(app.timeSpent / (6 * 60)) * 100}
                         className={
                           app.rating >= 4
                             ? 'bg-[rgb(124,58,237)]/20 [&>div]:bg-[rgb(124,58,237)]' :
-                          app.rating <= 2
-                            ? 'bg-[rgb(239,68,68)]/20 [&>div]:bg-[rgb(239,68,68)]' :
-                          'bg-gray-500/20 [&>div]:bg-gray-500'
+                            app.rating <= 2
+                              ? 'bg-[rgb(239,68,68)]/20 [&>div]:bg-[rgb(239,68,68)]' :
+                              'bg-gray-500/20 [&>div]:bg-gray-500'
                         }
                       />
                     </div>
