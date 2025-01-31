@@ -90,8 +90,8 @@ export const StartFlowPage = () => {
           objective,
           sessionId,
           duration: duration || undefined,
-          blocks: onlyAllowCreating ? 'all' : selectedBlocks,
-          onlyAllowCreating,
+          blocks: allowList ? 'all' : selectedBlocks,
+          allowList,
           playlist: selectedPlaylist ? {
             id: selectedPlaylist,
             service: musicService.type
