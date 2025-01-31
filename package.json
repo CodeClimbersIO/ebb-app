@@ -28,6 +28,7 @@
     "@supabase/supabase-js": "^2.48.1",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-sql": "^2.2.0",
+    "canvas-confetti": "^1.9.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
@@ -40,10 +41,12 @@
     "react-router-dom": "^7.1.1",
     "recharts": "^2.15.0",
     "tailwind-merge": "^2.6.0",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "use-sound": "^4.0.3"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2",
+    "@types/canvas-confetti": "^1.9.0",
     "@types/luxon": "^3.4.2",
     "@types/node": "^22.10.2",
     "@types/react": "^18.2.15",
