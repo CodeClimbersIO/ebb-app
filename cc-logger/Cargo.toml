@@ -1,0 +1,13 @@
+[package]
+name = "cc-logger"
+version = "0.1.0"
+edition = "2021"
+authors = ["Paul Hovley <rphovley@gmail.com>"]
+description = "CodeClimbers logger"
+license = "MIT"
+repository = "https://github.com/CodeClimbersIO/cc-logger"
+
+[dependencies]
+backtrace = "0.3.74"
+chrono = "0.4.39"
+colored = "3.0.0"
