@@ -38,7 +38,7 @@ export const StartFlowPage = () => {
     return saved ? JSON.parse(saved) : []
   })
   const [selectedPlaylist, setSelectedPlaylist] = useState('')
-  const [musicService, setMusicService] = useState<{
+  const [musicService] = useState<{
     type: 'spotify' | 'apple' | null,
     connected: boolean,
     playlists: { id: string, name: string }[]
