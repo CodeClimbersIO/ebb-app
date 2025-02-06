@@ -2722,6 +2722,8 @@ checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
 [[package]]
 name = "os-monitor"
 version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d8ed4e62680e6ce6bd439677b52e74d58a5d469ae43ff4264ca71038ab4aa625"
 dependencies = [
  "cc",
  "cc-logger",
@@ -2734,6 +2736,8 @@ dependencies = [
 [[package]]
 name = "os-monitor-service"
 version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "880a02d2d82f90937a0e2035cbb616f49a398b7a4023e40607dbdd96a0fb2f44"
 dependencies = [
  "cc-logger",
  "colored",
