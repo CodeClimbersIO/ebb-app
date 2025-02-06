@@ -1,13 +1,10 @@
-use chrono::Local;
-use std::fs::OpenOptions;
-use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::thread;
 use std::time::SystemTime;
 
 use os_monitor::{detect_changes, initialize_monitor, Monitor};
-use os_monitor_service::{enable_log as enable_log_service, initialize_monitoring_service};
+use os_monitor_service::initialize_monitoring_service;
 
 use tauri::async_runtime;
 use tauri::AppHandle;
@@ -27,33 +24,29 @@ pub fn get_default_db_path() -> String {
 }
 
 pub fn start_monitoring(app: AppHandle) {
-    cc_logger::log("Starting monitoring service...");
+    log::info!("Starting monitoring service...");
 
     // Start heartbeat monitoring in a separate task
     start_heartbeat_monitor();
-    enable_log_service();
 
     async_runtime::spawn(async move {
-        cc_logger::log("Initializing monitor in async runtime...");
+        log::info!("Initializing monitor in async runtime...");
         let db_path = get_default_db_path();
         let monitor = Arc::new(Monitor::new());
         initialize_monitor(monitor.clone()).expect("Failed to initialize monitor");
         initialize_monitoring_service(monitor.clone(), db_path).await;
-        cc_logger::log("Monitor initialized");
+        log::info!("Monitor initialized");
 
         loop {
-            cc_logger::log("Monitor loop iteration starting");
+            log::info!("Monitor loop iteration starting");
             sleep(Duration::from_secs(1)).await;
             let start = std::time::Instant::now();
 
             let _ = app
                 .run_on_main_thread(move || {
-                    cc_logger::log("Executing on main thread");
+                    log::info!("Executing on main thread");
                     let result = detect_changes();
-                    cc_logger::log(&format!(
-                        "Main thread execution completed in {:?}",
-                        start.elapsed()
-                    ));
+                    log::info!("Main thread execution completed in {:?}", start.elapsed());
 
                     // Only update completion time after successful main thread operation
                     update_main_thread_completion();
@@ -61,11 +54,11 @@ pub fn start_monitoring(app: AppHandle) {
                     result.expect("Failed to detect changes");
                 })
                 .unwrap_or_else(|e| {
-                    cc_logger::log(&format!("Failed to run on main thread: {}", e));
+                    log::error!("Failed to run on main thread: {}", e);
                     panic!("Failed to run on main thread: {}", e);
                 });
 
-            cc_logger::log("Monitor loop iteration completed");
+            log::info!("Monitor loop iteration completed");
         }
     });
 }
@@ -98,17 +91,17 @@ fn start_heartbeat_monitor() {
                     .as_secs();
 
                 if now - last_completion > MAIN_THREAD_TIMEOUT.as_secs() {
-                    eprintln!(
+                    log::error!(
                         "WARNING: Main thread operation timeout detected! Last completion: {}s ago",
                         now - last_completion
                     );
 
                     // Log to a file since stderr might be blocked
-                    log_error_to_file(&format!(
+                    log::error!(
                         "Main thread timeout detected at {}. Last completion: {}s ago",
                         now,
                         now - last_completion
-                    ));
+                    );
 
                     // Attempt recovery in a separate thread to avoid being blocked
                     attempt_recovery();
@@ -123,7 +116,7 @@ fn attempt_recovery() {
     thread::Builder::new()
         .name("recovery-worker".into())
         .spawn(move || {
-            eprintln!("Attempting monitoring service recovery...");
+            log::error!("Attempting monitoring service recovery...");
 
             // 1. Log system state
             log_system_state();
@@ -135,7 +128,7 @@ fn attempt_recovery() {
             restart_application();
             // This is a last resort option that should be carefully considered
             if cfg!(debug_assertions) {
-                eprintln!("In debug mode: would terminate application here");
+                log::error!("In debug mode: would terminate application here");
             } else {
                 // std::process::exit(1); // Enable if you want to force quit
             }
@@ -144,115 +137,32 @@ fn attempt_recovery() {
 }
 
 fn restart_application() {
-    log_error_to_file("Initiating application restart...");
-
+    log::info!("Initiating application restart...");
     if let Ok(current_exe) = std::env::current_exe() {
-        // Create logs directory if it doesn't exist
-        let logs_dir = PathBuf::from("logs");
-        std::fs::create_dir_all(&logs_dir).expect("Failed to create logs directory");
+        log::info!("Current executable path: {}", current_exe.display());
 
-        // Generate timestamp for log files
-        let timestamp = Local::now().format("%Y%m%d_%H%M%S");
-
-        // Create log files with timestamp
-        let stdout_log = logs_dir.join(format!("app_{}.log", timestamp));
-        let stderr_log = logs_dir.join(format!("error_{}.log", timestamp));
-
-        // Get absolute paths
-        let stdout_absolute = stdout_log.canonicalize().unwrap_or_else(|_| {
-            std::env::current_dir()
-                .unwrap_or_default()
-                .join(&stdout_log)
-        });
-        let stderr_absolute = stderr_log.canonicalize().unwrap_or_else(|_| {
-            std::env::current_dir()
-                .unwrap_or_default()
-                .join(&stderr_log)
-        });
-
-        // Log the absolute paths
-        cc_logger::log(&format!(
-            "New instance stdout will be logged to: {}",
-            stdout_absolute.display()
-        ));
-        cc_logger::log(&format!(
-            "New instance stderr will be logged to: {}",
-            stderr_absolute.display()
-        ));
-
-        log_error_to_file(&format!(
-            "New instance logs will be written to:\nstdout: {}\nstderr: {}",
-            stdout_absolute.display(),
-            stderr_absolute.display()
-        ));
-
-        // Get absolute paths for better visibility
-        let stdout_absolute = stdout_log.canonicalize().unwrap_or(stdout_log.clone());
-        let stderr_absolute = stderr_log.canonicalize().unwrap_or(stderr_log.clone());
-
-        // Open log files
-        let log_file = OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(&stdout_absolute)
-            .expect("Failed to open log file");
-
-        let error_log = OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(&stderr_absolute)
-            .expect("Failed to open error log file");
-
+        log::info!(
+            "Arguments: {}",
+            std::env::args().skip(1).collect::<Vec<String>>().join(" ")
+        );
         match std::process::Command::new(current_exe)
             .args(std::env::args().skip(1))
             .arg("--restarted")
-            .arg(format!("--log-path={}", stdout_absolute.display()))
-            .stdout(std::process::Stdio::from(log_file))
-            .stderr(std::process::Stdio::from(error_log))
             .spawn()
         {
             Ok(_) => {
-                log_error_to_file(&format!(
-                    "Successfully spawned new instance.\nLog files are at:\n  stdout: {}\n  stderr: {}", 
-                    stdout_absolute.display(),
-                    stderr_absolute.display()
-                ));
-                cc_logger::log(&format!(
-                    "Application restarting. Log files are at:\n  stdout: {}\n  stderr: {}",
-                    stdout_absolute.display(),
-                    stderr_absolute.display()
-                ));
+                log::error!("Successfully spawned new instance.");
                 thread::sleep(Duration::from_secs(1));
                 std::process::exit(0);
             }
             Err(e) => {
-                log_error_to_file(&format!("Failed to restart application: {}", e));
-                eprintln!("Failed to restart application: {}", e);
+                log::error!("Failed to restart application: {}", e);
             }
         }
     } else {
-        log_error_to_file("Failed to get current executable path");
-        eprintln!("Failed to get current executable path");
+        log::error!("Failed to get current executable path");
     }
-}
-
-fn log_error_to_file(message: &str) {
-    use std::fs::OpenOptions;
-    use std::io::Write;
-
-    if let Ok(mut file) = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open("monitor_errors.log")
-    {
-        let timestamp = SystemTime::now()
-            .duration_since(SystemTime::UNIX_EPOCH)
-            .unwrap()
-            .as_secs();
-        if writeln!(file, "[{}] {}", timestamp, message).is_err() {
-            eprintln!("Failed to write to error log file");
-        }
-    }
+    log::error!("Restarting application failed");
 }
 
 fn log_system_state() {
@@ -268,7 +178,7 @@ fn log_system_state() {
         std::thread::current().id(),
         get_memory_usage()
     );
-    log_error_to_file(&state);
+    log::info!("{}", state);
 }
 
 fn generate_thread_dump() {
