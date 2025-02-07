@@ -11,6 +11,8 @@
     "sql:allow-execute",
     "log:default",
     "deep-link:default",
-    "opener:default"
+    "opener:default",
+    "opener:allow-open-url",
+    "opener:allow-default-urls"
   ]
 }

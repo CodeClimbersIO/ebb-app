@@ -1,0 +1,117 @@
+<!-- This is only a reference file. This page is actually hosted on our website at https://ebb.cool/auth-success. -->
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Ebb Authentication</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: Inter, system-ui, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      background: #030712;
+      color: #fff;
+    }
+    .success-message {
+      text-align: center;
+    }
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 1.5rem;
+    }
+    p {
+      font-size: 1.1rem;
+      color: #a1a1aa;
+      margin-bottom: 2rem;
+    }
+    .open-app-button {
+      margin-top: 0.5rem;
+      padding: 12px 24px;
+      background: transparent;
+      color: #fff;
+      border: 1px solid #27272a;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all 0.2s ease;
+    }
+    .open-app-button:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: #3f3f46;
+    }
+  </style>
+</head>
+<body>
+  <div class="success-message">
+    <h1>Return to App</h1>
+    <p>Click "Open Ebb" to finish logging in</p>
+    <button id="openAppButton" class="open-app-button">Open Ebb</button>
+  </div>
+  <script>
+    function openApp() {
+      const fullHash = window.location.hash;
+      console.log('Original hash:', fullHash);
+      
+      // Remove the leading # and create URLSearchParams
+      const hashContent = fullHash.substring(1);
+      const params = new URLSearchParams(hashContent);
+      
+      // Get the required tokens
+      const accessToken = params.get('access_token');
+      const refreshToken = params.get('refresh_token');
+      
+      if (!accessToken || !refreshToken) {
+        console.error('Missing tokens in URL');
+        return;
+      }
+      
+      // Create a new URLSearchParams for the deep link
+      const deepLinkParams = new URLSearchParams();
+      deepLinkParams.set('access_token', accessToken);
+      deepLinkParams.set('refresh_token', refreshToken);
+      
+      const appUrl = `ebb://auth/callback?${deepLinkParams.toString()}`;
+      console.log('Final deep link URL:', appUrl);
+      
+      // Try multiple approaches for deep linking
+      // 1. Traditional window.location approach
+      window.location.href = appUrl;
+
+      // 2. Fallback to window.open
+      setTimeout(() => {
+        window.open(appUrl, '_self');
+      }, 100);
+
+      // 3. Hidden iframe approach
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = appUrl;
+      document.body.appendChild(iframe);
+      
+      // Remove iframe after a short delay
+      setTimeout(() => {
+        document.body.removeChild(iframe);
+      }, 2000);
+
+      // Close window after successful redirect
+      let redirectAttempts = 0;
+      const checkRedirect = setInterval(() => {
+        redirectAttempts++;
+        if (document.hidden || redirectAttempts > 5) {
+          window.close();
+          clearInterval(checkRedirect);
+        }
+      }, 1000);
+    }
+
+    // Only trigger openApp on button click, remove automatic open
+    document.getElementById('openAppButton').addEventListener('click', openApp);
+  </script>
+</body>
+</html>
