@@ -36,3 +36,6 @@ monitor-service
 *.dylib
 *.dll
 *.a
+
+scripts/*_seed_*.sql
+scripts/apps.csv
