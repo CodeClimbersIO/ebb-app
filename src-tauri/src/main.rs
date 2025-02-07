@@ -27,6 +27,8 @@ async fn main() {
 
     let migrations = db::get_migrations();
     tauri::Builder::default()
+        .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_deep_link::init())
         .plugin(
             tauri_plugin_sql::Builder::new()
                 .add_migrations(&format!("sqlite:{db_path}"), migrations)
