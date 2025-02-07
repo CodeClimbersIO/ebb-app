@@ -32,6 +32,8 @@ os-monitor
 os-monitor-service
 monitor
 monitor-service
+!src/db/monitor/
+
 
 *.dylib
 *.dll

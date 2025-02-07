@@ -27,39 +27,36 @@ export interface ActivityStateDb {
   start_time: string
   end_time: string
   created_at: string
-  activities?: string
+  tags?: string
 }
 
 export type ActivityState = ActivityStateDb & {
-  activities_json: Activity[]
+  tags_json?: {
+    tag_id: string
+    name: string
+  }[]
 }
 
-export const getActivityStatesBetween = async (start: DateTime, end: DateTime): Promise<ActivityStateDb[]> => {
+export const getActivityStatesByTagsAndTimePeriod = async (tagIds: string[], start: DateTime, end: DateTime): Promise<ActivityStateDb[]> => {
   const monitorDb = await MonitorDb.getMonitorDb()
   const startUtc = start.toUTC().toISO()
   const endUtc = end.toUTC().toISO()
   const query = `
     SELECT 
-      acts.*,
-      CASE
-      WHEN MAX(act.id) IS NULL THEN NULL
-      ELSE json_group_array(
-              json_object(
-                      'activity_type', act.activity_type,
-                      'app_name', act.app_name,
-                      'app_window_title', act.app_window_title,
-                      'created_at', act.created_at,
-                      'timestamp', act.timestamp
-              )
-            )
-      END as activities
+    acts.*,
+    json_group_array(json_object(
+      'tag_id', t.id,
+      'name', t.name
+    )) as tags
     FROM activity_state acts
-    LEFT JOIN activity act ON acts.start_time <= act.timestamp AND acts.end_time >= act.timestamp
-    WHERE acts.start_time >= '${startUtc}' AND acts.end_time <= '${endUtc}';`
+      LEFT JOIN activity_state_tag ast ON ast.activity_state_id = acts.id
+      LEFT JOIN tag t ON ast.tag_id = t.id
+    WHERE acts.start_time >= '${startUtc}' AND acts.end_time <= '${endUtc}' AND ast.tag_id IN ('${tagIds.join('\',\'')}')
+    GROUP BY acts.id, acts.state, acts.app_switches, acts.start_time, acts.end_time, acts.created_at`
   const activityStates = await monitorDb.select<ActivityStateDb[]>(query)
   return activityStates
 }
 
-export const ActivityStateDb = {
-  getActivityStatesBetween,
+export const ActivityStateRepo = {
+  getActivityStatesByTagsAndTimePeriod,
 }

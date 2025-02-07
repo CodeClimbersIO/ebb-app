@@ -32,45 +32,7 @@ import { apps } from '@/lib/app-directory/apps-list'
 import { categoryEmojis, AppDefinition, ActivityRating } from '@/lib/app-directory/apps-types'
 import { Slider } from '@/components/ui/slider'
 import { useAuth } from '../hooks/useAuth'
-
-const generateHourlyData = () => {
-  const data = []
-  const currentHour = DateTime.now().hour
-
-  // Always show structure from 6 AM to midnight
-  for (let hour = 6; hour < 24; hour++) {
-    const time = `${hour}:00`
-    const displayTime = DateTime.now().set({ hour, minute: 0 }).toFormat('h:mm a')
-    const nextHour = DateTime.now().set({ hour: hour + 1, minute: 0 }).toFormat('h:mm a')
-    const timeRange = `${displayTime} - ${nextHour}`
-
-    const showLabel = [6, 10, 14, 18, 22].includes(hour)
-    const xAxisLabel = showLabel ? DateTime.now().set({ hour }).toFormat('h a') : ''
-
-    // Only generate data for hours up to current hour
-    let creating = 0
-    let consuming = 0
-    let offline = 0
-
-    if (hour <= currentHour) {
-      creating = Math.floor(Math.random() * 40)
-      consuming = Math.floor(Math.random() * (60 - creating))
-      offline = 60 - creating - consuming
-    }
-
-    data.push({
-      time,
-      timeRange,
-      xAxisLabel,
-      creating,
-      consuming,
-      offline,
-    })
-  }
-  return data
-}
-
-const chartData = generateHourlyData()
+import { GraphableTimeByHourBlock, MonitorApi } from '../api/monitorApi/monitorApi'
 
 const chartConfig = {
   consuming: {
@@ -130,12 +92,13 @@ export const HomePage = () => {
   const [streak, setStreak] = useState(0)
   const [date, setDate] = useState<Date>(new Date())
   const [appUsage, setAppUsage] = useState<AppUsage[]>(usageApps)
+  const [chartData, setChartData] = useState<GraphableTimeByHourBlock[]>([])
   const appUsageRef = useRef<HTMLDivElement>(null)
 
   // Get first name from user metadata
-  const firstName = user?.user_metadata?.full_name?.split(' ')[0] || 
-                   user?.user_metadata?.name?.split(' ')[0] || 
-                   user?.email?.split('@')[0]
+  const firstName = user?.user_metadata?.full_name?.split(' ')[0] ||
+    user?.user_metadata?.name?.split(' ')[0] ||
+    user?.email?.split('@')[0]
 
   useEffect(() => {
     const init = async () => {
@@ -145,6 +108,11 @@ export const HomePage = () => {
       }
       const sessions = await FlowSessionApi.getFlowSessions()
       setHasNoSessions(sessions.length === 0)
+
+      const start = DateTime.now().startOf('day')
+      const end = DateTime.now().endOf('day')
+      const chartData = await MonitorApi.getTimeCreatingByHour(start, end)
+      setChartData(chartData)
 
       // Get streak data
       let currentStreak = 0
@@ -449,8 +417,8 @@ export const HomePage = () => {
                                   variant="ghost"
                                   size="sm"
                                   className={`h-6 px-2 py-0 text-xs font-medium justify-start ${app.rating >= 4 ? 'text-[rgb(124,58,237)] hover:bg-primary/10' :
-                                      app.rating <= 2 ? 'text-[rgb(239,68,68)] hover:bg-destructive/10' :
-                                        'text-gray-500 hover:bg-muted'
+                                    app.rating <= 2 ? 'text-[rgb(239,68,68)] hover:bg-destructive/10' :
+                                      'text-gray-500 hover:bg-muted'
                                     }`}
                                 >
                                   {app.rating === 5 ? 'High Creation' :
