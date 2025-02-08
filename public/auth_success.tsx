@@ -35,6 +35,13 @@ export function withAuthSuccess(Component): ComponentType {
             if (store.attempts === 0) {
                 openApp()
             }
+
+            // Set up auto-close timer
+            const timer = setTimeout(() => {
+                window.close()
+            }, 60000) // 60 seconds = 1 minute
+
+            return () => clearTimeout(timer)
         }, [openApp])
 
         return (
@@ -101,6 +108,13 @@ export function withAuthSuccess(Component): ComponentType {
                     >
                         Open App
                     </button>
+                    <p style={{ 
+                        fontSize: '14px',
+                        margin: '16px 0 0 0',
+                        opacity: 0.5 
+                    }}>
+                        This window will automatically close after 1 minute
+                    </p>
                 </div>
             </Component>
         )
