@@ -106,24 +106,3 @@ export function withAuthSuccess(Component): ComponentType {
         )
     }
 }
-
-// Optional: Additional override for styling
-export function withAuthSuccessStyle(Component): ComponentType {
-    return (props) => {
-        return (
-            <Component
-                {...props}
-                style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    height: '100%',
-                    gap: '16px',
-                    fontFamily: 'Inter, system-ui, sans-serif',
-                    color: '#fff',
-                }}
-            />
-        )
-    }
-}
