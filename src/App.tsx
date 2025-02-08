@@ -5,20 +5,18 @@ import { ThemeProvider } from '@/components/ThemeProvider'
 import supabase from '@/lib/utils/supabase'
 import { trace, info, error } from '@tauri-apps/plugin-log'
 
-
 const App = () => {
   trace('Trace')
   info('Info')
   error('Error')
+
   useEffect(() => {
     const initAuth = async () => {
-      console.log('initAuth')
       try {
         await supabase.auth.getSession()
       } catch (error) {
         console.error('Error initializing auth:', error)
       }
-      console.log('initAuth done')
     }
 
     initAuth()
