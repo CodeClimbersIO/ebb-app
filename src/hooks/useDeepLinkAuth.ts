@@ -11,10 +11,13 @@ export const useDeepLinkAuth = () => {
       try {
         const url = urls[0]
         
-        // Parse tokens from the query string
+        // Parse the URL and get the hash
         const urlObj = new URL(url)
-        const accessToken = urlObj.searchParams.get('access_token')
-        const refreshToken = urlObj.searchParams.get('refresh_token')
+        const hashParams = new URLSearchParams(urlObj.hash.substring(1))
+        const searchParams = urlObj.searchParams
+
+        const accessToken = hashParams.get('access_token') || searchParams.get('access_token')
+        const refreshToken = hashParams.get('refresh_token') || searchParams.get('refresh_token')
 
         if (accessToken && refreshToken) {
           const { data, error } = await supabase.auth.setSession({
@@ -28,7 +31,6 @@ export const useDeepLinkAuth = () => {
           }
           
           if (data.session) {
-            console.log('Session established successfully')
             navigate('/')
           }
         } else {

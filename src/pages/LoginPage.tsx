@@ -18,7 +18,7 @@ export const LoginPage = () => {
             access_type: 'offline',
             prompt: 'consent',
           },
-        },
+        }
       })
 
       if (!data?.url) throw new Error('No auth URL returned')

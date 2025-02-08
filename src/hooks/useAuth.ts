@@ -9,7 +9,6 @@ export const useAuth = () => {
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('session', session)
       setUser(session?.user ?? null)
       setLoading(false)
     }).catch((error) => {
@@ -21,8 +20,6 @@ export const useAuth = () => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      console.log('auth state changed')
-      console.log('session', session)
       setUser(session?.user ?? null)
       setLoading(false)
     })

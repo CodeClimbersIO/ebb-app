@@ -9,6 +9,7 @@ const App = () => {
   trace('Trace')
   info('Info')
   error('Error')
+
   useEffect(() => {
     const initAuth = async () => {
       try {
