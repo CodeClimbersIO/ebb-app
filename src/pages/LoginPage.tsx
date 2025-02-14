@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Logo } from '@/components/ui/logo'
-import supabase from '@/lib/utils/supabase'
+import supabase from '@/lib/integrations/supabase'
 import { openUrl } from '@tauri-apps/plugin-opener'
 
 export const LoginPage = () => {

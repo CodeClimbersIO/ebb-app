@@ -29,7 +29,6 @@ const ProtectedRoute = () => {
 }
 
 const Router = () => {
-  // Now useNavigate will work here because we're inside HashRouter
   useDeepLinkAuth()
 
   return (
@@ -48,6 +47,9 @@ const Router = () => {
         <Route path="/flow-recap" element={<FlowRecapPage />} />
         <Route path="/onboarding" element={<OnboardingPage />} />
       </Route>
+
+      {/* 404 catch-all */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }
