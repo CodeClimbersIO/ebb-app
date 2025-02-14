@@ -93,11 +93,9 @@ export class SpotifyService {
 
   static async handleCallback(code: string, state: string | null): Promise<void> {
     try {
-      console.log('Starting Spotify callback handling:', { code, state })
       
       // Verify state matches what we stored
       const storedState = localStorage.getItem(STATE_KEY)
-      console.log('States:', { stored: storedState, received: state })
       
       if (state === null || state !== storedState) {
         throw new Error('State mismatch')
@@ -106,9 +104,7 @@ export class SpotifyService {
       // Clear stored state
       localStorage.removeItem(STATE_KEY)
 
-      console.log('Exchanging code for tokens...')
       const tokens = await this.exchangeCodeForTokens(code)
-      console.log('Got tokens:', { ...tokens, access_token: '***', refresh_token: '***' })
       
       this.setStoredTokens({
         access_token: tokens.access_token,
@@ -117,12 +113,10 @@ export class SpotifyService {
       })
 
       // Verify connection by fetching profile
-      console.log('Verifying connection...')
       const profile = await this.getUserProfile()
       if (!profile) {
         throw new Error('Failed to verify connection')
       }
-      console.log('Successfully connected as:', profile.email)
     } catch (error) {
       console.error('Error in handleCallback:', error)
       throw error

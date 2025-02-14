@@ -26,7 +26,7 @@ import { AppCategory } from '../lib/app-directory/apps-types'
 import { TimeSelector } from '@/components/TimeSelector'
 import { AppSelector } from '@/components/AppSelector'
 import type { AppDefinition } from '@/lib/app-directory/apps-types'
-import { SpotifyService } from '@/lib/utils/spotify'
+import { SpotifyService } from '@/lib/integrations/spotify'
 import { SpotifyIcon } from '@/components/icons/SpotifyIcon'
 import { AppleMusicIcon } from '@/components/icons/AppleMusicIcon'
 

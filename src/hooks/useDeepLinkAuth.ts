@@ -1,8 +1,8 @@
 import { onOpenUrl } from '@tauri-apps/plugin-deep-link'
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import supabase from '@/lib/utils/supabase'
-import { SpotifyService } from '@/lib/utils/spotify'
+import supabase from '@/lib/integrations/supabase'
+import { SpotifyService } from '@/lib/integrations/spotify'
 
 export const useDeepLinkAuth = () => {
   const navigate = useNavigate()
@@ -11,18 +11,10 @@ export const useDeepLinkAuth = () => {
     const handleUrl = async (urls: string[]) => {
       try {
         const url = urls[0]
-        console.log('Deep link URL:', url)
         
         const urlObj = new URL(url)
         const hashParams = new URLSearchParams(urlObj.hash.substring(1))
         const searchParams = new URLSearchParams(urlObj.search.substring(1))
-
-        console.log('URL parts:', {
-          hash: urlObj.hash,
-          search: urlObj.search,
-          searchParams: Object.fromEntries(searchParams),
-          hashParams: Object.fromEntries(hashParams)
-        })
 
         // Handle Supabase auth
         const accessToken = hashParams.get('access_token') || searchParams.get('access_token')
@@ -43,7 +35,6 @@ export const useDeepLinkAuth = () => {
         const code = searchParams.get('code')
         const state = searchParams.get('state')
         if (code && state) {
-          console.log('Handling Spotify callback with:', { code, state })
           await SpotifyService.handleCallback(code, state)
           navigate('/settings', { 
             state: { spotifyConnected: true }

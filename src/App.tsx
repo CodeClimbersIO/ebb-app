@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import './App.css'
 import { AppRouter } from './routes'
 import { ThemeProvider } from '@/components/ThemeProvider'
-import supabase from '@/lib/utils/supabase'
+import supabase from '@/lib/integrations/supabase'
 import { trace, info, error } from '@tauri-apps/plugin-log'
 
 const App = () => {

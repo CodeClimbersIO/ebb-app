@@ -15,7 +15,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog'
-import { SpotifyService } from '@/lib/utils/spotify'
+import { SpotifyService } from '@/lib/integrations/spotify'
 import { AlertCircle } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 
@@ -34,9 +34,7 @@ export const SettingsPage = () => {
   useEffect(() => {
     const checkSpotifyConnection = async () => {
       try {
-        console.log('Checking Spotify connection...')
         const isConnected = await SpotifyService.isConnected()
-        console.log('Spotify connected:', isConnected)
         
         if (isConnected) {
           const profile = await SpotifyService.getUserProfile()
@@ -64,7 +62,6 @@ export const SettingsPage = () => {
       
       if (code && state && searchParams.get('spotify') === 'callback') {
         try {
-          console.log('Handling Spotify callback...')
           await SpotifyService.handleCallback(code, state)
           const profile = await SpotifyService.getUserProfile()
           if (profile) {
