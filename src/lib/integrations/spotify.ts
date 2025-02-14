@@ -40,6 +40,8 @@ const STORAGE_KEY = 'spotify_tokens'
 // Store state in localStorage to verify in callback
 const STATE_KEY = 'spotify_auth_state'
 
+const SPOTIFY_API_BASE = 'https://api.spotify.com/v1'
+
 export interface PlaybackState {
   track_window: {
     current_track: {
@@ -231,7 +233,7 @@ export class SpotifyService {
 
   static async getUserProfile(): Promise<SpotifyUserProfile | null> {
     try {
-      const response = await fetch('https://api.spotify.com/v1/me', {
+      const response = await fetch(`${SPOTIFY_API_BASE}/me`, {
         headers: {
           'Authorization': `Bearer ${await this.getAccessToken()}`
         }
@@ -256,7 +258,7 @@ export class SpotifyService {
 
   static async getUserPlaylists(): Promise<{ id: string, name: string }[]> {
     try {
-      const response = await fetch('https://api.spotify.com/v1/me/playlists?limit=50', {
+      const response = await fetch(`${SPOTIFY_API_BASE}/me/playlists?limit=50`, {
         headers: {
           'Authorization': `Bearer ${await this.getAccessToken()}`
         }
@@ -306,7 +308,7 @@ export class SpotifyService {
   static async startPlayback(playlistId: string, deviceId: string): Promise<void> {
     const token = await this.getAccessToken()
     
-    await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
+    await fetch(`${SPOTIFY_API_BASE}/me/player/play?device_id=${deviceId}`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -323,22 +325,21 @@ export class SpotifyService {
     const token = await this.getAccessToken()
     
     if (action === 'play') {
-      await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
+      await fetch(`${SPOTIFY_API_BASE}/me/player/play?device_id=${deviceId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
         }
       })
     } else if (action === 'pause') {
-      await fetch(`https://api.spotify.com/v1/me/player/pause?device_id=${deviceId}`, {
+      await fetch(`${SPOTIFY_API_BASE}/me/player/pause?device_id=${deviceId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
         }
       })
     } else {
-      // Handle next/previous
-      await fetch(`https://api.spotify.com/v1/me/player/${action}?device_id=${deviceId}`, {
+      await fetch(`${SPOTIFY_API_BASE}/me/player/${action}?device_id=${deviceId}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
