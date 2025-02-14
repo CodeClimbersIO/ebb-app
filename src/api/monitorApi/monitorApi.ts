@@ -1,6 +1,8 @@
 import { DateTime } from 'luxon'
 import { Tag, TagRepo, TagType } from '../../db/monitor/tagRepo'
-import { ActivityState, ActivityStateRepo } from '../../db/monitor/activityStateRepo'
+import { ActivityState, ActivityStateRepo, App, AppTag } from '../../db/monitor/activityStateRepo'
+import { ActivityRating } from '../../lib/app-directory/apps-types'
+import { AppRepo } from '../../db/monitor/appRepo'
 
 
 // during this time block, tags had the following duration
@@ -25,6 +27,13 @@ export interface GraphableTimeByHourBlock {
   xAxisLabel: string // "6 AM"
 }
 
+export type AppsWithTime = App & {
+  duration: number // in minutes
+  rating: ActivityRating
+  category_tag?: AppTag
+  default_tag?: AppTag
+  icon?: string
+}
 
 export const getTagsByType = async (type: TagType): Promise<Tag[]> => {
   const tags = await TagRepo.getTagsByType(type)
@@ -32,47 +41,49 @@ export const getTagsByType = async (type: TagType): Promise<Tag[]> => {
 }
 
 export const getActivityStatesByTagsAndTimePeriod = async (tagIds: string[], start: DateTime, end: DateTime) => {
-    const activityStates = await ActivityStateRepo.getActivityStatesByTagsAndTimePeriod(tagIds, start, end)
+  const activityStates = await ActivityStateRepo.getActivityStatesByTagsAndTimePeriod(tagIds, start, end)
   return activityStates
 }
 
 
-const mockHourlyData = (): GraphableTimeByHourBlock[] => {
-  const data = []
-  const currentHour = DateTime.now().hour
-
-  // Always show structure from 6 AM to midnight
-  for (let hour = 6; hour < 24; hour++) {
-    const time = `${hour}:00`
-    const displayTime = DateTime.now().set({ hour, minute: 0 }).toFormat('h:mm a')
-    const nextHour = DateTime.now().set({ hour: hour + 1, minute: 0 }).toFormat('h:mm a')
-    const timeRange = `${displayTime} - ${nextHour}`
-
-    const showLabel = [6, 10, 14, 18, 22].includes(hour)
-    const xAxisLabel = showLabel ? DateTime.now().set({ hour }).toFormat('h a') : ''
-
-    // Only generate data for hours up to current hour
-    let creating = 0
-    let consuming = 0
-    let offline = 0
-
-    if (hour <= currentHour) {
-      creating = Math.floor(Math.random() * 40)
-      consuming = Math.floor(Math.random() * (60 - creating))
-      offline = 60 - creating - consuming
-    }
-
-    data.push({
-      time,
-      timeRange,
-      xAxisLabel,
-      creating,
-      consuming,
-      offline,
-    })
-  }
-  return data
+export const getActivityStatesWithApps = async (start: DateTime, end: DateTime) => {
+  const activityStates = await ActivityStateRepo.getActivityStatesWithApps(start, end)
+  return activityStates
 }
+
+
+const getRatingFromTag = (tag: AppTag | undefined): ActivityRating => {
+  if (!tag) return 3
+  if (tag.tag_name === 'creating') {
+    return tag.weight === 1 ? 5 : 4
+  } else if (tag.tag_name === 'consuming') {
+    return tag.weight === 1 ? 1 : 2
+  }
+  return 3
+}
+
+// do the opposite of getRatingFromTag
+const getTagIdByRating = (rating: ActivityRating, tags: Tag[]): Tag | undefined => {
+  const tag = tags.find(tag => {
+    if (rating > 3 && tag.name === 'creating') {
+      return tag
+    } else if (rating < 3 && tag.name === 'consuming') {
+      return tag
+    } else {
+      return tag
+    }
+  })
+  
+  return tag
+}
+
+export const setAppDefaultTag = async (appTagId: string, rating: ActivityRating, tags: Tag[]) => {
+  // convert value or rating to tag id
+  const tag = getTagIdByRating(rating, tags)
+  if (!tag) return
+  await AppRepo.setAppDefaultTag(appTagId, tag.id)
+}
+
 
 // group activity states by hour and create time blocks. activity states are already sorted by time (ascending)
 export const createTimeBlockFromActivityState = (activityStates: ActivityState[]): TimeBlock[] => {
@@ -121,11 +132,14 @@ export const createTimeBlockFromActivityState = (activityStates: ActivityState[]
 export const getTimeCreatingByHour = async (start: DateTime, end: DateTime): Promise<GraphableTimeByHourBlock[]> => {
   const tags = await TagRepo.getTagsByType('default')
   const activityStatesDB = await getActivityStatesByTagsAndTimePeriod(tags.map(tag => tag.id), start, end)
+  console.log('activityStatesDB', activityStatesDB)
   const activityStates: ActivityState[] = activityStatesDB.map(state => ({
     ...state,
     tags_json: state.tags ? JSON.parse(state.tags) : []
   }))
   const timeBlocks = createTimeBlockFromActivityState(activityStates)
+  const currentHour = DateTime.now().hour
+  const currentMinute = DateTime.now().minute
   // convert time blocks to graphable time by hour block
   const graphableTimeByHourBlocks = timeBlocks.map(timeBlock => {
     const startHour = DateTime.now().set({ hour: parseInt(timeBlock.startTime.split(':')[0]) }).startOf('hour')
@@ -138,7 +152,10 @@ export const getTimeCreatingByHour = async (start: DateTime, end: DateTime): Pro
     const consuming = timeBlock.tags['consuming']?.duration || 0
     // const idle = timeBlock.tags['idle']?.duration || 0 // add back when we have something to show for idle data
     // const neutral = timeBlock.tags['neutral']?.duration || 0
-    const offline = 60 - creating - consuming
+
+    const isCurrentHour = startHour.hour === currentHour
+    const totalHourTime = isCurrentHour ? currentMinute : 60
+    const offline = totalHourTime - creating - consuming
     return {
       time,
       timeRange,
@@ -148,14 +165,44 @@ export const getTimeCreatingByHour = async (start: DateTime, end: DateTime): Pro
       offline,
     }
   })
-  console.log(graphableTimeByHourBlocks)
-  const mockData = mockHourlyData()
-  console.log(mockData)
-  return graphableTimeByHourBlocks.slice(6) // only show 6 AM to midnight
+  return graphableTimeByHourBlocks // only show 6 AM to midnight
   // return mockData
+}
+
+export const getTopAppsByPeriod = async (start: DateTime, end: DateTime): Promise<AppsWithTime[]> => {
+  const activityStatesDB = await getActivityStatesWithApps(start, end)
+  const activityStates: ActivityState[] = activityStatesDB.map(state => ({
+    ...state,
+    apps_json: state.apps ? JSON.parse(state.apps) : []
+  }))
+  
+  const appsWithTime: Record<string, AppsWithTime> = {}
+  for (const activityState of activityStates) {
+    if (!activityState.apps_json) continue
+    const appsUsed = activityState.apps_json.length // so the total time always adds up to .5 minutes between all apps used for the activity state
+    for (const app of activityState.apps_json ) {
+      if (!appsWithTime[app.id]) {
+        appsWithTime[app.id] = {
+          ...app,
+          duration: 0,
+          category_tag: app.tags.find(tag => tag.tag_type === 'category'),
+          default_tag: app.tags.find(tag => tag.tag_type === 'default'),
+          icon: '',
+          rating: getRatingFromTag(app.tags.find(tag => tag.tag_type === 'default')),
+        }
+      }
+      appsWithTime[app.id].duration += 0.5 / appsUsed
+    }
+  }
+
+  const sortedApps = Object.values(appsWithTime).sort((a, b) => b.duration - a.duration)
+  return sortedApps
 }
 
 
 export const MonitorApi = {
+  getTagsByType,
   getTimeCreatingByHour,
+  getTopAppsByPeriod,
+  setAppDefaultTag,
 }

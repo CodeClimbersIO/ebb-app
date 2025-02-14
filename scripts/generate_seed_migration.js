@@ -102,7 +102,7 @@ function generateMigration(csvContent) {
 
   // Insert apps
   sql += '-- Insert apps\n'
-  sql += 'INSERT INTO app (id, name, app_id, platform, is_browser, is_default) VALUES\n'
+  sql += 'INSERT INTO app (id, name, app_external_id, platform, is_browser, is_default) VALUES\n'
   const appValues = Array.from(apps.values())
     .map(app => `(${
       [
