@@ -26,6 +26,9 @@ import { AppCategory } from '../lib/app-directory/apps-types'
 import { TimeSelector } from '@/components/TimeSelector'
 import { AppSelector } from '@/components/AppSelector'
 import type { AppDefinition } from '@/lib/app-directory/apps-types'
+import { SpotifyService } from '@/lib/integrations/spotify'
+import { SpotifyIcon } from '@/components/icons/SpotifyIcon'
+import { AppleMusicIcon } from '@/components/icons/AppleMusicIcon'
 
 type SearchOption = AppDefinition | { type: 'category', category: AppCategory, count: number }
 
@@ -38,19 +41,17 @@ export const StartFlowPage = () => {
     return saved ? JSON.parse(saved) : []
   })
   const [selectedPlaylist, setSelectedPlaylist] = useState('')
-  const [musicService] = useState<{
+  const [isLoading, setIsLoading] = useState(true)
+  const [musicService, setMusicService] = useState<{
     type: 'spotify' | 'apple' | null,
     connected: boolean,
     playlists: { id: string, name: string }[]
   }>({
-    type: 'spotify', // This should come from your auth state
-    connected: true, // This should come from your auth state
-    playlists: [     // This should come from your API
-      { id: '1', name: 'Focus Flow' },
-      { id: '2', name: 'Deep Work' },
-      { id: '3', name: 'Coding Mode' },
-    ]
+    type: null,
+    connected: false,
+    playlists: []
   })
+  const [spotifyProfile, setSpotifyProfile] = useState<{ email: string; display_name: string | null; product: string } | null>(null)
   const [allowList, setAllowList] = useState(false)
   const [showBlockingSection, setShowBlockingSection] = useState(false)
   const [showMusicSection, setShowMusicSection] = useState(false)
@@ -59,6 +60,37 @@ export const StartFlowPage = () => {
   useEffect(() => {
     localStorage.setItem('selectedBlocks', JSON.stringify(selectedBlocks))
   }, [selectedBlocks])
+
+  useEffect(() => {
+    const checkSpotifyConnection = async () => {
+      try {
+        const isConnected = await SpotifyService.isConnected()
+        
+        if (isConnected) {
+          const profile = await SpotifyService.getUserProfile()
+          if (profile) {
+            setSpotifyProfile(profile)
+            setMusicService({
+              type: 'spotify',
+              connected: true,
+              playlists: [
+                { id: '1', name: 'Focus Flow' },
+                { id: '2', name: 'Deep Work' },
+                { id: '3', name: 'Coding Mode' },
+              ]
+            })
+          }
+        }
+        
+        setIsLoading(false)
+      } catch (error) {
+        console.error('Error checking Spotify connection:', error)
+        setIsLoading(false)
+      }
+    }
+
+    checkSpotifyConnection()
+  }, [])
 
   const getPlaceholderByRole = () => {
     switch (userRole) {
@@ -166,6 +198,98 @@ export const StartFlowPage = () => {
     </div>
   )
 
+  const MusicSection = () => (
+    <div>
+      <CollapsibleSectionHeader
+        title="Music"
+        isExpanded={showMusicSection}
+        onToggle={() => setShowMusicSection(!showMusicSection)}
+        type="music"
+      />
+      {showMusicSection && (
+        <div className="mt-4 space-y-4">
+          <div className="flex flex-col gap-2">
+            {!musicService.connected && (
+              <>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => SpotifyService.connect()}
+                  disabled={isLoading}
+                >
+                  <SpotifyIcon />
+                  <span className="ml-2">Connect Spotify</span>
+                </Button>
+
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span>
+                        <Button
+                          variant="outline"
+                          className="w-full"
+                          disabled={true}
+                        >
+                          <AppleMusicIcon />
+                          <span className="ml-2">Coming Soon</span>
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Apple Music integration coming soon</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </>
+            )}
+
+            {musicService.connected && (
+              <>
+                <div className="flex items-center gap-2 mb-2">
+                  {musicService.type === 'spotify' ? <SpotifyIcon /> : <AppleMusicIcon />}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => navigate('/settings')}
+                      className="text-sm text-muted-foreground hover:underline focus:outline-none"
+                    >
+                      Connected
+                    </button>
+                    <div className="h-2 w-2 rounded-full bg-green-500" />
+                  </div>
+                </div>
+
+                {spotifyProfile?.product === 'premium' ? (
+                  <Select value={selectedPlaylist} onValueChange={setSelectedPlaylist}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a playlist" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {musicService.playlists.map(playlist => (
+                        <SelectItem key={playlist.id} value={playlist.id}>
+                          <div className="flex items-center">
+                            <Music className="h-4 w-4 mr-2" />
+                            {playlist.name}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <button
+                    onClick={() => navigate('/settings')}
+                    className="text-sm text-destructive hover:underline focus:outline-none"
+                  >
+                    Error: Spotify Premium required
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+
   return (
     <div className="flex flex-col h-screen">
       <div className="flex">
@@ -236,53 +360,7 @@ export const StartFlowPage = () => {
               )}
             </div>
 
-            <div>
-              <CollapsibleSectionHeader
-                title="Music"
-                isExpanded={showMusicSection}
-                onToggle={() => setShowMusicSection(!showMusicSection)}
-                type="music"
-              />
-              {showMusicSection && (
-                <>
-                  <div className="flex items-center gap-2 mt-4 mb-4">
-                    <div className="flex items-center gap-2 text-sm">
-                      <span className={`h-2 w-2 rounded-full ${musicService.connected ? 'bg-green-500' : 'bg-red-500'}`} />
-                      <span className="text-muted-foreground">
-                        {musicService.type === 'spotify' ? 'Spotify' : 'Apple Music'}
-                        {musicService.connected ? ' Connected' : ' Disconnected'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {musicService.connected ? (
-                    <Select value={selectedPlaylist} onValueChange={setSelectedPlaylist}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a playlist" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {musicService.playlists.map(playlist => (
-                          <SelectItem key={playlist.id} value={playlist.id}>
-                            <div className="flex items-center">
-                              <Music className="h-4 w-4 mr-2" />
-                              {playlist.name}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => {/* Handle connection */ }}
-                    >
-                      Connect {musicService.type === 'spotify' ? 'Spotify' : 'Apple Music'}
-                    </Button>
-                  )}
-                </>
-              )}
-            </div>
+            <MusicSection />
 
             <Button
               className="w-full"

@@ -1,17 +1,17 @@
 <svg enable-background="new 0 0 70 70" version="1.1" viewBox="0 0 70 70" xml:space="preserve" xmlns="http://www.w3.org/2000/svg">
 	<linearGradient id="c" x1="25.068" x2="43.183" y1="1.4599" y2="66.675" gradientUnits="userSpaceOnUse">
-		<stop stop-color="#00CDD7" offset=".2849"/>
-		<stop stop-color="#2086D7" offset=".9409"/>
+		<stop stopColor="#00CDD7" offset=".2849"/>
+		<stop stopColor="#2086D7" offset=".9409"/>
 	</linearGradient>
  <polygon points="9.4 63.3 0 7.3 17.5 0.1 28.6 6.7 38.8 1.2 60.1 9.4 48.1 70" fill="url(#c)"/>
  <linearGradient id="b" x1="30.72" x2="61.365" y1="9.7343" y2="54.671" gradientUnits="userSpaceOnUse">
-		<stop stop-color="#FFF045" offset=".1398"/>
-		<stop stop-color="#00CDD7" offset=".3656"/>
+		<stop stopColor="#FFF045" offset=".1398"/>
+		<stop stopColor="#00CDD7" offset=".3656"/>
 	</linearGradient>
 	<polygon points="70 23.7 61 1.4 44.6 0 19.3 24.3 26.1 55.6 38.8 64.6 70 46 62.3 31.7" fill="url(#b)"/>
 	<linearGradient id="a" x1="61.082" x2="65.106" y1="15.29" y2="29.544" gradientUnits="userSpaceOnUse">
-		<stop stop-color="#00CDD7" offset=".2849"/>
-		<stop stop-color="#2086D7" offset=".9409"/>
+		<stop stopColor="#00CDD7" offset=".2849"/>
+		<stop stopColor="#2086D7" offset=".9409"/>
  </linearGradient>
 	<polygon points="56 20.4 62.3 31.7 70 23.7 64.4 9.8" fill="url(#a)"/>
 	<rect x="13.4" y="13.4" width="43.2" height="43.2"/>

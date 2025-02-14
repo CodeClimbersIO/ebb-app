@@ -48,8 +48,8 @@
 	<g>
 		<g>
 			<linearGradient id="SVGID_1_" gradientUnits="userSpaceOnUse" x1="39.6791" y1="64.48307" x2="39.6791" y2="14.87516">
-				<stop  offset="0" style="stop-color:#FD3159"/>
-				<stop  offset="1" style="stop-color:#FD5464"/>
+				<stop  offset="0" style="stopColor:#FD3159"/>
+				<stop  offset="1" style="stopColor:#FD5464"/>
 			</linearGradient>
 			<path fill-rule="evenodd" clip-rule="evenodd" fill="url(#SVGID_1_)" d="M14.87511,42.68384v15.04736l0.00007,2.05833
 				c0,0.17915-0.00007,0.35847,0.00109,0.53762c0.00079,0.15087,0.00255,0.30185,0.00658,0.45279

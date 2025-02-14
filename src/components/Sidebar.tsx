@@ -8,7 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import supabase from '@/lib/utils/supabase'
+import supabase from '@/lib/integrations/supabase'
 import { useAuth } from '@/hooks/useAuth'
 
 export function Sidebar() {
