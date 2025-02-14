@@ -54,42 +54,82 @@ export const StartFlowPage = () => {
   const [spotifyProfile, setSpotifyProfile] = useState<{ email: string; display_name: string | null; product: string } | null>(null)
   const [allowList, setAllowList] = useState(false)
   const [showBlockingSection, setShowBlockingSection] = useState(false)
-  const [showMusicSection, setShowMusicSection] = useState(false)
+  const [showMusicSection, setShowMusicSection] = useState(() => {
+    const hashParams = window.location.hash.replace('#', '')
+    const searchParams = new URLSearchParams(window.location.search || hashParams.substring(hashParams.indexOf('?')))
+    return searchParams.get('expandMusic') === 'true'
+  })
   const navigate = useNavigate()
 
   useEffect(() => {
     localStorage.setItem('selectedBlocks', JSON.stringify(selectedBlocks))
   }, [selectedBlocks])
 
+  // Combine the two separate useEffects into one that handles both initial load
+  // and auth callback
   useEffect(() => {
-    const checkSpotifyConnection = async () => {
-      try {
-        const isConnected = await SpotifyService.isConnected()
-        
-        if (isConnected) {
-          const profile = await SpotifyService.getUserProfile()
-          if (profile) {
-            setSpotifyProfile(profile)
-            setMusicService({
-              type: 'spotify',
-              connected: true,
-              playlists: [
-                { id: '1', name: 'Focus Flow' },
-                { id: '2', name: 'Deep Work' },
-                { id: '3', name: 'Coding Mode' },
-              ]
-            })
-          }
+    const handleSpotifyCallback = async () => {
+      const hashParams = window.location.hash.replace('#', '')
+      const searchParams = new URLSearchParams(window.location.search || hashParams.substring(hashParams.indexOf('?')))
+      const code = searchParams.get('code')
+      const state = searchParams.get('state')
+      
+      if (code && state) {
+        try {
+          setIsLoading(true)
+          await SpotifyService.handleCallback(code, state)
+          // Clear URL parameters but keep expandMusic=true
+          window.history.replaceState({}, '', '/start-flow?expandMusic=true')
+          // Force a full page refresh to get updated Spotify state
+          window.location.reload()
+          return
+        } catch (error) {
+          console.error('Error handling Spotify callback:', error)
+          setIsLoading(false)
         }
-        
-        setIsLoading(false)
-      } catch (error) {
-        console.error('Error checking Spotify connection:', error)
-        setIsLoading(false)
       }
+      
+      // Always check connection status after handling callback or on initial load
+      await checkSpotifyConnection()
     }
 
-    checkSpotifyConnection()
+    handleSpotifyCallback()
+  }, []) // Run once on mount
+
+  const checkSpotifyConnection = async () => {
+    try {
+      const isConnected = await SpotifyService.isConnected()
+      
+      if (isConnected) {
+        const profile = await SpotifyService.getUserProfile()
+        if (profile) {
+          setSpotifyProfile(profile)
+          setMusicService({
+            type: 'spotify',
+            connected: true,
+            playlists: [
+              { id: '1', name: 'Focus Flow' },
+              { id: '2', name: 'Deep Work' },
+              { id: '3', name: 'Coding Mode' },
+            ]
+          })
+        }
+      }
+      
+      setIsLoading(false)
+    } catch (error) {
+      console.error('Error checking Spotify connection:', error)
+      setIsLoading(false)
+    }
+  }
+
+  // Clear the URL parameter after initial load
+  useEffect(() => {
+    const hashParams = window.location.hash.replace('#', '')
+    const searchParams = new URLSearchParams(window.location.search || hashParams.substring(hashParams.indexOf('?')))
+    if (searchParams.get('expandMusic')) {
+      window.history.replaceState({}, '', '#/start-flow')
+    }
   }, [])
 
   const getPlaceholderByRole = () => {
