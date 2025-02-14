@@ -101,17 +101,17 @@ export const StartFlowPage = () => {
       const isConnected = await SpotifyService.isConnected()
       
       if (isConnected) {
-        const profile = await SpotifyService.getUserProfile()
+        const [profile, playlists] = await Promise.all([
+          SpotifyService.getUserProfile(),
+          SpotifyService.getUserPlaylists()
+        ])
+        
         if (profile) {
           setSpotifyProfile(profile)
           setMusicService({
             type: 'spotify',
             connected: true,
-            playlists: [
-              { id: '1', name: 'Focus Flow' },
-              { id: '2', name: 'Deep Work' },
-              { id: '3', name: 'Coding Mode' },
-            ]
+            playlists: playlists
           })
         }
       }
