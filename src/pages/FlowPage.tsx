@@ -101,6 +101,7 @@ export const FlowPage = () => {
   } | null>(null)
   const [playlists, setPlaylists] = useState<{ id: string; name: string; }[]>([])
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string>('')
+  const [isSpotifyAuthenticated, setIsSpotifyAuthenticated] = useState(false)
 
   useEffect(() => {
     const init = async () => {
@@ -126,6 +127,11 @@ export const FlowPage = () => {
   useEffect(() => {
     const initSpotify = async () => {
       try {
+        const isAuthenticated = await SpotifyService.isConnected()
+        setIsSpotifyAuthenticated(isAuthenticated)
+        
+        if (!isAuthenticated) return
+
         await SpotifyService.initializePlayer()
         const newPlayer = await SpotifyService.createPlayer()
         
@@ -158,7 +164,6 @@ export const FlowPage = () => {
 
     initSpotify()
 
-    // Cleanup
     return () => {
       player?.disconnect()
     }
@@ -277,36 +282,38 @@ export const FlowPage = () => {
 
       <div className="flex-1 flex flex-col items-center justify-center">
         <Timer flowSession={flowSession} />
-        <div className="w-full max-w-lg mx-auto px-4 mb-4 mt-12">
-          <Card className="p-6">
-            <CardContent className="space-y-12">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 rounded-full bg-green-500" />
-                  <SpotifyIcon />
-                  <span className="text-sm text-muted-foreground">Connected</span>
+        {isSpotifyAuthenticated && (
+          <div className="w-full max-w-lg mx-auto px-4 mb-4 mt-12">
+            <Card className="p-6">
+              <CardContent className="space-y-12">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 rounded-full bg-green-500" />
+                    <SpotifyIcon />
+                    <span className="text-sm text-muted-foreground">Connected</span>
+                  </div>
+                  <Select value={selectedPlaylistId} onValueChange={handlePlaylistChange}>
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue placeholder="Select playlist" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {playlists.map(playlist => (
+                        <SelectItem key={playlist.id} value={playlist.id}>
+                          <div className="flex items-center">
+                            <Music className="h-4 w-4 mr-2" />
+                            {playlist.name}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-                <Select value={selectedPlaylistId} onValueChange={handlePlaylistChange}>
-                  <SelectTrigger className="w-[200px]">
-                    <SelectValue placeholder="Select playlist" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {playlists.map(playlist => (
-                      <SelectItem key={playlist.id} value={playlist.id}>
-                        <div className="flex items-center">
-                          <Music className="h-4 w-4 mr-2" />
-                          {playlist.name}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
 
-              <MusicPlayer />
-            </CardContent>
-          </Card>
-        </div>
+                <MusicPlayer />
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   )
