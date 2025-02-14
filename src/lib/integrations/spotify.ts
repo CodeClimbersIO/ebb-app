@@ -40,6 +40,40 @@ const STORAGE_KEY = 'spotify_tokens'
 // Store state in localStorage to verify in callback
 const STATE_KEY = 'spotify_auth_state'
 
+export interface PlaybackState {
+  track_window: {
+    current_track: {
+      name: string;
+      artists: Array<{ name: string }>;
+    };
+  };
+  paused: boolean;
+  duration: number;
+  position: number;
+}
+
+declare global {
+  namespace Spotify {
+    interface Player {
+      addListener(event: 'player_state_changed', callback: (state: PlaybackState | null) => void): void;
+      addListener(event: 'ready', callback: (data: { device_id: string }) => void): void;
+      connect(): Promise<boolean>;
+      disconnect(): void;
+    }
+  }
+
+  interface Window {
+    Spotify: {
+      Player: new (options: {
+        name: string;
+        getOAuthToken: (cb: (token: string) => void) => void;
+        volume?: number;
+      }) => Spotify.Player;
+    };
+    onSpotifyWebPlaybackSDKReady: () => void;
+  }
+}
+
 export class SpotifyService {
   private static getStoredTokens(): SpotifyTokens | null {
     const tokens = localStorage.getItem(STORAGE_KEY)

@@ -24,8 +24,15 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Music } from 'lucide-react'
-import { SpotifyService } from '@/lib/integrations/spotify'
+import { SpotifyService, PlaybackState } from '@/lib/integrations/spotify'
 import { SpotifyIcon } from '@/components/icons/SpotifyIcon'
+declare namespace Spotify {
+  interface Player {
+    addListener(event: string, callback: (state: PlaybackState | null) => void): void;
+    connect(): Promise<boolean>;
+    disconnect(): void;
+  }
+}
 
 const getDurationFormatFromSeconds = (seconds: number) => {
   const duration = Duration.fromMillis(seconds * 1000)
@@ -131,7 +138,7 @@ export const FlowPage = () => {
           }
         })
 
-        newPlayer.addListener('player_state_changed', (state: Spotify.PlaybackState) => {
+        newPlayer.addListener('player_state_changed', (state: PlaybackState | null) => {
           if (!state) return
           
           setIsPlaying(!state.paused)
