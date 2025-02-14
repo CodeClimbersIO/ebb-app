@@ -1,3 +1,5 @@
+// *This is a reference file. The actual file is hosted on Framer website
+
 import type { ComponentType } from 'react'
 import * as React from 'react'
 import { createStore } from 'https://framer.com/m/framer/store.js@^1.0.0'
@@ -9,7 +11,6 @@ interface ButtonStyle extends React.CSSProperties {
 
 const useStore = createStore({
     isRedirecting: false,
-    attempts: 0,
 })
 
 export function withSpotifySuccess(Component: React.ComponentType): ComponentType {
@@ -17,33 +18,19 @@ export function withSpotifySuccess(Component: React.ComponentType): ComponentTyp
         const [store, setStore] = useStore()
 
         const openApp = React.useCallback(() => {
-            // Pass the entire search string instead of just code and state
             const searchParams = window.location.search
-            
-            // Create the deep link URL with the ebb:// scheme
             const deepLinkUrl = `ebb://spotify/callback${searchParams}`
-            
             setStore({ isRedirecting: true })
-            
-            // Try to open the app
             window.location.href = deepLinkUrl
-            
-            setStore(prev => ({ 
-                ...prev,
-                attempts: prev.attempts + 1 
-            }))
         }, [])
 
         React.useEffect(() => {
-            // Only try to open automatically on first load
-            if (store.attempts === 0) {
-                openApp()
-            }
+            // Try to open automatically on page load
+            openApp()
 
-            // Set up auto-close timer
             const timer = setTimeout(() => {
                 window.close()
-            }, 60000) // 60 seconds = 1 minute
+            }, 60000)
 
             return () => clearTimeout(timer)
         }, [openApp])

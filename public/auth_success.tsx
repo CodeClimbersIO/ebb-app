@@ -1,4 +1,4 @@
-// *This is a reference file. The actual file is hosted on our website
+// *This is a reference file. The actual file is hosted on Framer website
 
 import type { ComponentType } from "react"
 import * as React from "react"
@@ -6,7 +6,6 @@ import { createStore } from "https://framer.com/m/framer/store.js@^1.0.0"
 
 const useStore = createStore({
     isRedirecting: false,
-    attempts: 0,
 })
 
 export function withAuthSuccess(Component): ComponentType {
@@ -15,31 +14,18 @@ export function withAuthSuccess(Component): ComponentType {
 
         const openApp = React.useCallback(() => {
             const fullHash = window.location.hash
-            
-            // Create the deep link URL with the ebb:// scheme
             const deepLinkUrl = `ebb://auth/callback${fullHash}`
-            
             setStore({ isRedirecting: true })
-            
-            // Try to open the app
             window.location.href = deepLinkUrl
-            
-            setStore(prev => ({ 
-                ...prev,
-                attempts: prev.attempts + 1 
-            }))
         }, [])
 
         React.useEffect(() => {
-            // Only try to open automatically on first load
-            if (store.attempts === 0) {
-                openApp()
-            }
+            // Try to open automatically on page load
+            openApp()
 
-            // Set up auto-close timer
             const timer = setTimeout(() => {
                 window.close()
-            }, 60000) // 60 seconds = 1 minute
+            }, 60000)
 
             return () => clearTimeout(timer)
         }, [openApp])
