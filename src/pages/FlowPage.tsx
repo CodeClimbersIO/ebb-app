@@ -33,10 +33,54 @@ const getDurationFormatFromSeconds = (seconds: number) => {
   return duration.toFormat(format)
 }
 
+const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
+  const [time, setTime] = useState<string>('00:00')
+
+  useEffect(() => {
+    if (!flowSession) return
+
+    const updateTimer = () => {
+      const now = DateTime.now()
+      const nowAsSeconds = now.toSeconds()
+      const startTime = DateTime.fromISO(flowSession.start).toSeconds()
+
+      const diff = nowAsSeconds - startTime
+
+      if (flowSession.duration) {
+        const remaining = (flowSession.duration) - diff
+        if (remaining <= 0) {
+          // Instead of directly calling handleEndSession, we'll emit an event
+          window.dispatchEvent(new CustomEvent('flowSessionComplete'))
+          return
+        }
+
+        const duration = getDurationFormatFromSeconds(remaining)
+        setTime(duration)
+      } else {
+        const duration = getDurationFormatFromSeconds(diff)
+        setTime(duration)
+      }
+    }
+
+    updateTimer()
+    const interval = setInterval(updateTimer, 1000)
+
+    return () => clearInterval(interval)
+  }, [flowSession])
+
+  return (
+    <>
+      <div className="text-sm text-muted-foreground mb-2">{flowSession?.objective}</div>
+      <div className="text-6xl font-bold mb-2">
+        {time}
+      </div>
+    </>
+  )
+}
+
 export const FlowPage = () => {
   const navigate = useNavigate()
   const location = useLocation()
-  const [time, setTime] = useState<string>('00:00')
   const [flowSession, setFlowSession] = useState<FlowSession | null>(null)
   const [showEndDialog, setShowEndDialog] = useState(false)
   const [player, setPlayer] = useState<Spotify.Player | null>(null)
@@ -63,37 +107,13 @@ export const FlowPage = () => {
   }, [])
 
   useEffect(() => {
-    if (!flowSession) return
-
-    const updateTimer = () => {
-      const now = DateTime.now()
-      const nowAsSeconds = now.toSeconds()
-      const startTime = DateTime.fromISO(flowSession.start).toSeconds()
-
-      const diff = nowAsSeconds - startTime
-
-      // If duration is set (in minutes), do countdown
-      if (flowSession.duration) {
-        const remaining = (flowSession.duration) - diff
-        if (remaining <= 0) {
-          handleEndSession()
-          return
-        }
-
-        const duration = getDurationFormatFromSeconds(remaining)
-        setTime(duration)
-      } else {
-        // Count up if no duration set
-        const duration = getDurationFormatFromSeconds(diff)
-        setTime(duration)
-      }
-
+    // Add event listener for session completion
+    const handleSessionComplete = () => handleEndSession()
+    window.addEventListener('flowSessionComplete', handleSessionComplete)
+    
+    return () => {
+      window.removeEventListener('flowSessionComplete', handleSessionComplete)
     }
-
-    updateTimer()
-    const interval = setInterval(updateTimer, 1000)
-
-    return () => clearInterval(interval)
   }, [flowSession])
 
   useEffect(() => {
@@ -102,7 +122,7 @@ export const FlowPage = () => {
         await SpotifyService.initializePlayer()
         const newPlayer = await SpotifyService.createPlayer()
         
-        newPlayer.addListener('ready', ({ device_id }) => {
+        newPlayer.addListener('ready', ({ device_id }: { device_id: string }) => {
           setDeviceId(device_id)
           // Start playback if playlist was selected
           const playlist = location.state?.playlist
@@ -111,7 +131,7 @@ export const FlowPage = () => {
           }
         })
 
-        newPlayer.addListener('player_state_changed', (state) => {
+        newPlayer.addListener('player_state_changed', (state: Spotify.PlaybackState) => {
           if (!state) return
           
           setIsPlaying(!state.paused)
@@ -167,7 +187,7 @@ export const FlowPage = () => {
         sessionId: flowSession.id,
         startTime: flowSession.start,
         endTime: new Date().toISOString(),
-        timeInFlow: time,
+        timeInFlow: '00:00',
         idleTime: '0h 34m',
         objective: flowSession.objective
       }
@@ -249,11 +269,8 @@ export const FlowPage = () => {
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center">
-        <div className="text-sm text-muted-foreground mb-2">{flowSession?.objective}</div>
-        <div className="text-6xl font-bold mb-2">
-          {time}
-        </div>
-        <div className="w-full max-w-xl mx-auto px-4 mb-4 mt-12">
+        <Timer flowSession={flowSession} />
+        <div className="w-full max-w-lg mx-auto px-4 mb-4 mt-12">
           <Card className="p-6">
             <CardContent className="space-y-12">
               <div className="flex justify-between items-center">
