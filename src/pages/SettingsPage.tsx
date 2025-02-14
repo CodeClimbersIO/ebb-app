@@ -16,8 +16,9 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { SpotifyService } from '@/lib/integrations/spotify'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, ArrowRight } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { useNavigate } from 'react-router-dom'
 
 export const SettingsPage = () => {
   const { showZeroState, toggleZeroState } = useSettings()
@@ -30,6 +31,7 @@ export const SettingsPage = () => {
     display_name: string | null;
     product?: string;
   } | null>(null)
+  const navigate = useNavigate()
 
   useEffect(() => {
     const checkSpotifyConnection = async () => {
@@ -54,31 +56,6 @@ export const SettingsPage = () => {
     checkSpotifyConnection()
   }, [])
 
-  useEffect(() => {
-    const handleSpotifyCallback = async () => {
-      const searchParams = new URLSearchParams(window.location.search)
-      const code = searchParams.get('code')
-      const state = searchParams.get('state')
-      
-      if (code && state && searchParams.get('spotify') === 'callback') {
-        try {
-          await SpotifyService.handleCallback(code, state)
-          const profile = await SpotifyService.getUserProfile()
-          if (profile) {
-            setSpotifyProfile(profile)
-            setActiveService('spotify')
-          }
-          // Clear the URL parameters after successful authentication
-          window.history.replaceState({}, '', '/settings')
-        } catch (error) {
-          console.error('Error handling Spotify callback:', error)
-        }
-      }
-    }
-
-    handleSpotifyCallback()
-  }, [])
-
   const handleUnlink = (service: 'spotify' | 'apple') => {
     setServiceToUnlink(service)
     setShowUnlinkDialog(true)
@@ -95,12 +72,7 @@ export const SettingsPage = () => {
   }
 
   const handleSpotifyConnect = async () => {
-    try {
-      await SpotifyService.connect()
-    } catch (error) {
-      console.error('Failed to connect to Spotify:', error)
-      // You might want to show an error toast here
-    }
+    navigate('/start-flow?expandMusic=true')
   }
 
   return (
@@ -193,6 +165,7 @@ export const SettingsPage = () => {
                                 onClick={handleSpotifyConnect}
                               >
                                 Connect
+                                <ArrowRight className="w-4 h-4 ml-2" />
                               </Button>
                             </span>
                           </TooltipTrigger>
