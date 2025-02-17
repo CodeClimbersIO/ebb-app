@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
-import { FlowSession } from '../db/flowSession'
 import { DateTime, Duration } from 'luxon'
 import {
   Dialog,
@@ -26,6 +25,7 @@ import {
 import { Music } from 'lucide-react'
 import { SpotifyService, PlaybackState } from '@/lib/integrations/spotify'
 import { SpotifyIcon } from '@/components/icons/SpotifyIcon'
+import { FlowSession } from '../db/ebb/flowSessionRepo'
 declare namespace Spotify {
   interface Player {
     addListener(event: string, callback: (state: PlaybackState | null) => void): void;
@@ -118,7 +118,7 @@ export const FlowPage = () => {
     // Add event listener for session completion
     const handleSessionComplete = () => handleEndSession()
     window.addEventListener('flowSessionComplete', handleSessionComplete)
-    
+
     return () => {
       window.removeEventListener('flowSessionComplete', handleSessionComplete)
     }
@@ -129,12 +129,12 @@ export const FlowPage = () => {
       try {
         const isAuthenticated = await SpotifyService.isConnected()
         setIsSpotifyAuthenticated(isAuthenticated)
-        
+
         if (!isAuthenticated) return
 
         await SpotifyService.initializePlayer()
         const newPlayer = await SpotifyService.createPlayer()
-        
+
         newPlayer.addListener('ready', ({ device_id }: { device_id: string }) => {
           setDeviceId(device_id)
           // Start playback if playlist was selected
@@ -146,7 +146,7 @@ export const FlowPage = () => {
 
         newPlayer.addListener('player_state_changed', (state: PlaybackState | null) => {
           if (!state) return
-          
+
           setIsPlaying(!state.paused)
           setCurrentTrack({
             name: state.track_window.current_track.name,
@@ -184,12 +184,12 @@ export const FlowPage = () => {
 
   const handleEndSession = async () => {
     if (!flowSession) return
-    
+
     // Stop playback if player exists
     if (player && deviceId) {
       await SpotifyService.controlPlayback('pause', deviceId)
     }
-    
+
     await FlowSessionApi.endFlowSession(flowSession.id)
     setShowEndDialog(false)
 

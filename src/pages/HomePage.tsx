@@ -366,7 +366,7 @@ export const HomePage = () => {
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-1">
                         <div className="flex items-center gap-1">
-                          <span className="font-medium">{app.is_browser ? app.external_id : app.app_name}</span>
+                          <span className="font-medium">{app.is_browser ? app.app_external_id : app.name}</span>
                           <Popover>
                             <PopoverTrigger asChild>
                               <div className="w-[80px]">
@@ -419,7 +419,7 @@ export const HomePage = () => {
                                       if (!app.default_tag) return
                                       MonitorApi.setAppDefaultTag(app.default_tag.id, value as ActivityRating, tags)
                                       setAppUsage(prev => prev.map(a =>
-                                        a.app_name === app.app_name ? { ...a, rating: value as ActivityRating } : a
+                                        a.name === app.name ? { ...a, rating: value as ActivityRating } : a
                                       ))
                                     }}
                                     className="[&_[role=slider]]:h-4 [&_[role=slider]]:w-4 [&_[role=slider]]:bg-background"

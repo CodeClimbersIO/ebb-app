@@ -1,8 +1,8 @@
 import { DateTime } from 'luxon'
 import { Tag, TagRepo, TagType } from '../../db/monitor/tagRepo'
-import { ActivityState, ActivityStateRepo, App, AppTag } from '../../db/monitor/activityStateRepo'
+import { ActivityState, ActivityStateRepo } from '../../db/monitor/activityStateRepo'
 import { ActivityRating } from '../../lib/app-directory/apps-types'
-import { AppRepo } from '../../db/monitor/appRepo'
+import { App, AppDb, AppRepo, AppTagJoined } from '../../db/monitor/appRepo'
 
 
 // during this time block, tags had the following duration
@@ -27,12 +27,11 @@ export interface GraphableTimeByHourBlock {
   xAxisLabel: string // "6 AM"
 }
 
-export type AppsWithTime = App & {
+export type AppsWithTime = AppDb & {
   duration: number // in minutes
   rating: ActivityRating
-  category_tag?: AppTag
-  default_tag?: AppTag
-  icon?: string
+  category_tag?: AppTagJoined
+  default_tag?: AppTagJoined
 }
 
 export const getTagsByType = async (type: TagType): Promise<Tag[]> => {
@@ -52,7 +51,7 @@ export const getActivityStatesWithApps = async (start: DateTime, end: DateTime) 
 }
 
 
-const getRatingFromTag = (tag: AppTag | undefined): ActivityRating => {
+const getRatingFromTag = (tag: AppTagJoined | undefined): ActivityRating => {
   if (!tag) return 3
   if (tag.tag_name === 'creating') {
     return tag.weight === 1 ? 5 : 4
@@ -180,20 +179,16 @@ export const getTopAppsByPeriod = async (start: DateTime, end: DateTime): Promis
   for (const activityState of activityStates) {
     if (!activityState.apps_json) continue
     const appsUsed = activityState.apps_json.length // so the total time always adds up to .5 minutes between all apps used for the activity state
-    console.log('appsUsed', appsUsed)
     for (const app of activityState.apps_json ) {
       if (!appsWithTime[app.id]) {
         appsWithTime[app.id] = {
           ...app,
           duration: 0,
-          category_tag: app.tags.find(tag => tag.tag_type === 'category'),
-          default_tag: app.tags.find(tag => tag.tag_type === 'default'),
-          icon: '',
-          rating: getRatingFromTag(app.tags.find(tag => tag.tag_type === 'default')),
+          category_tag: app.tags?.find(tag => tag.tag_type === 'category'),
+          default_tag: app.tags?.find(tag => tag.tag_type === 'default'),
+          rating: getRatingFromTag(app.tags?.find(tag => tag.tag_type === 'default')),
         }
       }
-      console.log('app.id', app.id)
-      console.log('time', 0.5 / appsUsed)
       appsWithTime[app.id].duration += 0.5 / appsUsed
     }
   }
@@ -202,8 +197,23 @@ export const getTopAppsByPeriod = async (start: DateTime, end: DateTime): Promis
   return sortedApps
 }
 
+export const getApps = async (): Promise<App[]> => {
+  const appsRaw = await AppRepo.getApps()
+  const apps = appsRaw.map(app => {
+    const tags: AppTagJoined[] = app.tags_json ? JSON.parse(app.tags_json) : []
+    return {
+      ...app,
+      tags,
+      category_tag: tags.find(tag => tag.tag_type === 'category'),
+      default_tag: tags.find(tag => tag.tag_type === 'default'),
+    }
+  })
+  return apps
+}
+
 
 export const MonitorApi = {
+  getApps,
   getTagsByType,
   getTimeCreatingByHour,
   getTopAppsByPeriod,

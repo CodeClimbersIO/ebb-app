@@ -22,15 +22,12 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { useSettings } from '../hooks/useSettings'
-import { AppCategory } from '../lib/app-directory/apps-types'
 import { TimeSelector } from '@/components/TimeSelector'
-import { AppSelector } from '@/components/AppSelector'
-import type { AppDefinition } from '@/lib/app-directory/apps-types'
+import { AppSelector, SearchOption } from '@/components/AppSelector'
 import { SpotifyService } from '@/lib/integrations/spotify'
 import { SpotifyIcon } from '@/components/icons/SpotifyIcon'
 import { AppleMusicIcon } from '@/components/icons/AppleMusicIcon'
 
-type SearchOption = AppDefinition | { type: 'category', category: AppCategory, count: number }
 
 export const StartFlowPage = () => {
   const { userRole } = useSettings()
@@ -94,7 +91,7 @@ export const StartFlowPage = () => {
       const searchParams = new URLSearchParams(window.location.search || hashParams.substring(hashParams.indexOf('?')))
       const code = searchParams.get('code')
       const state = searchParams.get('state')
-      
+
       if (code && state) {
         try {
           setIsLoading(true)
@@ -109,7 +106,7 @@ export const StartFlowPage = () => {
           setIsLoading(false)
         }
       }
-      
+
       // Always check connection status after handling callback or on initial load
       await checkSpotifyConnection()
     }
@@ -120,13 +117,13 @@ export const StartFlowPage = () => {
   const checkSpotifyConnection = async () => {
     try {
       const isConnected = await SpotifyService.isConnected()
-      
+
       if (isConnected) {
         const [profile, playlists] = await Promise.all([
           SpotifyService.getUserProfile(),
           SpotifyService.getUserPlaylists()
         ])
-        
+
         if (profile) {
           setSpotifyProfile(profile)
           setMusicService({
@@ -136,7 +133,7 @@ export const StartFlowPage = () => {
           })
         }
       }
-      
+
       setIsLoading(false)
     } catch (error) {
       console.error('Error checking Spotify connection:', error)
@@ -221,13 +218,11 @@ export const StartFlowPage = () => {
         if ('category' in option && 'category' in app && option.type === 'category' && app.type === 'category') {
           return app.category !== option.category
         }
-        if ('type' in option && 'type' in app) {
-          if (option.type === 'application' && app.type === 'application') {
-            return app.name !== option.name
+        if (option.type === 'app' && app.type === 'app') {
+          if (!option.app.is_browser) {
+            return app.app.name !== option.app.name
           }
-          if (option.type === 'website' && app.type === 'website') {
-            return app.websiteUrl !== option.websiteUrl
-          }
+          return app.app.app_external_id !== option.app.app_external_id
         }
         return true
       })
