@@ -5,9 +5,11 @@ import { Check, X } from 'lucide-react'
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from '@/components/ui/command'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils/tailwind.util'
-import { AppCategory, AppDefinition, categoryEmojis } from '@/lib/app-directory/apps-types'
-import { apps } from '@/lib/app-directory/apps-list'
+import { AppCategory, categoryEmojis } from '@/lib/app-directory/apps-types'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { useEffect, useRef, useState } from 'react'
+import { MonitorApi } from '../api/monitorApi/monitorApi'
+import { App } from '../db/monitor/appRepo'
 
 interface CategoryOption {
   type: 'category'
@@ -15,7 +17,12 @@ interface CategoryOption {
   count: number
 }
 
-type SearchOption = AppDefinition | CategoryOption
+interface AppOption {
+  type: 'app'
+  app: App
+}
+
+export type SearchOption = AppOption | CategoryOption
 
 interface AppSelectorProps {
   placeholder?: string
@@ -29,16 +36,14 @@ interface AppSelectorProps {
 
 // Simplified helper function to get display text and key
 const getOptionDetails = (option: SearchOption) => {
-  if ('type' in option) {
-    if (option.type === 'application') {
-      return { text: option.name, key: `app-${option.name}` }
+  if (option.type === 'app') {
+    if (!option.app.is_browser) {
+      return { text: option.app.name, key: `app-${option.app.app_external_id}` }
     }
-    if (option.type === 'website') {
-      return { text: option.websiteUrl, key: `web-${option.websiteUrl}` }
-    }
+    return { text: option.app.app_external_id, key: `app-${option.app.app_external_id}` }
   }
   if ('category' in option && 'count' in option) {
-    return { 
+    return {
       text: `${option.category} (${option.count})`,
       key: `cat-${option.category}`
     }
@@ -47,11 +52,11 @@ const getOptionDetails = (option: SearchOption) => {
 }
 
 // Add this helper function near other helper functions
-const getCategoryTooltipContent = (category: AppCategory): string => {
-  const categoryApps = apps.filter(app => app.category === category)
+const getCategoryTooltipContent = (category: AppCategory, apps: App[]): string => {
+  const categoryApps = apps.filter(app => app.category_tag?.tag_name === category)
   const appNames = categoryApps.map(app => {
-    if (app.type === 'application') return app.name
-    return app.websiteUrl
+    if (app.is_browser) return app.app_external_id
+    return app.name
   })
   return appNames.join(', ')
 }
@@ -64,18 +69,27 @@ export function AppSelector({
   onAppSelect,
   onAppRemove
 }: AppSelectorProps) {
-  const [open, setOpen] = React.useState(false)
-  const [search, setSearch] = React.useState('')
-  const inputRef = React.useRef<HTMLDivElement>(null)
-  const [selected, setSelected] = React.useState(0)
-
+  const [open, setOpen] = useState(false)
+  const [search, setSearch] = useState('')
+  const inputRef = useRef<HTMLDivElement>(null)
+  const [selected, setSelected] = useState(0)
+  const [apps, setApps] = useState<AppOption[]>([])
   // Combined close and reset functionality
   const handleClose = () => {
     setOpen(false)
     setSearch('')
   }
 
-  React.useEffect(() => {
+
+  useEffect(() => {
+    const init = async () => {
+      const apps = await MonitorApi.getApps()
+      setApps(apps.map(app => ({ type: 'app', app: app })))
+    }
+    init()
+  }, [])
+
+  useEffect(() => {
     if (!open) {
       setSearch('')
     }
@@ -86,52 +100,54 @@ export function AppSelector({
     return Object.keys(categoryEmojis).map((category) => ({
       type: 'category' as const,
       category: category as AppCategory,
-      count: apps.filter(app => app.category === category).length
+      count: apps.filter(app => app.type === 'app' && app.app.category_tag?.tag_name === category).length
     }))
-  }, [])
+  }, [apps])
 
   // Update filtered apps to include categories
   const filteredOptions = React.useMemo(() => {
     const searchLower = search.toLowerCase()
-    
+
     if (!search) {
       // When no search term, return all categories that aren't already selected
       return categoryOptions
-        .filter(cat => !selectedApps.some(selected => 
+        .filter(cat => !selectedApps.some(selected =>
           'category' in selected && selected.category === cat.category
         ))
         .sort((a, b) => a.category.localeCompare(b.category))
     }
 
     let results: SearchOption[] = categoryOptions
-      .filter(cat => 
+      .filter(cat =>
         cat.category.toLowerCase().includes(searchLower) &&
-        !selectedApps.some(selected => 
+        !selectedApps.some(selected =>
           'category' in selected && selected.category === cat.category
         )
       )
 
     // Modified to only check for exact duplicates of the same app/website, not category
     results = results.concat(
-      apps.filter(app => {
+      apps.filter(option => {
         const isDuplicate = selectedApps.some(selected => {
-          if (!('type' in selected)) return false
-          
-          if (app.type === 'application' && selected.type === 'application') {
-            return app.name === selected.name
-          }
-          if (app.type === 'website' && selected.type === 'website') {
-            return app.websiteUrl === selected.websiteUrl
+          if (option.type === 'app' && selected.type === 'app') {
+            if (!option.app.is_browser && !selected.app.is_browser) {
+              return option.app.name === selected.app.name
+            }
+            if (option.app.is_browser && selected.app.is_browser) {
+              return option.app.app_external_id === selected.app.app_external_id
+            }
           }
           return false
         })
 
         if (isDuplicate) return false
 
-        if (app.type === 'application') {
-          return app.name.toLowerCase().includes(searchLower)
+        if (option.type === 'app' && !option.app.is_browser) {
+          return option.app.name.toLowerCase().includes(searchLower)
         }
-        return app.websiteUrl.toLowerCase().includes(searchLower)
+        if (option.type === 'app' && option.app.is_browser) {
+          return option.app.app_external_id.toLowerCase().includes(searchLower)
+        }
       })
     )
 
@@ -139,10 +155,10 @@ export function AppSelector({
       .sort((a, b) => {
         const aStr = getOptionDetails(a).text.toLowerCase()
         const bStr = getOptionDetails(b).text.toLowerCase()
-        
+
         const aStartsWith = aStr.startsWith(searchLower)
         const bStartsWith = bStr.startsWith(searchLower)
-        
+
         if (aStartsWith && !bStartsWith) return -1
         if (!aStartsWith && bStartsWith) return 1
         return 0
@@ -194,17 +210,17 @@ export function AppSelector({
 
   const handleSelect = (option: SearchOption) => {
     const { key } = getOptionDetails(option)
-    
+
     // For non-category options, check if they belong to an already selected category
-    if (!('category' in option) || !('count' in option)) {
-      const category = ('type' in option) ? option.category : null
-      const categoryAlreadySelected = selectedApps.some(selected => 
+    if (option.type === 'app') {
+      const category = option.app.category_tag?.tag_name
+      const categoryAlreadySelected = selectedApps.some(selected =>
         'category' in selected && selected.category === category
       )
 
       if (categoryAlreadySelected) {
         // Add the item even if its category is already selected
-        const exactDuplicate = selectedApps.find(selected => 
+        const exactDuplicate = selectedApps.find(selected =>
           'type' in selected && 'type' in option &&
           getOptionDetails(selected).key === key
         )
@@ -220,7 +236,7 @@ export function AppSelector({
 
     // Rest of the existing selection logic
     if ('category' in option) {
-      const categoryExists = selectedApps.some(selected => 
+      const categoryExists = selectedApps.some(selected =>
         'category' in selected && selected.category === option.category
       )
 
@@ -228,7 +244,7 @@ export function AppSelector({
         onAppSelect(option)
       }
     } else {
-      const exactDuplicate = selectedApps.find(selected => 
+      const exactDuplicate = selectedApps.find(selected =>
         'type' in selected && 'type' in option &&
         getOptionDetails(selected).key === key
       )
@@ -237,7 +253,7 @@ export function AppSelector({
         onAppSelect(option)
       }
     }
-    
+
     setSearch('')
     setSelected(0)
   }
@@ -245,9 +261,9 @@ export function AppSelector({
   // Update isAlreadySelected function
   const isAlreadySelected = (searchTerm: string): { isSelected: boolean; message?: string } => {
     const searchLower = searchTerm.toLowerCase()
-    
+
     // First check direct matches
-    const directMatch = selectedApps.some(selected => 
+    const directMatch = selectedApps.some(selected =>
       getOptionDetails(selected).text.toLowerCase().includes(searchLower)
     )
     if (directMatch) {
@@ -256,19 +272,19 @@ export function AppSelector({
 
     // Then check if the search matches any app/website that belongs to a selected category
     const searchMatchingApp = apps.find(app => {
-      const appText = app.type === 'application' ? app.name : app.websiteUrl
+      const appText = app.type === 'app' ? app.app.name : app.app.app_external_id
       return appText.toLowerCase().includes(searchLower)
     })
 
     if (searchMatchingApp) {
-      const selectedCategory = selectedApps.find(selected => 
-        'category' in selected && selected.category === searchMatchingApp.category
+      const selectedCategory = selectedApps.find(selected =>
+        'category' in selected && selected.category === searchMatchingApp.app.category_tag?.tag_name
       )
-      
-      if (selectedCategory) {
-        return { 
-          isSelected: true, 
-          message: `Already included in ${selectedCategory.category} list`
+
+      if (selectedCategory && selectedCategory.type === 'app') {
+        return {
+          isSelected: true,
+          message: `Already included in ${selectedCategory.app.category_tag?.tag_name} list`
         }
       }
     }
@@ -289,22 +305,22 @@ export function AppSelector({
                 <Tooltip>
                   <TooltipTrigger>
                     <div className="flex items-center">
-                      <Badge 
-                        variant="secondary" 
+                      <Badge
+                        variant="secondary"
                         className="flex items-center gap-1 h-6"
                       >
                         <span className="w-4 h-4 flex items-center justify-center shrink-0">
                           {('type' in option && 'icon' in option) ? (
-                            <img 
-                              src={`/src/lib/app-directory/icons/${option.icon}`} 
-                              alt="" 
+                            <img
+                              src={`/src/lib/app-directory/icons/${option.icon}`}
+                              alt=""
                               className="w-4 h-4 object-contain"
                               onError={(e) => {
                                 const target = e.target as HTMLImageElement
-                                const category = ('type' in option && (option.type === 'application' || option.type === 'website')) 
-                                  ? option.category 
-                                  : 'Utilities'
-                                target.parentElement!.textContent = categoryEmojis[category as AppCategory]
+                                if (option.type === 'app') {
+                                  const category = option.app.category_tag?.tag_name
+                                  target.parentElement!.textContent = categoryEmojis[category as AppCategory]
+                                }
                               }}
                             />
                           ) : (
@@ -312,7 +328,7 @@ export function AppSelector({
                           )}
                         </span>
                         <span className="truncate">{getOptionDetails(option).text}</span>
-                        <X 
+                        <X
                           className="h-3 w-3 cursor-pointer shrink-0"
                           onClick={(e) => {
                             e.stopPropagation()
@@ -324,7 +340,7 @@ export function AppSelector({
                   </TooltipTrigger>
                   {isCategory && (
                     <TooltipContent className="max-w-[300px]">
-                      {getCategoryTooltipContent(option.category)}
+                      {getCategoryTooltipContent(option.category, apps.map(app => app.app))}
                     </TooltipContent>
                   )}
                 </Tooltip>
@@ -346,8 +362,8 @@ export function AppSelector({
                 <CommandList className="max-h-fit">
                   {filteredOptions.length === 0 ? (
                     <CommandEmpty>
-                      {search && isAlreadySelected(search).isSelected 
-                        ? isAlreadySelected(search).message 
+                      {search && isAlreadySelected(search).isSelected
+                        ? isAlreadySelected(search).message
                         : emptyText}
                     </CommandEmpty>
                   ) : (
@@ -367,16 +383,16 @@ export function AppSelector({
                                   )} />
                                   <span className="w-4 h-4 flex items-center justify-center mr-2">
                                     {('type' in option && 'icon' in option) ? (
-                                      <img 
-                                        src={`/src/lib/app-directory/icons/${option.icon}`} 
-                                        alt="" 
+                                      <img
+                                        src={`/src/lib/app-directory/icons/${option.icon}`}
+                                        alt=""
                                         className="w-4 h-4 object-contain"
                                         onError={(e) => {
                                           const target = e.target as HTMLImageElement
-                                          const category = ('type' in option && (option.type === 'application' || option.type === 'website')) 
-                                            ? option.category 
-                                            : 'Utilities'
-                                          target.parentElement!.textContent = categoryEmojis[category as AppCategory]
+                                          if (option.type === 'app') {
+                                            const category = option.app.category_tag?.tag_name
+                                            target.parentElement!.textContent = categoryEmojis[category as AppCategory]
+                                          }
                                         }}
                                       />
                                     ) : (
@@ -389,7 +405,7 @@ export function AppSelector({
                             </TooltipTrigger>
                             {'category' in option && 'count' in option && (
                               <TooltipContent side="right" align="start" className="max-w-[300px]">
-                                {getCategoryTooltipContent(option.category)}
+                                {getCategoryTooltipContent(option.category, apps.map(app => app.app))}
                               </TooltipContent>
                             )}
                           </Tooltip>
