@@ -2750,7 +2750,7 @@ version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "af1844ef2428cc3e1cb900be36181049ef3d3193c63e43026cfe202983b27a56"
 dependencies = [
- "proc-macro-crate 1.3.1",
+ "proc-macro-crate 3.2.0",
  "proc-macro2",
  "quote",
  "syn 2.0.89",
@@ -3061,9 +3061,9 @@ dependencies = [
 
 [[package]]
 name = "os-monitor-service"
-version = "0.2.3"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f8e1cc3d0463a5970a4ce8660a5cad4efea34913aa9b6bbc62efc4edab967f28"
+checksum = "1c4421865dc51d645fb6023faed36cd443799a5c726679c6a9cb270765495d0e"
 dependencies = [
  "dirs 6.0.0",
  "dotenv",
@@ -3075,6 +3075,8 @@ dependencies = [
  "sqlx",
  "time",
  "tokio",
+ "url",
+ "uuid",
 ]
 
 [[package]]

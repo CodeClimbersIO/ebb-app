@@ -105,7 +105,6 @@ export const HomePage = () => {
       const start = DateTime.now().startOf('day')
       const end = DateTime.now().endOf('day')
       const chartData = await MonitorApi.getTimeCreatingByHour(start, end)
-      console.log('chartData', chartData)
       const tags = await MonitorApi.getTagsByType('default')
       setTags(tags)
       const topApps = await MonitorApi.getTopAppsByPeriod(start, end)

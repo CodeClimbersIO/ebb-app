@@ -63,25 +63,26 @@ const getRatingFromTag = (tag: AppTag | undefined): ActivityRating => {
 }
 
 // do the opposite of getRatingFromTag
-const getTagIdByRating = (rating: ActivityRating, tags: Tag[]): Tag | undefined => {
-  const tag = tags.find(tag => {
+const getTagIdByRating = (rating: ActivityRating, tags: Tag[]): [Tag, number] | [undefined, undefined] => {
+  for (const tag of tags) {
     if (rating > 3 && tag.name === 'creating') {
-      return tag
+      const weight = rating === 5 ? 1 : 0.5
+      return [tag, weight]
     } else if (rating < 3 && tag.name === 'consuming') {
-      return tag
-    } else {
-      return tag
+      const weight = rating === 1 ? 1 : 0.5
+      return [tag, weight]
+    } else if (rating === 3 && tag.name === 'neutral') {
+      return [tag, 1]
     }
-  })
-  
-  return tag
+  }
+  return [undefined, undefined]
 }
 
 export const setAppDefaultTag = async (appTagId: string, rating: ActivityRating, tags: Tag[]) => {
   // convert value or rating to tag id
-  const tag = getTagIdByRating(rating, tags)
-  if (!tag) return
-  await AppRepo.setAppDefaultTag(appTagId, tag.id)
+  const [tag, weight] = getTagIdByRating(rating, tags)
+  if (!tag || !weight) return
+  await AppRepo.setAppTag(appTagId, tag.id, weight)
 }
 
 
@@ -132,7 +133,6 @@ export const createTimeBlockFromActivityState = (activityStates: ActivityState[]
 export const getTimeCreatingByHour = async (start: DateTime, end: DateTime): Promise<GraphableTimeByHourBlock[]> => {
   const tags = await TagRepo.getTagsByType('default')
   const activityStatesDB = await getActivityStatesByTagsAndTimePeriod(tags.map(tag => tag.id), start, end)
-  console.log('activityStatesDB', activityStatesDB)
   const activityStates: ActivityState[] = activityStatesDB.map(state => ({
     ...state,
     tags_json: state.tags ? JSON.parse(state.tags) : []
@@ -180,6 +180,7 @@ export const getTopAppsByPeriod = async (start: DateTime, end: DateTime): Promis
   for (const activityState of activityStates) {
     if (!activityState.apps_json) continue
     const appsUsed = activityState.apps_json.length // so the total time always adds up to .5 minutes between all apps used for the activity state
+    console.log('appsUsed', appsUsed)
     for (const app of activityState.apps_json ) {
       if (!appsWithTime[app.id]) {
         appsWithTime[app.id] = {
@@ -191,6 +192,8 @@ export const getTopAppsByPeriod = async (start: DateTime, end: DateTime): Promis
           rating: getRatingFromTag(app.tags.find(tag => tag.tag_type === 'default')),
         }
       }
+      console.log('app.id', app.id)
+      console.log('time', 0.5 / appsUsed)
       appsWithTime[app.id].duration += 0.5 / appsUsed
     }
   }
