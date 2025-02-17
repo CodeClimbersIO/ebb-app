@@ -258,9 +258,10 @@ export class SpotifyService {
 
   static async getUserPlaylists(): Promise<{ id: string, name: string }[]> {
     try {
+      const token = await this.getAccessToken()
       const response = await fetch(`${SPOTIFY_API_BASE}/me/playlists?limit=50`, {
         headers: {
-          'Authorization': `Bearer ${await this.getAccessToken()}`
+          'Authorization': `Bearer ${token}`
         }
       })
       

@@ -1,8 +1,9 @@
+use os_monitor::get_application_icon_data;
 use std::thread;
 use tokio;
-
 mod db;
 mod system_monitor;
+use tauri::command;
 
 fn get_thread_info() -> String {
     let current = thread::current();
@@ -16,6 +17,11 @@ fn get_thread_info() -> String {
     )
 }
 
+#[command]
+async fn get_app_icon(bundle_id: String) -> Result<String, String> {
+    get_application_icon_data(&bundle_id).ok_or_else(|| "Failed to get app icon".to_string())
+}
+
 #[tokio::main]
 async fn main() {
     tauri::async_runtime::set(tokio::runtime::Handle::current());
@@ -27,6 +33,7 @@ async fn main() {
 
     let migrations = db::get_migrations();
     tauri::Builder::default()
+        .invoke_handler(tauri::generate_handler![get_app_icon])
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_deep_link::init())
         .plugin(
