@@ -88,46 +88,43 @@ export const setAppDefaultTag = async (appTagId: string, rating: ActivityRating,
 
 // group activity states by hour and create time blocks. activity states are already sorted by time (ascending)
 export const createTimeBlockFromActivityState = (activityStates: ActivityState[]): TimeBlock[] => {
-  const hours = new Set<number>()
-  // fill set with hours form 0 to 23
-  for (let hour = 0; hour < 24; hour++) {
-    hours.add(hour)
-  }
-  const timeBlocks: TimeBlock[] = []
-  // for each hour, create a time block
-  for (const hour of hours) {
-    const timeBlock: TimeBlock = {
-      startTime: `${hour}:00`,
-      endTime: `${hour + 1}:00`,
-      tags: {},
-    }
-    timeBlocks.push(timeBlock)
-  }
+  // Initialize time blocks for each hour
+  const timeBlocks: TimeBlock[] = Array.from({ length: 24 }, (_, i) => ({
+    startTime: `${i}:00`,
+    endTime: `${i + 1}:00`,
+    tags: {}
+  }))
 
   // for each activity state, add it to the time block
   for (const activityState of activityStates) {
     const startTime = DateTime.fromISO(activityState.start_time)
+    const endTime = DateTime.fromISO(activityState.end_time)
+    const duration = endTime.diff(startTime, 'minutes').minutes
+    
     // get hour of start time
     const startTimeHour = startTime.hour
     // get timeblock for that hour
     const timeBlock = timeBlocks[startTimeHour]
-    // determine if tag exists in time block. If not, add it
-    activityState.tags_json?.forEach(tag => {
-      const existingTag = timeBlock.tags[tag.name]
-      if (!existingTag) {
-        timeBlock.tags[tag.name] = {
-          tag_id: tag.tag_id,
-          name: tag.name,
-          duration: 0.5,
+    
+    // If there are multiple tags, split the duration among them
+    const tags = activityState.tags_json || []
+    if (tags.length > 0) {
+      const durationPerTag = duration / tags.length
+      
+      tags.forEach(tag => {
+        if (!timeBlock.tags[tag.name]) {
+          timeBlock.tags[tag.name] = {
+            tag_id: tag.tag_id,
+            name: tag.name,
+            duration: 0
+          }
         }
-      }
-      // add duration to existing tag
-      timeBlock.tags[tag.name].duration += 0.5
-    })
+        timeBlock.tags[tag.name].duration += durationPerTag
+      })
+    }
   }
 
   return timeBlocks
-
 }
 
 export const getTimeCreatingByHour = async (start: DateTime, end: DateTime): Promise<GraphableTimeByHourBlock[]> => {
@@ -140,6 +137,7 @@ export const getTimeCreatingByHour = async (start: DateTime, end: DateTime): Pro
   const timeBlocks = createTimeBlockFromActivityState(activityStates)
   const currentHour = DateTime.now().hour
   const currentMinute = DateTime.now().minute
+
   // convert time blocks to graphable time by hour block
   const graphableTimeByHourBlocks = timeBlocks.map(timeBlock => {
     const startHour = DateTime.now().set({ hour: parseInt(timeBlock.startTime.split(':')[0]) }).startOf('hour')
@@ -148,25 +146,30 @@ export const getTimeCreatingByHour = async (start: DateTime, end: DateTime): Pro
     const timeRange = `${startHour.toFormat('h:mm a')} - ${endHour.toFormat('h:mm a')}`
     const showLabel = [6, 10, 14, 18, 22].includes(startHour.hour)
     const xAxisLabel = showLabel ? startHour.toFormat('h a') : ''
-    const creating = timeBlock.tags['creating']?.duration || 0
-    const consuming = timeBlock.tags['consuming']?.duration || 0
-    // const idle = timeBlock.tags['idle']?.duration || 0 // add back when we have something to show for idle data
-    // const neutral = timeBlock.tags['neutral']?.duration || 0
 
+    // Scale values based on whether it's the current hour
     const isCurrentHour = startHour.hour === currentHour
-    const totalHourTime = isCurrentHour ? currentMinute : 60
-    const offline = totalHourTime - creating - consuming
+
+    // Get raw values
+    const creating = Math.round((timeBlock.tags['creating']?.duration || 0))
+    const consuming = Math.round((timeBlock.tags['consuming']?.duration || 0))
+    const neutral = Math.round((timeBlock.tags['neutral']?.duration || 0))
+    const offline = isCurrentHour 
+      ? Math.max(0, currentMinute - (creating + consuming + neutral))
+      : Math.max(0, 60 - (creating + consuming + neutral))
+
     return {
       time,
       timeRange,
       xAxisLabel,
       creating,
       consuming,
-      offline,
+      neutral,
+      offline
     }
   })
-  return graphableTimeByHourBlocks // only show 6 AM to midnight
-  // return mockData
+
+  return graphableTimeByHourBlocks
 }
 
 export const getTopAppsByPeriod = async (start: DateTime, end: DateTime): Promise<AppsWithTime[]> => {
