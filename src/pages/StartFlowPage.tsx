@@ -254,7 +254,7 @@ export const StartFlowPage = () => {
       <h2 className="text-lg font-semibold">{title}</h2>
       <div className="flex items-center gap-2">
         {!isExpanded && (
-          <span className="text-sm text-muted-foreground">
+          <span className="text-sm text-muted-foreground truncate max-w-[200px]">
             {type === 'music'
               ? musicService.playlists.find(p => p.id === selectedPlaylist)?.name || 'No playlist selected'
               : 'Applying last used'
@@ -340,7 +340,7 @@ export const StartFlowPage = () => {
                         <SelectItem key={playlist.id} value={playlist.id}>
                           <div className="flex items-center">
                             <Music className="h-4 w-4 mr-2" />
-                            {playlist.name}
+                            <span className="truncate">{playlist.name}</span>
                           </div>
                         </SelectItem>
                       ))}
