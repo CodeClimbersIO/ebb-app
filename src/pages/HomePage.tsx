@@ -28,49 +28,12 @@ import {
 } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
 import { Progress } from '@/components/ui/progress'
-import { apps } from '@/lib/app-directory/apps-list'
-import { categoryEmojis, AppDefinition, ActivityRating } from '@/lib/app-directory/apps-types'
+import { ActivityRating } from '@/lib/app-directory/apps-types'
 import { Slider } from '@/components/ui/slider'
 import { useAuth } from '../hooks/useAuth'
-
-const generateHourlyData = () => {
-  const data = []
-  const currentHour = DateTime.now().hour
-
-  // Always show structure from 6 AM to midnight
-  for (let hour = 6; hour < 24; hour++) {
-    const time = `${hour}:00`
-    const displayTime = DateTime.now().set({ hour, minute: 0 }).toFormat('h:mm a')
-    const nextHour = DateTime.now().set({ hour: hour + 1, minute: 0 }).toFormat('h:mm a')
-    const timeRange = `${displayTime} - ${nextHour}`
-
-    const showLabel = [6, 10, 14, 18, 22].includes(hour)
-    const xAxisLabel = showLabel ? DateTime.now().set({ hour }).toFormat('h a') : ''
-
-    // Only generate data for hours up to current hour
-    let creating = 0
-    let consuming = 0
-    let offline = 0
-
-    if (hour <= currentHour) {
-      creating = Math.floor(Math.random() * 40)
-      consuming = Math.floor(Math.random() * (60 - creating))
-      offline = 60 - creating - consuming
-    }
-
-    data.push({
-      time,
-      timeRange,
-      xAxisLabel,
-      creating,
-      consuming,
-      offline,
-    })
-  }
-  return data
-}
-
-const chartData = generateHourlyData()
+import { GraphableTimeByHourBlock, MonitorApi, AppsWithTime } from '../api/monitorApi/monitorApi'
+import { AppIcon } from '../components/AppIcon'
+import { Tag } from '../db/monitor/tagRepo'
 
 const chartConfig = {
   consuming: {
@@ -83,30 +46,9 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-type AppUsage = {
-  name: string
-  icon: string
-  timeSpent: number // in minutes
-  rating: ActivityRating // Using rating (1-5) instead of category
-}
-
-// Helper function to get random items from array
-const getRandomItems = (array: AppDefinition[], count: number) => {
-  const shuffled = [...array].sort(() => 0.5 - Math.random())
-  return shuffled.slice(0, count)
-}
-
-// Update the usage apps to use ratings
-const usageApps = getRandomItems(apps, 6).map(app => ({
-  name: app.type === 'application' ? app.name : app.websiteUrl,
-  icon: app.icon,
-  timeSpent: Math.floor(Math.random() * 180) + 30,
-  rating: app.defaultRating
-}))
-
-const calculateNetCreationScore = (apps: AppUsage[]): number => {
+const calculateNetCreationScore = (apps: AppsWithTime[]): number => {
   return Number(apps.reduce((score, app) => {
-    const minutes = app.timeSpent
+    const minutes = app.duration
     switch (app.rating) {
       case 5: // High Creation
         return score + minutes * 0.1
@@ -122,6 +64,16 @@ const calculateNetCreationScore = (apps: AppUsage[]): number => {
   }, 0).toFixed(1))
 }
 
+const formatTime = (minutes: number) => {
+  const hours = Math.floor(minutes / 60)
+  const remainingMinutes = minutes % 60
+  // round to nearest minute
+  const roundedMinutes = Math.round(remainingMinutes)
+  return `${hours}h ${roundedMinutes}m`
+}
+
+
+
 export const HomePage = () => {
   const { user } = useAuth()
   const { showZeroState } = useSettings()
@@ -129,15 +81,19 @@ export const HomePage = () => {
   const [hasNoSessions, setHasNoSessions] = useState(true)
   const [streak, setStreak] = useState(0)
   const [date, setDate] = useState<Date>(new Date())
-  const [appUsage, setAppUsage] = useState<AppUsage[]>(usageApps)
+  const [appUsage, setAppUsage] = useState<AppsWithTime[]>([])
+  const [totalCreating, setTotalCreating] = useState(0)
+  const [chartData, setChartData] = useState<GraphableTimeByHourBlock[]>([])
+  const [tags, setTags] = useState<Tag[]>([])
   const appUsageRef = useRef<HTMLDivElement>(null)
 
   // Get first name from user metadata
-  const firstName = user?.user_metadata?.full_name?.split(' ')[0] || 
-                   user?.user_metadata?.name?.split(' ')[0] || 
-                   user?.email?.split('@')[0]
+  const firstName = user?.user_metadata?.full_name?.split(' ')[0] ||
+    user?.user_metadata?.name?.split(' ')[0] ||
+    user?.email?.split('@')[0]
 
   useEffect(() => {
+
     const init = async () => {
       const flowSession = await FlowSessionApi.getInProgressFlowSession()
       if (flowSession) {
@@ -145,6 +101,17 @@ export const HomePage = () => {
       }
       const sessions = await FlowSessionApi.getFlowSessions()
       setHasNoSessions(sessions.length === 0)
+
+      const start = DateTime.now().startOf('day')
+      const end = DateTime.now().endOf('day')
+      const chartData = await MonitorApi.getTimeCreatingByHour(start, end)
+      const tags = await MonitorApi.getTagsByType('default')
+      setTags(tags)
+      const topApps = await MonitorApi.getTopAppsByPeriod(start, end)
+
+      setAppUsage(topApps)
+      setTotalCreating(chartData.reduce((acc, curr) => acc + curr.creating, 0))
+      setChartData(chartData.slice(6))
 
       // Get streak data
       let currentStreak = 0
@@ -165,6 +132,11 @@ export const HomePage = () => {
       setStreak(currentStreak)
     }
     init()
+    const handleFocus = () => {
+      init()
+    }
+    window.addEventListener('focus', handleFocus)
+    return () => window.removeEventListener('focus', handleFocus)
   }, [])
 
   const handleStartFlowSession = () => {
@@ -200,7 +172,7 @@ export const HomePage = () => {
   }
 
   // Sort app usage in the render section, before mapping
-  const sortedAppUsage = [...appUsage].sort((a, b) => b.timeSpent - a.timeSpent)
+  const sortedAppUsage = [...appUsage].sort((a, b) => b.duration - a.duration)
 
   return (
     <Layout>
@@ -266,7 +238,7 @@ export const HomePage = () => {
                 <CardContent>
                   <Tooltip>
                     <TooltipTrigger>
-                      <div className="text-2xl font-bold">3h 45m</div>
+                      <div className="text-2xl font-bold">{formatTime(totalCreating)}</div>
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>Total time spent creating today</p>
@@ -308,28 +280,7 @@ export const HomePage = () => {
                         className="w-8 h-8 p-0"
                         onClick={scrollToAppUsage}
                       >
-                        <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
-                          {app.icon ? (
-                            <img
-                              src={`/src/lib/app-directory/icons/${app.icon}`}
-                              alt={app.name}
-                              className="h-5 w-5"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement
-                                const parent = target.parentElement
-                                const appDef = apps.find(a =>
-                                  (a.type === 'application' && a.name === app.name) ||
-                                  (a.type === 'website' && a.websiteUrl === app.name)
-                                )
-                                if (parent && appDef) {
-                                  parent.textContent = categoryEmojis[appDef.category]
-                                }
-                              }}
-                            />
-                          ) : (
-                            <span className="text-muted-foreground">❓</span>
-                          )}
-                        </div>
+                        <AppIcon app={app} />
                       </Button>
                     ))}
                   </div>
@@ -408,40 +359,14 @@ export const HomePage = () => {
             <CardContent>
               <div className="space-y-6">
                 {sortedAppUsage.map((app) => (
-                  <div key={app.name} className="flex items-center gap-4">
+                  <div key={app.id} className="flex items-center gap-4">
                     <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
-                      {app.icon ? (
-                        <img
-                          src={`/src/lib/app-directory/icons/${app.icon}`}
-                          alt={app.name}
-                          className="h-5 w-5"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement
-                            const parent = target.parentElement
-                            const appDef = apps.find(a =>
-                              (a.type === 'application' && a.name === app.name) ||
-                              (a.type === 'website' && a.websiteUrl === app.name)
-                            )
-                            if (parent && appDef) {
-                              parent.textContent = categoryEmojis[appDef.category]
-                            } else if (parent) {
-                              // Fallback to using the app's category that we already have
-                              const foundApp = apps.find(a =>
-                                (a.type === 'application' && a.name === app.name) ||
-                                (a.type === 'website' && a.websiteUrl === app.name)
-                              )
-                              parent.textContent = foundApp ? categoryEmojis[foundApp.category] : '❓'
-                            }
-                          }}
-                        />
-                      ) : (
-                        <span className="text-muted-foreground">❓</span>
-                      )}
+                      <AppIcon app={app} />
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-1">
                         <div className="flex items-center gap-1">
-                          <span className="font-medium">{app.name}</span>
+                          <span className="font-medium">{app.is_browser ? app.external_id : app.app_name}</span>
                           <Popover>
                             <PopoverTrigger asChild>
                               <div className="w-[80px]">
@@ -449,8 +374,8 @@ export const HomePage = () => {
                                   variant="ghost"
                                   size="sm"
                                   className={`h-6 px-2 py-0 text-xs font-medium justify-start ${app.rating >= 4 ? 'text-[rgb(124,58,237)] hover:bg-primary/10' :
-                                      app.rating <= 2 ? 'text-[rgb(239,68,68)] hover:bg-destructive/10' :
-                                        'text-gray-500 hover:bg-muted'
+                                    app.rating <= 2 ? 'text-[rgb(239,68,68)] hover:bg-destructive/10' :
+                                      'text-gray-500 hover:bg-muted'
                                     }`}
                                 >
                                   {app.rating === 5 ? 'High Creation' :
@@ -491,8 +416,10 @@ export const HomePage = () => {
                                           : 'border-gray-500'
                                     }
                                     onValueChange={([value]) => {
+                                      if (!app.default_tag) return
+                                      MonitorApi.setAppDefaultTag(app.default_tag.id, value as ActivityRating, tags)
                                       setAppUsage(prev => prev.map(a =>
-                                        a.name === app.name ? { ...a, rating: value as ActivityRating } : a
+                                        a.app_name === app.app_name ? { ...a, rating: value as ActivityRating } : a
                                       ))
                                     }}
                                     className="[&_[role=slider]]:h-4 [&_[role=slider]]:w-4 [&_[role=slider]]:bg-background"
@@ -503,11 +430,11 @@ export const HomePage = () => {
                           </Popover>
                         </div>
                         <span className="text-sm text-muted-foreground">
-                          {Math.floor(app.timeSpent / 60)}h {app.timeSpent % 60}m
+                          {formatTime(app.duration)}
                         </span>
                       </div>
                       <Progress
-                        value={(app.timeSpent / (6 * 60)) * 100}
+                        value={(app.duration / (6 * 60)) * 100}
                         className={
                           app.rating >= 4
                             ? 'bg-[rgb(124,58,237)]/20 [&>div]:bg-[rgb(124,58,237)]' :

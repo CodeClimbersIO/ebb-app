@@ -1,8 +1,8 @@
 import { QueryResult } from '@tauri-apps/plugin-sql'
-import { insert, update } from '../lib/utils/sql.util'
+import { insert, update } from '../../lib/utils/sql.util'
 import { getEbbDb } from './ebbDb'
 
-export interface FlowSessionDb {
+export interface FlowSessionSchema {
   id: string
   start: string
   end?: string
@@ -13,12 +13,12 @@ export interface FlowSessionDb {
   duration?: number
 }
 
-export type FlowSession = FlowSessionDb & {
+export type FlowSession = FlowSessionSchema & {
 }
 
 
 const createFlowSession = async (
-  flowSession: FlowSessionDb,
+  flowSession: FlowSessionSchema,
 ): Promise<QueryResult> => {
   const ebbDb = await getEbbDb()
   return insert(ebbDb, 'flow_session', flowSession)
@@ -50,7 +50,7 @@ const getFlowSessions = async (limit = 10): Promise<FlowSession[]> => {
       LEFT JOIN flow_period fp ON fs.start <= fp.start_time AND fs.end >= fp.end_time
     GROUP BY fs.id, fs.objective, fs.self_score, fs.start, fs.end
     ORDER BY start DESC LIMIT ${limit};`
-  const flowSessions = await ebbDb.select<FlowSessionDb[]>(query) 
+  const flowSessions = await ebbDb.select<FlowSessionSchema[]>(query) 
 
   return flowSessions.map((flowSession) => ({
     ...flowSession,
@@ -109,7 +109,7 @@ const getInProgressFlowSession = async () => {
 }
 
 
-export const FlowSessionDb = {
+export const FlowSessionRepo = {
   createFlowSession,
   updateFlowSession,
   getFlowSessions,

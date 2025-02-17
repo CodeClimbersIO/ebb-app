@@ -1,23 +1,23 @@
 import { QueryResult } from '@tauri-apps/plugin-sql'
-import { FlowSession, FlowSessionDb } from '../../db/flowSession'
+import { FlowSession, FlowSessionRepo, FlowSessionSchema } from '../../db/ebb/flowSessionRepo'
 
 const startFlowSession = async (objective: string, duration?: number): Promise<string> => {
-  const flowSession: FlowSessionDb = {
+  const flowSession: FlowSessionSchema = {
     id: self.crypto.randomUUID(),
     start: new Date().toISOString(),
     objective,
     self_score: 0,
     duration: duration ? duration * 60 : undefined,
   }
-  if (await FlowSessionDb.getInProgressFlowSession()) {
+  if (await FlowSessionRepo.getInProgressFlowSession()) {
     throw new Error('Flow session already in progress')
   }
-  await FlowSessionDb.createFlowSession(flowSession)
+  await FlowSessionRepo.createFlowSession(flowSession)
   return flowSession.id
 }
 
 const endFlowSession = async (id: string): Promise<QueryResult> => {
-  const flowSession = await FlowSessionDb.getInProgressFlowSession()
+  const flowSession = await FlowSessionRepo.getInProgressFlowSession()
   if (!flowSession) {
     throw new Error('Flow session not found')
   }
@@ -27,7 +27,7 @@ const endFlowSession = async (id: string): Promise<QueryResult> => {
     end: new Date().toISOString(),
   }
 
-  return FlowSessionDb.updateFlowSession(flowSessionUpdated)
+  return FlowSessionRepo.updateFlowSession(flowSessionUpdated)
 }
 
 const scoreFlowSession = async (
@@ -38,15 +38,15 @@ const scoreFlowSession = async (
     id,
     self_score: score,
   }
-  return FlowSessionDb.updateFlowSession(flowSession)
+  return FlowSessionRepo.updateFlowSession(flowSession)
 }
 
 const getInProgressFlowSession = async () => {
-  return FlowSessionDb.getInProgressFlowSession()
+  return FlowSessionRepo.getInProgressFlowSession()
 }
 
 const getFlowSessions = async (limit = 10): Promise<FlowSession[]> => {
-  const flowSessions = await FlowSessionDb.getFlowSessions(limit)
+  const flowSessions = await FlowSessionRepo.getFlowSessions(limit)
   return flowSessions
 }
 
