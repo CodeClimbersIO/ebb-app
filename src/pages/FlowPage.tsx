@@ -230,8 +230,16 @@ export const FlowPage = () => {
   const MusicPlayer = () => (
     <div className="flex flex-col items-center space-y-6">
       <div className="text-center">
-        <h3 className="text-2xl font-semibold">{currentTrack?.name || 'Loading...'}</h3>
-        <p className="text-sm text-muted-foreground">{currentTrack?.artist}</p>
+        {currentTrack && selectedPlaylistId ? (
+          <>
+            <h3 className="text-2xl font-semibold">{currentTrack.name}</h3>
+            <p className="text-sm text-muted-foreground">{currentTrack.artist}</p>
+          </>
+        ) : (
+          <h3 className="text-2xl font-semibold">
+            {selectedPlaylistId ? 'Loading...' : 'Select a playlist'}
+          </h3>
+        )}
       </div>
 
       <div className="flex items-center space-x-4">
