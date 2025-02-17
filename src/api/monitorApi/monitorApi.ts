@@ -32,7 +32,6 @@ export type AppsWithTime = AppDb & {
   rating: ActivityRating
   category_tag?: AppTagJoined
   default_tag?: AppTagJoined
-  icon?: string
 }
 
 export const getTagsByType = async (type: TagType): Promise<Tag[]> => {
@@ -187,7 +186,6 @@ export const getTopAppsByPeriod = async (start: DateTime, end: DateTime): Promis
           duration: 0,
           category_tag: app.tags?.find(tag => tag.tag_type === 'category'),
           default_tag: app.tags?.find(tag => tag.tag_type === 'default'),
-          icon: '',
           rating: getRatingFromTag(app.tags?.find(tag => tag.tag_type === 'default')),
         }
       }

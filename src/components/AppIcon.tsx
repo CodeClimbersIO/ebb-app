@@ -1,8 +1,8 @@
-import { AppsWithTime } from '../api/monitorApi/monitorApi'
+import { App } from '../db/monitor/appRepo'
 import { categoryEmojis, AppCategory } from '../lib/app-directory/apps-types'
 
 // Add this helper function at the top level
-const getAppIcon = (app: AppsWithTime) => {
+const getAppIcon = (app: App) => {
   if (app.is_browser) {
     return '🌐'
   }
@@ -10,7 +10,7 @@ const getAppIcon = (app: AppsWithTime) => {
   return categoryEmojis[app.category_tag?.tag_name as AppCategory] || '❓'
 }
 
-export const AppIcon = ({ app }: { app: AppsWithTime }) => {
+export const AppIcon = ({ app }: { app: App }) => {
   if (app.is_browser) {
     const faviconUrl = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(app.app_external_id)}&sz=32`
     return (

@@ -10,6 +10,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useEffect, useRef, useState } from 'react'
 import { MonitorApi } from '../api/monitorApi/monitorApi'
 import { App } from '../db/monitor/appRepo'
+import { AppIcon } from './AppIcon'
 
 interface CategoryOption {
   type: 'category'
@@ -310,22 +311,7 @@ export function AppSelector({
                         className="flex items-center gap-1 h-6"
                       >
                         <span className="w-4 h-4 flex items-center justify-center shrink-0">
-                          {('type' in option && 'icon' in option) ? (
-                            <img
-                              src={`/src/lib/app-directory/icons/${option.icon}`}
-                              alt=""
-                              className="w-4 h-4 object-contain"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement
-                                if (option.type === 'app') {
-                                  const category = option.app.category_tag?.tag_name
-                                  target.parentElement!.textContent = categoryEmojis[category as AppCategory]
-                                }
-                              }}
-                            />
-                          ) : (
-                            'category' in option ? categoryEmojis[option.category] : '❓'
-                          )}
+                          {option.type === 'app' ? <AppIcon app={option.app} /> : categoryEmojis[option.category]}
                         </span>
                         <span className="truncate">{getOptionDetails(option).text}</span>
                         <X
@@ -382,22 +368,7 @@ export function AppSelector({
                                     index === selected ? 'opacity-100' : 'opacity-0'
                                   )} />
                                   <span className="w-4 h-4 flex items-center justify-center mr-2">
-                                    {('type' in option && 'icon' in option) ? (
-                                      <img
-                                        src={`/src/lib/app-directory/icons/${option.icon}`}
-                                        alt=""
-                                        className="w-4 h-4 object-contain"
-                                        onError={(e) => {
-                                          const target = e.target as HTMLImageElement
-                                          if (option.type === 'app') {
-                                            const category = option.app.category_tag?.tag_name
-                                            target.parentElement!.textContent = categoryEmojis[category as AppCategory]
-                                          }
-                                        }}
-                                      />
-                                    ) : (
-                                      'category' in option ? categoryEmojis[option.category] : '❓'
-                                    )}
+                                    {option.type === 'app' ? <AppIcon app={option.app} /> : categoryEmojis[option.category]}
                                   </span>
                                   {getOptionDetails(option).text}
                                 </CommandItem>

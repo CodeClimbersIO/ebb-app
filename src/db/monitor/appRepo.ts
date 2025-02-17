@@ -20,6 +20,7 @@ export type App = AppDb & {
   tags?: AppTagJoined[]
   category_tag?: AppTagJoined
   default_tag?: AppTagJoined
+  icon?: string
 }
 
 export interface AppTagJoined {
