@@ -1,5 +1,6 @@
 import { DateTime } from 'luxon'
 import { MonitorDb } from './monitorDb'
+import { App } from './appRepo'
 
 export enum ActivityStateType {
   Active = 'ACTIVE',
@@ -20,21 +21,7 @@ export interface Activity {
   bundle_id: string
 } 
 
-export interface App {
-  id: string
-  app_name: string
-  tags: AppTag[]
-  external_id: string
-  is_browser: boolean
-}
-export interface AppTag {
-  id: string
-  app_id: string
-  tag_id: string
-  weight: number
-  tag_name: string
-  tag_type: 'default' | 'category'
-}
+
 
 export interface ActivityStateDb {
   id: number
@@ -90,8 +77,8 @@ export const getActivityStatesWithApps = async (start: DateTime, end: DateTime):
         ELSE json_group_array(DISTINCT
           json_object(
             'id', app.id,
-            'app_name', app.name,
-            'external_id', app.app_external_id,
+            'name', app.name,
+            'app_external_id', app.app_external_id,
             'is_browser', app.is_browser,
             'tags', (
               SELECT json_group_array(

@@ -118,7 +118,7 @@ export const FlowPage = () => {
     // Add event listener for session completion
     const handleSessionComplete = () => handleEndSession()
     window.addEventListener('flowSessionComplete', handleSessionComplete)
-    
+
     return () => {
       window.removeEventListener('flowSessionComplete', handleSessionComplete)
     }
@@ -129,12 +129,12 @@ export const FlowPage = () => {
       try {
         const isAuthenticated = await SpotifyService.isConnected()
         setIsSpotifyAuthenticated(isAuthenticated)
-        
+
         if (!isAuthenticated) return
 
         await SpotifyService.initializePlayer()
         const newPlayer = await SpotifyService.createPlayer()
-        
+
         newPlayer.addListener('ready', ({ device_id }: { device_id: string }) => {
           setDeviceId(device_id)
           // Start playback if playlist was selected
@@ -146,7 +146,7 @@ export const FlowPage = () => {
 
         newPlayer.addListener('player_state_changed', (state: PlaybackState | null) => {
           if (!state) return
-          
+
           setIsPlaying(!state.paused)
           setCurrentTrack({
             name: state.track_window.current_track.name,
@@ -184,12 +184,12 @@ export const FlowPage = () => {
 
   const handleEndSession = async () => {
     if (!flowSession) return
-    
+
     // Stop playback if player exists
     if (player && deviceId) {
       await SpotifyService.controlPlayback('pause', deviceId)
     }
-    
+
     await FlowSessionApi.endFlowSession(flowSession.id)
     setShowEndDialog(false)
 
