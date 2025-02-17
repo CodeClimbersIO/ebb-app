@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
+import { FlowSession } from '@/db/ebb/flowSessionRepo'
 import { DateTime, Duration } from 'luxon'
 import {
   Dialog,
@@ -25,7 +26,6 @@ import {
 import { Music } from 'lucide-react'
 import { SpotifyService, PlaybackState } from '@/lib/integrations/spotify'
 import { SpotifyIcon } from '@/components/icons/SpotifyIcon'
-import { FlowSession } from '../db/ebb/flowSessionRepo'
 declare namespace Spotify {
   interface Player {
     addListener(event: string, callback: (state: PlaybackState | null) => void): void;
@@ -230,8 +230,16 @@ export const FlowPage = () => {
   const MusicPlayer = () => (
     <div className="flex flex-col items-center space-y-6">
       <div className="text-center">
-        <h3 className="text-2xl font-semibold">{currentTrack?.name || 'Loading...'}</h3>
-        <p className="text-sm text-muted-foreground">{currentTrack?.artist}</p>
+        {currentTrack && selectedPlaylistId ? (
+          <>
+            <h3 className="text-2xl font-semibold">{currentTrack.name}</h3>
+            <p className="text-sm text-muted-foreground">{currentTrack.artist}</p>
+          </>
+        ) : (
+          <h3 className="text-2xl font-semibold">
+            {selectedPlaylistId ? 'Loading...' : 'Select a playlist'}
+          </h3>
+        )}
       </div>
 
       <div className="flex items-center space-x-4">

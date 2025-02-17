@@ -307,6 +307,14 @@ export class SpotifyService {
 
   static async startPlayback(playlistId: string, deviceId: string): Promise<void> {
     const token = await this.getAccessToken()
+
+    // Enable shuffle.
+    await fetch(`${SPOTIFY_API_BASE}/me/player/shuffle?device_id=${deviceId}&state=true`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    })
     
     await fetch(`${SPOTIFY_API_BASE}/me/player/play?device_id=${deviceId}`, {
       method: 'PUT',
@@ -316,7 +324,7 @@ export class SpotifyService {
       },
       body: JSON.stringify({
         context_uri: `spotify:playlist:${playlistId}`,
-        shuffle: true,
+        // Remove shuffle from here, as it's handled by the API call above.
       }),
     })
   }
