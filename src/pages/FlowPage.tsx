@@ -78,7 +78,7 @@ const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
   return (
     <>
       <div className="text-sm text-muted-foreground mb-2">{flowSession?.objective}</div>
-      <div className="text-6xl font-bold mb-2">
+      <div className="text-6xl font-bold mb-2 font-mono tracking-tight">
         {time}
       </div>
     </>
@@ -116,13 +116,19 @@ export const FlowPage = () => {
 
   useEffect(() => {
     // Add event listener for session completion
-    const handleSessionComplete = () => handleEndSession()
+    const handleSessionComplete = () => {
+      // Stop playback if player exists
+      if (player && deviceId) {
+        SpotifyService.controlPlayback('pause', deviceId)
+      }
+      handleEndSession()
+    }
     window.addEventListener('flowSessionComplete', handleSessionComplete)
 
     return () => {
       window.removeEventListener('flowSessionComplete', handleSessionComplete)
     }
-  }, [flowSession])
+  }, [flowSession, player, deviceId])
 
   useEffect(() => {
     const initSpotify = async () => {
@@ -184,11 +190,6 @@ export const FlowPage = () => {
 
   const handleEndSession = async () => {
     if (!flowSession) return
-
-    // Stop playback if player exists
-    if (player && deviceId) {
-      await SpotifyService.controlPlayback('pause', deviceId)
-    }
 
     await FlowSessionApi.endFlowSession(flowSession.id)
     setShowEndDialog(false)
