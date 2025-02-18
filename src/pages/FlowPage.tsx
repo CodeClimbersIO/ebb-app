@@ -205,7 +205,7 @@ export const FlowPage = () => {
         const images: Record<string, string> = {}
         
         for (const playlist of playlists) {
-          const imageUrl = await SpotifyService.getPlaylistCoverImage(playlist.id)
+          const imageUrl = await SpotifyApiService.getPlaylistCoverImage(playlist.id)
           if (imageUrl) {
             images[playlist.id] = imageUrl
           }

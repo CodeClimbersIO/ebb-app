@@ -175,11 +175,11 @@ export const StartFlowPage = () => {
       if (!musicService.connected || musicService.type !== 'spotify') return
       
       try {
-        const playlists = await SpotifyService.getUserPlaylists()
+        const playlists = await SpotifyApiService.getUserPlaylists()
         const images: Record<string, string> = {}
         
         for (const playlist of playlists) {
-          const imageUrl = await SpotifyService.getPlaylistCoverImage(playlist.id)
+          const imageUrl = await SpotifyApiService.getPlaylistCoverImage(playlist.id)
           if (imageUrl) {
             images[playlist.id] = imageUrl
           }

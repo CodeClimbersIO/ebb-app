@@ -10,6 +10,11 @@ interface SpotifyUserProfile {
 interface SpotifyPlaylist {
   id: string
   name: string
+  images: Array<{
+    url: string;
+    height: number | null;
+    width: number | null;
+  }>;
 }
 
 const SPOTIFY_API_BASE = 'https://api.spotify.com/v1'
@@ -149,6 +154,17 @@ export class SpotifyApiService {
       }
     } catch (error) {
       console.error(`Error controlling playback (${action}):`, error)
+    }
+  }
+
+  static async getPlaylistCoverImage(playlistId: string): Promise<string | null> {
+    try {
+      const images = await this.spotifyApiRequest(`playlists/${playlistId}/images`)
+      // Return the URL of the first image (usually the highest quality one)
+      return images[0]?.url || null
+    } catch (error) {
+      console.error('Error fetching playlist cover image:', error)
+      return null
     }
   }
 } 
