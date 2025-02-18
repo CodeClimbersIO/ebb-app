@@ -384,93 +384,98 @@ export const HomePage = () => {
                 {sortedAppUsage
                   .filter(app => app.duration >= 1)
                   .map((app) => (
-                  <div key={app.id} className="flex items-center gap-4">
-                    <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
-                      <AppIcon app={app} />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-1">
-                          <span className="font-medium">{app.is_browser ? app.app_external_id : app.name}</span>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <div className="w-[80px]">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className={`h-6 px-2 py-0 text-xs font-medium justify-start ${app.rating >= 4 ? 'text-[rgb(124,58,237)] hover:bg-primary/10' :
-                                    app.rating <= 2 ? 'text-[rgb(239,68,68)] hover:bg-destructive/10' :
-                                      'text-gray-500 hover:bg-muted'
-                                    }`}
-                                >
-                                  {app.rating === 5 ? 'High Creation' :
-                                    app.rating === 4 ? 'Creation' :
-                                      app.rating === 3 ? 'Neutral' :
-                                        app.rating === 2 ? 'Consumption' :
-                                          'High Consumption'}
-                                </Button>
-                              </div>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-[280px] p-4">
-                              <div className="space-y-4">
-                                <div className="relative">
-                                  <Slider
-                                    defaultValue={[app.rating]}
-                                    max={5}
-                                    min={1}
-                                    step={1}
-                                    trackColor={
-                                      app.rating >= 4
-                                        ? 'bg-[rgb(124,58,237)]/20'
-                                        : app.rating <= 2
-                                          ? 'bg-[rgb(239,68,68)]/20'
-                                          : 'bg-gray-500/20'
-                                    }
-                                    rangeColor={
-                                      app.rating >= 4
-                                        ? 'bg-[rgb(124,58,237)]'
-                                        : app.rating <= 2
-                                          ? 'bg-[rgb(239,68,68)]'
-                                          : 'bg-gray-500'
-                                    }
-                                    thumbBorderColor={
-                                      app.rating >= 4
-                                        ? 'border-[rgb(124,58,237)]'
-                                        : app.rating <= 2
-                                          ? 'border-[rgb(239,68,68)]'
-                                          : 'border-gray-500'
-                                    }
-                                    onValueChange={([value]) => {
-                                      if (!app.default_tag) return
-                                      MonitorApi.setAppDefaultTag(app.default_tag.id, value as ActivityRating, tags)
-                                      setAppUsage(prev => prev.map(a =>
-                                        a.name === app.name ? { ...a, rating: value as ActivityRating } : a
-                                      ))
-                                    }}
-                                    className="[&_[role=slider]]:h-4 [&_[role=slider]]:w-4 [&_[role=slider]]:bg-background"
-                                  />
-                                </div>
-                              </div>
-                            </PopoverContent>
-                          </Popover>
-                        </div>
-                        <span className="text-sm text-muted-foreground">
-                          {formatTime(app.duration)}
-                        </span>
+                    <div key={app.id} className="flex items-center gap-4">
+                      <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
+                        <AppIcon app={app} />
                       </div>
-                      <Progress
-                        value={(app.duration / (6 * 60)) * 100}
-                        className={
-                          app.rating >= 4
-                            ? 'bg-[rgb(124,58,237)]/20 [&>div]:bg-[rgb(124,58,237)]' :
-                            app.rating <= 2
-                              ? 'bg-[rgb(239,68,68)]/20 [&>div]:bg-[rgb(239,68,68)]' :
-                              'bg-gray-500/20 [&>div]:bg-gray-500'
-                        }
-                      />
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-1">
+                            <span className="font-medium">{app.is_browser ? app.app_external_id : app.name}</span>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <div className="w-[80px]">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className={`h-6 px-2 py-0 text-xs font-medium justify-start ${app.rating >= 4 ? 'text-[rgb(124,58,237)] hover:bg-primary/10' :
+                                      app.rating <= 2 ? 'text-[rgb(239,68,68)] hover:bg-destructive/10' :
+                                        'text-gray-500 hover:bg-muted'
+                                      }`}
+                                  >
+                                    {app.rating === 5 ? 'High Creation' :
+                                      app.rating === 4 ? 'Creation' :
+                                        app.rating === 3 ? 'Neutral' :
+                                          app.rating === 2 ? 'Consumption' :
+                                            'High Consumption'}
+                                  </Button>
+                                </div>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-[280px] p-4">
+                                <div className="space-y-4">
+                                  <div className="relative">
+                                    <Slider
+                                      defaultValue={[app.rating]}
+                                      max={5}
+                                      min={1}
+                                      step={1}
+                                      trackColor={
+                                        app.rating >= 4
+                                          ? 'bg-[rgb(124,58,237)]/20'
+                                          : app.rating <= 2
+                                            ? 'bg-[rgb(239,68,68)]/20'
+                                            : 'bg-gray-500/20'
+                                      }
+                                      rangeColor={
+                                        app.rating >= 4
+                                          ? 'bg-[rgb(124,58,237)]'
+                                          : app.rating <= 2
+                                            ? 'bg-[rgb(239,68,68)]'
+                                            : 'bg-gray-500'
+                                      }
+                                      thumbBorderColor={
+                                        app.rating >= 4
+                                          ? 'border-[rgb(124,58,237)]'
+                                          : app.rating <= 2
+                                            ? 'border-[rgb(239,68,68)]'
+                                            : 'border-gray-500'
+                                      }
+                                      onValueChange={([value]) => {
+                                        if (!app.default_tag) return
+                                        MonitorApi.setAppDefaultTag(app.default_tag.id, value as ActivityRating, tags)
+                                        setAppUsage(prev => prev.map(a => {
+                                          if (!app.is_browser && a.name === app.name) {
+                                            return { ...a, rating: value as ActivityRating }
+                                          } else if (app.is_browser && a.app_external_id === app.app_external_id) {
+                                            return { ...a, rating: value as ActivityRating }
+                                          }
+                                          return a
+                                        }))
+                                      }}
+                                      className="[&_[role=slider]]:h-4 [&_[role=slider]]:w-4 [&_[role=slider]]:bg-background"
+                                    />
+                                  </div>
+                                </div>
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+                          <span className="text-sm text-muted-foreground">
+                            {formatTime(app.duration)}
+                          </span>
+                        </div>
+                        <Progress
+                          value={(app.duration / (6 * 60)) * 100}
+                          className={
+                            app.rating >= 4
+                              ? 'bg-[rgb(124,58,237)]/20 [&>div]:bg-[rgb(124,58,237)]' :
+                              app.rating <= 2
+                                ? 'bg-[rgb(239,68,68)]/20 [&>div]:bg-[rgb(239,68,68)]' :
+                                'bg-gray-500/20 [&>div]:bg-gray-500'
+                          }
+                        />
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             </CardContent>
           </Card>
