@@ -24,9 +24,10 @@ import {
 import { useSettings } from '../hooks/useSettings'
 import { TimeSelector } from '@/components/TimeSelector'
 import { AppSelector, SearchOption } from '@/components/AppSelector'
-import { SpotifyService } from '@/lib/integrations/spotify'
 import { SpotifyIcon } from '@/components/icons/SpotifyIcon'
 import { AppleMusicIcon } from '@/components/icons/AppleMusicIcon'
+import { SpotifyAuthService } from '@/lib/integrations/spotify/spotifyAuth'
+import { SpotifyApiService } from '@/lib/integrations/spotify/spotifyApi'
 
 
 export const StartFlowPage = () => {
@@ -95,7 +96,7 @@ export const StartFlowPage = () => {
       if (code && state) {
         try {
           setIsLoading(true)
-          await SpotifyService.handleCallback(code, state)
+          await SpotifyAuthService.handleCallback(code, state)
           // Clear URL parameters but keep expandMusic=true
           window.history.replaceState({}, '', '/start-flow?expandMusic=true')
           // Force a full page refresh to get updated Spotify state
@@ -116,12 +117,12 @@ export const StartFlowPage = () => {
 
   const checkSpotifyConnection = async () => {
     try {
-      const isConnected = await SpotifyService.isConnected()
+      const isConnected = await SpotifyAuthService.isConnected()
 
       if (isConnected) {
         const [profile, playlists] = await Promise.all([
-          SpotifyService.getUserProfile(),
-          SpotifyService.getUserPlaylists()
+          SpotifyApiService.getUserProfile(),
+          SpotifyApiService.getUserPlaylists()
         ])
 
         if (profile) {
@@ -281,7 +282,7 @@ export const StartFlowPage = () => {
                 <Button
                   variant="outline"
                   className="w-full"
-                  onClick={() => SpotifyService.connect()}
+                  onClick={() => SpotifyAuthService.connect()}
                   disabled={isLoading}
                 >
                   <SpotifyIcon />
