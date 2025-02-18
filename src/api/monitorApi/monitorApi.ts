@@ -19,7 +19,8 @@ export interface TimeBlock {
 }
 
 export interface GraphableTimeByHourBlock {
-  consuming: number // in minutes
+  consuming: number 
+  neutral: number // in minutes
   creating: number // in minutes
   offline: number // in minutes -- remaining in the hour
   time: string // "6:00"
