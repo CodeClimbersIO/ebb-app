@@ -330,30 +330,43 @@ export class SpotifyService {
     })
   }
 
-  static async controlPlayback(action: 'play' | 'pause' | 'next' | 'previous', deviceId: string): Promise<void> {
-    const token = await this.getAccessToken()
-    
-    if (action === 'play') {
-      await fetch(`${SPOTIFY_API_BASE}/me/player/play?device_id=${deviceId}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        }
-      })
-    } else if (action === 'pause') {
+  static async stopPlayback(deviceId: string): Promise<void> {
+    try {
+      const token = await this.getAccessToken()
       await fetch(`${SPOTIFY_API_BASE}/me/player/pause?device_id=${deviceId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
         }
       })
-    } else {
-      await fetch(`${SPOTIFY_API_BASE}/me/player/${action}?device_id=${deviceId}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        }
-      })
+    } catch (error) {
+      console.error('Error stopping playback:', error)
+    }
+  }
+
+  static async controlPlayback(action: 'play' | 'pause' | 'next' | 'previous', deviceId: string): Promise<void> {
+    try {
+      const token = await this.getAccessToken()
+      
+      if (action === 'play') {
+        await fetch(`${SPOTIFY_API_BASE}/me/player/play?device_id=${deviceId}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          }
+        })
+      } else if (action === 'pause') {
+        await this.stopPlayback(deviceId)
+      } else {
+        await fetch(`${SPOTIFY_API_BASE}/me/player/${action}?device_id=${deviceId}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          }
+        })
+      }
+    } catch (error) {
+      console.error(`Error controlling playback (${action}):`, error)
     }
   }
 } 

@@ -40,6 +40,8 @@ const getDurationFormatFromSeconds = (seconds: number) => {
   return duration.toFormat(format)
 }
 
+const MAX_SESSION_DURATION = 8 * 60 * 60 // 8 hours in seconds
+
 const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
   const [time, setTime] = useState<string>('00:00')
 
@@ -50,17 +52,20 @@ const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
       const now = DateTime.now()
       const nowAsSeconds = now.toSeconds()
       const startTime = DateTime.fromISO(flowSession.start).toSeconds()
-
       const diff = nowAsSeconds - startTime
+
+      // Check for max duration limit for unlimited sessions
+      if (!flowSession.duration && diff >= MAX_SESSION_DURATION) {
+        window.dispatchEvent(new CustomEvent('flowSessionComplete'))
+        return
+      }
 
       if (flowSession.duration) {
         const remaining = (flowSession.duration) - diff
         if (remaining <= 0) {
-          // Instead of directly calling handleEndSession, we'll emit an event
           window.dispatchEvent(new CustomEvent('flowSessionComplete'))
           return
         }
-
         const duration = getDurationFormatFromSeconds(remaining)
         setTime(duration)
       } else {
@@ -115,11 +120,12 @@ export const FlowPage = () => {
   }, [])
 
   useEffect(() => {
-    // Add event listener for session completion
     const handleSessionComplete = () => {
-      // Stop playback if player exists
       if (player && deviceId) {
         SpotifyService.controlPlayback('pause', deviceId)
+        setIsPlaying(false)
+        setCurrentTrack(null)
+        setSelectedPlaylistId('')
       }
       handleEndSession()
     }
@@ -190,6 +196,14 @@ export const FlowPage = () => {
 
   const handleEndSession = async () => {
     if (!flowSession) return
+
+    // Stop playback and clear player state
+    if (player && deviceId) {
+      await SpotifyService.controlPlayback('pause', deviceId)
+      setIsPlaying(false)
+      setCurrentTrack(null)
+      setSelectedPlaylistId('')
+    }
 
     await FlowSessionApi.endFlowSession(flowSession.id)
     setShowEndDialog(false)
