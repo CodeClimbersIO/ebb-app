@@ -2,7 +2,7 @@ import { onOpenUrl } from '@tauri-apps/plugin-deep-link'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import supabase from '@/lib/integrations/supabase'
-import { SpotifyService } from '@/lib/integrations/spotify'
+import { SpotifyAuthService } from '@/lib/integrations/spotify/spotifyAuth'
 
 export const useDeepLinkAuth = () => {
   const navigate = useNavigate()
@@ -51,7 +51,7 @@ export const useDeepLinkAuth = () => {
         const code = searchParams.get('code')
         const state = searchParams.get('state')
         if (code && state) {
-          await SpotifyService.handleCallback(code, state)
+          await SpotifyAuthService.handleCallback(code, state)
           navigate('/start-flow?expandMusic=true', { replace: true })
           window.location.reload()
           return

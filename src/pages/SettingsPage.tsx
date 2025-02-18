@@ -15,10 +15,11 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog'
-import { SpotifyService } from '@/lib/integrations/spotify'
 import { AlertCircle, ArrowRight } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { useNavigate } from 'react-router-dom'
+import { SpotifyApiService } from '@/lib/integrations/spotify/spotifyApi'
+import { SpotifyAuthService } from '@/lib/integrations/spotify/spotifyAuth'
 
 export const SettingsPage = () => {
   const { showZeroState, toggleZeroState } = useSettings()
@@ -36,16 +37,16 @@ export const SettingsPage = () => {
   useEffect(() => {
     const checkSpotifyConnection = async () => {
       try {
-        const isConnected = await SpotifyService.isConnected()
-        
+        const isConnected = await SpotifyAuthService.isConnected()
+
         if (isConnected) {
-          const profile = await SpotifyService.getUserProfile()
+          const profile = await SpotifyApiService.getUserProfile()
           if (profile) {
             setSpotifyProfile(profile)
             setActiveService('spotify')
           }
         }
-        
+
         setIsLoading(false)
       } catch (error) {
         console.error('Error checking Spotify connection:', error)
@@ -63,7 +64,7 @@ export const SettingsPage = () => {
 
   const confirmUnlink = async () => {
     if (serviceToUnlink === 'spotify') {
-      await SpotifyService.disconnect()
+      await SpotifyAuthService.disconnect()
       setSpotifyProfile(null)
     }
     setActiveService(null)
@@ -147,9 +148,9 @@ export const SettingsPage = () => {
                     </div>
                     <div>
                       {activeService === 'spotify' ? (
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => handleUnlink('spotify')}
                         >
                           Unlink
@@ -217,7 +218,7 @@ export const SettingsPage = () => {
                 </div>
               </div>
             </div>
-            
+
             <div className="mt-12 flex justify-between text-sm text-muted-foreground/50">
               <div>Ebb Version 1.0.0</div>
               <div>Slop by Paul Hovley and Nathan Covey</div>
