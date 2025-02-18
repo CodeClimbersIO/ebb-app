@@ -33,6 +33,11 @@ interface SpotifyUserProfile {
 interface SpotifyPlaylist {
   id: string
   name: string
+  images?: Array<{
+    url: string
+    height: number | null
+    width: number | null
+  }>
 }
 
 const STORAGE_KEY = 'spotify_tokens'
@@ -367,6 +372,28 @@ export class SpotifyService {
       }
     } catch (error) {
       console.error(`Error controlling playback (${action}):`, error)
+    }
+  }
+
+  static async getPlaylistCoverImage(playlistId: string): Promise<string | null> {
+    try {
+      const token = await this.getAccessToken()
+      const response = await fetch(`${SPOTIFY_API_BASE}/playlists/${playlistId}/images`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch playlist cover image')
+      }
+      
+      const images = await response.json()
+      // Return the URL of the first image if available
+      return images[0]?.url ?? null
+    } catch (error) {
+      console.error('Error fetching playlist cover image:', error)
+      return null
     }
   }
 } 

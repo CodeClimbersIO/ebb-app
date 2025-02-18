@@ -65,6 +65,13 @@ export const StartFlowPage = () => {
     const searchParams = new URLSearchParams(window.location.search || hashParams.substring(hashParams.indexOf('?')))
     return searchParams.get('expandMusic') === 'true'
   })
+  const [playlistData, setPlaylistData] = useState<{
+    playlists: { id: string; name: string }[];
+    images: Record<string, string>;
+  }>(() => {
+    const saved = localStorage.getItem('playlistData')
+    return saved ? JSON.parse(saved) : { playlists: [], images: {} }
+  })
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -160,6 +167,33 @@ export const StartFlowPage = () => {
     document.addEventListener('keydown', handleKeyPress)
     return () => document.removeEventListener('keydown', handleKeyPress)
   }, [objective]) // Re-run when objective changes
+
+  // Load playlists and images once on page load
+  useEffect(() => {
+    const loadPlaylistData = async () => {
+      if (!musicService.connected || musicService.type !== 'spotify') return
+      
+      try {
+        const playlists = await SpotifyService.getUserPlaylists()
+        const images: Record<string, string> = {}
+        
+        for (const playlist of playlists) {
+          const imageUrl = await SpotifyService.getPlaylistCoverImage(playlist.id)
+          if (imageUrl) {
+            images[playlist.id] = imageUrl
+          }
+        }
+        
+        const newPlaylistData = { playlists, images }
+        setPlaylistData(newPlaylistData)
+        localStorage.setItem('playlistData', JSON.stringify(newPlaylistData))
+      } catch (error) {
+        console.error('Error loading playlist data:', error)
+      }
+    }
+
+    loadPlaylistData()
+  }, [musicService.connected, musicService.type])
 
   const getPlaceholderByRole = () => {
     switch (userRole) {
@@ -326,15 +360,26 @@ export const StartFlowPage = () => {
                 </div>
 
                 {spotifyProfile?.product === 'premium' ? (
-                  <Select value={selectedPlaylist} onValueChange={setSelectedPlaylist}>
+                  <Select 
+                    value={selectedPlaylist} 
+                    onValueChange={setSelectedPlaylist}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select a playlist" />
                     </SelectTrigger>
                     <SelectContent>
-                      {musicService.playlists.map(playlist => (
+                      {playlistData.playlists.map(playlist => (
                         <SelectItem key={playlist.id} value={playlist.id}>
                           <div className="flex items-center">
-                            <Music className="h-4 w-4 mr-2" />
+                            {playlistData.images[playlist.id] ? (
+                              <img 
+                                src={playlistData.images[playlist.id]} 
+                                alt={playlist.name}
+                                className="h-6 w-6 rounded mr-2 object-cover"
+                              />
+                            ) : (
+                              <Music className="h-4 w-4 mr-2" />
+                            )}
                             <span className="truncate">{playlist.name}</span>
                           </div>
                         </SelectItem>

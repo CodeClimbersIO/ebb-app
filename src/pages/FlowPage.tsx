@@ -104,9 +104,15 @@ export const FlowPage = () => {
     duration_ms: number;
     position_ms: number;
   } | null>(null)
-  const [playlists, setPlaylists] = useState<{ id: string; name: string; }[]>([])
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string>('')
   const [isSpotifyAuthenticated, setIsSpotifyAuthenticated] = useState(false)
+  const [playlistData, setPlaylistData] = useState<{
+    playlists: { id: string; name: string }[];
+    images: Record<string, string>;
+  }>(() => {
+    const saved = localStorage.getItem('playlistData')
+    return saved ? JSON.parse(saved) : { playlists: [], images: {} }
+  })
 
   useEffect(() => {
     const init = async () => {
@@ -182,17 +188,51 @@ export const FlowPage = () => {
   }, [])
 
   useEffect(() => {
-    const fetchPlaylists = async () => {
-      const userPlaylists = await SpotifyService.getUserPlaylists()
-      setPlaylists(userPlaylists)
-      // Set initial playlist from location state
-      const initialPlaylist = location.state?.playlist?.id
-      if (initialPlaylist) {
-        setSelectedPlaylistId(initialPlaylist)
+    const loadPlaylistData = async () => {
+      if (!isSpotifyAuthenticated) return
+
+      // Use cached data if available
+      const cached = localStorage.getItem('playlistData')
+      if (cached) {
+        const parsedData = JSON.parse(cached)
+        setPlaylistData(parsedData)
+        
+        // Set initial playlist from location state
+        const initialPlaylist = location.state?.playlist?.id
+        if (initialPlaylist) {
+          setSelectedPlaylistId(initialPlaylist)
+        }
+        return
+      }
+
+      // Load fresh data if no cache exists
+      try {
+        const playlists = await SpotifyService.getUserPlaylists()
+        const images: Record<string, string> = {}
+        
+        for (const playlist of playlists) {
+          const imageUrl = await SpotifyService.getPlaylistCoverImage(playlist.id)
+          if (imageUrl) {
+            images[playlist.id] = imageUrl
+          }
+        }
+        
+        const newPlaylistData = { playlists, images }
+        setPlaylistData(newPlaylistData)
+        localStorage.setItem('playlistData', JSON.stringify(newPlaylistData))
+
+        // Set initial playlist from location state
+        const initialPlaylist = location.state?.playlist?.id
+        if (initialPlaylist) {
+          setSelectedPlaylistId(initialPlaylist)
+        }
+      } catch (error) {
+        console.error('Error loading playlist data:', error)
       }
     }
-    fetchPlaylists()
-  }, [])
+
+    loadPlaylistData()
+  }, [isSpotifyAuthenticated]) // Only run when Spotify authentication status changes
 
   const handleEndSession = async () => {
     if (!flowSession) return
@@ -320,10 +360,18 @@ export const FlowPage = () => {
                       <SelectValue placeholder="Select playlist" />
                     </SelectTrigger>
                     <SelectContent>
-                      {playlists.map(playlist => (
+                      {playlistData.playlists.map(playlist => (
                         <SelectItem key={playlist.id} value={playlist.id}>
                           <div className="flex items-center">
-                            <Music className="h-4 w-4 mr-2" />
+                            {playlistData.images[playlist.id] ? (
+                              <img 
+                                src={playlistData.images[playlist.id]} 
+                                alt={playlist.name}
+                                className="h-6 w-6 rounded mr-2 object-cover"
+                              />
+                            ) : (
+                              <Music className="h-4 w-4 mr-2" />
+                            )}
                             {playlist.name}
                           </div>
                         </SelectItem>
