@@ -381,7 +381,9 @@ export const HomePage = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
-                {sortedAppUsage.map((app) => (
+                {sortedAppUsage
+                  .filter(app => app.duration >= 1)
+                  .map((app) => (
                   <div key={app.id} className="flex items-center gap-4">
                     <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
                       <AppIcon app={app} />
