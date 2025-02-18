@@ -24,15 +24,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Music } from 'lucide-react'
-import { SpotifyService, PlaybackState } from '@/lib/integrations/spotify'
 import { SpotifyIcon } from '@/components/icons/SpotifyIcon'
-declare namespace Spotify {
-  interface Player {
-    addListener(event: string, callback: (state: PlaybackState | null) => void): void;
-    connect(): Promise<boolean>;
-    disconnect(): void;
-  }
-}
+import { PlaybackState, SpotifyApiService } from '@/lib/integrations/spotify/spotifyApi'
+import { SpotifyAuthService } from '@/lib/integrations/spotify/spotifyAuth'
 
 const getDurationFormatFromSeconds = (seconds: number) => {
   const duration = Duration.fromMillis(seconds * 1000)
@@ -128,7 +122,7 @@ export const FlowPage = () => {
   useEffect(() => {
     const handleSessionComplete = () => {
       if (player && deviceId) {
-        SpotifyService.controlPlayback('pause', deviceId)
+        SpotifyApiService.controlPlayback('pause', deviceId)
         setIsPlaying(false)
         setCurrentTrack(null)
         setSelectedPlaylistId('')
@@ -145,25 +139,25 @@ export const FlowPage = () => {
   useEffect(() => {
     const initSpotify = async () => {
       try {
-        const isAuthenticated = await SpotifyService.isConnected()
+        const isAuthenticated = await SpotifyAuthService.isConnected()
         setIsSpotifyAuthenticated(isAuthenticated)
 
         if (!isAuthenticated) return
 
-        await SpotifyService.initializePlayer()
-        const newPlayer = await SpotifyService.createPlayer()
+        await SpotifyApiService.initializePlayer()
+        const newPlayer = await SpotifyApiService.createPlayer()
 
         newPlayer.addListener('ready', ({ device_id }: { device_id: string }) => {
           setDeviceId(device_id)
           // Start playback if playlist was selected
           const playlist = location.state?.playlist
           if (playlist?.id) {
-            SpotifyService.startPlayback(playlist.id, device_id)
+            SpotifyApiService.startPlayback(playlist.id, device_id)
           }
         })
 
         newPlayer.addListener('player_state_changed', (state: PlaybackState | null) => {
-          if (!state) return
+          if (!state || !state.track_window.current_track) return
 
           setIsPlaying(!state.paused)
           setCurrentTrack({
@@ -207,7 +201,7 @@ export const FlowPage = () => {
 
       // Load fresh data if no cache exists
       try {
-        const playlists = await SpotifyService.getUserPlaylists()
+        const playlists = await SpotifyApiService.getUserPlaylists()
         const images: Record<string, string> = {}
         
         for (const playlist of playlists) {
@@ -239,7 +233,7 @@ export const FlowPage = () => {
 
     // Stop playback and clear player state
     if (player && deviceId) {
-      await SpotifyService.controlPlayback('pause', deviceId)
+      await SpotifyApiService.controlPlayback('pause', deviceId)
       setIsPlaying(false)
       setCurrentTrack(null)
       setSelectedPlaylistId('')
@@ -263,23 +257,23 @@ export const FlowPage = () => {
 
   const handlePlayPause = async () => {
     if (!player || !deviceId) return
-    await SpotifyService.controlPlayback(isPlaying ? 'pause' : 'play', deviceId)
+    await SpotifyApiService.controlPlayback(isPlaying ? 'pause' : 'play', deviceId)
   }
 
   const handleNext = async () => {
     if (!player || !deviceId) return
-    await SpotifyService.controlPlayback('next', deviceId)
+    await SpotifyApiService.controlPlayback('next', deviceId)
   }
 
   const handlePrevious = async () => {
     if (!player || !deviceId) return
-    await SpotifyService.controlPlayback('previous', deviceId)
+    await SpotifyApiService.controlPlayback('previous', deviceId)
   }
 
   const handlePlaylistChange = async (playlistId: string) => {
     if (!deviceId) return
     setSelectedPlaylistId(playlistId)
-    await SpotifyService.startPlayback(playlistId, deviceId)
+    await SpotifyApiService.startPlayback(playlistId, deviceId)
   }
 
   const MusicPlayer = () => (
