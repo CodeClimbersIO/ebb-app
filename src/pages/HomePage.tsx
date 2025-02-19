@@ -76,6 +76,17 @@ const formatTime = (minutes: number) => {
   return `${hours}h ${roundedMinutes}m`
 }
 
+const fetchData = async (selectedDate: Date) => {
+  const start = DateTime.fromJSDate(selectedDate).startOf('day')
+  const end = DateTime.fromJSDate(selectedDate).endOf('day')
+  
+  const chartData = await MonitorApi.getTimeCreatingByHour(start, end)
+  const tags = await MonitorApi.getTagsByType('default')
+  const topApps = await MonitorApi.getTopAppsByPeriod(start, end)
+
+  return { chartData, tags, topApps }
+}
+
 export const HomePage = () => {
   const { user } = useAuth()
   const { showZeroState } = useSettings()
@@ -107,13 +118,8 @@ export const HomePage = () => {
         return // Exit early if no sessions
       }
 
-      const start = DateTime.now().startOf('day')
-      const end = DateTime.now().endOf('day')
-      const chartData = await MonitorApi.getTimeCreatingByHour(start, end)
-      const tags = await MonitorApi.getTagsByType('default')
+      const { chartData, tags, topApps } = await fetchData(date)
       setTags(tags)
-      const topApps = await MonitorApi.getTopAppsByPeriod(start, end)
-
       setAppUsage(topApps)
       setTotalCreating(chartData.reduce((acc, curr) => acc + curr.creating, 0))
       setChartData(chartData.slice(6))
@@ -138,11 +144,11 @@ export const HomePage = () => {
     }
     init()
     const handleFocus = () => {
-      init()
+      fetchData(date)
     }
     window.addEventListener('focus', handleFocus)
     return () => window.removeEventListener('focus', handleFocus)
-  }, [])
+  }, [date])
 
   const handleStartFlowSession = () => {
     navigate('/start-flow')
@@ -223,7 +229,12 @@ export const HomePage = () => {
                 <Calendar
                   mode="single"
                   selected={date}
-                  onSelect={(newDate) => newDate && setDate(newDate)}
+                  onSelect={(newDate) => {
+                    if (newDate) {
+                      setDate(newDate)
+                      fetchData(newDate)
+                    }
+                  }}
                   disabled={(date) => date > new Date()}
                   initialFocus
                 />
