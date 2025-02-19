@@ -23,12 +23,12 @@ export function TopNav({ variant = 'default' }: TopNavProps) {
             onClick={handleStartFlowSession}
           >
             Start Focus
-            <div className="ml-2 flex gap-1">
-              <kbd className="rounded bg-violet-900 px-1.5 font-mono text-xs font-bold flex gap-1">
-                <span>⌘</span>
+            <div className="ml-2 flex gap-0.5">
+              <kbd className="rounded bg-violet-900 px-1.5 font-mono font-bold flex">
+                <span className="text-sm">⌘</span>
               </kbd>
-              <kbd className="rounded bg-violet-900 px-1.5 font-mono text-xs font-bold flex gap-1">
-                <span>E</span>
+              <kbd className="rounded bg-violet-900 px-1.5 font-mono font-bold flex">
+                <span className="text-xs self-center">E</span>
               </kbd>
             </div>
           </Button>
