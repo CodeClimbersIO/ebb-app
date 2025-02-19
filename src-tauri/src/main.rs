@@ -33,6 +33,7 @@ async fn main() {
 
     let migrations = db::get_migrations();
     tauri::Builder::default()
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .invoke_handler(tauri::generate_handler![get_app_icon])
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_deep_link::init())

@@ -13,6 +13,11 @@
     "deep-link:default",
     "opener:default",
     "opener:allow-open-url",
-    "opener:allow-default-urls"
+    "opener:allow-default-urls",
+    "global-shortcut:allow-is-registered",
+    "global-shortcut:allow-register",
+    "global-shortcut:allow-unregister",
+    "core:window:allow-unminimize",
+    "core:window:allow-set-focus"
   ]
 }
