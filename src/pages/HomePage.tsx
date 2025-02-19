@@ -76,13 +76,11 @@ const formatTime = (minutes: number) => {
   return `${hours}h ${roundedMinutes}m`
 }
 
-
-
 export const HomePage = () => {
   const { user } = useAuth()
   const { showZeroState } = useSettings()
   const navigate = useNavigate()
-  const [hasNoSessions, setHasNoSessions] = useState(true)
+  const [hasNoSessions, setHasNoSessions] = useState(false)
   const [streak, setStreak] = useState(0)
   const [date, setDate] = useState<Date>(new Date())
   const [appUsage, setAppUsage] = useState<AppsWithTime[]>([])
@@ -97,14 +95,17 @@ export const HomePage = () => {
     user?.email?.split('@')[0]
 
   useEffect(() => {
-
     const init = async () => {
       const flowSession = await FlowSessionApi.getInProgressFlowSession()
       if (flowSession) {
         navigate('/flow')
       }
+      // Check for sessions in the background
       const sessions = await FlowSessionApi.getFlowSessions()
-      setHasNoSessions(sessions.length === 0)
+      if (sessions.length === 0) {
+        setHasNoSessions(true)
+        return // Exit early if no sessions
+      }
 
       const start = DateTime.now().startOf('day')
       const end = DateTime.now().endOf('day')
