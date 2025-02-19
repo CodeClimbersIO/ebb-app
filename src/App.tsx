@@ -4,6 +4,7 @@ import { AppRouter } from './routes'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import supabase from '@/lib/integrations/supabase'
 import { trace, info, error } from '@tauri-apps/plugin-log'
+import { setupTray } from '@/lib/tray'
 
 const App = () => {
   trace('Trace')
@@ -11,15 +12,19 @@ const App = () => {
   error('Error')
 
   useEffect(() => {
-    const initAuth = async () => {
+    const init = async () => {
       try {
+        // Initialize auth
         await supabase.auth.getSession()
+        
+        // Setup tray
+        await setupTray()
       } catch (error) {
-        console.error('Error initializing auth:', error)
+        console.error('Error during initialization:', error)
       }
     }
 
-    initAuth()
+    init()
   }, [])
 
   return (
