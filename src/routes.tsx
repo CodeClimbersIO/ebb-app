@@ -10,7 +10,6 @@ import { FlowPage } from './pages/FlowPage'
 import { BreathingExercisePage } from './pages/BreathingExercisePage'
 import { FlowRecapPage } from '@/pages/FlowRecapPage'
 import { LoadingScreen } from '@/components/LoadingScreen'
-import { OnboardingPage } from '@/pages/OnboardingPage'
 import { useDeepLinkAuth } from '@/hooks/useDeepLinkAuth'
 import { register, unregister } from '@tauri-apps/plugin-global-shortcut'
 import { getCurrentWindow } from '@tauri-apps/api/window'
@@ -107,7 +106,6 @@ const Router = () => {
           <Route path="/breathing-exercise" element={<BreathingExercisePage />} />
           <Route path="/flow" element={<FlowPage />} />
           <Route path="/flow-recap" element={<FlowRecapPage />} />
-          <Route path="/onboarding" element={<OnboardingPage />} />
         </Route>
 
         {/* 404 catch-all */}
