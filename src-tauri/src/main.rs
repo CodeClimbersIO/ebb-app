@@ -1,7 +1,7 @@
 use os_monitor::get_application_icon_data;
 use std::thread;
-use tokio;
 use tauri::Manager;
+use tokio;
 mod db;
 mod system_monitor;
 use tauri::command;
@@ -34,20 +34,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let migrations = db::get_migrations();
     tauri::Builder::default()
-        .on_window_event(|window, event| {
-            match event {
-                tauri::WindowEvent::CloseRequested { api, .. } => {
-                    api.prevent_close();
-                    window.hide().unwrap();
-                }
-                _ => {}
+        .on_window_event(|window, event| match event {
+            tauri::WindowEvent::CloseRequested { api, .. } => {
+                api.prevent_close();
+                window.hide().unwrap();
             }
+            _ => {}
         })
         .setup(|app| {
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Regular);
-            let app_handle = app.handle().clone();
-            system_monitor::start_monitoring(app_handle);
+            system_monitor::start_monitoring();
             println!("setup thread info: {}", get_thread_info());
             Ok(())
         })
@@ -70,8 +67,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .build(),
         )
         .build(tauri::generate_context!())?
-        .run(|app: &tauri::AppHandle<tauri::Wry>, event: tauri::RunEvent| {
-            match event {
+        .run(
+            |app: &tauri::AppHandle<tauri::Wry>, event: tauri::RunEvent| match event {
                 tauri::RunEvent::Reopen { .. } => {
                     if let Some(window) = app.get_webview_window("main") {
                         window.show().unwrap();
@@ -79,7 +76,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                 }
                 _ => {}
-            }
-        });
+            },
+        );
     Ok(())
 }
