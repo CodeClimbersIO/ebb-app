@@ -1,6 +1,7 @@
 use os_monitor::get_application_icon_data;
 use std::thread;
 use tokio;
+use tauri::Manager;
 mod db;
 mod system_monitor;
 use tauri::command;
@@ -23,7 +24,7 @@ async fn get_app_icon(bundle_id: String) -> Result<String, String> {
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tauri::async_runtime::set(tokio::runtime::Handle::current());
     let db_path = db::get_db_path();
     let path = std::path::Path::new(&db_path);
@@ -33,6 +34,23 @@ async fn main() {
 
     let migrations = db::get_migrations();
     tauri::Builder::default()
+        .on_window_event(|window, event| {
+            match event {
+                tauri::WindowEvent::CloseRequested { api, .. } => {
+                    api.prevent_close();
+                    window.hide().unwrap();
+                }
+                _ => {}
+            }
+        })
+        .setup(|app| {
+            #[cfg(target_os = "macos")]
+            app.set_activation_policy(tauri::ActivationPolicy::Regular);
+            let app_handle = app.handle().clone();
+            system_monitor::start_monitoring(app_handle);
+            println!("setup thread info: {}", get_thread_info());
+            Ok(())
+        })
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .invoke_handler(tauri::generate_handler![get_app_icon])
         .plugin(tauri_plugin_opener::init())
@@ -51,12 +69,17 @@ async fn main() {
                 ))
                 .build(),
         )
-        .setup(|app| {
-            let app_handle = app.handle().clone();
-            system_monitor::start_monitoring(app_handle);
-            println!("setup thread info: {}", get_thread_info());
-            Ok(())
-        })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())?
+        .run(|app: &tauri::AppHandle<tauri::Wry>, event: tauri::RunEvent| {
+            match event {
+                tauri::RunEvent::Reopen { .. } => {
+                    if let Some(window) = app.get_webview_window("main") {
+                        window.show().unwrap();
+                        window.set_focus().unwrap();
+                    }
+                }
+                _ => {}
+            }
+        });
+    Ok(())
 }

@@ -17,7 +17,7 @@ const App = () => {
         // Initialize auth
         await supabase.auth.getSession()
         
-        // Setup tray
+        // Setup tray - only happens once when App mounts
         await setupTray()
       } catch (error) {
         console.error('Error during initialization:', error)

@@ -35,18 +35,27 @@ const GlobalShortcuts = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate()
 
   useEffect(() => {
+    let unlistenNavigate: (() => void) | undefined
+
     const registerShortcuts = async () => {
       try {
         await register('CommandOrControl+E', async (event) => {
           if (event.state === 'Pressed') {
-            // Get the current window and focus it
+            // Get the current window and show/focus it
             const window = getCurrentWindow()
-            await window.unminimize()
+            await window.show()
             await window.setFocus()
             
             // Navigate to start-flow page
             navigate('/start-flow')
           }
+        })
+
+        // Listen for navigation events from the tray menu
+        const window = getCurrentWindow()
+        unlistenNavigate = await window.listen('navigate', (event) => {
+          const path = event.payload as string
+          navigate(path)
         })
       } catch (error) {
         console.error('Failed to register global shortcut:', error)
@@ -60,6 +69,9 @@ const GlobalShortcuts = ({ children }: { children: React.ReactNode }) => {
       const cleanup = async () => {
         try {
           await unregister('CommandOrControl+E')
+          if (unlistenNavigate) {
+            unlistenNavigate()
+          }
         } catch (error) {
           console.error('Failed to unregister global shortcut:', error)
         }
@@ -106,4 +118,3 @@ export const AppRouter = () => {
     </HashRouter>
   )
 }
-

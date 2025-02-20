@@ -1,63 +1,61 @@
 import { TrayIcon } from '@tauri-apps/api/tray'
 import { Window } from '@tauri-apps/api/window'
-import { Menu } from '@tauri-apps/api/menu'
+import { Menu, PredefinedMenuItem } from '@tauri-apps/api/menu'
 
-let trayInstance: TrayIcon | null = null
+async function showAndFocusWindow() {
+  const mainWindow = Window.getCurrent()
+  await mainWindow.show()
+  await mainWindow.unminimize()
+  await mainWindow.setFocus()
+  return mainWindow
+}
 
 export async function setupTray() {
   try {
-    // Clean up existing tray if it exists
-    if (trayInstance) {
-      await trayInstance.close()
+    // Check if tray already exists
+    const existingTray = await TrayIcon.getById('main-tray')
+    if (existingTray) {
+      return existingTray
     }
+
+    const separator = await PredefinedMenuItem.new({ item: 'Separator' })
 
     const menu = await Menu.new({
       items: [
         {
-          text: 'Go to Dashboard',
+          text: 'Start Focus Session',
+          accelerator: 'CommandOrControl+E',
           action: async () => {
-            const mainWindow = Window.getCurrent()
-            await mainWindow.show()
-            await mainWindow.unminimize()
-            await mainWindow.setFocus()
+            const window = await showAndFocusWindow()
+            await window.emit('navigate', '/start-flow')
           }
         },
         {
+          text: 'Show Dashboard',
+          action: async () => {
+            await showAndFocusWindow()
+          }
+        },
+        separator,
+        {
           text: 'Quit',
           action: async () => {
-            // Close the window first
-            await Window.getCurrent().close()
-            // Then close the tray
-            if (trayInstance) {
-              await trayInstance.close()
-              trayInstance = null
-            }
-            // Actually quit the app
-            await Window.getCurrent().destroy()
+            const window = Window.getCurrent()
+            await window.close()
+            await window.destroy()
           }
         }
       ]
     })
 
-    trayInstance = await TrayIcon.new({
+    return await TrayIcon.new({
       id: 'main-tray',
       tooltip: 'Ebb',
-      icon: 'icons/tray.png',
+      icon: '../src-tauri/icons/tray.png',
       menu,
-      menuOnLeftClick: true,
     })
-
-    // Add event listener for app cleanup
-    window.addEventListener('unload', async () => {
-      if (trayInstance) {
-        await trayInstance.close()
-        trayInstance = null
-      }
-    })
-
-    return trayInstance
   } catch (error) {
     console.error('Failed to setup tray:', error)
     throw error
   }
-} 
+}
