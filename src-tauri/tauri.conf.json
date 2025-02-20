@@ -13,10 +13,10 @@
     "windows": [
       {
         "title": "Ebb",
-        "width": 1000,
-        "height": 700,
-        "minWidth": 1000,
-        "minHeight": 700,
+        "width": 950,
+        "height": 675,
+        "minWidth": 950,
+        "minHeight": 675,
         "hiddenTitle": true,
         "titleBarStyle": "Transparent",
         "backgroundColor": "#FCF8EDCC"
