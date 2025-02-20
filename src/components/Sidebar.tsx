@@ -32,7 +32,7 @@ export function Sidebar() {
                      'User'
 
   return (
-    <div className="w-64 border-r h-screen flex flex-col">
+    <div className="w-56 border-r h-screen flex flex-col">
       <LogoContainer />
       <nav className="px-3 pt-4 space-y-2 flex-1">
         <Button 
@@ -77,12 +77,12 @@ export function Sidebar() {
       </nav>
       <div className="p-4 border-t">
         <div className="rounded-lg p-4 bg-muted/50">
-          <h3 className="font-semibold text-lg">Upgrade to Pro</h3>
+          <h3 className="font-semibold text-lg">14 days left</h3>
           <p className="text-sm text-muted-foreground">
-            Listen to music while in flow and block distracting apps.
+            Your Ebb Pro free trial ends soon.
           </p>
           <Button className="w-full mt-4 bg-gray-500 hover:bg-gray-600" disabled>
-            Coming Soon
+            Coming soon
           </Button>
         </div>
       </div>

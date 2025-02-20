@@ -15,6 +15,7 @@ import { useDeepLinkAuth } from '@/hooks/useDeepLinkAuth'
 import { register, unregister } from '@tauri-apps/plugin-global-shortcut'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useEffect } from 'react'
+import { FlowSessionApi } from './api/ebbApi/flowSessionApi'
 
 // Protected Route wrapper component
 const ProtectedRoute = () => {
@@ -46,8 +47,13 @@ const GlobalShortcuts = ({ children }: { children: React.ReactNode }) => {
             await window.show()
             await window.setFocus()
             
-            // Navigate to start-flow page
-            navigate('/start-flow')
+            // Check if there's an active flow session
+            const activeSession = await FlowSessionApi.getInProgressFlowSession()
+            if (activeSession) {
+              navigate('/flow')
+            } else {
+              navigate('/start-flow')
+            }
           }
         })
 
