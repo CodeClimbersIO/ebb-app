@@ -21,7 +21,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { useSettings } from '../hooks/useSettings'
 import { TimeSelector } from '@/components/TimeSelector'
 import { AppSelector, SearchOption } from '@/components/AppSelector'
 import { SpotifyIcon } from '@/components/icons/SpotifyIcon'
@@ -31,7 +30,6 @@ import { SpotifyApiService } from '@/lib/integrations/spotify/spotifyApi'
 
 
 export const StartFlowPage = () => {
-  const { userRole } = useSettings()
   const [objective, setObjective] = useState('')
   const [duration, setDuration] = useState<number | null>(() => {
     const saved = localStorage.getItem('lastDuration')
@@ -65,6 +63,13 @@ export const StartFlowPage = () => {
     const hashParams = window.location.hash.replace('#', '')
     const searchParams = new URLSearchParams(window.location.search || hashParams.substring(hashParams.indexOf('?')))
     return searchParams.get('expandMusic') === 'true'
+  })
+  const [playlistData, setPlaylistData] = useState<{
+    playlists: { id: string; name: string }[];
+    images: Record<string, string>;
+  }>(() => {
+    const saved = localStorage.getItem('playlistData')
+    return saved ? JSON.parse(saved) : { playlists: [], images: {} }
   })
   const navigate = useNavigate()
 
@@ -162,18 +167,32 @@ export const StartFlowPage = () => {
     return () => document.removeEventListener('keydown', handleKeyPress)
   }, [objective]) // Re-run when objective changes
 
-  const getPlaceholderByRole = () => {
-    switch (userRole) {
-      case 'developer':
-        return '💻 Build new feature...'
-      case 'designer':
-        return '🎨 Design landing page...'
-      case 'creator':
-        return '🎥 Create new content...'
-      default:
-        return '💡 Enter your goal...'
+  // Load playlists and images once on page load
+  useEffect(() => {
+    const loadPlaylistData = async () => {
+      if (!musicService.connected || musicService.type !== 'spotify') return
+      
+      try {
+        const playlists = await SpotifyApiService.getUserPlaylists()
+        const images: Record<string, string> = {}
+        
+        for (const playlist of playlists) {
+          const imageUrl = await SpotifyApiService.getPlaylistCoverImage(playlist.id)
+          if (imageUrl) {
+            images[playlist.id] = imageUrl
+          }
+        }
+        
+        const newPlaylistData = { playlists, images }
+        setPlaylistData(newPlaylistData)
+        localStorage.setItem('playlistData', JSON.stringify(newPlaylistData))
+      } catch (error) {
+        console.error('Error loading playlist data:', error)
+      }
     }
-  }
+
+    loadPlaylistData()
+  }, [musicService.connected, musicService.type])
 
   const handleBegin = async () => {
     if (!objective) return
@@ -247,7 +266,7 @@ export const StartFlowPage = () => {
       className="flex items-center justify-between cursor-pointer"
       onClick={onToggle}
     >
-      <h2 className="text-lg font-semibold">{title}</h2>
+      <h2 className="text-md font-semibold">{title}</h2>
       <div className="flex items-center gap-2">
         {!isExpanded && (
           <span className="text-sm text-muted-foreground truncate max-w-[200px]">
@@ -327,15 +346,26 @@ export const StartFlowPage = () => {
                 </div>
 
                 {spotifyProfile?.product === 'premium' ? (
-                  <Select value={selectedPlaylist} onValueChange={setSelectedPlaylist}>
+                  <Select 
+                    value={selectedPlaylist} 
+                    onValueChange={setSelectedPlaylist}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select a playlist" />
                     </SelectTrigger>
                     <SelectContent>
-                      {musicService.playlists.map(playlist => (
+                      {playlistData.playlists.map(playlist => (
                         <SelectItem key={playlist.id} value={playlist.id}>
                           <div className="flex items-center">
-                            <Music className="h-4 w-4 mr-2" />
+                            {playlistData.images[playlist.id] ? (
+                              <img 
+                                src={playlistData.images[playlist.id]} 
+                                alt={playlist.name}
+                                className="h-6 w-6 rounded mr-2 object-cover"
+                              />
+                            ) : (
+                              <Music className="h-4 w-4 mr-2" />
+                            )}
                             <span className="truncate">{playlist.name}</span>
                           </div>
                         </SelectItem>
@@ -368,18 +398,19 @@ export const StartFlowPage = () => {
         <Card className="w-[400px]">
           <CardContent className="pt-6 space-y-6">
             <div>
-              <h2 className="text-lg font-semibold mb-4">Goal</h2>
+              <h2 className="text-md font-semibold mb-4">Goal</h2>
               <Input
-                placeholder={getPlaceholderByRole()}
+                placeholder="What will you focus on?"
                 value={objective}
                 onChange={(e) => setObjective(e.target.value)}
                 maxLength={50}
                 className="w-full"
+                autoFocus
               />
             </div>
 
             <div>
-              <h2 className="text-lg font-semibold mb-4">Session Duration</h2>
+              <h2 className="text-md font-semibold mb-4">Duration</h2>
               <TimeSelector
                 value={duration}
                 onChange={setDuration}

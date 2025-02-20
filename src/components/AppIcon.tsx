@@ -72,7 +72,7 @@ const DesktopIcon = ({ app }: { app: App }) => {
       <img
         src={iconDataUrl}
         alt={app.name}
-        className="h-5 w-5"
+        className="h-6 w-6"
         onError={(e) => {
           const target = e.target as HTMLImageElement
           target.style.display = 'none'
@@ -91,7 +91,7 @@ const DesktopIcon = ({ app }: { app: App }) => {
       <img
         src={`/src/lib/app-directory/icons/${app.icon}`}
         alt={app.name}
-        className="h-5 w-5"
+        className="h-6 w-6"
         onError={(e) => {
           const target = e.target as HTMLImageElement
           target.style.display = 'none'

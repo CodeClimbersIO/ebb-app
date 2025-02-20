@@ -126,9 +126,22 @@ export function TimeSelector({ value: externalValue, onChange }: TimeSelectorPro
 
   const displayOptions = React.useMemo(() => {
     const options = [...presetTimes]
-    const filtered = options.filter(option => 
-      option.label.toLowerCase().includes(inputValue.toLowerCase())
-    )
+    const parsedInput = parseTimeInput(inputValue)
+    
+    const filtered = options.filter(option => {
+      // Check if the label includes the input text
+      if (option.label.toLowerCase().includes(inputValue.toLowerCase())) {
+        return true
+      }
+      
+      // If input is a valid duration, check if it matches the preset's duration
+      if (parsedInput !== null && option.value !== 'no-limit' && option.value !== 'workday') {
+        const presetMinutes = parseTimeInput(option.value)
+        return presetMinutes === parsedInput
+      }
+      
+      return false
+    })
     
     if (customOption) {
       return [customOption, ...filtered]

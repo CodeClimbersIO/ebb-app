@@ -23,9 +23,14 @@ export function TopNav({ variant = 'default' }: TopNavProps) {
             onClick={handleStartFlowSession}
           >
             Start Focus
-            <kbd className="ml-2 rounded bg-violet-900 px-1.5 font-mono text-xs">
-              F6
-            </kbd>
+            <div className="ml-2 flex gap-0.5">
+              <kbd className="rounded bg-violet-900 px-1.5 font-mono font-bold flex">
+                <span className="text-sm">⌘</span>
+              </kbd>
+              <kbd className="rounded bg-violet-900 px-1.5 font-mono font-bold flex">
+                <span className="text-xs self-center">E</span>
+              </kbd>
+            </div>
           </Button>
         ) : (
           <Button variant="ghost" size="icon" onClick={() => navigate('/')}>

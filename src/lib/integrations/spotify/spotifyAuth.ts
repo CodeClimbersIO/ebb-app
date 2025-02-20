@@ -161,8 +161,6 @@ export class SpotifyAuthService {
     const now = new Date()
     
     if (expiresAt <= now) {
-      // Try to refresh the token
-      console.log('Refreshing token')
       return this.refreshAccessToken()
     }
 

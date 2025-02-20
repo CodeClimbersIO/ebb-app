@@ -70,19 +70,31 @@ const calculateNetCreationScore = (apps: AppsWithTime[]): number => {
 
 const formatTime = (minutes: number) => {
   const hours = Math.floor(minutes / 60)
-  const remainingMinutes = minutes % 60
-  // round to nearest minute
-  const roundedMinutes = Math.round(remainingMinutes)
-  return `${hours}h ${roundedMinutes}m`
+  const remainingMinutes = Math.round(minutes % 60)
+  
+  if (remainingMinutes === 60) {
+    return `${hours + 1}h 0m`
+  }
+  
+  return `${hours}h ${remainingMinutes}m`
 }
 
+const fetchData = async (selectedDate: Date) => {
+  const start = DateTime.fromJSDate(selectedDate).startOf('day')
+  const end = DateTime.fromJSDate(selectedDate).endOf('day')
+  
+  const chartData = await MonitorApi.getTimeCreatingByHour(start, end)
+  const tags = await MonitorApi.getTagsByType('default')
+  const topApps = await MonitorApi.getTopAppsByPeriod(start, end)
 
+  return { chartData, tags, topApps }
+}
 
 export const HomePage = () => {
   const { user } = useAuth()
   const { showZeroState } = useSettings()
   const navigate = useNavigate()
-  const [hasNoSessions, setHasNoSessions] = useState(true)
+  const [hasNoSessions, setHasNoSessions] = useState(false)
   const [streak, setStreak] = useState(0)
   const [date, setDate] = useState<Date>(new Date())
   const [appUsage, setAppUsage] = useState<AppsWithTime[]>([])
@@ -97,22 +109,20 @@ export const HomePage = () => {
     user?.email?.split('@')[0]
 
   useEffect(() => {
-
     const init = async () => {
       const flowSession = await FlowSessionApi.getInProgressFlowSession()
       if (flowSession) {
         navigate('/flow')
       }
+      // Check for sessions in the background
       const sessions = await FlowSessionApi.getFlowSessions()
-      setHasNoSessions(sessions.length === 0)
+      if (sessions.length === 0) {
+        setHasNoSessions(true)
+        return // Exit early if no sessions
+      }
 
-      const start = DateTime.now().startOf('day')
-      const end = DateTime.now().endOf('day')
-      const chartData = await MonitorApi.getTimeCreatingByHour(start, end)
-      const tags = await MonitorApi.getTagsByType('default')
+      const { chartData, tags, topApps } = await fetchData(date)
       setTags(tags)
-      const topApps = await MonitorApi.getTopAppsByPeriod(start, end)
-
       setAppUsage(topApps)
       setTotalCreating(chartData.reduce((acc, curr) => acc + curr.creating, 0))
       setChartData(chartData.slice(6))
@@ -137,11 +147,11 @@ export const HomePage = () => {
     }
     init()
     const handleFocus = () => {
-      init()
+      fetchData(date)
     }
     window.addEventListener('focus', handleFocus)
     return () => window.removeEventListener('focus', handleFocus)
-  }, [])
+  }, [date])
 
   const handleStartFlowSession = () => {
     navigate('/start-flow')
@@ -222,7 +232,12 @@ export const HomePage = () => {
                 <Calendar
                   mode="single"
                   selected={date}
-                  onSelect={(newDate) => newDate && setDate(newDate)}
+                  onSelect={(newDate) => {
+                    if (newDate) {
+                      setDate(newDate)
+                      fetchData(newDate)
+                    }
+                  }}
                   disabled={(date) => date > new Date()}
                   initialFocus
                 />
@@ -235,7 +250,7 @@ export const HomePage = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Time Spent Creating
+                    Time Creating
                   </CardTitle>
                   <WandSparkles className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>

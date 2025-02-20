@@ -23,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Music } from 'lucide-react'
+import { Music, Loader2 } from 'lucide-react'
 import { SpotifyIcon } from '@/components/icons/SpotifyIcon'
 import { PlaybackState, SpotifyApiService } from '@/lib/integrations/spotify/spotifyApi'
 import { SpotifyAuthService } from '@/lib/integrations/spotify/spotifyAuth'
@@ -98,9 +98,16 @@ export const FlowPage = () => {
     duration_ms: number;
     position_ms: number;
   } | null>(null)
-  const [playlists, setPlaylists] = useState<{ id: string; name: string; }[]>([])
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string>('')
   const [isSpotifyAuthenticated, setIsSpotifyAuthenticated] = useState(false)
+  const [playlistData, setPlaylistData] = useState<{
+    playlists: { id: string; name: string }[];
+    images: Record<string, string>;
+  }>(() => {
+    const saved = localStorage.getItem('playlistData')
+    return saved ? JSON.parse(saved) : { playlists: [], images: {} }
+  })
+  const [isLoadingPlayback, setIsLoadingPlayback] = useState<'prev' | 'play' | 'next' | null>(null)
 
   useEffect(() => {
     const init = async () => {
@@ -176,17 +183,51 @@ export const FlowPage = () => {
   }, [])
 
   useEffect(() => {
-    const fetchPlaylists = async () => {
-      const userPlaylists = await SpotifyApiService.getUserPlaylists()
-      setPlaylists(userPlaylists)
-      // Set initial playlist from location state
-      const initialPlaylist = location.state?.playlist?.id
-      if (initialPlaylist) {
-        setSelectedPlaylistId(initialPlaylist)
+    const loadPlaylistData = async () => {
+      if (!isSpotifyAuthenticated) return
+
+      // Use cached data if available
+      const cached = localStorage.getItem('playlistData')
+      if (cached) {
+        const parsedData = JSON.parse(cached)
+        setPlaylistData(parsedData)
+        
+        // Set initial playlist from location state
+        const initialPlaylist = location.state?.playlist?.id
+        if (initialPlaylist) {
+          setSelectedPlaylistId(initialPlaylist)
+        }
+        return
+      }
+
+      // Load fresh data if no cache exists
+      try {
+        const playlists = await SpotifyApiService.getUserPlaylists()
+        const images: Record<string, string> = {}
+        
+        for (const playlist of playlists) {
+          const imageUrl = await SpotifyApiService.getPlaylistCoverImage(playlist.id)
+          if (imageUrl) {
+            images[playlist.id] = imageUrl
+          }
+        }
+        
+        const newPlaylistData = { playlists, images }
+        setPlaylistData(newPlaylistData)
+        localStorage.setItem('playlistData', JSON.stringify(newPlaylistData))
+
+        // Set initial playlist from location state
+        const initialPlaylist = location.state?.playlist?.id
+        if (initialPlaylist) {
+          setSelectedPlaylistId(initialPlaylist)
+        }
+      } catch (error) {
+        console.error('Error loading playlist data:', error)
       }
     }
-    fetchPlaylists()
-  }, [])
+
+    loadPlaylistData()
+  }, [isSpotifyAuthenticated]) // Only run when Spotify authentication status changes
 
   const handleEndSession = async () => {
     if (!flowSession) return
@@ -217,17 +258,41 @@ export const FlowPage = () => {
 
   const handlePlayPause = async () => {
     if (!player || !deviceId) return
-    await SpotifyApiService.controlPlayback(isPlaying ? 'pause' : 'play', deviceId)
+    try {
+      setIsLoadingPlayback('play')
+      await SpotifyApiService.controlPlayback(isPlaying ? 'pause' : 'play', deviceId)
+    } catch (error) {
+      console.error('Playback control error:', error)
+      // Optionally add user feedback here
+    } finally {
+      setIsLoadingPlayback(null)
+    }
   }
 
   const handleNext = async () => {
     if (!player || !deviceId) return
-    await SpotifyApiService.controlPlayback('next', deviceId)
+    try {
+      setIsLoadingPlayback('next')
+      await SpotifyApiService.controlPlayback('next', deviceId)
+    } catch (error) {
+      console.error('Next track error:', error)
+      // Optionally add user feedback here
+    } finally {
+      setIsLoadingPlayback(null)
+    }
   }
 
   const handlePrevious = async () => {
     if (!player || !deviceId) return
-    await SpotifyApiService.controlPlayback('previous', deviceId)
+    try {
+      setIsLoadingPlayback('prev')
+      await SpotifyApiService.controlPlayback('previous', deviceId)
+    } catch (error) {
+      console.error('Previous track error:', error)
+      // Optionally add user feedback here
+    } finally {
+      setIsLoadingPlayback(null)
+    }
   }
 
   const handlePlaylistChange = async (playlistId: string) => {
@@ -252,18 +317,28 @@ export const FlowPage = () => {
       </div>
 
       <div className="flex items-center space-x-4">
-        <Button variant="ghost" size="icon" onClick={handlePrevious}>
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="19 20 9 12 19 4 19 20"></polygon><line x1="5" y1="19" x2="5" y2="5"></line></svg>
+        <Button variant="ghost" size="icon" onClick={handlePrevious} disabled={isLoadingPlayback === 'prev'}>
+          {isLoadingPlayback === 'prev' ? (
+            <Loader2 className="h-6 w-6 animate-spin" />
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="19 20 9 12 19 4 19 20"></polygon><line x1="5" y1="19" x2="5" y2="5"></line></svg>
+          )}
         </Button>
-        <Button size="icon" className="h-12 w-12" onClick={handlePlayPause}>
-          {isPlaying ? (
+        <Button size="icon" className="h-12 w-12" onClick={handlePlayPause} disabled={isLoadingPlayback === 'play'}>
+          {isLoadingPlayback === 'play' ? (
+            <Loader2 className="h-6 w-6 animate-spin" />
+          ) : isPlaying ? (
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
           ) : (
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
           )}
         </Button>
-        <Button variant="ghost" size="icon" onClick={handleNext}>
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg>
+        <Button variant="ghost" size="icon" onClick={handleNext} disabled={isLoadingPlayback === 'next'}>
+          {isLoadingPlayback === 'next' ? (
+            <Loader2 className="h-6 w-6 animate-spin" />
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg>
+          )}
         </Button>
       </div>
     </div>
@@ -314,10 +389,18 @@ export const FlowPage = () => {
                       <SelectValue placeholder="Select playlist" />
                     </SelectTrigger>
                     <SelectContent>
-                      {playlists.map(playlist => (
+                      {playlistData.playlists.map(playlist => (
                         <SelectItem key={playlist.id} value={playlist.id}>
                           <div className="flex items-center">
-                            <Music className="h-4 w-4 mr-2" />
+                            {playlistData.images[playlist.id] ? (
+                              <img 
+                                src={playlistData.images[playlist.id]} 
+                                alt={playlist.name}
+                                className="h-6 w-6 rounded mr-2 object-cover"
+                              />
+                            ) : (
+                              <Music className="h-4 w-4 mr-2" />
+                            )}
                             {playlist.name}
                           </div>
                         </SelectItem>
