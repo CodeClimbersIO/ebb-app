@@ -1,6 +1,6 @@
 import { TrayIcon } from '@tauri-apps/api/tray'
 import { Window } from '@tauri-apps/api/window'
-import { Menu, PredefinedMenuItem } from '@tauri-apps/api/menu'
+import { Menu } from '@tauri-apps/api/menu'
 
 async function showAndFocusWindow() {
   const mainWindow = Window.getCurrent()
@@ -18,8 +18,15 @@ export async function setupTray() {
       return existingTray
     }
 
-    const separator = await PredefinedMenuItem.new({ item: 'Separator' })
+    // First create the tray
+    const tray = await TrayIcon.new({
+      id: 'main-tray',
+      tooltip: 'Ebb',
+      icon: 'icons/tray.png',
+      iconAsTemplate: true  // For better macOS dark mode support
+    })
 
+    // Then create and set the menu
     const menu = await Menu.new({
       items: [
         {
@@ -36,7 +43,7 @@ export async function setupTray() {
             await showAndFocusWindow()
           }
         },
-        separator,
+        { item: 'Separator' },
         {
           text: 'Quit',
           action: async () => {
@@ -48,12 +55,10 @@ export async function setupTray() {
       ]
     })
 
-    return await TrayIcon.new({
-      id: 'main-tray',
-      tooltip: 'Ebb',
-      icon: '../src-tauri/icons/tray.png',
-      menu,
-    })
+    // Set the menu after creating it
+    await tray.setMenu(menu)
+    
+    return tray
   } catch (error) {
     console.error('Failed to setup tray:', error)
     throw error
