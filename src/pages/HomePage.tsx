@@ -70,10 +70,13 @@ const calculateNetCreationScore = (apps: AppsWithTime[]): number => {
 
 const formatTime = (minutes: number) => {
   const hours = Math.floor(minutes / 60)
-  const remainingMinutes = minutes % 60
-  // round to nearest minute
-  const roundedMinutes = Math.round(remainingMinutes)
-  return `${hours}h ${roundedMinutes}m`
+  const remainingMinutes = Math.round(minutes % 60)
+  
+  if (remainingMinutes === 60) {
+    return `${hours + 1}h 0m`
+  }
+  
+  return `${hours}h ${remainingMinutes}m`
 }
 
 const fetchData = async (selectedDate: Date) => {
