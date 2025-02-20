@@ -24,12 +24,22 @@ interface SpotifyTokens {
   expires_at: string
 }
 
+interface SpotifyTokenResponse {
+  access_token: string
+  token_type: string
+  scope: string
+  expires_in: number
+  refresh_token: string
+}
+
 const STORAGE_KEY = 'spotify_tokens'
 
 // Store state in localStorage to verify in callback
 const STATE_KEY = 'spotify_auth_state'
 
 export class SpotifyAuthService {
+  private static CODE_VERIFIER_KEY = 'spotify_code_verifier'
+
   private static getStoredTokens(): SpotifyTokens | null {
     const tokens = localStorage.getItem(STORAGE_KEY)
     return tokens ? JSON.parse(tokens) : null
@@ -43,9 +53,37 @@ export class SpotifyAuthService {
     localStorage.removeItem(STORAGE_KEY)
   }
 
+  private static async generateCodeChallenge(codeVerifier: string): Promise<string> {
+    const encoder = new TextEncoder()
+    const data = encoder.encode(codeVerifier)
+    const digest = await crypto.subtle.digest('SHA-256', data)
+    return btoa(String.fromCharCode(...new Uint8Array(digest)))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '')
+  }
+
+  private static generateCodeVerifier(): string {
+    const array = new Uint8Array(32)
+    crypto.getRandomValues(array)
+    return btoa(String.fromCharCode(...array))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '')
+      .substring(0, 128)
+  }
+
   static async connect(): Promise<void> {
+    // Clear any existing tokens first
+    this.clearStoredTokens()
+    
     const state = crypto.randomUUID()
-    localStorage.setItem('spotify_auth_state', state)
+    localStorage.setItem(STATE_KEY, state)
+    
+    // Generate and store PKCE values
+    const codeVerifier = this.generateCodeVerifier()
+    localStorage.setItem(this.CODE_VERIFIER_KEY, codeVerifier)
+    const codeChallenge = await this.generateCodeChallenge(codeVerifier)
     
     const params = new URLSearchParams({
       client_id: SPOTIFY_CONFIG.clientId,
@@ -53,6 +91,8 @@ export class SpotifyAuthService {
       redirect_uri: SPOTIFY_CONFIG.redirectUri,
       state: state,
       scope: SPOTIFY_CONFIG.scopes,
+      code_challenge_method: 'S256',
+      code_challenge: codeChallenge,
       show_dialog: 'true'
     })
 
@@ -67,7 +107,6 @@ export class SpotifyAuthService {
 
   static async handleCallback(code: string, state: string | null): Promise<void> {
     try {
-      
       // Verify state matches what we stored
       const storedState = localStorage.getItem(STATE_KEY)
       
@@ -101,23 +140,32 @@ export class SpotifyAuthService {
     this.clearStoredTokens()
   }
 
-  private static async exchangeCodeForTokens(code: string) {
+  private static async exchangeCodeForTokens(code: string): Promise<SpotifyTokenResponse> {
+    const codeVerifier = localStorage.getItem(this.CODE_VERIFIER_KEY)
+    
+    if (!codeVerifier) {
+      throw new Error('Code verifier not found')
+    }
+    localStorage.removeItem(this.CODE_VERIFIER_KEY)
+
+    const params = new URLSearchParams({
+      client_id: SPOTIFY_CONFIG.clientId,
+      grant_type: 'authorization_code',
+      code: code,
+      redirect_uri: SPOTIFY_CONFIG.redirectUri,
+      code_verifier: codeVerifier
+    })
+
     const response = await fetch('https://accounts.spotify.com/api/token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': `Basic ${btoa(`${SPOTIFY_CONFIG.clientId}:${SPOTIFY_CONFIG.clientSecret}`)}`,
       },
-      body: new URLSearchParams({
-        grant_type: 'authorization_code',
-        code: code,
-        redirect_uri: SPOTIFY_CONFIG.redirectUri,
-      }),
+      body: params.toString()
     })
 
     if (!response.ok) {
-      const errorText = await response.text()
-      throw new Error(`Failed to exchange code for tokens: ${errorText}`)
+      throw new Error('Failed to exchange code for tokens')
     }
 
     return response.json()
@@ -169,7 +217,6 @@ export class SpotifyAuthService {
 
   static async isConnected(): Promise<boolean> {
     const tokens = await this.getAuth()
-    console.log('Tokens', tokens)
     return Boolean(tokens)
   }
 
