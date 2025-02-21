@@ -17,6 +17,16 @@ interface SpotifyPlaylist {
   }>;
 }
 
+interface SpotifyDevice {
+  id: string;
+  is_active: boolean;
+  is_private_session: boolean;
+  is_restricted: boolean;
+  name: string;
+  type: string;
+  volume_percent: number;
+}
+
 const SPOTIFY_API_BASE = 'https://api.spotify.com/v1'
 
 export interface PlaybackState {
@@ -167,4 +177,44 @@ export class SpotifyApiService {
       return null
     }
   }
+
+  static async getAvailableDevices(): Promise<SpotifyDevice[]> {
+    try {
+      const response = await this.spotifyApiRequest('me/player/devices')
+      return response.devices
+    } catch (error) {
+      console.error('Error fetching available devices:', error)
+      return []
+    }
+  }
+
+  static async transferPlaybackToDevice(deviceId: string): Promise<void> {
+    try {
+      await this.spotifyApiRequest('me/player', {
+        method: 'PUT',
+        body: JSON.stringify({
+          device_ids: [deviceId],
+          play: false // Don't auto-resume playback after transfer
+        })
+      })
+    } catch (error) {
+      console.error('Error transferring playback:', error)
+    }
+  }
+
+  static async transferPlaybackToComputerDevice(): Promise<void> {
+    try {
+      const devices = await this.getAvailableDevices()
+      const computerDevice = devices.find(device => 
+        device.type.toLowerCase() === 'computer' && !device.is_restricted
+      )
+      
+      if (computerDevice) {
+        await this.transferPlaybackToDevice(computerDevice.id)
+      }
+    } catch (error) {
+      console.error('Error transferring playback to computer:', error)
+    }
+  }
+
 } 

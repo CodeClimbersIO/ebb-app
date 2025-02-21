@@ -121,9 +121,11 @@ export const FlowPage = () => {
   }, [])
 
   useEffect(() => {
-    const handleSessionComplete = () => {
+    const handleSessionComplete = async () => {
       if (player && deviceId) {
-        SpotifyApiService.controlPlayback('pause', deviceId)
+        await SpotifyApiService.controlPlayback('pause', deviceId)
+        await SpotifyApiService.transferPlaybackToComputerDevice()
+        player.disconnect() // Disconnect the Web Playback SDK player
         setIsPlaying(false)
         setCurrentTrack(null)
         setSelectedPlaylistId('')
@@ -232,9 +234,11 @@ export const FlowPage = () => {
   const handleEndSession = async () => {
     if (!flowSession) return
 
-    // Stop playback and clear player state
+    // Stop playback, transfer to computer device, and clear player state
     if (player && deviceId) {
       await SpotifyApiService.controlPlayback('pause', deviceId)
+      await SpotifyApiService.transferPlaybackToComputerDevice()
+      player.disconnect() // Disconnect the Web Playback SDK player
       setIsPlaying(false)
       setCurrentTrack(null)
       setSelectedPlaylistId('')
