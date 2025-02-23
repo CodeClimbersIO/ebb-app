@@ -1,4 +1,4 @@
-use os_monitor::get_application_icon_data;
+use os_monitor::{get_application_icon_data, has_accessibility_permissions, request_accessibility_permissions};
 use std::thread;
 use tauri::Manager;
 use tokio;
@@ -23,6 +23,21 @@ async fn get_app_icon(bundle_id: String) -> Result<String, String> {
     get_application_icon_data(&bundle_id).ok_or_else(|| "Failed to get app icon".to_string())
 }
 
+#[command]
+fn check_accessibility_permissions() -> bool {
+    has_accessibility_permissions()
+}
+
+#[command]
+fn request_system_permissions() -> bool {
+    request_accessibility_permissions()
+}
+
+#[command]
+fn start_system_monitoring() {
+    system_monitor::start_monitoring();
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tauri::async_runtime::set(tokio::runtime::Handle::current());
@@ -44,12 +59,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .setup(|app| {
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Regular);
-            system_monitor::start_monitoring();
             println!("setup thread info: {}", get_thread_info());
             Ok(())
         })
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
-        .invoke_handler(tauri::generate_handler![get_app_icon])
+        .invoke_handler(tauri::generate_handler![
+            get_app_icon,
+            check_accessibility_permissions,
+            request_system_permissions,
+            start_system_monitoring
+        ])
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_deep_link::init())
         .plugin(
