@@ -50,10 +50,19 @@ const getFlowSessions = async (limit = 10): Promise<FlowSession[]> => {
   return flowSessions
 }
 
+const updateFlowSessionDuration = async (id: string, newDuration: number): Promise<QueryResult> => {
+  const flowSession: Partial<FlowSession> & { id: string } = {
+    id,
+    duration: newDuration,
+  }
+  return FlowSessionRepo.updateFlowSession(flowSession)
+}
+
 export const FlowSessionApi = {
   startFlowSession,
   endFlowSession,
   scoreFlowSession,
   getInProgressFlowSession,
   getFlowSessions,
+  updateFlowSessionDuration,
 }
