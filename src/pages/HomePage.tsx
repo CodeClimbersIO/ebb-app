@@ -4,7 +4,6 @@ import { useEffect, useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { WandSparkles, Flame, ChevronDown, Diff } from 'lucide-react'
 import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
-import { useSettings } from '../hooks/useSettings'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { DateTime } from 'luxon'
 import { Bar, BarChart, CartesianGrid, XAxis } from 'recharts'
@@ -92,9 +91,7 @@ const fetchData = async (selectedDate: Date) => {
 
 export const HomePage = () => {
   const { user } = useAuth()
-  const { showZeroState } = useSettings()
   const navigate = useNavigate()
-  const [hasNoSessions, setHasNoSessions] = useState(false)
   const [streak, setStreak] = useState(0)
   const [date, setDate] = useState<Date>(new Date())
   const [appUsage, setAppUsage] = useState<AppsWithTime[]>([])
@@ -113,12 +110,6 @@ export const HomePage = () => {
       const flowSession = await FlowSessionApi.getInProgressFlowSession()
       if (flowSession) {
         navigate('/flow')
-      }
-      // Check for sessions in the background
-      const sessions = await FlowSessionApi.getFlowSessions()
-      if (sessions.length === 0) {
-        setHasNoSessions(true)
-        return // Exit early if no sessions
       }
 
       const { chartData, tags, topApps } = await fetchData(date)
@@ -153,36 +144,8 @@ export const HomePage = () => {
     return () => window.removeEventListener('focus', handleFocus)
   }, [date])
 
-  const handleStartFlowSession = () => {
-    navigate('/start-flow')
-  }
-
   const scrollToAppUsage = () => {
     appUsageRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
-
-  if (showZeroState || hasNoSessions) {
-    return (
-      <Layout>
-        <div className="p-8">
-          <div className="max-w-5xl mx-auto">
-            <h1 className="text-2xl font-semibold mb-8">
-              {firstName ? `Welcome, ${firstName}` : 'Welcome'}
-            </h1>
-            <div className="border rounded-lg p-8 text-center">
-              <h2 className="text-xl font-medium mb-4">Ready to start your flow journey?</h2>
-              <p className="text-muted-foreground mb-6">
-                It's time to lock in and improve your focus
-              </p>
-              <Button size="lg" onClick={handleStartFlowSession}>
-                <WandSparkles className="mr-2 h-5 w-5" />
-                Start Focus Session
-              </Button>
-            </div>
-          </div>
-        </div>
-      </Layout>
-    )
   }
 
   // Sort app usage in the render section, before mapping

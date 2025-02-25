@@ -1,7 +1,5 @@
 import { Layout } from '@/components/Layout'
 import { ModeToggle } from '@/components/ModeToggle'
-import { Switch } from '@/components/ui/switch'
-import { useSettings } from '../hooks/useSettings'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip'
@@ -23,7 +21,6 @@ import { SpotifyAuthService } from '@/lib/integrations/spotify/spotifyAuth'
 import supabase from '@/lib/integrations/supabase'
 
 export const SettingsPage = () => {
-  const { showZeroState, toggleZeroState } = useSettings()
   const [showUnlinkDialog, setShowUnlinkDialog] = useState(false)
   const [activeService, setActiveService] = useState<'spotify' | 'apple' | null>(null)
   const [serviceToUnlink, setServiceToUnlink] = useState<'spotify' | 'apple' | null>(null)
@@ -136,24 +133,6 @@ export const SettingsPage = () => {
                   </div>
                   <div className="relative">
                     <ModeToggle />
-                  </div>
-                </div>
-              </div>
-
-              <div className="border rounded-lg p-6">
-                <h2 className="text-lg font-semibold mb-4">Developer Settings</h2>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium">Show Zero State</div>
-                      <div className="text-sm text-muted-foreground">
-                        Toggle zero state UI for testing
-                      </div>
-                    </div>
-                    <Switch
-                      checked={showZeroState}
-                      onCheckedChange={toggleZeroState}
-                    />
                   </div>
                 </div>
               </div>
