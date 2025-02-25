@@ -20,6 +20,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { useNavigate } from 'react-router-dom'
 import { SpotifyApiService } from '@/lib/integrations/spotify/spotifyApi'
 import { SpotifyAuthService } from '@/lib/integrations/spotify/spotifyAuth'
+import supabase from '@/lib/integrations/supabase'
 
 export const SettingsPage = () => {
   const { showZeroState, toggleZeroState } = useSettings()
@@ -33,6 +34,8 @@ export const SettingsPage = () => {
     product?: string;
   } | null>(null)
   const navigate = useNavigate()
+  const [showDeleteAccountDialog, setShowDeleteAccountDialog] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     const checkSpotifyConnection = async () => {
@@ -74,6 +77,44 @@ export const SettingsPage = () => {
 
   const handleSpotifyConnect = async () => {
     navigate('/start-flow?expandMusic=true')
+  }
+
+  const handleDeleteAccount = async () => {
+    try {
+      setIsDeleting(true)
+      
+      // Get the current user's session
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error('No session found')
+
+      // Make API call to your backend endpoint to delete the user
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-account`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+            'x-client-info': 'codeclimbers'
+          }
+        }
+      )
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to delete account')
+      }
+
+      // Sign out the user after successful deletion
+      await supabase.auth.signOut()
+      navigate('/')
+    } catch (error) {
+      console.error('Error deleting account:', error)
+    } finally {
+      setIsDeleting(false)
+      setShowDeleteAccountDialog(false)
+    }
   }
 
   return (
@@ -217,6 +258,28 @@ export const SettingsPage = () => {
                   </div>
                 </div>
               </div>
+
+              <div className="border rounded-lg p-6 mt-8">
+                <h2 className="text-lg font-semibold mb-4 text-red-500">Danger Zone</h2>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between gap-8">
+                    <div>
+                      <div className="font-medium">Delete Account</div>
+                      <div className="text-sm text-muted-foreground">
+                        Permanently delete your account and cloud data. Local usage data will not be deleted.
+                      </div>
+                    </div>
+                    <div className="flex-shrink-0">
+                      <Button
+                        variant="destructive"
+                        onClick={() => setShowDeleteAccountDialog(true)}
+                      >
+                        Delete Account
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="mt-12 flex justify-between text-sm text-muted-foreground/50">
@@ -237,6 +300,35 @@ export const SettingsPage = () => {
             <DialogFooter>
               <Button variant="outline" onClick={() => setShowUnlinkDialog(false)}>Cancel</Button>
               <Button variant="destructive" onClick={confirmUnlink}>Unlink</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showDeleteAccountDialog} onOpenChange={setShowDeleteAccountDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete Account?</DialogTitle>
+              <DialogDescription>
+                This action cannot be undone. This will permanently delete your account
+                and remove all of your scoring and friends data from our servers. Your local usage data
+                will remain.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setShowDeleteAccountDialog(false)}
+                disabled={isDeleting}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDeleteAccount}
+                disabled={isDeleting}
+              >
+                {isDeleting ? 'Deleting...' : 'Delete Account'}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
