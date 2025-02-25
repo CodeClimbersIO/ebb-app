@@ -25,16 +25,9 @@ export const AccessibilityPage = () => {
         
         setPermissionStatus(hasPermissions ? 'granted' : 'not_granted')
         
-        // If permissions are granted, start the monitoring service
-        if (hasPermissions) {
-          console.log('🚀 Starting system monitoring...')
-          await invoke('start_system_monitoring')
-          console.log('✨ System monitoring started successfully')
-        }
-        
         return hasPermissions
       } catch (error) {
-        console.error('❌ Error during permission check or monitoring start:', error)
+        console.error('❌ Error during permission check:', error)
         setPermissionStatus('not_granted')
         return false
       }
