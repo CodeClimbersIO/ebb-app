@@ -44,6 +44,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let db_path = db::get_db_path();
     let path = std::path::Path::new(&db_path);
     if let Some(parent) = path.parent() {
+        system_monitor::start_monitoring();
         std::fs::create_dir_all(parent).expect("Failed to create directory");
     }
 
