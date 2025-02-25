@@ -58,8 +58,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         })
         .setup(|app| {
             #[cfg(target_os = "macos")]
-            app.set_activation_policy
-            (tauri::ActivationPolicy::Regular);
+            app.set_activation_policy(tauri::ActivationPolicy::Regular);
             system_monitor::start_monitoring();
             println!("setup thread info: {}", get_thread_info());
             Ok(())
