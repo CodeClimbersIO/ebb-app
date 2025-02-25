@@ -13,15 +13,12 @@ export const AccessibilityPage = () => {
   useEffect(() => {
     const checkPermissions = async () => {
       try {
-        console.log('🔍 Starting permission check...')
         setPermissionStatus('checking')
         
         // Add a small delay to ensure loading state is visible
         await new Promise(resolve => setTimeout(resolve, 1000))
         
-        console.log('📝 Invoking check_accessibility_permissions...')
         const hasPermissions = await invoke<boolean>('check_accessibility_permissions')
-        console.log('✅ Permission check result:', hasPermissions)
         
         setPermissionStatus(hasPermissions ? 'granted' : 'not_granted')
         
@@ -36,7 +33,6 @@ export const AccessibilityPage = () => {
     let interval: NodeJS.Timeout | null = null
 
     // Initial check
-    console.log('🔄 Performing initial permission check...')
     checkPermissions().then(hasPermissions => {
       // Only set up the interval if permissions are not granted
       if (!hasPermissions) {
