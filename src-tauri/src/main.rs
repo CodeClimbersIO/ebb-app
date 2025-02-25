@@ -44,7 +44,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let db_path = db::get_db_path();
     let path = std::path::Path::new(&db_path);
     if let Some(parent) = path.parent() {
-        system_monitor::start_monitoring();
         std::fs::create_dir_all(parent).expect("Failed to create directory");
     }
 
@@ -59,7 +58,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         })
         .setup(|app| {
             #[cfg(target_os = "macos")]
-            app.set_activation_policy(tauri::ActivationPolicy::Regular);
+            app.set_activation_policy
+            (tauri::ActivationPolicy::Regular);
+            system_monitor::start_monitoring();
             println!("setup thread info: {}", get_thread_info());
             Ok(())
         })
