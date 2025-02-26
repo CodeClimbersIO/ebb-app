@@ -1,11 +1,16 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Logo } from '@/components/ui/logo'
 import supabase from '@/lib/integrations/supabase'
 import { openUrl } from '@tauri-apps/plugin-opener'
+import { OnboardingUtils } from '@/lib/utils/onboarding'
 
 export const LoginPage = () => {
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    OnboardingUtils.resetOnboarding()
+  }, [])
 
   const handleGoogleLogin = async () => {
     try {

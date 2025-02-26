@@ -171,34 +171,44 @@ export class SpotifyAuthService {
     return response.json()
   }
 
-  private static async refreshAccessToken(): Promise<SpotifyTokens | undefined> {
+  static async refreshAccessToken(): Promise<SpotifyTokens | undefined> {
     const tokens = this.getStoredTokens()
     if (!tokens?.refresh_token) throw new Error('No refresh token available')
 
-    const response = await fetch('https://accounts.spotify.com/api/token', {
+    const url = 'https://accounts.spotify.com/api/token'
+
+    const payload = {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        Authorization: `Basic ${btoa(`${SPOTIFY_CONFIG.clientId}:${SPOTIFY_CONFIG.clientSecret}`)}`,
+        'Content-Type': 'application/x-www-form-urlencoded'
       },
       body: new URLSearchParams({
         grant_type: 'refresh_token',
         refresh_token: tokens.refresh_token,
+        client_id: SPOTIFY_CONFIG.clientId
       }),
-    })
-
-    if (!response.ok) {
-      console.log('Failed to refresh token', response)
-      throw new Error('Failed to refresh token')
     }
 
-    const newTokens = await response.json()
-    this.setStoredTokens({
-      access_token: newTokens.access_token,
-      refresh_token: newTokens.refresh_token ?? tokens.refresh_token,
-      expires_at: new Date(Date.now() + newTokens.expires_in * 1000).toISOString()
-    })
-    return newTokens
+    try {
+      const response = await fetch(url, payload)
+      
+      if (!response.ok) {
+        throw new Error(`Request failed with status ${response.status}`)
+      }
+      
+      const data = await response.json()
+      
+      this.setStoredTokens({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token ?? tokens.refresh_token,
+        expires_at: new Date(Date.now() + data.expires_in * 1000).toISOString()
+      })
+      
+      return data
+    } catch (error) {
+      console.error('Failed to refresh token:', error)
+      throw error
+    }
   }
 
   static async getAuth(): Promise<SpotifyTokens | undefined> {

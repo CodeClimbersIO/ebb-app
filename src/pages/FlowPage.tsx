@@ -38,6 +38,8 @@ const MAX_SESSION_DURATION = 8 * 60 * 60 // 8 hours in seconds
 
 const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
   const [time, setTime] = useState<string>('00:00')
+  const [isAddingTime, setIsAddingTime] = useState(false)
+  const [cooldown, setCooldown] = useState(false)
 
   useEffect(() => {
     if (!flowSession) return
@@ -74,12 +76,59 @@ const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
     return () => clearInterval(interval)
   }, [flowSession])
 
+  const handleAddTime = async () => {
+    if (!flowSession || !flowSession.duration || isAddingTime || cooldown) return
+    
+    try {
+      setIsAddingTime(true)
+      setCooldown(true)
+      
+      // Calculate the new total duration
+      const additionalSeconds = 15 * 60 // 15 minutes in seconds
+      const newTotalDuration = flowSession.duration + additionalSeconds
+      
+      // Update the session duration on the server
+      await FlowSessionApi.updateFlowSessionDuration(flowSession.id, newTotalDuration)
+      
+      // Update the flowSession object directly
+      flowSession.duration = newTotalDuration
+    } catch (error) {
+      console.error('Failed to extend session duration:', error)
+    } finally {
+      setIsAddingTime(false)
+      // Set a 3 second cooldown
+      setTimeout(() => {
+        setCooldown(false)
+      }, 1000)
+    }
+  }
+
   return (
     <>
       <div className="text-sm text-muted-foreground mb-2">{flowSession?.objective}</div>
       <div className="text-6xl font-bold mb-2 font-mono tracking-tight">
         {time}
       </div>
+      {flowSession?.duration && (
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={handleAddTime}
+          className="mt-2"
+          disabled={isAddingTime || cooldown}
+        >
+          {isAddingTime ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Adding time...
+            </>
+          ) : cooldown ? (
+            'Adding...'
+          ) : (
+            'Add 15 min'
+          )}
+        </Button>
+      )}
     </>
   )
 }
@@ -171,6 +220,23 @@ export const FlowPage = () => {
           })
         })
 
+        // Handle player disconnection events, which might be caused by token issues
+        newPlayer.addListener('not_ready', ({ device_id }: { device_id: string }) => {
+          console.log('Device ID has gone offline', device_id)
+          
+          // Attempt to reconnect if possible
+          setTimeout(async () => {
+            try {
+              const isConnected = await SpotifyAuthService.isConnected()
+              if (isConnected) {
+                newPlayer.connect()
+              }
+            } catch (error) {
+              console.error('Error reconnecting player:', error)
+            }
+          }, 2000) // Short delay before attempting to reconnect
+        })
+
         setPlayer(newPlayer)
       } catch (error) {
         console.error('Failed to initialize Spotify player:', error)
@@ -230,6 +296,21 @@ export const FlowPage = () => {
 
     loadPlaylistData()
   }, [isSpotifyAuthenticated]) // Only run when Spotify authentication status changes
+
+  useEffect(() => {
+    if (!isSpotifyAuthenticated) return
+
+    // Refresh token every 30 minutes to ensure uninterrupted playback
+    const tokenRefreshInterval = setInterval(async () => {
+      try {
+        await SpotifyAuthService.refreshAccessToken()
+      } catch (error) {
+        console.error('Failed to refresh token in interval:', error)
+      }
+    }, 30 * 60 * 1000) // 30 minutes
+
+    return () => clearInterval(tokenRefreshInterval)
+  }, [isSpotifyAuthenticated])
 
   const handleEndSession = async () => {
     if (!flowSession) return
@@ -302,6 +383,13 @@ export const FlowPage = () => {
   const handlePlaylistChange = async (playlistId: string) => {
     if (!deviceId) return
     setSelectedPlaylistId(playlistId)
+    
+    // Save the selected playlist to local storage using the same key as StartFlowPage
+    const playlist = playlistData.playlists.find(p => p.id === playlistId)
+    if (playlist) {
+      localStorage.setItem('lastPlaylist', playlistId)
+    }
+    
     await SpotifyApiService.startPlayback(playlistId, deviceId)
   }
 

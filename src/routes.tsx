@@ -1,7 +1,6 @@
-import { HashRouter, Route, Routes, Navigate, Outlet, useNavigate } from 'react-router-dom'
+import { HashRouter, Route, Routes, Navigate, useNavigate, Outlet, useLocation } from 'react-router-dom'
 import { HomePage } from '@/pages/HomePage'
 import { LoginPage } from '@/pages/LoginPage'
-import { SignupPage } from '@/pages/SignupPage'
 import { FriendsPage } from '@/pages/FriendsPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 import { StartFlowPage } from './pages/StartFlowPage'
@@ -10,7 +9,10 @@ import { FlowPage } from './pages/FlowPage'
 import { BreathingExercisePage } from './pages/BreathingExercisePage'
 import { FlowRecapPage } from '@/pages/FlowRecapPage'
 import { LoadingScreen } from '@/components/LoadingScreen'
-import { useDeepLinkAuth } from '@/hooks/useDeepLinkAuth'
+import { AccessibilityPage } from './pages/AccessibilityPage'
+import { ShortcutTutorialPage } from './pages/ShortcutTutorialPage'
+import { OnboardingUtils } from '@/lib/utils/onboarding'
+import { useDeepLinkAuth } from './hooks/useDeepLinkAuth'
 import { register, unregister } from '@tauri-apps/plugin-global-shortcut'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useEffect } from 'react'
@@ -19,6 +21,7 @@ import { FlowSessionApi } from './api/ebbApi/flowSessionApi'
 // Protected Route wrapper component
 const ProtectedRoute = () => {
   const { user, loading } = useAuth()
+  const location = useLocation()
 
   if (loading) {
     return <LoadingScreen />
@@ -26,6 +29,17 @@ const ProtectedRoute = () => {
 
   if (!user) {
     return <Navigate to="/login" replace />
+  }
+
+  // Skip onboarding check for onboarding routes themselves
+  if (location.pathname === '/onboarding/accessibility' || 
+      location.pathname === '/onboarding/shortcut-tutorial') {
+    return <Outlet />
+  }
+
+  // Redirect to onboarding if not completed
+  if (!OnboardingUtils.isOnboardingCompleted()) {
+    return <Navigate to="/onboarding/accessibility" replace />
   }
 
   return <Outlet />
@@ -95,7 +109,6 @@ const Router = () => {
     <GlobalShortcuts>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignupPage />} />
 
         {/* Protected routes group */}
         <Route element={<ProtectedRoute />}>
@@ -106,6 +119,8 @@ const Router = () => {
           <Route path="/breathing-exercise" element={<BreathingExercisePage />} />
           <Route path="/flow" element={<FlowPage />} />
           <Route path="/flow-recap" element={<FlowRecapPage />} />
+          <Route path="/onboarding/accessibility" element={<AccessibilityPage />} />
+  <Route path="/onboarding/shortcut-tutorial" element={<ShortcutTutorialPage />} />
         </Route>
 
         {/* 404 catch-all */}

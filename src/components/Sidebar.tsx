@@ -88,10 +88,10 @@ export function Sidebar() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="w-full justify-start gap-3 px-3 text-muted-foreground [&>svg]:text-muted-foreground">
               <UserCircle className="h-5 w-5" />
-              {displayName}
+              <span className="truncate">{displayName}</span>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuContent align="end" className="w-48">
             <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
               <LogOut className="h-4 w-4 mr-2" />
               Logout

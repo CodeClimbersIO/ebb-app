@@ -29,17 +29,8 @@ interface SpotifyDevice {
 
 const SPOTIFY_API_BASE = 'https://api.spotify.com/v1'
 
-export interface PlaybackState {
-  track_window: {
-    current_track: {
-      name: string;
-      artists: Array<{ name: string }>;
-    };
-  };
-  paused: boolean;
-  duration: number;
-  position: number;
-}
+// Export the PlaybackState type from the Spotify namespace for use in other files
+export type PlaybackState = Spotify.PlaybackState;
 
 export class SpotifyApiService {
 
@@ -114,10 +105,52 @@ export class SpotifyApiService {
   static async createPlayer(): Promise<Spotify.Player> {
     const accessToken = await SpotifyAuthService.getAccessToken()
     if (!accessToken) throw new Error('Not connected to Spotify')
+    
     const player = new window.Spotify.Player({
       name: 'Ebb Flow Player',
-      getOAuthToken: cb => cb(accessToken),
+      getOAuthToken: async (cb) => {
+        try {
+          // Get a fresh token each time this callback is invoked
+          const token = await SpotifyAuthService.getAccessToken()
+          cb(token)
+        } catch (error) {
+          console.error('Error getting OAuth token for player:', error)
+          // Attempt to reconnect if possible
+          const isConnected = await SpotifyAuthService.isConnected()
+          if (isConnected) {
+            const token = await SpotifyAuthService.getAccessToken()
+            cb(token)
+          } else {
+            console.error('Spotify connection lost, unable to refresh token')
+          }
+        }
+      },
       volume: 0.5
+    })
+
+    // Add event listeners for player errors
+    player.addListener('initialization_error', ({ message }) => {
+      console.error('Failed to initialize player:', message)
+    })
+    
+    player.addListener('authentication_error', async ({ message }) => {
+      console.error('Authentication error:', message)
+      // Try to refresh the token immediately
+      try {
+        await SpotifyAuthService.refreshAccessToken()
+        // Reconnect the player after token refresh
+        player.connect()
+      } catch (refreshError) {
+        console.error('Failed to refresh token after authentication error:', refreshError)
+      }
+    })
+    
+    player.addListener('account_error', ({ message }) => {
+      console.error('Account error:', message)
+    })
+    
+    player.addListener('playback_error', ({ message }) => {
+      console.error('Playback error:', message)
     })
 
     await player.connect()
