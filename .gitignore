@@ -24,10 +24,14 @@ dist-ssr
 *.sw?
 
 .env
+.DS_Store
+
+#Supabase
 .temp/
 .temp*
+.npmrc
 
-.DS_Store
+
 
 # monitor
 os-monitor
