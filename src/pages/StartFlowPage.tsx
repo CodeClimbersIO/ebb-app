@@ -244,6 +244,17 @@ export const StartFlowPage = () => {
           }
           return app.app.app_external_id !== option.app.app_external_id
         }
+        // Handle custom website option
+        if (option.type === 'custom' && app.type === 'custom') {
+          return app.url !== option.url
+        }
+        // Handle app vs custom comparison (they might be converted from one to the other)
+        if (option.type === 'custom' && app.type === 'app' && app.app.is_browser) {
+          return app.app.app_external_id !== option.url
+        }
+        if (option.type === 'app' && option.app.is_browser && app.type === 'custom') {
+          return app.url !== option.app.app_external_id
+        }
         return true
       })
       localStorage.setItem('selectedBlocks', JSON.stringify(newBlocks))
@@ -428,7 +439,7 @@ export const StartFlowPage = () => {
                 <div className="mt-4 space-y-4">
                   <AppSelector
                     placeholder="Search apps & websites to block..."
-                    emptyText="No apps or websites found."
+                    emptyText="Enter full URL to add website"
                     selectedApps={selectedBlocks}
                     excludedCategories={[
                       'ai',

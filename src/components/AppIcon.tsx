@@ -13,10 +13,37 @@ const getAppIcon = (app: App) => {
 }
 
 const stripSubdomains = (url: string): string => {
-  // Match the main domain and TLD, keeping the last two parts for known multi-part TLDs
-  const parts = url.split('.')
-  if (parts.length <= 2) return url
-  return parts.slice(-2).join('.')
+  // First, try to extract the domain from a full URL
+  try {
+    // Handle URLs with or without protocol
+    let urlWithProtocol = url
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      urlWithProtocol = 'https://' + url
+    }
+    
+    // Try to parse as URL
+    const parsedUrl = new URL(urlWithProtocol)
+    const hostname = parsedUrl.hostname
+    
+    // Match the main domain and TLD, keeping the last two parts for known multi-part TLDs
+    const parts = hostname.split('.')
+    if (parts.length <= 2) return hostname
+    
+    // Handle common multi-part TLDs like .co.uk, .com.au, etc.
+    const commonMultiPartTlds = ['co.uk', 'com.au', 'co.nz', 'co.jp', 'org.uk']
+    const lastTwoParts = parts.slice(-2).join('.')
+    
+    if (commonMultiPartTlds.includes(lastTwoParts) && parts.length > 2) {
+      return parts.slice(-3).join('.')
+    }
+    
+    return parts.slice(-2).join('.')
+  } catch {
+    // If URL parsing fails, fall back to simple string manipulation
+    const parts = url.split('.')
+    if (parts.length <= 2) return url
+    return parts.slice(-2).join('.')
+  }
 }
 
 type IconSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl'
@@ -30,20 +57,24 @@ const sizeMap = {
 }
 
 const BrowserIcon = ({ app, size = 'md' }: { app: App; size?: IconSize }) => {
-  const strippedDomain = stripSubdomains(app.app_external_id)
+  const [fallbackToEmoji, setFallbackToEmoji] = useState(false)
+  
+  // Handle the app_external_id which could be a full URL or just a domain
+  const domain = app.app_external_id
+  const strippedDomain = stripSubdomains(domain)
   const faviconUrl = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(strippedDomain)}&sz=32`
+  
+  if (fallbackToEmoji) {
+    return <span className="text-muted-foreground">🌐</span>
+  }
+  
   return (
     <img
       src={faviconUrl}
-      alt={app.name}
+      alt={app.name || domain}
       className={`${sizeMap[size]} object-contain`}
-      onError={(e) => {
-        const target = e.target as HTMLImageElement
-        target.style.display = 'none'
-        const parent = target.parentElement
-        if (parent) {
-          parent.textContent = '🌐' // Fallback to globe emoji if favicon fails
-        }
+      onError={() => {
+        setFallbackToEmoji(true)
       }}
     />
   )
@@ -83,8 +114,8 @@ const DesktopIcon = ({ app, size = 'md' }: { app: App; size?: IconSize }) => {
         src={iconDataUrl}
         alt={app.name}
         className={`${sizeMap[size]} object-contain`}
-        onError={(e) => {
-          const target = e.target as HTMLImageElement
+        onError={(event) => {
+          const target = event.currentTarget as HTMLImageElement
           target.style.display = 'none'
           const parent = target.parentElement
           if (parent) {
@@ -102,8 +133,8 @@ const DesktopIcon = ({ app, size = 'md' }: { app: App; size?: IconSize }) => {
         src={`/src/lib/app-directory/icons/${app.icon}`}
         alt={app.name}
         className={`${sizeMap[size]} object-contain`}
-        onError={(e) => {
-          const target = e.target as HTMLImageElement
+        onError={(event) => {
+          const target = event.currentTarget as HTMLImageElement
           target.style.display = 'none'
           const parent = target.parentElement
           if (parent) {
@@ -120,8 +151,12 @@ const DesktopIcon = ({ app, size = 'md' }: { app: App; size?: IconSize }) => {
   )
 }
 
-
 export const AppIcon = ({ app, size = 'md' }: { app: App; size?: IconSize }) => {
+  // Handle undefined or incomplete app objects (for custom websites)
+  if (!app) {
+    return <span className="text-muted-foreground">❓</span>
+  }
+  
   if (app.is_browser) {
     return <BrowserIcon app={app} size={size} />
   }
