@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Check, X } from 'lucide-react'
+import { Check, X, Plus } from 'lucide-react'
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from '@/components/ui/command'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils/tailwind.util'
@@ -23,7 +23,12 @@ interface AppOption {
   app: App
 }
 
-export type SearchOption = AppOption | CategoryOption
+interface CustomWebsiteOption {
+  type: 'custom'
+  url: string
+}
+
+export type SearchOption = AppOption | CategoryOption | CustomWebsiteOption
 
 interface AppSelectorProps {
   placeholder?: string
@@ -31,6 +36,7 @@ interface AppSelectorProps {
   maxItems?: number
   selectedApps: SearchOption[]
   currentCategory?: string
+  excludedCategories?: AppCategory[]
   onAppSelect: (option: SearchOption) => void
   onAppRemove: (option: SearchOption) => void
 }
@@ -42,6 +48,9 @@ const getOptionDetails = (option: SearchOption) => {
       return { text: option.app.name, key: `app-${option.app.app_external_id}` }
     }
     return { text: option.app.app_external_id, key: `app-${option.app.app_external_id}` }
+  }
+  if (option.type === 'custom') {
+    return { text: option.url, key: `custom-${option.url}` }
   }
   if ('category' in option && 'count' in option) {
     return {
@@ -64,9 +73,10 @@ const getCategoryTooltipContent = (category: AppCategory, apps: App[]): string =
 
 export function AppSelector({
   placeholder = 'Search apps...',
-  emptyText = 'No apps found.',
+  emptyText = 'Keep typing for custom website',
   maxItems = 5,
   selectedApps,
+  excludedCategories = [],
   onAppSelect,
   onAppRemove
 }: AppSelectorProps) {
@@ -98,12 +108,14 @@ export function AppSelector({
 
   // Create memoized category options
   const categoryOptions = React.useMemo(() => {
-    return Object.keys(categoryEmojis).map((category) => ({
-      type: 'category' as const,
-      category: category as AppCategory,
-      count: apps.filter(app => app.type === 'app' && app.app.category_tag?.tag_name === category).length
-    }))
-  }, [apps])
+    return Object.keys(categoryEmojis)
+      .filter(category => !excludedCategories.includes(category as AppCategory))
+      .map((category) => ({
+        type: 'category' as const,
+        category: category as AppCategory,
+        count: apps.filter(app => app.type === 'app' && app.app.category_tag?.tag_name === category).length
+      }))
+  }, [apps, excludedCategories])
 
   // Update filtered apps to include categories
   const filteredOptions = React.useMemo(() => {
@@ -152,10 +164,47 @@ export function AppSelector({
       })
     )
 
+    // Check if the search term looks like a URL and isn't already in the results
+    const isValidUrl = (url: string) => {
+      try {
+        // Simple check for URL format (has domain-like structure)
+        return /^(https?:\/\/)?[\w.-]+\.[a-z]{2,}(\/.*)?$/i.test(url)
+      } catch {
+        return false
+      }
+    }
+
+    // Check if the search term might be a website
+    const mightBeWebsite = search.includes('.') || search.includes('://')
+
+    // Add custom website option if search looks like a URL and not already in results
+    const customUrlAlreadyExists = results.some(option => 
+      (option.type === 'app' && option.app.is_browser && option.app.app_external_id.toLowerCase() === searchLower) ||
+      (option.type === 'custom' && option.url.toLowerCase() === searchLower)
+    )
+
+    // Check if the search term is already selected
+    const alreadySelected = selectedApps.some(selected => 
+      (selected.type === 'app' && selected.app.is_browser && selected.app.app_external_id.toLowerCase() === searchLower) ||
+      (selected.type === 'custom' && selected.url.toLowerCase() === searchLower)
+    )
+
+    // Add custom website option if appropriate - use isValidUrl for better validation
+    if (search && (isValidUrl(search) || mightBeWebsite) && !customUrlAlreadyExists && !alreadySelected) {
+      results.push({
+        type: 'custom',
+        url: search
+      })
+    }
+
     return results
       .sort((a, b) => {
         const aStr = getOptionDetails(a).text.toLowerCase()
         const bStr = getOptionDetails(b).text.toLowerCase()
+
+        // Custom website option should be at the bottom
+        if (a.type === 'custom') return 1
+        if (b.type === 'custom') return -1
 
         const aStartsWith = aStr.startsWith(searchLower)
         const bStartsWith = bStr.startsWith(searchLower)
@@ -165,7 +214,7 @@ export function AppSelector({
         return 0
       })
       .slice(0, maxItems)
-  }, [search, maxItems, categoryOptions, selectedApps])
+  }, [search, maxItems, categoryOptions, selectedApps, apps])
 
   // Update click outside handler
   React.useEffect(() => {
@@ -211,6 +260,34 @@ export function AppSelector({
 
   const handleSelect = (option: SearchOption) => {
     const { key } = getOptionDetails(option)
+
+    // For custom website option, create a new app-like object
+    if (option.type === 'custom') {
+      // Create a custom app option
+      const customApp: AppOption = {
+        type: 'app',
+        app: {
+          id: `custom-${Date.now()}`,
+          name: option.url,
+          app_external_id: option.url,
+          is_browser: true,
+          // Add any other required properties with default values
+          category_tag: {
+            id: 'custom',
+            app_id: `custom-${Date.now()}`,
+            tag_id: 'custom',
+            weight: 3,
+            tag_name: 'Website',
+            tag_type: 'category'
+          }
+        }
+      }
+      
+      onAppSelect(customApp)
+      setSearch('')
+      setSelected(0)
+      return
+    }
 
     // For non-category options, check if they belong to an already selected category
     if (option.type === 'app') {
@@ -293,6 +370,23 @@ export function AppSelector({
     return { isSelected: false }
   }
 
+  // Add global keydown event listener
+  React.useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // Only handle Delete or Backspace when not in an input field
+      if ((e.key === 'Delete' || e.key === 'Backspace') && 
+          selectedApps.length > 0 && 
+          document.activeElement?.tagName !== 'INPUT' &&
+          document.activeElement?.tagName !== 'TEXTAREA') {
+        e.preventDefault()
+        onAppRemove(selectedApps[selectedApps.length - 1])
+      }
+    }
+
+    document.addEventListener('keydown', handleGlobalKeyDown)
+    return () => document.removeEventListener('keydown', handleGlobalKeyDown)
+  }, [selectedApps, onAppRemove])
+
   return (
     <div className="relative w-full" ref={inputRef}>
       <div className="relative min-h-[100px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
@@ -311,7 +405,11 @@ export function AppSelector({
                         className="flex items-center gap-1 h-6"
                       >
                         <span className="w-4 h-4 flex items-center justify-center shrink-0">
-                          {option.type === 'app' ? <AppIcon app={option.app} /> : categoryEmojis[option.category]}
+                          {option.type === 'app' ? <AppIcon app={option.app} /> : option.type === 'custom' ? (
+                            <Plus className="h-3 w-3" />
+                          ) : (
+                            categoryEmojis[option.category as AppCategory]
+                          )}
                         </span>
                         <span className="truncate">{getOptionDetails(option).text}</span>
                         <X
@@ -326,7 +424,7 @@ export function AppSelector({
                   </TooltipTrigger>
                   {isCategory && (
                     <TooltipContent className="max-w-[300px]">
-                      {getCategoryTooltipContent(option.category, apps.map(app => app.app))}
+                      {getCategoryTooltipContent((option as CategoryOption).category, apps.map(app => app.app))}
                     </TooltipContent>
                   )}
                 </Tooltip>
@@ -345,7 +443,7 @@ export function AppSelector({
             />
             {open && (
               <Command className="absolute left-0 top-full z-50 max-w-[250px] rounded-md border bg-popover shadow-md h-fit mt-2">
-                <CommandList className="max-h-fit">
+                <CommandList className="max-h-[300px] overflow-y-auto">
                   {filteredOptions.length === 0 ? (
                     <CommandEmpty>
                       {search && isAlreadySelected(search).isSelected
@@ -364,19 +462,29 @@ export function AppSelector({
                                   className={cn(index === selected && 'bg-accent text-accent-foreground')}
                                 >
                                   <Check className={cn(
-                                    'mr-2 h-4 w-4',
+                                    'mr-1 h-4 w-4',
                                     index === selected ? 'opacity-100' : 'opacity-0'
                                   )} />
-                                  <span className="w-4 h-4 flex items-center justify-center mr-2">
-                                    {option.type === 'app' ? <AppIcon app={option.app} /> : categoryEmojis[option.category]}
+                                  <span className="w-6 h-6 flex items-center justify-center mr-1">
+                                    {option.type === 'app' ? (
+                                      <AppIcon app={option.app} />
+                                    ) : option.type === 'custom' ? (
+                                      <Plus className="h-4 w-4" />
+                                    ) : (
+                                      categoryEmojis[option.category as AppCategory]
+                                    )}
                                   </span>
-                                  {getOptionDetails(option).text}
+                                  {option.type === 'custom' ? (
+                                    <span>Add custom website: <span className="font-semibold">{option.url}</span></span>
+                                  ) : (
+                                    getOptionDetails(option).text
+                                  )}
                                 </CommandItem>
                               </div>
                             </TooltipTrigger>
                             {'category' in option && 'count' in option && (
                               <TooltipContent side="right" align="start" className="max-w-[300px]">
-                                {getCategoryTooltipContent(option.category, apps.map(app => app.app))}
+                                {getCategoryTooltipContent((option as CategoryOption).category, apps.map(app => app.app))}
                               </TooltipContent>
                             )}
                           </Tooltip>

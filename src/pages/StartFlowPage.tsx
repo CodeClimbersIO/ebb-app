@@ -158,7 +158,7 @@ export const StartFlowPage = () => {
 
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
-      if (event.key === 'Enter' && objective) {
+      if (event.key === 'Enter' && event.metaKey && objective) {
         handleBegin()
       }
     }
@@ -243,6 +243,17 @@ export const StartFlowPage = () => {
             return app.app.name !== option.app.name
           }
           return app.app.app_external_id !== option.app.app_external_id
+        }
+        // Handle custom website option
+        if (option.type === 'custom' && app.type === 'custom') {
+          return app.url !== option.url
+        }
+        // Handle app vs custom comparison (they might be converted from one to the other)
+        if (option.type === 'custom' && app.type === 'app' && app.app.is_browser) {
+          return app.app.app_external_id !== option.url
+        }
+        if (option.type === 'app' && option.app.is_browser && app.type === 'custom') {
+          return app.url !== option.app.app_external_id
         }
         return true
       })
@@ -428,8 +439,20 @@ export const StartFlowPage = () => {
                 <div className="mt-4 space-y-4">
                   <AppSelector
                     placeholder="Search apps & websites to block..."
-                    emptyText="No apps or websites found."
+                    emptyText="Enter full URL to add website"
                     selectedApps={selectedBlocks}
+                    excludedCategories={[
+                      'ai',
+                      'browser',
+                      'coding',
+                      'data/analytics',
+                      'designing',
+                      'learning',
+                      'music/sound',
+                      'photo/video',
+                      'utilities',
+                      'writing'
+                    ]}
                     onAppSelect={handleAppSelect}
                     onAppRemove={handleAppRemove}
                   />
@@ -467,9 +490,10 @@ export const StartFlowPage = () => {
               disabled={!objective}
             >
               Start Focus Session
-              <kbd className="ml-2 rounded bg-violet-900 px-1.5 font-mono text-xs">
-                ↵
-              </kbd>
+              <div className="ml-2 flex items-center gap-1">
+                <kbd className="rounded bg-violet-900 px-1.5 font-mono text-sm">⌘</kbd>
+                <kbd className="rounded bg-violet-900 px-1.5 font-mono text-sm">↵</kbd>
+              </div>
             </Button>
           </CardContent>
         </Card>
