@@ -19,14 +19,24 @@ const stripSubdomains = (url: string): string => {
   return parts.slice(-2).join('.')
 }
 
-const BrowserIcon = ({ app }: { app: App }) => {
+type IconSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl'
+
+const sizeMap = {
+  xs: 'h-3 w-3',
+  sm: 'h-4 w-4',
+  md: 'h-5 w-5',
+  lg: 'h-6 w-6',
+  xl: 'h-8 w-8'
+}
+
+const BrowserIcon = ({ app, size = 'md' }: { app: App; size?: IconSize }) => {
   const strippedDomain = stripSubdomains(app.app_external_id)
   const faviconUrl = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(strippedDomain)}&sz=32`
   return (
     <img
       src={faviconUrl}
       alt={app.name}
-      className="h-5 w-5"
+      className={`${sizeMap[size]} object-contain`}
       onError={(e) => {
         const target = e.target as HTMLImageElement
         target.style.display = 'none'
@@ -39,7 +49,7 @@ const BrowserIcon = ({ app }: { app: App }) => {
   )
 }
 
-const DesktopIcon = ({ app }: { app: App }) => {
+const DesktopIcon = ({ app, size = 'md' }: { app: App; size?: IconSize }) => {
   const [iconDataUrl, setIconDataUrl] = useState<string | null>(null)
   const [iconError, setIconError] = useState(false)
 
@@ -72,7 +82,7 @@ const DesktopIcon = ({ app }: { app: App }) => {
       <img
         src={iconDataUrl}
         alt={app.name}
-        className="h-6 w-6"
+        className={`${sizeMap[size]} object-contain`}
         onError={(e) => {
           const target = e.target as HTMLImageElement
           target.style.display = 'none'
@@ -91,7 +101,7 @@ const DesktopIcon = ({ app }: { app: App }) => {
       <img
         src={`/src/lib/app-directory/icons/${app.icon}`}
         alt={app.name}
-        className="h-6 w-6"
+        className={`${sizeMap[size]} object-contain`}
         onError={(e) => {
           const target = e.target as HTMLImageElement
           target.style.display = 'none'
@@ -111,10 +121,15 @@ const DesktopIcon = ({ app }: { app: App }) => {
 }
 
 
-export const AppIcon = ({ app }: { app: App }) => {
+export const AppIcon = ({ app, size = 'md' }: { app: App; size?: IconSize }) => {
   if (app.is_browser) {
-    return <BrowserIcon app={app} />
+    return <BrowserIcon app={app} size={size} />
   }
 
-  return <DesktopIcon app={app} />
+  // For desktop apps, use one size larger if available
+  const appSize = size === 'xl' ? 'xl' : 
+                 (size === 'lg' ? 'xl' : 
+                 (size === 'md' ? 'lg' : 
+                 (size === 'sm' ? 'md' : 'sm')))
+  return <DesktopIcon app={app} size={appSize} />
 }

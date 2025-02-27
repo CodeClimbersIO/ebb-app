@@ -430,6 +430,18 @@ export const StartFlowPage = () => {
                     placeholder="Search apps & websites to block..."
                     emptyText="No apps or websites found."
                     selectedApps={selectedBlocks}
+                    excludedCategories={[
+                      'ai',
+                      'browser',
+                      'coding',
+                      'data/analytics',
+                      'designing',
+                      'learning',
+                      'music/sound',
+                      'photo/video',
+                      'utilities',
+                      'writing'
+                    ]}
                     onAppSelect={handleAppSelect}
                     onAppRemove={handleAppRemove}
                   />

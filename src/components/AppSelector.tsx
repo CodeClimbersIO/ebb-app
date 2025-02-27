@@ -31,6 +31,7 @@ interface AppSelectorProps {
   maxItems?: number
   selectedApps: SearchOption[]
   currentCategory?: string
+  excludedCategories?: AppCategory[]
   onAppSelect: (option: SearchOption) => void
   onAppRemove: (option: SearchOption) => void
 }
@@ -67,6 +68,7 @@ export function AppSelector({
   emptyText = 'No apps found.',
   maxItems = 5,
   selectedApps,
+  excludedCategories = [],
   onAppSelect,
   onAppRemove
 }: AppSelectorProps) {
@@ -98,12 +100,14 @@ export function AppSelector({
 
   // Create memoized category options
   const categoryOptions = React.useMemo(() => {
-    return Object.keys(categoryEmojis).map((category) => ({
-      type: 'category' as const,
-      category: category as AppCategory,
-      count: apps.filter(app => app.type === 'app' && app.app.category_tag?.tag_name === category).length
-    }))
-  }, [apps])
+    return Object.keys(categoryEmojis)
+      .filter(category => !excludedCategories.includes(category as AppCategory))
+      .map((category) => ({
+        type: 'category' as const,
+        category: category as AppCategory,
+        count: apps.filter(app => app.type === 'app' && app.app.category_tag?.tag_name === category).length
+      }))
+  }, [apps, excludedCategories])
 
   // Update filtered apps to include categories
   const filteredOptions = React.useMemo(() => {
@@ -293,6 +297,23 @@ export function AppSelector({
     return { isSelected: false }
   }
 
+  // Add global keydown event listener
+  React.useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // Only handle Delete or Backspace when not in an input field
+      if ((e.key === 'Delete' || e.key === 'Backspace') && 
+          selectedApps.length > 0 && 
+          document.activeElement?.tagName !== 'INPUT' &&
+          document.activeElement?.tagName !== 'TEXTAREA') {
+        e.preventDefault()
+        onAppRemove(selectedApps[selectedApps.length - 1])
+      }
+    }
+
+    document.addEventListener('keydown', handleGlobalKeyDown)
+    return () => document.removeEventListener('keydown', handleGlobalKeyDown)
+  }, [selectedApps, onAppRemove])
+
   return (
     <div className="relative w-full" ref={inputRef}>
       <div className="relative min-h-[100px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
@@ -345,7 +366,7 @@ export function AppSelector({
             />
             {open && (
               <Command className="absolute left-0 top-full z-50 max-w-[250px] rounded-md border bg-popover shadow-md h-fit mt-2">
-                <CommandList className="max-h-fit">
+                <CommandList className="max-h-[300px] overflow-y-auto">
                   {filteredOptions.length === 0 ? (
                     <CommandEmpty>
                       {search && isAlreadySelected(search).isSelected
@@ -364,10 +385,10 @@ export function AppSelector({
                                   className={cn(index === selected && 'bg-accent text-accent-foreground')}
                                 >
                                   <Check className={cn(
-                                    'mr-2 h-4 w-4',
+                                    'mr-1 h-4 w-4',
                                     index === selected ? 'opacity-100' : 'opacity-0'
                                   )} />
-                                  <span className="w-4 h-4 flex items-center justify-center mr-2">
+                                  <span className="w-6 h-6 flex items-center justify-center mr-1">
                                     {option.type === 'app' ? <AppIcon app={option.app} /> : categoryEmojis[option.category]}
                                   </span>
                                   {getOptionDetails(option).text}

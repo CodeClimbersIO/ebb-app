@@ -255,7 +255,7 @@ export const UsageSummary = ({
                 .map((app) => (
                   <div key={app.id} className="flex items-center gap-4">
                     <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
-                      <AppIcon app={app} />
+                      <AppIcon app={app} size="md" />
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-1">
