@@ -11,7 +11,7 @@ pub fn get_db_path() -> String {
 }
 
 pub fn get_migrations() -> Vec<Migration> {
-    println!("get_migrations");
+    log::info!("get_migrations");
     vec![
         Migration {
             version: 1,

@@ -1,22 +1,12 @@
-use os_monitor::{get_application_icon_data, has_accessibility_permissions, request_accessibility_permissions};
-use std::thread;
+use log::info;
+use os_monitor::{
+    get_application_icon_data, has_accessibility_permissions, request_accessibility_permissions,
+};
 use tauri::Manager;
 use tokio;
 mod db;
 mod system_monitor;
 use tauri::command;
-
-fn get_thread_info() -> String {
-    let current = thread::current();
-    let is_main = current.name().map_or(false, |name| name == "main");
-
-    format!(
-        "Thread ID: {:?}, Thread Name: {:?}, Is Main: {}",
-        current.id(),
-        current.name().unwrap_or("unnamed"),
-        is_main
-    )
-}
 
 #[command]
 async fn get_app_icon(bundle_id: String) -> Result<String, String> {
@@ -59,8 +49,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .setup(|app| {
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Regular);
-            system_monitor::start_monitoring();
-            println!("setup thread info: {}", get_thread_info());
             Ok(())
         })
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())

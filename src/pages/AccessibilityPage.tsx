@@ -14,14 +14,14 @@ export const AccessibilityPage = () => {
     const checkPermissions = async () => {
       try {
         setPermissionStatus('checking')
-        
+
         // Add a small delay to ensure loading state is visible
         await new Promise(resolve => setTimeout(resolve, 1000))
-        
+
         const hasPermissions = await invoke<boolean>('check_accessibility_permissions')
-        
+
         setPermissionStatus(hasPermissions ? 'granted' : 'not_granted')
-        
+
         return hasPermissions
       } catch (error) {
         console.error('❌ Error during permission check:', error)
@@ -39,6 +39,7 @@ export const AccessibilityPage = () => {
         interval = setInterval(async () => {
           const granted = await checkPermissions()
           if (granted && interval) {
+            await invoke('start_system_monitoring')
             clearInterval(interval)
             interval = null
           }
@@ -70,10 +71,10 @@ export const AccessibilityPage = () => {
         <p className="text-lg text-muted-foreground mb-3">
           Ebb needs accessibility permissions to support blocking, time tracking, and shortcuts.
         </p>
-        
+
         <HoverCard open={showPrivacy} onOpenChange={setShowPrivacy}>
           <HoverCardTrigger asChild>
-            <button 
+            <button
               onClick={() => setShowPrivacy(!showPrivacy)}
               className="text-sm text-primary hover:underline inline-flex items-center gap-1"
             >
@@ -105,10 +106,10 @@ export const AccessibilityPage = () => {
           </HoverCardContent>
         </HoverCard>
 
-        <Button 
+        <Button
           size="lg"
-          onClick={permissionStatus === 'granted' ? 
-            () => navigate('/onboarding/shortcut-tutorial') : 
+          onClick={permissionStatus === 'granted' ?
+            () => navigate('/onboarding/shortcut-tutorial') :
             handleRequestPermissions}
           className="mt-8 mb-4"
         >
