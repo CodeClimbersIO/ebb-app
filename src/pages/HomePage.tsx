@@ -1,6 +1,6 @@
 import { Layout } from '@/components/Layout'
 import { useNavigate } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { ChevronDown } from 'lucide-react'
 import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
@@ -37,19 +37,19 @@ export const HomePage = () => {
   const [totalOnline, setTotalOnline] = useState(0)
   const [chartData, setChartData] = useState<GraphableTimeByHourBlock[]>([])
   const [tags, setTags] = useState<Tag[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const refreshIntervalRef = useRef<number | null>(null)
 
   // Get first name from user metadata
   const firstName = user?.user_metadata?.full_name?.split(' ')[0] ||
     user?.user_metadata?.name?.split(' ')[0] ||
     user?.email?.split('@')[0]
 
-  useEffect(() => {
-    const init = async () => {
-      const flowSession = await FlowSessionApi.getInProgressFlowSession()
-      if (flowSession) {
-        navigate('/flow')
-      }
-
+  const refreshData = async () => {
+    if (isLoading) return
+    
+    setIsLoading(true)
+    try {
       const { chartData, tags, topApps } = await fetchData(date)
       setTags(tags)
       setAppUsage(topApps)
@@ -61,13 +61,49 @@ export const HomePage = () => {
       setTotalOnline(online)
       
       setChartData(chartData.slice(6))
+    } catch (error) {
+      console.error('Error refreshing data:', error)
+    } finally {
+      setIsLoading(false)
     }
+  }
+
+  useEffect(() => {
+    const init = async () => {
+      const flowSession = await FlowSessionApi.getInProgressFlowSession()
+      if (flowSession) {
+        navigate('/flow')
+      }
+
+      await refreshData()
+    }
+    
     init()
+    
+    // Set up auto-refresh interval (every 30 seconds)
+    refreshIntervalRef.current = window.setInterval(() => {
+      // Only auto-refresh if the selected date is today
+      if (date.toDateString() === new Date().toDateString()) {
+        refreshData()
+      }
+    }, 30000) // 30 seconds
+    
+    // Also refresh when window regains focus
     const handleFocus = () => {
-      fetchData(date)
+      if (date.toDateString() === new Date().toDateString()) {
+        refreshData()
+      }
     }
+    
     window.addEventListener('focus', handleFocus)
-    return () => window.removeEventListener('focus', handleFocus)
+    
+    // Clean up interval and event listener on unmount
+    return () => {
+      if (refreshIntervalRef.current !== null) {
+        clearInterval(refreshIntervalRef.current)
+      }
+      window.removeEventListener('focus', handleFocus)
+    }
   }, [date])
 
   const handleRatingChange = (tagId: string, rating: ActivityRating, tags: Tag[]) => {
@@ -112,7 +148,7 @@ export const HomePage = () => {
                   onSelect={(newDate) => {
                     if (newDate) {
                       setDate(newDate)
-                      fetchData(newDate)
+                      refreshData()
                     }
                   }}
                   disabled={(date) => date > new Date()}
@@ -132,6 +168,7 @@ export const HomePage = () => {
             showAppRatingControls={true}
             onRatingChange={handleRatingChange}
             tags={tags}
+            isLoading={isLoading}
           />
         </div>
       </div>
