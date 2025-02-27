@@ -1,4 +1,3 @@
-use log::info;
 use os_monitor::{
     get_application_icon_data, has_accessibility_permissions, request_accessibility_permissions,
 };
