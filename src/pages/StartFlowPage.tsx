@@ -158,7 +158,7 @@ export const StartFlowPage = () => {
 
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
-      if (event.key === 'Enter' && objective) {
+      if (event.key === 'Enter' && event.metaKey && objective) {
         handleBegin()
       }
     }
@@ -467,9 +467,10 @@ export const StartFlowPage = () => {
               disabled={!objective}
             >
               Start Focus Session
-              <kbd className="ml-2 rounded bg-violet-900 px-1.5 font-mono text-xs">
-                ↵
-              </kbd>
+              <div className="ml-2 flex items-center gap-1">
+                <kbd className="rounded bg-violet-900 px-1.5 font-mono text-sm">⌘</kbd>
+                <kbd className="rounded bg-violet-900 px-1.5 font-mono text-sm">↵</kbd>
+              </div>
             </Button>
           </CardContent>
         </Card>
