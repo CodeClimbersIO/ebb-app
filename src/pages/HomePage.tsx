@@ -2,7 +2,7 @@ import { Layout } from '@/components/Layout'
 import { useNavigate } from 'react-router-dom'
 import { useEffect, useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
-import { WandSparkles, Flame, ChevronDown, Diff } from 'lucide-react'
+import { WandSparkles, ChevronDown } from 'lucide-react'
 import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { DateTime } from 'luxon'
@@ -49,24 +49,6 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-const calculateNetCreationScore = (apps: AppsWithTime[]): number => {
-  return Number(apps.reduce((score, app) => {
-    const minutes = app.duration
-    switch (app.rating) {
-      case 5: // High Creation
-        return score + minutes * 0.1
-      case 4: // Creation
-        return score + minutes * 0.05
-      case 2: // Consumption
-        return score - minutes * 0.05
-      case 1: // High Consumption
-        return score - minutes * 0.1
-      default: // Neutral (3)
-        return score
-    }
-  }, 0).toFixed(1))
-}
-
 const formatTime = (minutes: number) => {
   const hours = Math.floor(minutes / 60)
   const remainingMinutes = Math.round(minutes % 60)
@@ -92,10 +74,10 @@ const fetchData = async (selectedDate: Date) => {
 export const HomePage = () => {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const [streak, setStreak] = useState(0)
   const [date, setDate] = useState<Date>(new Date())
   const [appUsage, setAppUsage] = useState<AppsWithTime[]>([])
   const [totalCreating, setTotalCreating] = useState(0)
+  const [totalOnline, setTotalOnline] = useState(0)
   const [chartData, setChartData] = useState<GraphableTimeByHourBlock[]>([])
   const [tags, setTags] = useState<Tag[]>([])
   const appUsageRef = useRef<HTMLDivElement>(null)
@@ -116,25 +98,13 @@ export const HomePage = () => {
       setTags(tags)
       setAppUsage(topApps)
       setTotalCreating(chartData.reduce((acc, curr) => acc + curr.creating, 0))
+      
+      // Calculate total online time (creating + neutral + consuming)
+      const online = chartData.reduce((acc, curr) => 
+        acc + curr.creating + curr.neutral + curr.consuming, 0)
+      setTotalOnline(online)
+      
       setChartData(chartData.slice(6))
-
-      // Get streak data
-      let currentStreak = 0
-      let currentDate = DateTime.now().startOf('day')
-      let daysToCheck = 30
-
-      while (daysToCheck > 0) {
-        if (currentDate.weekday >= 6) {
-          currentDate = currentDate.minus({ days: 1 })
-          continue
-        }
-
-        currentStreak++
-        currentDate = currentDate.minus({ days: 1 })
-        daysToCheck--
-      }
-
-      setStreak(currentStreak)
     }
     init()
     const handleFocus = () => {
@@ -156,25 +126,10 @@ export const HomePage = () => {
       <div className="p-8">
         <div className="max-w-5xl mx-auto">
           <div className="mb-8 flex items-center justify-between">
-            <div className="flex items-center gap-4">
+            <div>
               <h1 className="text-2xl font-semibold">
                 {firstName ? `Welcome, ${firstName}` : 'Welcome'}
               </h1>
-              {streak > 0 && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <div className="flex items-center gap-1 text-orange-500">
-                        <Flame className="h-5 w-5" />
-                        <span className="font-medium">{streak}</span>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Number of consecutive days with a focus session, excluding weekends</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
             </div>
 
             <Popover>
@@ -212,6 +167,27 @@ export const HomePage = () => {
             <TooltipProvider>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Total Time</CardTitle>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 text-muted-foreground">
+                    <rect x="2" y="3" width="20" height="14" rx="2" />
+                    <line x1="8" x2="16" y1="21" y2="21" />
+                    <line x1="12" x2="12" y1="17" y2="21" />
+                  </svg>
+                </CardHeader>
+                <CardContent>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <div className="text-2xl font-bold">{formatTime(totalOnline)}</div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Total time spent online today</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
                     Time Creating
                   </CardTitle>
@@ -224,26 +200,6 @@ export const HomePage = () => {
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>Total time spent creating today</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Net Creation</CardTitle>
-                  <Diff className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <div className="text-2xl font-bold">
-                        {calculateNetCreationScore(appUsage) > 0 ? '+' : ''}
-                        {calculateNetCreationScore(appUsage)}
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Positive = more creation, Negative = more consumption</p>
                     </TooltipContent>
                   </Tooltip>
                 </CardContent>
