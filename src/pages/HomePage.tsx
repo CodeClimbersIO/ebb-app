@@ -2,7 +2,7 @@ import { Layout } from '@/components/Layout'
 import { useNavigate } from 'react-router-dom'
 import { useEffect, useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, AlertCircle } from 'lucide-react'
 import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
 import { DateTime } from 'luxon'
 import {
@@ -16,6 +16,8 @@ import { useAuth } from '../hooks/useAuth'
 import { GraphableTimeByHourBlock, MonitorApi, AppsWithTime } from '../api/monitorApi/monitorApi'
 import { Tag } from '../db/monitor/tagRepo'
 import { UsageSummary } from '@/components/UsageSummary'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { invoke } from '@tauri-apps/api/core'
 
 const fetchData = async (selectedDate: Date) => {
   const start = DateTime.fromJSDate(selectedDate).startOf('day')
@@ -38,6 +40,7 @@ export const HomePage = () => {
   const [chartData, setChartData] = useState<GraphableTimeByHourBlock[]>([])
   const [tags, setTags] = useState<Tag[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [permissionStatus, setPermissionStatus] = useState<boolean | null>(null)
   const refreshIntervalRef = useRef<number | null>(null)
 
   // Get first name from user metadata
@@ -106,6 +109,39 @@ export const HomePage = () => {
     }
   }, [date])
 
+  // Check accessibility permissions
+  useEffect(() => {
+    const checkPermissions = async () => {
+      try {
+        const hasPermissions = await invoke<boolean>('check_accessibility_permissions')
+        setPermissionStatus(hasPermissions)
+      } catch (error) {
+        console.error('Error checking permissions:', error)
+        setPermissionStatus(false)
+      }
+    }
+
+    checkPermissions()
+
+    // Set up interval to check permissions periodically
+    // Check more frequently (every 1 second) when permissions are not granted
+    const intervalTime = permissionStatus === false ? 1000 : 30000
+    const permissionInterval = setInterval(checkPermissions, intervalTime)
+
+    return () => {
+      clearInterval(permissionInterval)
+    }
+  }, [permissionStatus])
+
+  const handleRequestPermissions = async () => {
+    try {
+      await invoke('request_system_permissions')
+      // The status will be updated by the interval checker
+    } catch (error) {
+      console.error('Failed to request permissions:', error)
+    }
+  }
+
   const handleRatingChange = (tagId: string, rating: ActivityRating, tags: Tag[]) => {
     MonitorApi.setAppDefaultTag(tagId, rating, tags)
     setAppUsage(prev => prev.map(a => {
@@ -120,6 +156,20 @@ export const HomePage = () => {
     <Layout>
       <div className="p-8">
         <div className="max-w-5xl mx-auto">
+          {permissionStatus === false && (
+            <Alert variant="destructive" className="mb-6 bg-red-950 border-red-900">
+              <AlertCircle className="h-4 w-4 text-red-400" />
+              <AlertDescription className="text-red-400">
+                Ebb needs accessibility permissions to support blocking, time tracking, and shortcuts.{' '}
+                <button 
+                  onClick={handleRequestPermissions}
+                  className="underline hover:text-red-300 font-medium"
+                >
+                  Enable permissions
+                </button>
+              </AlertDescription>
+            </Alert>
+          )}
           <div className="mb-8 flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-semibold">
