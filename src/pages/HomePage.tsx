@@ -39,7 +39,6 @@ export const HomePage = () => {
   const [totalOnline, setTotalOnline] = useState(0)
   const [chartData, setChartData] = useState<GraphableTimeByHourBlock[]>([])
   const [tags, setTags] = useState<Tag[]>([])
-  const [isLoading, setIsLoading] = useState(false)
   const [permissionStatus, setPermissionStatus] = useState<boolean | null>(null)
   const refreshIntervalRef = useRef<number | null>(null)
 
@@ -49,9 +48,6 @@ export const HomePage = () => {
     user?.email?.split('@')[0]
 
   const refreshData = async () => {
-    if (isLoading) return
-    
-    setIsLoading(true)
     try {
       const { chartData, tags, topApps } = await fetchData(date)
       setTags(tags)
@@ -66,8 +62,6 @@ export const HomePage = () => {
       setChartData(chartData.slice(6))
     } catch (error) {
       console.error('Error refreshing data:', error)
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -84,17 +78,17 @@ export const HomePage = () => {
     init()
     
     // Set up auto-refresh interval (every 30 seconds)
-    refreshIntervalRef.current = window.setInterval(() => {
+    refreshIntervalRef.current = window.setInterval(async () => {
       // Only auto-refresh if the selected date is today
       if (date.toDateString() === new Date().toDateString()) {
-        refreshData()
+        await refreshData()
       }
-    }, 30000) // 30 seconds
+    }, 30000)
     
     // Also refresh when window regains focus
-    const handleFocus = () => {
+    const handleFocus = async () => {
       if (date.toDateString() === new Date().toDateString()) {
-        refreshData()
+        await refreshData()
       }
     }
     
@@ -198,7 +192,6 @@ export const HomePage = () => {
                   onSelect={(newDate) => {
                     if (newDate) {
                       setDate(newDate)
-                      refreshData()
                     }
                   }}
                   disabled={(date) => date > new Date()}
@@ -218,7 +211,6 @@ export const HomePage = () => {
             showAppRatingControls={true}
             onRatingChange={handleRatingChange}
             tags={tags}
-            isLoading={isLoading}
           />
         </div>
       </div>
