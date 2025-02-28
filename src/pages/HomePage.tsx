@@ -39,7 +39,6 @@ export const HomePage = () => {
   const [totalOnline, setTotalOnline] = useState(0)
   const [chartData, setChartData] = useState<GraphableTimeByHourBlock[]>([])
   const [tags, setTags] = useState<Tag[]>([])
-  const [isLoading, setIsLoading] = useState(false)
   const [permissionStatus, setPermissionStatus] = useState<boolean | null>(null)
   const refreshIntervalRef = useRef<number | null>(null)
 
@@ -49,9 +48,6 @@ export const HomePage = () => {
     user?.email?.split('@')[0]
 
   const refreshData = async () => {
-    if (isLoading) return
-    
-    setIsLoading(true)
     try {
       const { chartData, tags, topApps } = await fetchData(date)
       setTags(tags)
@@ -66,8 +62,6 @@ export const HomePage = () => {
       setChartData(chartData.slice(6))
     } catch (error) {
       console.error('Error refreshing data:', error)
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -198,7 +192,17 @@ export const HomePage = () => {
                   onSelect={(newDate) => {
                     if (newDate) {
                       setDate(newDate)
-                      refreshData()
+                      fetchData(newDate).then(({ chartData, tags, topApps }) => {
+                        setTags(tags)
+                        setAppUsage(topApps)
+                        setTotalCreating(chartData.reduce((acc, curr) => acc + curr.creating, 0))
+                        const online = chartData.reduce((acc, curr) => 
+                          acc + curr.creating + curr.neutral + curr.consuming, 0)
+                        setTotalOnline(online)
+                        setChartData(chartData.slice(6))
+                      }).catch(error => {
+                        console.error('Error fetching data:', error)
+                      })
                     }
                   }}
                   disabled={(date) => date > new Date()}
@@ -218,7 +222,6 @@ export const HomePage = () => {
             showAppRatingControls={true}
             onRatingChange={handleRatingChange}
             tags={tags}
-            isLoading={isLoading}
           />
         </div>
       </div>

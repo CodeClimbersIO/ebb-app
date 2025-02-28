@@ -154,87 +154,81 @@ export const UsageSummary = ({
       <Card>
         <CardContent className="pt-6">
           <ChartContainer config={chartConfig}>
-            {chartData && chartData.length > 0 ? (
-              <BarChart height={200} data={chartData}>
-                <defs>
-                  <linearGradient id="creatingGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="rgb(124 58 237)" stopOpacity={1} />
-                    <stop offset="100%" stopColor="rgb(124 58 237)" stopOpacity={0.8} />
-                  </linearGradient>
-                  <linearGradient id="neutralGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="rgb(82 82 91)" stopOpacity={1} />
-                    <stop offset="100%" stopColor="rgb(82 82 91)" stopOpacity={0.8} />
-                  </linearGradient>
-                  <linearGradient id="consumingGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="rgb(239 68 68)" stopOpacity={1} />
-                    <stop offset="100%" stopColor="rgb(239 68 68)" stopOpacity={0.8} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid
-                  vertical={false}
-                  stroke="hsl(var(--border))"
-                  strokeOpacity={0.8}
-                />
-                <XAxis
-                  dataKey="xAxisLabel"
-                  tickLine={false}
-                  tickMargin={10}
-                  axisLine={false}
-                  interval={0}
-                />
-                <ChartTooltip
-                  content={({ active, payload }) => {
-                    if (!active || !payload?.length) return null
+            <BarChart height={200} data={chartData}>
+              <defs>
+                <linearGradient id="creatingGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="rgb(124 58 237)" stopOpacity={1} />
+                  <stop offset="100%" stopColor="rgb(124 58 237)" stopOpacity={0.8} />
+                </linearGradient>
+                <linearGradient id="neutralGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="rgb(82 82 91)" stopOpacity={1} />
+                  <stop offset="100%" stopColor="rgb(82 82 91)" stopOpacity={0.8} />
+                </linearGradient>
+                <linearGradient id="consumingGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="rgb(239 68 68)" stopOpacity={1} />
+                  <stop offset="100%" stopColor="rgb(239 68 68)" stopOpacity={0.8} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid
+                vertical={false}
+                stroke="hsl(var(--border))"
+                strokeOpacity={0.8}
+              />
+              <XAxis
+                dataKey="xAxisLabel"
+                tickLine={false}
+                tickMargin={10}
+                axisLine={false}
+                interval={0}
+              />
+              <ChartTooltip
+                content={({ active, payload }) => {
+                  if (!active || !payload?.length) return null
 
-                    const data = payload[0].payload
-                    return (
-                      <div className="rounded-lg border bg-background p-2 shadow-md">
-                        <div className="mb-2 font-medium">{data.timeRange}</div>
-                        <div className="space-y-1">
-                          <div className="text-[rgb(124,58,237)]">Creating: {data.creating} min</div>
-                          <div className="text-gray-500">Neutral: {data.neutral} min</div>
-                          <div className="text-[rgb(239,68,68)]">Consuming: {data.consuming} min</div>
-                          <div className="text-gray-600">Offline: {data.offline} min</div>
-                        </div>
+                  const data = payload[0].payload
+                  return (
+                    <div className="rounded-lg border bg-background p-2 shadow-md">
+                      <div className="mb-2 font-medium">{data.timeRange}</div>
+                      <div className="space-y-1">
+                        <div className="text-[rgb(124,58,237)]">Creating: {data.creating} min</div>
+                        <div className="text-gray-500">Neutral: {data.neutral} min</div>
+                        <div className="text-[rgb(239,68,68)]">Consuming: {data.consuming} min</div>
+                        <div className="text-gray-600">Offline: {data.offline} min</div>
                       </div>
-                    )
-                  }}
-                />
-                <ChartLegend content={<ChartLegendContent />} />
-                <Bar
-                  dataKey="consuming"
-                  stackId="a"
-                  fill={chartConfig.consuming.color}
-                  radius={[0, 0, 4, 4]}
-                  barSize={20}
-                />
-                <Bar
-                  dataKey="neutral"
-                  stackId="a"
-                  fill={chartConfig.neutral.color}
-                  radius={[0, 0, 0, 0]}
-                  barSize={20}
-                />
-                <Bar
-                  dataKey="creating"
-                  stackId="a"
-                  fill={chartConfig.creating.color}
-                  radius={[4, 4, 0, 0]}
-                  barSize={20}
-                />
-                <Bar
-                  dataKey="offline"
-                  stackId="a"
-                  fill="transparent"
-                  radius={[4, 4, 0, 0]}
-                  barSize={20}
-                />
-              </BarChart>
-            ) : (
-              <div className="flex h-[200px] items-center justify-center text-muted-foreground">
-                No chart data available
-              </div>
-            )}
+                    </div>
+                  )
+                }}
+              />
+              <ChartLegend content={<ChartLegendContent />} />
+              <Bar
+                dataKey="consuming"
+                stackId="a"
+                fill={chartConfig.consuming.color}
+                radius={[0, 0, 4, 4]}
+                barSize={20}
+              />
+              <Bar
+                dataKey="neutral"
+                stackId="a"
+                fill={chartConfig.neutral.color}
+                radius={[0, 0, 0, 0]}
+                barSize={20}
+              />
+              <Bar
+                dataKey="creating"
+                stackId="a"
+                fill={chartConfig.creating.color}
+                radius={[4, 4, 0, 0]}
+                barSize={20}
+              />
+              <Bar
+                dataKey="offline"
+                stackId="a"
+                fill="transparent"
+                radius={[4, 4, 0, 0]}
+                barSize={20}
+              />
+            </BarChart>
           </ChartContainer>
         </CardContent>
       </Card>
