@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Music, Info, Plus, Minus } from 'lucide-react'
+import { Music, Plus, Minus } from 'lucide-react'
 import { TopNav } from '@/components/TopNav'
 import { LogoContainer } from '@/components/LogoContainer'
 import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
@@ -14,7 +14,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Switch } from '@/components/ui/switch'
 import {
   Tooltip,
   TooltipContent,
@@ -27,6 +26,8 @@ import { SpotifyIcon } from '@/components/icons/SpotifyIcon'
 import { AppleMusicIcon } from '@/components/icons/AppleMusicIcon'
 import { SpotifyAuthService } from '@/lib/integrations/spotify/spotifyAuth'
 import { SpotifyApiService } from '@/lib/integrations/spotify/spotifyApi'
+import { BlockingPreferenceApi } from '../api/ebbApi/blockingPreferenceApi'
+import { invoke } from '@tauri-apps/api/core'
 
 
 export const StartFlowPage = () => {
@@ -35,14 +36,8 @@ export const StartFlowPage = () => {
     const saved = localStorage.getItem('lastDuration')
     return saved ? JSON.parse(saved) : null
   })
-  const [selectedBlocks, setSelectedBlocks] = useState<SearchOption[]>(() => {
-    const saved = localStorage.getItem('selectedBlocks')
-    return saved ? JSON.parse(saved) : []
-  })
-  const [allowList, setAllowList] = useState(() => {
-    const saved = localStorage.getItem('allowList')
-    return saved ? JSON.parse(saved) : false
-  })
+  const [selectedBlocks, setSelectedBlocks] = useState<SearchOption[]>([])
+
   const [selectedPlaylist, setSelectedPlaylist] = useState(() => {
     const saved = localStorage.getItem('lastPlaylist')
     return saved || ''
@@ -80,10 +75,6 @@ export const StartFlowPage = () => {
   useEffect(() => {
     localStorage.setItem('lastDuration', JSON.stringify(duration))
   }, [duration])
-
-  useEffect(() => {
-    localStorage.setItem('allowList', JSON.stringify(allowList))
-  }, [allowList])
 
   useEffect(() => {
     localStorage.setItem('lastPlaylist', selectedPlaylist)
@@ -157,6 +148,14 @@ export const StartFlowPage = () => {
   }, [])
 
   useEffect(() => {
+    const loadBlockingPreferences = async () => {
+      const prefs = await BlockingPreferenceApi.getBlockingPreferencesAsSearchOptions()
+      setSelectedBlocks(prefs)
+    }
+    loadBlockingPreferences()
+  }, [])
+
+  useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
       if (event.key === 'Enter' && event.metaKey && objective) {
         handleBegin()
@@ -171,18 +170,18 @@ export const StartFlowPage = () => {
   useEffect(() => {
     const loadPlaylistData = async () => {
       if (!musicService.connected || musicService.type !== 'spotify') return
-      
+
       try {
         const playlists = await SpotifyApiService.getUserPlaylists()
         const images: Record<string, string> = {}
-        
+
         for (const playlist of playlists) {
           const imageUrl = await SpotifyApiService.getPlaylistCoverImage(playlist.id)
           if (imageUrl) {
             images[playlist.id] = imageUrl
           }
         }
-        
+
         const newPlaylistData = { playlists, images }
         setPlaylistData(newPlaylistData)
         localStorage.setItem('playlistData', JSON.stringify(newPlaylistData))
@@ -198,7 +197,18 @@ export const StartFlowPage = () => {
     if (!objective) return
 
     try {
-      const sessionId = await FlowSessionApi.startFlowSession(objective, duration || undefined)
+
+      await BlockingPreferenceApi.saveBlockingPreferences(selectedBlocks)
+
+      const allBlockedApps = await BlockingPreferenceApi.getAllBlockedApps()
+      const blockingUrls = allBlockedApps.map(app => app.app_external_id)
+      await invoke('start_blocking', { blockingUrls })
+
+      const sessionId = await FlowSessionApi.startFlowSession(
+        objective,
+        duration || undefined,
+        selectedBlocks,
+      )
 
       if (!sessionId) {
         console.error('No session ID returned from API')
@@ -211,8 +221,6 @@ export const StartFlowPage = () => {
           objective,
           sessionId,
           duration: duration || undefined,
-          blocks: allowList ? 'all' : selectedBlocks,
-          allowList,
           playlist: selectedPlaylist ? {
             id: selectedPlaylist,
             service: musicService.type
@@ -224,42 +232,38 @@ export const StartFlowPage = () => {
     }
   }
 
-  const handleAppSelect = (option: SearchOption) => {
-    setSelectedBlocks((prev: SearchOption[]) => {
-      const newBlocks = [...prev, option]
-      localStorage.setItem('selectedBlocks', JSON.stringify(newBlocks))
-      return newBlocks
-    })
+  const handleAppSelect = async (option: SearchOption) => {
+    const newBlocks = [...selectedBlocks, option]
+    await BlockingPreferenceApi.saveBlockingPreferences(newBlocks)
+    setSelectedBlocks(newBlocks)
   }
 
-  const handleAppRemove = (option: SearchOption) => {
-    setSelectedBlocks((prev: SearchOption[]) => {
-      const newBlocks = prev.filter(app => {
-        if ('category' in option && 'category' in app && option.type === 'category' && app.type === 'category') {
-          return app.category !== option.category
+  const handleAppRemove = async (option: SearchOption) => {
+    const newBlocks = selectedBlocks.filter(app => {
+      if ('category' in option && 'category' in app && option.type === 'category' && app.type === 'category') {
+        return app.category !== option.category
+      }
+      if (option.type === 'app' && app.type === 'app') {
+        if (!option.app.is_browser) {
+          return app.app.name !== option.app.name
         }
-        if (option.type === 'app' && app.type === 'app') {
-          if (!option.app.is_browser) {
-            return app.app.name !== option.app.name
-          }
-          return app.app.app_external_id !== option.app.app_external_id
-        }
-        // Handle custom website option
-        if (option.type === 'custom' && app.type === 'custom') {
-          return app.url !== option.url
-        }
-        // Handle app vs custom comparison (they might be converted from one to the other)
-        if (option.type === 'custom' && app.type === 'app' && app.app.is_browser) {
-          return app.app.app_external_id !== option.url
-        }
-        if (option.type === 'app' && option.app.is_browser && app.type === 'custom') {
-          return app.url !== option.app.app_external_id
-        }
-        return true
-      })
-      localStorage.setItem('selectedBlocks', JSON.stringify(newBlocks))
-      return newBlocks
+        return app.app.app_external_id !== option.app.app_external_id
+      }
+      // Handle custom website option
+      if (option.type === 'custom' && app.type === 'custom') {
+        return app.url !== option.url
+      }
+      // Handle app vs custom comparison (they might be converted from one to the other)
+      if (option.type === 'custom' && app.type === 'app' && app.app.is_browser) {
+        return app.app.app_external_id !== option.url
+      }
+      if (option.type === 'app' && option.app.is_browser && app.type === 'custom') {
+        return app.url !== option.app.app_external_id
+      }
+      return true
     })
+    await BlockingPreferenceApi.saveBlockingPreferences(newBlocks)
+    setSelectedBlocks(newBlocks)
   }
 
   const CollapsibleSectionHeader = ({
@@ -357,8 +361,8 @@ export const StartFlowPage = () => {
                 </div>
 
                 {spotifyProfile?.product === 'premium' ? (
-                  <Select 
-                    value={selectedPlaylist} 
+                  <Select
+                    value={selectedPlaylist}
                     onValueChange={setSelectedPlaylist}
                   >
                     <SelectTrigger>
@@ -369,8 +373,8 @@ export const StartFlowPage = () => {
                         <SelectItem key={playlist.id} value={playlist.id}>
                           <div className="flex items-center">
                             {playlistData.images[playlist.id] ? (
-                              <img 
-                                src={playlistData.images[playlist.id]} 
+                              <img
+                                src={playlistData.images[playlist.id]}
                                 alt={playlist.name}
                                 className="h-6 w-6 rounded mr-2 object-cover"
                               />
@@ -456,28 +460,6 @@ export const StartFlowPage = () => {
                     onAppSelect={handleAppSelect}
                     onAppRemove={handleAppRemove}
                   />
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        checked={allowList}
-                        onCheckedChange={(checked) => {
-                          setAllowList(checked)
-                        }}
-                      />
-                      <span className="text-sm text-muted-foreground">Allow List</span>
-                    </div>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <Info className="h-4 w-4 text-muted-foreground" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Only allow what's on this list and block everything else</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
                 </div>
               )}
             </div>

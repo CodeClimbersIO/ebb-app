@@ -20,6 +20,29 @@ const getTagsByType = async (type: TagType): Promise<Tag[]> => {
   return tags
 }
 
+export interface TagWithAppCount extends TagSchema {
+  count: number;
+}
+
+const getCategoriesWithAppCounts = async (tagIds: string[]): Promise<TagWithAppCount[]> => {
+  if (tagIds.length === 0) return []
+  
+  const monitorDb = await MonitorDb.getMonitorDb()
+  
+  const categories = await monitorDb.select<TagWithAppCount[]>(
+    `SELECT t.*, COUNT(at.app_id) as count 
+     FROM tag t
+     LEFT JOIN app_tag at ON t.id = at.tag_id
+     WHERE t.id IN (${tagIds.map(() => '?').join(',')})
+     AND t.tag_type = 'category'
+     GROUP BY t.id`,
+    [...tagIds]
+  )
+  
+  return categories
+}
+
 export const TagRepo = {
   getTagsByType,
+  getCategoriesWithAppCounts
 }

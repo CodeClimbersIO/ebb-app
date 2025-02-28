@@ -60,7 +60,27 @@ const getApps = async (): Promise<AppDb[]> => {
   return apps
 }
 
+const getAppsByIds = async (appIds: string[]): Promise<AppDb[]> => {
+  if (appIds.length === 0) return []
+  
+  const monitorDb = await MonitorDb.getMonitorDb()
+  const query = `
+    SELECT * FROM app WHERE id IN (${appIds.map(() => '?').join(',')})`
+  return await monitorDb.select(query, [...appIds])
+}
+
+const getAppsByCategoryTags = async (tagIds: string[]): Promise<AppDb[]> => {
+  const monitorDb = await MonitorDb.getMonitorDb()
+  const query = `
+    SELECT * FROM app a
+    LEFT JOIN app_tag at ON at.app_id = a.id
+    WHERE at.tag_id IN (${tagIds.map(() => '?').join(',')})`
+  return monitorDb.select<AppDb[]>(query, [...tagIds])
+}
+
 export const AppRepo = {
   setAppTag,
   getApps,
+  getAppsByIds,
+  getAppsByCategoryTags
 }

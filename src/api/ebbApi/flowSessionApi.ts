@@ -1,7 +1,13 @@
 import { QueryResult } from '@tauri-apps/plugin-sql'
 import { FlowSession, FlowSessionRepo, FlowSessionSchema } from '../../db/ebb/flowSessionRepo'
+import { SearchOption } from '@/components/AppSelector'
+import { BlockingPreferenceApi } from './blockingPreferenceApi'
 
-const startFlowSession = async (objective: string, duration?: number): Promise<string> => {
+const startFlowSession = async (
+  objective: string, 
+  duration?: number, 
+  blocks?: SearchOption[],
+): Promise<string> => {
   const flowSession: FlowSessionSchema = {
     id: self.crypto.randomUUID(),
     start: new Date().toISOString(),
@@ -9,10 +15,17 @@ const startFlowSession = async (objective: string, duration?: number): Promise<s
     self_score: 0,
     duration: duration ? duration * 60 : undefined,
   }
+  
   if (await FlowSessionRepo.getInProgressFlowSession()) {
     throw new Error('Flow session already in progress')
   }
+  
   await FlowSessionRepo.createFlowSession(flowSession)
+  
+  if (blocks) {
+    await BlockingPreferenceApi.saveBlockingPreferences(blocks)
+  }
+  
   return flowSession.id
 }
 

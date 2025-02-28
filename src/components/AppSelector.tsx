@@ -11,10 +11,12 @@ import { useEffect, useRef, useState } from 'react'
 import { MonitorApi } from '../api/monitorApi/monitorApi'
 import { App } from '../db/monitor/appRepo'
 import { AppIcon } from './AppIcon'
+import { Tag } from '../db/monitor/tagRepo'
 
 interface CategoryOption {
   type: 'category'
   category: AppCategory
+  tag: Tag
   count: number
 }
 
@@ -85,6 +87,7 @@ export function AppSelector({
   const inputRef = useRef<HTMLDivElement>(null)
   const [selected, setSelected] = useState(0)
   const [apps, setApps] = useState<AppOption[]>([])
+  const [categoryOptions, setCategoryOptions] = useState<CategoryOption[]>([])
   // Combined close and reset functionality
   const handleClose = () => {
     setOpen(false)
@@ -94,8 +97,20 @@ export function AppSelector({
 
   useEffect(() => {
     const init = async () => {
-      const apps = await MonitorApi.getApps()
+      const [apps, tags] = await Promise.all([
+        MonitorApi.getApps(),
+        MonitorApi.getTagsByType('category')
+      ])
+      const categoryOptionsFiltered = tags
+        .filter(tag => !excludedCategories.includes(tag.name as AppCategory))
+        .map(tag => ({
+          type: 'category',
+          category: tag.name as AppCategory,
+          tag,
+          count: apps.filter(app => app.category_tag?.tag_name === tag.name).length
+        } as CategoryOption))
       setApps(apps.map(app => ({ type: 'app', app: app })))
+      setCategoryOptions(categoryOptionsFiltered)
     }
     init()
   }, [])
@@ -105,17 +120,6 @@ export function AppSelector({
       setSearch('')
     }
   }, [open])
-
-  // Create memoized category options
-  const categoryOptions = React.useMemo(() => {
-    return Object.keys(categoryEmojis)
-      .filter(category => !excludedCategories.includes(category as AppCategory))
-      .map((category) => ({
-        type: 'category' as const,
-        category: category as AppCategory,
-        count: apps.filter(app => app.type === 'app' && app.app.category_tag?.tag_name === category).length
-      }))
-  }, [apps, excludedCategories])
 
   // Update filtered apps to include categories
   const filteredOptions = React.useMemo(() => {
@@ -178,13 +182,13 @@ export function AppSelector({
     const mightBeWebsite = search.includes('.') || search.includes('://')
 
     // Add custom website option if search looks like a URL and not already in results
-    const customUrlAlreadyExists = results.some(option => 
+    const customUrlAlreadyExists = results.some(option =>
       (option.type === 'app' && option.app.is_browser && option.app.app_external_id.toLowerCase() === searchLower) ||
       (option.type === 'custom' && option.url.toLowerCase() === searchLower)
     )
 
     // Check if the search term is already selected
-    const alreadySelected = selectedApps.some(selected => 
+    const alreadySelected = selectedApps.some(selected =>
       (selected.type === 'app' && selected.app.is_browser && selected.app.app_external_id.toLowerCase() === searchLower) ||
       (selected.type === 'custom' && selected.url.toLowerCase() === searchLower)
     )
@@ -282,7 +286,7 @@ export function AppSelector({
           }
         }
       }
-      
+
       onAppSelect(customApp)
       setSearch('')
       setSelected(0)
@@ -374,10 +378,10 @@ export function AppSelector({
   React.useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       // Only handle Delete or Backspace when not in an input field
-      if ((e.key === 'Delete' || e.key === 'Backspace') && 
-          selectedApps.length > 0 && 
-          document.activeElement?.tagName !== 'INPUT' &&
-          document.activeElement?.tagName !== 'TEXTAREA') {
+      if ((e.key === 'Delete' || e.key === 'Backspace') &&
+        selectedApps.length > 0 &&
+        document.activeElement?.tagName !== 'INPUT' &&
+        document.activeElement?.tagName !== 'TEXTAREA') {
         e.preventDefault()
         onAppRemove(selectedApps[selectedApps.length - 1])
       }

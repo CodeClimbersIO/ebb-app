@@ -27,6 +27,7 @@ import { Music, Loader2 } from 'lucide-react'
 import { SpotifyIcon } from '@/components/icons/SpotifyIcon'
 import { PlaybackState, SpotifyApiService } from '@/lib/integrations/spotify/spotifyApi'
 import { SpotifyAuthService } from '@/lib/integrations/spotify/spotifyAuth'
+import { invoke } from '@tauri-apps/api/core'
 
 const getDurationFormatFromSeconds = (seconds: number) => {
   const duration = Duration.fromMillis(seconds * 1000)
@@ -78,18 +79,18 @@ const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
 
   const handleAddTime = async () => {
     if (!flowSession || !flowSession.duration || isAddingTime || cooldown) return
-    
+
     try {
       setIsAddingTime(true)
       setCooldown(true)
-      
+
       // Calculate the new total duration
       const additionalSeconds = 15 * 60 // 15 minutes in seconds
       const newTotalDuration = flowSession.duration + additionalSeconds
-      
+
       // Update the session duration on the server
       await FlowSessionApi.updateFlowSessionDuration(flowSession.id, newTotalDuration)
-      
+
       // Update the flowSession object directly
       flowSession.duration = newTotalDuration
     } catch (error) {
@@ -110,8 +111,8 @@ const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
         {time}
       </div>
       {flowSession?.duration && (
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           size="sm"
           onClick={handleAddTime}
           className="mt-2"
@@ -223,7 +224,7 @@ export const FlowPage = () => {
         // Handle player disconnection events, which might be caused by token issues
         newPlayer.addListener('not_ready', ({ device_id }: { device_id: string }) => {
           console.log('Device ID has gone offline', device_id)
-          
+
           // Attempt to reconnect if possible
           setTimeout(async () => {
             try {
@@ -259,7 +260,7 @@ export const FlowPage = () => {
       if (cached) {
         const parsedData = JSON.parse(cached)
         setPlaylistData(parsedData)
-        
+
         // Set initial playlist from location state
         const initialPlaylist = location.state?.playlist?.id
         if (initialPlaylist) {
@@ -272,14 +273,14 @@ export const FlowPage = () => {
       try {
         const playlists = await SpotifyApiService.getUserPlaylists()
         const images: Record<string, string> = {}
-        
+
         for (const playlist of playlists) {
           const imageUrl = await SpotifyApiService.getPlaylistCoverImage(playlist.id)
           if (imageUrl) {
             images[playlist.id] = imageUrl
           }
         }
-        
+
         const newPlaylistData = { playlists, images }
         setPlaylistData(newPlaylistData)
         localStorage.setItem('playlistData', JSON.stringify(newPlaylistData))
@@ -325,6 +326,7 @@ export const FlowPage = () => {
       setSelectedPlaylistId('')
     }
 
+    await invoke('stop_blocking')
     await FlowSessionApi.endFlowSession(flowSession.id)
     setShowEndDialog(false)
 
@@ -383,13 +385,13 @@ export const FlowPage = () => {
   const handlePlaylistChange = async (playlistId: string) => {
     if (!deviceId) return
     setSelectedPlaylistId(playlistId)
-    
+
     // Save the selected playlist to local storage using the same key as StartFlowPage
     const playlist = playlistData.playlists.find(p => p.id === playlistId)
     if (playlist) {
       localStorage.setItem('lastPlaylist', playlistId)
     }
-    
+
     await SpotifyApiService.startPlayback(playlistId, deviceId)
   }
 
@@ -485,8 +487,8 @@ export const FlowPage = () => {
                         <SelectItem key={playlist.id} value={playlist.id}>
                           <div className="flex items-center">
                             {playlistData.images[playlist.id] ? (
-                              <img 
-                                src={playlistData.images[playlist.id]} 
+                              <img
+                                src={playlistData.images[playlist.id]}
                                 alt={playlist.name}
                                 className="h-6 w-6 rounded mr-2 object-cover"
                               />

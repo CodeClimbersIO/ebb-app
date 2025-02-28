@@ -1,5 +1,6 @@
 use os_monitor::{
     get_application_icon_data, has_accessibility_permissions, request_accessibility_permissions,
+    start_site_blocking, stop_site_blocking,
 };
 use tauri::Manager;
 use tokio;
@@ -10,6 +11,16 @@ use tauri::command;
 #[command]
 async fn get_app_icon(bundle_id: String) -> Result<String, String> {
     get_application_icon_data(&bundle_id).ok_or_else(|| "Failed to get app icon".to_string())
+}
+
+#[command]
+fn start_blocking(blocking_urls: Vec<String>) {
+    start_site_blocking(&blocking_urls, "https://ebb.cool/vibes");
+}
+
+#[command]
+fn stop_blocking() {
+    stop_site_blocking();
 }
 
 #[command]
@@ -55,7 +66,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             get_app_icon,
             check_accessibility_permissions,
             request_system_permissions,
-            start_system_monitoring
+            start_system_monitoring,
+            start_blocking,
+            stop_blocking
         ])
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_deep_link::init())

@@ -69,5 +69,18 @@ pub fn get_migrations() -> Vec<Migration> {
             "#,
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 6,
+            description: "create_blocking_preference",
+            sql: r#"
+            CREATE TABLE IF NOT EXISTS blocking_preference (
+                id TEXT PRIMARY KEY NOT NULL,
+                app_id TEXT,
+                tag_id TEXT,
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+            );"#,
+            kind: MigrationKind::Up,
+        },
     ]
 }
