@@ -482,7 +482,7 @@ export const FlowPage = () => {
                     <SelectTrigger className="w-[200px]">
                       <SelectValue placeholder="Select playlist" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="max-h-[300px] overflow-y-auto">
                       {playlistData.playlists.map(playlist => (
                         <SelectItem key={playlist.id} value={playlist.id}>
                           <div className="flex items-center">
