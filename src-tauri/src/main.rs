@@ -56,12 +56,30 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             _ => {}
         })
+        .plugin(
+            tauri_plugin_log::Builder::new()
+                .clear_targets()
+                .targets([
+                    tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::LogDir {
+                        file_name: Some("logs".to_string()),
+                    }),
+                    tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::Stdout),
+                ])
+                .build(),
+        )
         .setup(|app| {
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Regular);
             Ok(())
         })
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+        .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_deep_link::init())
+        .plugin(
+            tauri_plugin_sql::Builder::new()
+                .add_migrations(&format!("sqlite:{db_path}"), migrations)
+                .build(),
+        )
         .invoke_handler(tauri::generate_handler![
             get_app_icon,
             check_accessibility_permissions,
@@ -70,22 +88,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             start_blocking,
             stop_blocking
         ])
-        .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_deep_link::init())
-        .plugin(
-            tauri_plugin_sql::Builder::new()
-                .add_migrations(&format!("sqlite:{db_path}"), migrations)
-                .build(),
-        )
-        .plugin(
-            tauri_plugin_log::Builder::new()
-                .target(tauri_plugin_log::Target::new(
-                    tauri_plugin_log::TargetKind::LogDir {
-                        file_name: Some("logs".to_string()),
-                    },
-                ))
-                .build(),
-        )
         .build(tauri::generate_context!())?
         .run(
             |app: &tauri::AppHandle<tauri::Wry>, event: tauri::RunEvent| match event {

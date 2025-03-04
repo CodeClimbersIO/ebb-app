@@ -22,7 +22,7 @@ import { invoke } from '@tauri-apps/api/core'
 const fetchData = async (selectedDate: Date) => {
   const start = DateTime.fromJSDate(selectedDate).startOf('day')
   const end = DateTime.fromJSDate(selectedDate).endOf('day')
-  
+
   const chartData = await MonitorApi.getTimeCreatingByHour(start, end)
   const tags = await MonitorApi.getTagsByType('default')
   const topApps = await MonitorApi.getTopAppsByPeriod(start, end)
@@ -53,12 +53,12 @@ export const HomePage = () => {
       setTags(tags)
       setAppUsage(topApps)
       setTotalCreating(chartData.reduce((acc, curr) => acc + curr.creating, 0))
-      
+
       // Calculate total online time (creating + neutral + consuming)
-      const online = chartData.reduce((acc, curr) => 
+      const online = chartData.reduce((acc, curr) =>
         acc + curr.creating + curr.neutral + curr.consuming, 0)
       setTotalOnline(online)
-      
+
       setChartData(chartData.slice(6))
     } catch (error) {
       console.error('Error refreshing data:', error)
@@ -74,9 +74,9 @@ export const HomePage = () => {
 
       await refreshData()
     }
-    
+
     init()
-    
+
     // Set up auto-refresh interval (every 30 seconds)
     refreshIntervalRef.current = window.setInterval(async () => {
       // Only auto-refresh if the selected date is today
@@ -84,16 +84,15 @@ export const HomePage = () => {
         await refreshData()
       }
     }, 30000)
-    
-    // Also refresh when window regains focus
+
     const handleFocus = async () => {
       if (date.toDateString() === new Date().toDateString()) {
         await refreshData()
       }
     }
-    
+
     window.addEventListener('focus', handleFocus)
-    
+
     // Clean up interval and event listener on unmount
     return () => {
       if (refreshIntervalRef.current !== null) {
@@ -155,7 +154,7 @@ export const HomePage = () => {
               <AlertCircle className="h-4 w-4 text-red-400" />
               <AlertDescription className="text-red-400">
                 Ebb needs accessibility permissions to support blocking, time tracking, and shortcuts.{' '}
-                <button 
+                <button
                   onClick={handleRequestPermissions}
                   className="underline hover:text-red-300 font-medium"
                 >
