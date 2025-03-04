@@ -38,6 +38,11 @@ fn start_system_monitoring() {
     system_monitor::start_monitoring();
 }
 
+#[command]
+fn is_monitoring_running() -> bool {
+    system_monitor::is_monitoring_running()
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tauri::async_runtime::set(tokio::runtime::Handle::current());
@@ -86,7 +91,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             request_system_permissions,
             start_system_monitoring,
             start_blocking,
-            stop_blocking
+            stop_blocking,
+            is_monitoring_running
         ])
         .build(tauri::generate_context!())?
         .run(

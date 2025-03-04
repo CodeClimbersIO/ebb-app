@@ -4,6 +4,7 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/h
 import { useState, useEffect } from 'react'
 import { Github, Lock, Loader2, CheckCircle2 } from 'lucide-react'
 import { invoke } from '@tauri-apps/api/core'
+import { error as logError } from '@tauri-apps/plugin-log'
 
 export const AccessibilityPage = () => {
   const navigate = useNavigate()
@@ -11,6 +12,8 @@ export const AccessibilityPage = () => {
   const [permissionStatus, setPermissionStatus] = useState<'checking' | 'granted' | 'not_granted'>('checking')
 
   useEffect(() => {
+    let interval: NodeJS.Timeout | null = null
+
     const checkPermissions = async () => {
       try {
         setPermissionStatus('checking')
@@ -22,32 +25,25 @@ export const AccessibilityPage = () => {
 
         setPermissionStatus(hasPermissions ? 'granted' : 'not_granted')
 
-        return hasPermissions
+        if (!hasPermissions) {
+          interval = setInterval(async () => {
+            const granted = await checkPermissions()
+            if (granted && interval) {
+              await invoke('start_system_monitoring')
+              clearInterval(interval)
+              interval = null
+            }
+          }, 3000)
+        }
       } catch (error) {
-        console.error('❌ Error during permission check:', error)
+        logError(`❌ Error during permission check: ${error}`)
         setPermissionStatus('not_granted')
         return false
       }
     }
 
-    let interval: NodeJS.Timeout | null = null
+    checkPermissions()
 
-    // Initial check
-    checkPermissions().then(hasPermissions => {
-      // Only set up the interval if permissions are not granted
-      if (!hasPermissions) {
-        interval = setInterval(async () => {
-          const granted = await checkPermissions()
-          if (granted && interval) {
-            await invoke('start_system_monitoring')
-            clearInterval(interval)
-            interval = null
-          }
-        }, 3000)
-      }
-    })
-
-    // Cleanup function
     return () => {
       if (interval) {
         clearInterval(interval)
@@ -58,9 +54,8 @@ export const AccessibilityPage = () => {
   const handleRequestPermissions = async () => {
     try {
       await invoke('request_system_permissions')
-      // The status will be updated by the interval checker
     } catch (error) {
-      console.error('Failed to request permissions:', error)
+      logError(`Failed to request permissions: ${error}`)
     }
   }
 

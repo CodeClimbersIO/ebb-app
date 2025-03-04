@@ -1,7 +1,7 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
-use os_monitor::{detect_changes, Monitor};
+use os_monitor::{detect_changes, has_accessibility_permissions, Monitor};
 use os_monitor_service::initialize_monitoring_service;
 
 use tauri::async_runtime;
@@ -9,6 +9,10 @@ use tokio::time::{sleep, Duration};
 
 // Static flag to track if monitoring is already running
 static MONITOR_RUNNING: AtomicBool = AtomicBool::new(false);
+
+pub fn is_monitoring_running() -> bool {
+    MONITOR_RUNNING.load(Ordering::SeqCst)
+}
 
 pub fn get_default_db_path() -> String {
     let home_dir = dirs::home_dir().expect("Could not find home directory");
@@ -49,7 +53,11 @@ pub fn start_monitoring() {
                 break;
             }
             sleep(Duration::from_secs(1)).await;
-
+            if !has_accessibility_permissions() {
+                log::error!("Accessibility permissions not granted, stopping monitoring");
+                MONITOR_RUNNING.store(false, Ordering::SeqCst);
+                break;
+            }
             log::info!("Monitor loop iteration completed");
         }
     });
