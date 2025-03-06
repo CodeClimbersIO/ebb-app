@@ -45,20 +45,21 @@ pub fn start_monitoring() {
         log::info!("Monitor initialized");
 
         loop {
-            log::info!("Monitor loop iteration starting");
+            log::trace!("Monitor loop iteration starting");
             if let Err(e) = detect_changes() {
                 log::error!("Failed to detect changes: {}", e);
                 // On error, allow restarting the monitoring service
                 MONITOR_RUNNING.store(false, Ordering::SeqCst);
                 break;
             }
+
             sleep(Duration::from_secs(1)).await;
             if !has_accessibility_permissions() {
                 log::error!("Accessibility permissions not granted, stopping monitoring");
                 MONITOR_RUNNING.store(false, Ordering::SeqCst);
                 break;
             }
-            log::info!("Monitor loop iteration completed");
+            log::trace!("Monitor loop iteration completed");
         }
     });
 }

@@ -64,6 +64,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .plugin(
             tauri_plugin_log::Builder::new()
                 .clear_targets()
+                .level(log::LevelFilter::Trace)
                 .targets([
                     tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::LogDir {
                         file_name: Some("logs".to_string()),
