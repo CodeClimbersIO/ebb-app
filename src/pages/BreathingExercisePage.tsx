@@ -17,7 +17,7 @@ export const BreathingExercisePage = () => {
 
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      if (event.key === 'Escape' || event.key === 'Enter') {
         navigate('/flow', { 
           state: {
             ...state,
