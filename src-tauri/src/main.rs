@@ -1,6 +1,6 @@
 use os_monitor::{
     get_application_icon_data, has_accessibility_permissions, request_accessibility_permissions,
-    start_site_blocking, stop_site_blocking,
+    start_blocking as os_start_blocking, stop_blocking as os_stop_blocking,
 };
 use tauri::Manager;
 use tokio;
@@ -15,12 +15,12 @@ async fn get_app_icon(bundle_id: String) -> Result<String, String> {
 
 #[command]
 fn start_blocking(blocking_urls: Vec<String>) {
-    start_site_blocking(&blocking_urls, "https://ebb.cool/vibes");
+    os_start_blocking(&blocking_urls, "https://ebb.cool/vibes");
 }
 
 #[command]
 fn stop_blocking() {
-    stop_site_blocking();
+    os_stop_blocking();
 }
 
 #[command]
