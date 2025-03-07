@@ -13,6 +13,10 @@
         const duration = parseInt(params.get('duration') || '5000');
         const notification = document.querySelector('.notification');
         
+        // Add audio element and play sound
+        const audio = new Audio('src/sounds/app_blocked.mp3');
+        audio.play();
+        
         document.documentElement.style.setProperty('--progress-duration', `${duration}ms`);
         
         setTimeout(() => {

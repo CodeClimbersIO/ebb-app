@@ -12,6 +12,10 @@
         const params = new URLSearchParams(window.location.search);
         const duration = parseInt(params.get('duration') || '5000');
         const notification = document.querySelector('.notification');
+
+        // Add audio element and play sound
+        const audio = new Audio('src/sounds/session_start.mp3');
+        audio.play();
         
         // Set the progress animation duration
         document.documentElement.style.setProperty('--progress-duration', `${duration}ms`);

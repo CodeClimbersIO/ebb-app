@@ -13,6 +13,10 @@
         const duration = parseInt(params.get('duration'));
         const animationDuration = parseInt(params.get('animationDuration'));
         const notification = document.querySelector('.notification');
+
+        // Add audio element and play sound
+        const audio = new Audio('src/sounds/session_end.mp3');
+        audio.play();
         
         console.log('Duration received:', duration);
         console.log('Animation duration received:', animationDuration);
