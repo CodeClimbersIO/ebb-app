@@ -4,50 +4,41 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Session Warning</title>
+    <link rel="stylesheet" href="src/Notifications.css">
+    <script type="module">
+      import { event } from '@tauri-apps/api';
+      
+      window.onload = function() {
+        const params = new URLSearchParams(window.location.search);
+        const duration = parseInt(params.get('duration'));
+        const notification = document.querySelector('.notification');
+        
+        document.documentElement.style.setProperty('--progress-duration', `${duration}ms`);
+        
+        setTimeout(() => {
+          notification.style.animation = 'slideOut 0.5s ease-in forwards';
+        }, duration);
+      }
+    </script>
     <style>
-      body {
-        margin: 0;
-        padding: 0;
-        background: rgba(0, 0, 0, 0.8);
-        font-family: system-ui, -apple-system, sans-serif;
-      }
       .notification {
-        display: flex;
-        align-items: center;
-        padding: 16px;
-        gap: 12px;
-        border-left: 4px solid #eab308;
+        animation: slideIn 0.3s ease-out forwards;
       }
-      .icon {
-        width: 24px;
-        height: 24px;
-        color: #eab308;
-      }
-      .content {
-        flex: 1;
-      }
-      .title {
-        color: white;
-        font-weight: 600;
-        margin: 0;
-        font-size: 16px;
-      }
-      .message {
-        color: #94a3b8;
-        margin: 4px 0 0 0;
-        font-size: 14px;
+      
+      .notification::after {
+        animation-duration: var(--progress-duration);
       }
     </style>
   </head>
   <body>
-    <div class="notification">
+    <div class="notification warning">
       <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
       <div class="content">
-        <h3 class="title">Session Ending Soon</h3>
-        <p class="message">One minute remaining in your focus session.</p>
+        <h3 class="title">1 min left...</h3>
       </div>
+      <button class="button-ghost">Add 15 min</button>
     </div>
   </body>
 </html> 

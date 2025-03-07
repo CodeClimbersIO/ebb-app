@@ -154,26 +154,22 @@ export const SettingsPage = () => {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <Button onClick={() => notificationManager.show({
-                      type: 'session-start',
-                      duration: 5000
+                      type: 'session-start'
                     })}>
                       Test Session Start
                     </Button>
                     <Button onClick={() => notificationManager.show({
-                      type: 'session-end',
-                      duration: 5000
+                      type: 'session-end'
                     })}>
                       Test Session End
                     </Button>
                     <Button onClick={() => notificationManager.show({
-                      type: 'session-warning',
-                      duration: 5000
+                      type: 'session-warning'
                     })}>
                       Test Session Warning
                     </Button>
                     <Button onClick={() => notificationManager.show({
-                      type: 'blocked-app',
-                      duration: 5000
+                      type: 'blocked-app'
                     })}>
                       Test Blocked App
                     </Button>
