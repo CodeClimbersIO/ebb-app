@@ -19,6 +19,10 @@ import { useNavigate } from 'react-router-dom'
 import { SpotifyApiService } from '@/lib/integrations/spotify/spotifyApi'
 import { SpotifyAuthService } from '@/lib/integrations/spotify/spotifyAuth'
 import supabase from '@/lib/integrations/supabase'
+import NotificationManager from '@/lib/notificationManager'
+
+// Initialize the notification manager
+const notificationManager = NotificationManager.getInstance()
 
 export const SettingsPage = () => {
   const [showUnlinkDialog, setShowUnlinkDialog] = useState(false)
@@ -114,6 +118,14 @@ export const SettingsPage = () => {
     }
   }
 
+  const handleTestNotification = async () => {
+    await notificationManager.show({
+      title: 'Test Notification',
+      message: 'This is a test notification from Ebb!',
+      duration: 5000
+    })
+  }
+
   return (
     <Layout>
       <TooltipProvider>
@@ -134,6 +146,21 @@ export const SettingsPage = () => {
                   <div className="relative">
                     <ModeToggle />
                   </div>
+                </div>
+              </div>
+
+              <div className="border rounded-lg p-6">
+                <h2 className="text-lg font-semibold mb-4">Notifications</h2>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium">Test Notifications</div>
+                    <div className="text-sm text-muted-foreground">
+                      Try out the notification system
+                    </div>
+                  </div>
+                  <Button onClick={handleTestNotification}>
+                    Show Test Notification
+                  </Button>
                 </div>
               </div>
 
