@@ -118,14 +118,6 @@ export const SettingsPage = () => {
     }
   }
 
-  const handleTestNotification = async () => {
-    await notificationManager.show({
-      title: 'Test Notification',
-      message: 'This is a test notification from Ebb!',
-      duration: 5000
-    })
-  }
-
   return (
     <Layout>
       <TooltipProvider>
@@ -151,16 +143,41 @@ export const SettingsPage = () => {
 
               <div className="border rounded-lg p-6">
                 <h2 className="text-lg font-semibold mb-4">Notifications</h2>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">Test Notifications</div>
-                    <div className="text-sm text-muted-foreground">
-                      Try out the notification system
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">Test Notifications</div>
+                      <div className="text-sm text-muted-foreground">
+                        Try out different notification types
+                      </div>
                     </div>
                   </div>
-                  <Button onClick={handleTestNotification}>
-                    Show Test Notification
-                  </Button>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Button onClick={() => notificationManager.show({
+                      type: 'session-start',
+                      duration: 5000
+                    })}>
+                      Test Session Start
+                    </Button>
+                    <Button onClick={() => notificationManager.show({
+                      type: 'session-end',
+                      duration: 5000
+                    })}>
+                      Test Session End
+                    </Button>
+                    <Button onClick={() => notificationManager.show({
+                      type: 'session-warning',
+                      duration: 5000
+                    })}>
+                      Test Session Warning
+                    </Button>
+                    <Button onClick={() => notificationManager.show({
+                      type: 'blocked-app',
+                      duration: 5000
+                    })}>
+                      Test Blocked App
+                    </Button>
+                  </div>
                 </div>
               </div>
 
