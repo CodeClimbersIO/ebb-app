@@ -4,7 +4,7 @@ import { OnboardingUtils } from '@/lib/utils/onboarding'
 import { useEffect, useState } from 'react'
 import { register, unregister } from '@tauri-apps/plugin-global-shortcut'
 import { getCurrentWindow } from '@tauri-apps/api/window'
-
+import { error as logError } from '@tauri-apps/plugin-log'
 export const ShortcutTutorialPage = () => {
   const navigate = useNavigate()
   const [cmdPressed, setCmdPressed] = useState(false)
@@ -25,13 +25,13 @@ export const ShortcutTutorialPage = () => {
           const window = getCurrentWindow()
           await window.show()
           await window.setFocus()
-          
+
           setTimeout(() => {
             handleComplete()
           }, 300)
         })
       } catch (error) {
-        console.error('Failed to register shortcut:', error)
+        logError(`Failed to register shortcut: ${error}`)
       }
     }
 
@@ -78,7 +78,7 @@ export const ShortcutTutorialPage = () => {
       <p className="text-lg text-muted-foreground mb-8 text-center max-w-md">
         Try it now! E for Ebb 😎
       </p>
-      <Button 
+      <Button
         size="sm"
         variant="secondary"
         onClick={handleComplete}

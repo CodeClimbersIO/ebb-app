@@ -106,7 +106,6 @@ export class SpotifyAuthService {
   }
 
   static async handleCallback(code: string, state: string | null): Promise<void> {
-    try {
       // Verify state matches what we stored
       const storedState = localStorage.getItem(STATE_KEY)
       
@@ -130,10 +129,6 @@ export class SpotifyAuthService {
       if (!profile) {
         throw new Error('Failed to verify connection')
       }
-    } catch (error) {
-      console.error('Error in handleCallback:', error)
-      throw error
-    }
   }
 
   static async disconnect(): Promise<void> {
@@ -189,7 +184,6 @@ export class SpotifyAuthService {
       }),
     }
 
-    try {
       const response = await fetch(url, payload)
       
       if (!response.ok) {
@@ -205,10 +199,6 @@ export class SpotifyAuthService {
       })
       
       return data
-    } catch (error) {
-      console.error('Failed to refresh token:', error)
-      throw error
-    }
   }
 
   static async getAuth(): Promise<SpotifyTokens | undefined> {

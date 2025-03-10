@@ -2,7 +2,6 @@ import { AlertCircle } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useEffect, useState } from 'react'
 import { invoke } from '@tauri-apps/api/core'
-import { error as errorLog } from '@tauri-apps/plugin-log'
 export const PermissionAlert = () => {
   const [permissionStatus, setPermissionStatus] = useState<boolean | null>(null)
 
@@ -18,8 +17,8 @@ export const PermissionAlert = () => {
           }
         }
       } catch (error) {
-        errorLog(`Error checking permissions: ${error}`)
         setPermissionStatus(false)
+        throw error
       }
     }
 
@@ -34,11 +33,7 @@ export const PermissionAlert = () => {
   }, [permissionStatus])
 
   const handleRequestPermissions = async () => {
-    try {
-      await invoke('request_system_permissions')
-    } catch (error) {
-      errorLog(`Failed to request permissions: ${error}`)
-    }
+    await invoke('request_system_permissions')
   }
 
   if (permissionStatus !== false) {

@@ -46,21 +46,17 @@ export const HomePage = () => {
     user?.email?.split('@')[0]
 
   const refreshData = async () => {
-    try {
-      const { chartData, tags, topApps } = await fetchData(date)
-      setTags(tags)
-      setAppUsage(topApps)
-      setTotalCreating(chartData.reduce((acc, curr) => acc + curr.creating, 0))
+    const { chartData, tags, topApps } = await fetchData(date)
+    setTags(tags)
+    setAppUsage(topApps)
+    setTotalCreating(chartData.reduce((acc, curr) => acc + curr.creating, 0))
 
-      // Calculate total online time (creating + neutral + consuming)
-      const online = chartData.reduce((acc, curr) =>
-        acc + curr.creating + curr.neutral + curr.consuming, 0)
-      setTotalOnline(online)
+    // Calculate total online time (creating + neutral + consuming)
+    const online = chartData.reduce((acc, curr) =>
+      acc + curr.creating + curr.neutral + curr.consuming, 0)
+    setTotalOnline(online)
 
-      setChartData(chartData.slice(6))
-    } catch (error) {
-      console.error('Error refreshing data:', error)
-    }
+    setChartData(chartData.slice(6))
   }
 
   useEffect(() => {
