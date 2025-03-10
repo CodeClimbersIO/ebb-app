@@ -1,47 +1,9 @@
-use os_monitor::{
-    get_application_icon_data, has_accessibility_permissions, request_accessibility_permissions,
-    start_blocking as os_start_blocking, stop_blocking as os_stop_blocking,
-};
 use tauri::Manager;
 use tokio;
+
+mod commands;
 mod db;
 mod system_monitor;
-use tauri::command;
-
-#[command]
-async fn get_app_icon(bundle_id: String) -> Result<String, String> {
-    get_application_icon_data(&bundle_id).ok_or_else(|| "Failed to get app icon".to_string())
-}
-
-#[command]
-fn start_blocking(blocking_urls: Vec<String>) {
-    os_start_blocking(&blocking_urls, "https://ebb.cool/vibes");
-}
-
-#[command]
-fn stop_blocking() {
-    os_stop_blocking();
-}
-
-#[command]
-fn check_accessibility_permissions() -> bool {
-    has_accessibility_permissions()
-}
-
-#[command]
-fn request_system_permissions() -> bool {
-    request_accessibility_permissions()
-}
-
-#[command]
-fn start_system_monitoring() {
-    system_monitor::start_monitoring();
-}
-
-#[command]
-fn is_monitoring_running() -> bool {
-    system_monitor::is_monitoring_running()
-}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -87,13 +49,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .build(),
         )
         .invoke_handler(tauri::generate_handler![
-            get_app_icon,
-            check_accessibility_permissions,
-            request_system_permissions,
-            start_system_monitoring,
-            start_blocking,
-            stop_blocking,
-            is_monitoring_running
+            commands::get_app_icon,
+            commands::check_accessibility_permissions,
+            commands::request_system_permissions,
+            commands::start_system_monitoring,
+            commands::start_blocking,
+            commands::stop_blocking,
+            commands::is_monitoring_running,
+            commands::reset_app_data_for_testing,
+            commands::restore_app_data_from_backup
         ])
         .build(tauri::generate_context!())?
         .run(

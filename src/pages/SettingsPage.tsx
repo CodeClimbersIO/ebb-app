@@ -19,6 +19,7 @@ import { useNavigate } from 'react-router-dom'
 import { SpotifyApiService } from '@/lib/integrations/spotify/spotifyApi'
 import { SpotifyAuthService } from '@/lib/integrations/spotify/spotifyAuth'
 import supabase from '@/lib/integrations/supabase'
+import { ResetAppData } from '@/components/developer/ResetAppData'
 
 export const SettingsPage = () => {
   const [showUnlinkDialog, setShowUnlinkDialog] = useState(false)
@@ -79,7 +80,7 @@ export const SettingsPage = () => {
   const handleDeleteAccount = async () => {
     try {
       setIsDeleting(true)
-      
+
       // Get the current user's session
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) throw new Error('No session found')
@@ -260,6 +261,14 @@ export const SettingsPage = () => {
                 </div>
               </div>
             </div>
+
+            {/* Developer section - only visible in development mode */}
+            {import.meta.env.DEV && (
+              <div className="mt-12 border-t pt-6">
+                <h2 className="text-xl font-semibold mb-4">Developer Options</h2>
+                <ResetAppData />
+              </div>
+            )}
 
             <div className="mt-12 flex justify-between text-sm text-muted-foreground/50">
               <div>Ebb Version 1.0.0</div>

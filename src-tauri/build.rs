@@ -28,7 +28,9 @@ fn main() {
                 .filter(|entry| {
                     let file_name = entry.file_name();
                     let file_name_str = file_name.to_string_lossy();
-                    file_name_str.starts_with("os-monitor-") && entry.path().join("out").exists()
+                    file_name_str.starts_with("os-monitor-")
+                        && !file_name_str.starts_with("os-monitor-service")
+                        && entry.path().join("out").exists()
                 })
                 .map(|entry| entry.path().join("out"))
                 .collect();
