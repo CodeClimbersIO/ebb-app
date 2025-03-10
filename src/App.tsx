@@ -6,14 +6,14 @@ import supabase from '@/lib/integrations/supabase'
 import { error as logError } from '@tauri-apps/plugin-log'
 import { invoke } from '@tauri-apps/api/core'
 import { setupTray } from './lib/tray'
+import { initSentry } from '@/components/Sentry'
 
 const App = () => {
-
   useEffect(() => {
+    initSentry()
     const init = async () => {
       try {
         await supabase.auth.getSession()
-
         await setupTray()
         const hasPermissions = await invoke<boolean>('check_accessibility_permissions')
 

@@ -7,6 +7,11 @@ mod system_monitor;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let _guard = sentry::init(("https://d23e3cf5027dc14dfe8128f4d35219f7@o4508951187554304.ingest.us.sentry.io/4508951212851200", sentry::ClientOptions {
+        release: sentry::release_name!(),
+        ..Default::default()
+    }));
+
     tauri::async_runtime::set(tokio::runtime::Handle::current());
     let db_path = db::get_db_path();
     let path = std::path::Path::new(&db_path);
