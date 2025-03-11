@@ -46,7 +46,7 @@
     ],
     "macOS": {
       "signingIdentity": "Developer ID Application: Extremely Bad Builders LLC (83F463YC4T)",
-      "frameworks": ["./target/release/libMacMonitor.dylib"]
+      "frameworks": ["./target/libMacMonitor.dylib"]
     }
   }
 }

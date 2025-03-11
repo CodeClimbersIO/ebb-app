@@ -48,10 +48,15 @@ fn main() {
 
                 if dylib_path.exists() {
                     // Copy the dylib to the target directory
-                    let dest_path = target_release_dir.join("libMacMonitor.dylib");
+                    let target_dir = target_release_dir.parent().unwrap();
+                    let dest_path = target_dir.join("libMacMonitor.dylib");
                     fs::copy(&dylib_path, &dest_path).expect("Failed to copy libMacMonitor.dylib");
 
                     println!("Successfully copied libMacMonitor.dylib to target directory");
+
+                    // Tell Cargo to link with rpath for the dev build
+                    println!("cargo:rustc-link-arg=-Wl,-rpath,@executable_path");
+                    println!("cargo:rustc-link-arg=-Wl,-rpath,@loader_path");
 
                     // Tell Cargo to re-run this build script if the dylib changes
                     println!("cargo:rerun-if-changed={}", dylib_path.display());
