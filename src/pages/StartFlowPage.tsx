@@ -312,6 +312,8 @@ export const StartFlowPage = () => {
                   className="w-full"
                   onClick={() => SpotifyAuthService.connect()}
                   disabled={isLoading}
+                  size="lg"
+                  iconSize={6}
                 >
                   <SpotifyIcon />
                   <span className="ml-2">Connect Spotify</span>
@@ -325,6 +327,8 @@ export const StartFlowPage = () => {
                           variant="outline"
                           className="w-full"
                           disabled={true}
+                          size="lg"
+                          iconSize={6}
                         >
                           <AppleMusicIcon />
                           <span className="ml-2">Coming Soon</span>
