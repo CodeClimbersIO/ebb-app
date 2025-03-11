@@ -42,10 +42,6 @@ export default defineConfig(async () => ({
     watch: {
       // 3. tell vite to ignore watching `src-tauri`
       ignored: ['**/src-tauri/**'],
-    },
-    fs: {
-      // Allow serving files from one level up to the project root
-      allow: ['..'],
-    },
+    }
   },
 }))
