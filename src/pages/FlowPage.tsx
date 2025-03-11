@@ -28,6 +28,7 @@ import { SpotifyIcon } from '@/components/icons/SpotifyIcon'
 import { PlaybackState, SpotifyApiService } from '@/lib/integrations/spotify/spotifyApi'
 import { SpotifyAuthService } from '@/lib/integrations/spotify/spotifyAuth'
 import { invoke } from '@tauri-apps/api/core'
+import { openUrl } from '@tauri-apps/plugin-opener'
 
 const getDurationFormatFromSeconds = (seconds: number) => {
   const duration = Duration.fromMillis(seconds * 1000)
@@ -158,6 +159,7 @@ export const FlowPage = () => {
     return saved ? JSON.parse(saved) : { playlists: [], images: {} }
   })
   const [isLoadingPlayback, setIsLoadingPlayback] = useState<'prev' | 'play' | 'next' | null>(null)
+  const [isSpotifyInstalled, setIsSpotifyInstalled] = useState<boolean>(false)
 
   useEffect(() => {
     const init = async () => {
@@ -312,6 +314,21 @@ export const FlowPage = () => {
 
     return () => clearInterval(tokenRefreshInterval)
   }, [isSpotifyAuthenticated])
+
+  useEffect(() => {
+    // Check if Spotify is installed when component mounts
+    const checkSpotifyInstallation = async () => {
+      try {
+        const installed = await invoke<boolean>('detect_spotify')
+        setIsSpotifyInstalled(installed)
+      } catch (error) {
+        console.error('Error detecting Spotify:', error)
+        setIsSpotifyInstalled(false)
+      }
+    }
+
+    checkSpotifyInstallation()
+  }, [])
 
   const handleEndSession = async () => {
     if (!flowSession) return
@@ -474,9 +491,33 @@ export const FlowPage = () => {
               <CardContent className="space-y-12">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 rounded-full bg-green-500" />
                     <SpotifyIcon />
-                    <span className="text-sm text-muted-foreground">Connected</span>
+                    <a 
+                      href="#"
+                      onClick={async (e) => {
+                        e.preventDefault()
+                        if (isSpotifyInstalled) {
+                          try {
+                            const spotifyUri = selectedPlaylistId 
+                              ? `spotify:playlist:${selectedPlaylistId}`
+                              : 'spotify:'
+                            await openUrl(spotifyUri)
+                          } catch (error) {
+                            console.error('Failed to open Spotify:', error)
+                            // Fallback to web version if native app fails to open
+                            const webUrl = selectedPlaylistId
+                              ? `https://open.spotify.com/playlist/${selectedPlaylistId}`
+                              : 'https://open.spotify.com'
+                            await openUrl(webUrl)
+                          }
+                        } else {
+                          await openUrl('https://open.spotify.com/download')
+                        }
+                      }}
+                      className="text-sm text-muted-foreground hover:underline cursor-pointer"
+                    >
+                      {isSpotifyInstalled ? 'Open Spotify' : 'Get Spotify Free'}
+                    </a>
                   </div>
                   <Select value={selectedPlaylistId} onValueChange={handlePlaylistChange}>
                     <SelectTrigger className="w-[200px]">

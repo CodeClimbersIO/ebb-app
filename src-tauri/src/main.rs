@@ -62,7 +62,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             commands::stop_blocking,
             commands::is_monitoring_running,
             commands::reset_app_data_for_testing,
-            commands::restore_app_data_from_backup
+            commands::restore_app_data_from_backup,
+            commands::detect_spotify,
         ])
         .build(tauri::generate_context!())?
         .run(
