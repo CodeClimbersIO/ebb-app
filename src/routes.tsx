@@ -17,7 +17,7 @@ import { register, unregister } from '@tauri-apps/plugin-global-shortcut'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useEffect } from 'react'
 import { FlowSessionApi } from './api/ebbApi/flowSessionApi'
-
+import { error as logError } from '@tauri-apps/plugin-log'
 // Protected Route wrapper component
 const ProtectedRoute = () => {
   const { user, loading } = useAuth()
@@ -32,8 +32,8 @@ const ProtectedRoute = () => {
   }
 
   // Skip onboarding check for onboarding routes themselves
-  if (location.pathname === '/onboarding/accessibility' || 
-      location.pathname === '/onboarding/shortcut-tutorial') {
+  if (location.pathname === '/onboarding/accessibility' ||
+    location.pathname === '/onboarding/shortcut-tutorial') {
     return <Outlet />
   }
 
@@ -59,7 +59,7 @@ const GlobalShortcuts = ({ children }: { children: React.ReactNode }) => {
             const window = getCurrentWindow()
             await window.show()
             await window.setFocus()
-            
+
             // Check if there's an active flow session
             const activeSession = await FlowSessionApi.getInProgressFlowSession()
             if (activeSession) {
@@ -77,7 +77,7 @@ const GlobalShortcuts = ({ children }: { children: React.ReactNode }) => {
           navigate(path)
         })
       } catch (error) {
-        console.error('Failed to register global shortcut:', error)
+        logError(`Failed to register global shortcut: ${error}`)
       }
     }
 
@@ -92,7 +92,7 @@ const GlobalShortcuts = ({ children }: { children: React.ReactNode }) => {
             unlistenNavigate()
           }
         } catch (error) {
-          console.error('Failed to unregister global shortcut:', error)
+          logError(`Failed to unregister global shortcut: ${error}`)
         }
       }
       cleanup()
@@ -120,7 +120,7 @@ const Router = () => {
           <Route path="/flow" element={<FlowPage />} />
           <Route path="/flow-recap" element={<FlowRecapPage />} />
           <Route path="/onboarding/accessibility" element={<AccessibilityPage />} />
-  <Route path="/onboarding/shortcut-tutorial" element={<ShortcutTutorialPage />} />
+          <Route path="/onboarding/shortcut-tutorial" element={<ShortcutTutorialPage />} />
         </Route>
 
         {/* 404 catch-all */}

@@ -99,8 +99,8 @@ export const StartFlowPage = () => {
           window.location.reload()
           return
         } catch (error) {
-          console.error('Error handling Spotify callback:', error)
           setIsLoading(false)
+          throw error
         }
       }
 
@@ -196,40 +196,34 @@ export const StartFlowPage = () => {
   const handleBegin = async () => {
     if (!objective) return
 
-    try {
+    await BlockingPreferenceApi.saveBlockingPreferences(selectedBlocks)
 
-      await BlockingPreferenceApi.saveBlockingPreferences(selectedBlocks)
+    const allBlockedApps = await BlockingPreferenceApi.getAllBlockedApps()
+    const blockingUrls = allBlockedApps.map(app => app.app_external_id)
+    await invoke('start_blocking', { blockingUrls })
 
-      const allBlockedApps = await BlockingPreferenceApi.getAllBlockedApps()
-      const blockingUrls = allBlockedApps.map(app => app.app_external_id)
-      await invoke('start_blocking', { blockingUrls })
+    const sessionId = await FlowSessionApi.startFlowSession(
+      objective,
+      duration || undefined,
+      selectedBlocks,
+    )
 
-      const sessionId = await FlowSessionApi.startFlowSession(
-        objective,
-        duration || undefined,
-        selectedBlocks,
-      )
-
-      if (!sessionId) {
-        console.error('No session ID returned from API')
-        return
-      }
-
-      navigate('/breathing-exercise', {
-        state: {
-          startTime: Date.now(),
-          objective,
-          sessionId,
-          duration: duration || undefined,
-          playlist: selectedPlaylist ? {
-            id: selectedPlaylist,
-            service: musicService.type
-          } : null
-        }
-      })
-    } catch (error) {
-      console.error('Failed to start flow session:', error)
+    if (!sessionId) {
+      throw new Error('No session ID returned from API')
     }
+
+    navigate('/breathing-exercise', {
+      state: {
+        startTime: Date.now(),
+        objective,
+        sessionId,
+        duration: duration || undefined,
+        playlist: selectedPlaylist ? {
+          id: selectedPlaylist,
+          service: musicService.type
+        } : null
+      }
+    })
   }
 
   const handleAppSelect = async (option: SearchOption) => {

@@ -3,25 +3,20 @@ import './App.css'
 import { AppRouter } from './routes'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import supabase from '@/lib/integrations/supabase'
-import { error as logError } from '@tauri-apps/plugin-log'
 import { invoke } from '@tauri-apps/api/core'
 import { setupTray } from './lib/tray'
+import { initSentry } from '@/components/Sentry'
 
 const App = () => {
-
   useEffect(() => {
+    initSentry()
     const init = async () => {
-      try {
-        await supabase.auth.getSession()
+      await supabase.auth.getSession()
+      await setupTray()
+      const hasPermissions = await invoke<boolean>('check_accessibility_permissions')
 
-        await setupTray()
-        const hasPermissions = await invoke<boolean>('check_accessibility_permissions')
-
-        if (hasPermissions) {
-          await invoke('start_system_monitoring')
-        }
-      } catch (error) {
-        logError(`Error during initialization: ${error}`)
+      if (hasPermissions) {
+        await invoke('start_system_monitoring')
       }
     }
 

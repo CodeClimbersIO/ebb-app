@@ -12,8 +12,8 @@ export const useAuth = () => {
       setUser(session?.user ?? null)
       setLoading(false)
     }).catch((error) => {
-      console.error('Error getting session:', error)
       setLoading(false)
+      throw error
     })
 
     // Listen for auth changes

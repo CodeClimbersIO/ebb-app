@@ -17,29 +17,24 @@ export function Sidebar() {
   const { user } = useAuth()
 
   const handleLogout = async () => {
-    try {
-      const { error } = await supabase.auth.signOut()
-      if (error) throw error
-      navigate('/login')
-    } catch (error) {
-      console.error('Failed to logout:', error)
-    }
+    const { error } = await supabase.auth.signOut()
+    if (error) throw error
+    navigate('/login')
   }
 
-  const displayName = user?.user_metadata?.full_name || 
-                     user?.user_metadata?.name || 
-                     user?.email?.split('@')[0] || 
-                     'User'
+  const displayName = user?.user_metadata?.full_name ||
+    user?.user_metadata?.name ||
+    user?.email?.split('@')[0] ||
+    'User'
 
   return (
     <div className="w-56 border-r h-screen flex flex-col">
       <LogoContainer />
       <nav className="px-3 pt-4 space-y-2 flex-1">
-        <Button 
+        <Button
           variant="ghost"
-          className={`w-full justify-start gap-3 px-3 text-muted-foreground [&>svg]:text-muted-foreground ${
-            location.pathname === '/' ? 'text-foreground [&>svg]:text-foreground' : ''
-          }`}
+          className={`w-full justify-start gap-3 px-3 text-muted-foreground [&>svg]:text-muted-foreground ${location.pathname === '/' ? 'text-foreground [&>svg]:text-foreground' : ''
+            }`}
           asChild
         >
           <Link to="/">
@@ -47,11 +42,10 @@ export function Sidebar() {
             Today
           </Link>
         </Button>
-        <Button 
+        <Button
           variant="ghost"
-          className={`w-full justify-start gap-3 px-3 text-muted-foreground [&>svg]:text-muted-foreground ${
-            location.pathname === '/friends' ? 'text-foreground [&>svg]:text-foreground' : ''
-          }`}
+          className={`w-full justify-start gap-3 px-3 text-muted-foreground [&>svg]:text-muted-foreground ${location.pathname === '/friends' ? 'text-foreground [&>svg]:text-foreground' : ''
+            }`}
           asChild
         >
           <Link to="/friends">
@@ -59,11 +53,10 @@ export function Sidebar() {
             Friends
           </Link>
         </Button>
-        <Button 
+        <Button
           variant="ghost"
-          className={`w-full justify-start gap-3 px-3 text-muted-foreground [&>svg]:text-muted-foreground ${
-            location.pathname === '/settings' ? 'text-foreground [&>svg]:text-foreground' : ''
-          }`}
+          className={`w-full justify-start gap-3 px-3 text-muted-foreground [&>svg]:text-muted-foreground ${location.pathname === '/settings' ? 'text-foreground [&>svg]:text-foreground' : ''
+            }`}
           asChild
         >
           <Link to="/settings">

@@ -1,0 +1,186 @@
+use os_monitor::{
+    get_application_icon_data, has_accessibility_permissions, request_accessibility_permissions,
+    start_blocking as os_start_blocking, stop_blocking as os_stop_blocking,
+};
+use std::fs;
+use std::path::PathBuf;
+use tauri::command;
+
+use crate::system_monitor;
+
+#[command]
+pub async fn get_app_icon(bundle_id: String) -> Result<String, String> {
+    get_application_icon_data(&bundle_id).ok_or_else(|| "Failed to get app icon".to_string())
+}
+
+#[command]
+pub fn start_blocking(blocking_urls: Vec<String>) {
+    os_start_blocking(&blocking_urls, "https://ebb.cool/vibes");
+}
+
+#[command]
+pub fn stop_blocking() {
+    os_stop_blocking();
+}
+
+#[command]
+pub fn check_accessibility_permissions() -> bool {
+    has_accessibility_permissions()
+}
+
+#[command]
+pub fn request_system_permissions() -> bool {
+    request_accessibility_permissions()
+}
+
+#[command]
+pub fn start_system_monitoring() {
+    system_monitor::start_monitoring();
+}
+
+#[command]
+pub fn is_monitoring_running() -> bool {
+    system_monitor::is_monitoring_running()
+}
+
+#[command]
+pub fn reset_app_data_for_testing(backup: bool) -> Result<String, String> {
+    let home_dir = dirs::home_dir().expect("Could not find home directory");
+    let ebb_db_path = home_dir.join(".ebb").join("ebb-desktop.sqlite");
+    let monitor_db_path = home_dir
+        .join(".codeclimbers")
+        .join("codeclimbers-desktop.sqlite");
+
+    // Helper function to get all related database files (main, WAL, SHM)
+    fn get_db_files(base_path: &PathBuf) -> Vec<PathBuf> {
+        let mut files = Vec::new();
+        files.push(base_path.clone());
+        files.push(PathBuf::from(format!(
+            "{}-wal",
+            base_path.to_string_lossy()
+        )));
+        files.push(PathBuf::from(format!(
+            "{}-shm",
+            base_path.to_string_lossy()
+        )));
+        files
+    }
+
+    if backup {
+        // Create backup directory with timestamp
+        use chrono::Local;
+        let now = Local::now();
+        let timestamp = now.format("%Y%m%d_%H%M%S").to_string();
+        let backup_dir = home_dir.join(".ebb_backups").join(&timestamp);
+
+        fs::create_dir_all(&backup_dir).map_err(|e| e.to_string())?;
+
+        // Backup databases and associated files if they exist
+        for db_path in [&ebb_db_path, &monitor_db_path] {
+            for file_path in get_db_files(db_path) {
+                if file_path.exists() {
+                    let file_name = file_path.file_name().unwrap();
+                    let backup_path = backup_dir.join(file_name);
+                    fs::copy(&file_path, &backup_path).map_err(|e| e.to_string())?;
+                    log::info!("Backed up {:?} to {:?}", file_path, backup_path);
+                }
+            }
+        }
+    }
+
+    // Remove existing databases and associated files
+    for db_path in [&ebb_db_path, &monitor_db_path] {
+        for file_path in get_db_files(db_path) {
+            if file_path.exists() {
+                fs::remove_file(&file_path).map_err(|e| e.to_string())?;
+                log::info!("Removed {:?}", file_path);
+            }
+        }
+    }
+
+    Ok("App data reset successfully".to_string())
+}
+
+#[command]
+pub fn restore_app_data_from_backup() -> Result<String, String> {
+    use std::path::{Path, PathBuf};
+
+    let home_dir = dirs::home_dir().expect("Could not find home directory");
+    let backups_dir = home_dir.join(".ebb_backups");
+
+    if !backups_dir.exists() {
+        return Err("No backups found".to_string());
+    }
+
+    // Find the most recent backup directory
+    let mut latest_backup: Option<(PathBuf, std::time::SystemTime)> = None;
+
+    for entry in fs::read_dir(&backups_dir).map_err(|e| e.to_string())? {
+        let entry = entry.map_err(|e| e.to_string())?;
+        let path = entry.path();
+
+        if path.is_dir() {
+            if let Ok(metadata) = fs::metadata(&path) {
+                if let Ok(modified) = metadata.modified() {
+                    if latest_backup.is_none() || modified > latest_backup.as_ref().unwrap().1 {
+                        latest_backup = Some((path, modified));
+                    }
+                }
+            }
+        }
+    }
+
+    let latest_backup_dir = match latest_backup {
+        Some((dir, _)) => dir,
+        None => return Err("No backup directories found".to_string()),
+    };
+
+    // Helper function to restore files
+    fn restore_file(backup_path: &Path, target_path: &Path) -> Result<(), String> {
+        if backup_path.exists() {
+            // Ensure parent directory exists
+            if let Some(parent) = target_path.parent() {
+                fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+            }
+
+            fs::copy(backup_path, target_path).map_err(|e| e.to_string())?;
+            log::info!("Restored {:?} to {:?}", backup_path, target_path);
+        }
+        Ok(())
+    }
+
+    // Restore Ebb database
+    let ebb_db_name = "ebb-desktop.sqlite";
+    let ebb_db_backup = latest_backup_dir.join(ebb_db_name);
+    let ebb_db_target = home_dir.join(".ebb").join(ebb_db_name);
+
+    restore_file(&ebb_db_backup, &ebb_db_target)?;
+    restore_file(
+        &latest_backup_dir.join(format!("{}-wal", ebb_db_name)),
+        &Path::new(&format!("{}-wal", ebb_db_target.to_string_lossy())),
+    )?;
+    restore_file(
+        &latest_backup_dir.join(format!("{}-shm", ebb_db_name)),
+        &Path::new(&format!("{}-shm", ebb_db_target.to_string_lossy())),
+    )?;
+
+    // Restore CodeClimbers database
+    let cc_db_name = "codeclimbers-desktop.sqlite";
+    let cc_db_backup = latest_backup_dir.join(cc_db_name);
+    let cc_db_target = home_dir.join(".codeclimbers").join(cc_db_name);
+
+    restore_file(&cc_db_backup, &cc_db_target)?;
+    restore_file(
+        &latest_backup_dir.join(format!("{}-wal", cc_db_name)),
+        &Path::new(&format!("{}-wal", cc_db_target.to_string_lossy())),
+    )?;
+    restore_file(
+        &latest_backup_dir.join(format!("{}-shm", cc_db_name)),
+        &Path::new(&format!("{}-shm", cc_db_target.to_string_lossy())),
+    )?;
+
+    Ok(format!(
+        "App data restored from backup: {:?}",
+        latest_backup_dir
+    ))
+}
