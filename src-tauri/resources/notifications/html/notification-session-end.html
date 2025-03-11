@@ -3,20 +3,28 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Session Warning</title>
-    <link rel="stylesheet" href="src/Notifications.css">
+    <title>Session Ended</title>
+    <link rel="stylesheet" href="../Notifications.css">
     <script type="module">
       import { event } from '@tauri-apps/api';
       
       window.onload = function() {
         const params = new URLSearchParams(window.location.search);
         const duration = parseInt(params.get('duration'));
+        const animationDuration = parseInt(params.get('animationDuration'));
         const notification = document.querySelector('.notification');
+
+        // Add audio element and play sound
+        const audio = new Audio('../sounds/session_end.mp3');
+        audio.play();
+        
+        console.log('Duration received:', duration);
+        console.log('Animation duration received:', animationDuration);
         
         document.documentElement.style.setProperty('--progress-duration', `${duration}ms`);
         
         setTimeout(() => {
-          notification.style.animation = 'slideOut 0.5s ease-in forwards';
+          notification.style.animation = `slideOut ${animationDuration}ms ease-in forwards`;
         }, duration);
       }
     </script>
@@ -31,14 +39,14 @@
     </style>
   </head>
   <body>
-    <div class="notification warning">
+    <div class="notification info">
       <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
       <div class="content">
-        <h3 class="title">1 min left...</h3>
+        <h3 class="title">Focus Complete!</h3>
       </div>
-      <button class="button-ghost">Add 15 min</button>
+      <button class="button-ghost">See Recap</button>
     </div>
   </body>
 </html> 

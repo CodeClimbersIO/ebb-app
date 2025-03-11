@@ -22,14 +22,25 @@ class NotificationManager {
     return NotificationManager.instance
   }
 
-  private getNotificationUrl(type: NotificationOptions['type'], duration: number, animationDuration: number): string {
-    const baseUrl = import.meta.env.DEV ? 'http://localhost:1420' : ''
-    const url = new URL(`${baseUrl}/notification-${type}.html`)
-    url.searchParams.set('duration', duration.toString())
-    url.searchParams.set('animationDuration', animationDuration.toString())
-    console.log('Constructed URL:', url.toString())
-    console.log('Duration being sent:', duration)
-    return url.toString()
+  private async getNotificationUrl(type: NotificationOptions['type'], duration: number, animationDuration: number): Promise<string> {
+    try {
+      if (import.meta.env.DEV) {
+        // In development, use the local file path
+        const url = new URL(`http://localhost:1420/src-tauri/resources/notifications/html/notification-${type}.html`)
+        url.searchParams.set('duration', duration.toString())
+        url.searchParams.set('animationDuration', animationDuration.toString())
+        return url.toString()
+      } else {
+        // In production, use the bundled path
+        const url = new URL(`tauri://localhost/resources/notifications/html/notification-${type}.html`)
+        url.searchParams.set('duration', duration.toString())
+        url.searchParams.set('animationDuration', animationDuration.toString())
+        return url.toString()
+      }
+    } catch (err) {
+      console.error('Error constructing notification URL:', err)
+      throw err
+    }
   }
 
   public async show(options: NotificationOptions): Promise<void> {
@@ -91,14 +102,29 @@ class NotificationManager {
 
       const ANIMATION_DURATION = 500 // Animation duration in ms
 
-      // Create the webview with the original duration for the progress bar
+      // Since getNotificationUrl is now async, we need to await it
+      const notificationUrl = await this.getNotificationUrl(type, duration, ANIMATION_DURATION)
+      
       const webview = new Webview(window, label, {
-        url: this.getNotificationUrl(type, duration, ANIMATION_DURATION),
+        url: notificationUrl,
         x: 0,
         y: 0,
         width: this.NOTIFICATION_WIDTH,
         height: this.NOTIFICATION_HEIGHT,
         transparent: true,
+      })
+
+      // Add these debug listeners
+      webview.once('tauri://load-start', () => {
+        console.log('Webview started loading')
+      })
+
+      webview.once('tauri://load-end', () => {
+        console.log('Webview finished loading')
+      })
+
+      webview.once('tauri://error', (e) => {
+        console.error('Webview error:', e)
       })
 
       // Wait for the webview to be created

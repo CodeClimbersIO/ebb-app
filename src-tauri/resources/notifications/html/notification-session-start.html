@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Session Start</title>
-    <link rel="stylesheet" href="src/Notifications.css">
+    <link rel="stylesheet" href="../Notifications.css">
     <script type="module">
       import { event } from '@tauri-apps/api';
       
@@ -14,7 +14,7 @@
         const notification = document.querySelector('.notification');
 
         // Add audio element and play sound
-        const audio = new Audio('src/sounds/session_start.mp3');
+        const audio = new Audio('../sounds/session_start.mp3');
         audio.play();
         
         // Set the progress animation duration
