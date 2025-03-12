@@ -2,7 +2,13 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "Capability for the main window",
-  "windows": ["main", "notification"],
+  "windows": [
+    "main",
+    "session-start",
+    "session-end",
+    "session-warning",
+    "blocked-app"
+  ],
   "permissions": [
     "core:default",
     "sql:default",
@@ -32,12 +38,6 @@
     "core:window:allow-show",
     "core:window:allow-minimize",
     "core:window:allow-destroy",
-    "core:window:allow-create",
-    "core:window:allow-set-position",
-    "core:window:allow-set-size",
-    "core:window:allow-set-decorations",
-    "core:window:allow-set-skip-taskbar",
-    "core:window:allow-set-always-on-top",
-    "core:webview:allow-create-webview"
+    "core:webview:allow-create-webview-window"
   ]
 }

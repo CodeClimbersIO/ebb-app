@@ -1,8 +1,7 @@
-import { Effect, Window } from '@tauri-apps/api/window'
-import { Webview } from '@tauri-apps/api/webview'
 import { error, info } from '@tauri-apps/plugin-log'
 import { convertFileSrc } from '@tauri-apps/api/core'
 import { resolveResource } from '@tauri-apps/api/path'
+import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 
 interface NotificationOptions {
   duration?: number
@@ -11,7 +10,7 @@ interface NotificationOptions {
 
 class NotificationManager {
   private static instance: NotificationManager
-  private notifications: Webview[] = []
+  private notifications: WebviewWindow[] = []
   private readonly NOTIFICATION_HEIGHT = 100
   private readonly NOTIFICATION_WIDTH = 356
 
@@ -137,18 +136,19 @@ class NotificationManager {
       }
 
       const { type } = options
+      const ANIMATION_DURATION = 500 // Animation duration in ms
 
-      // Create a unique label for the notification window
-      const label = `notification-${Date.now()}`
+      // Use the notification type as the label
+      const label = type
       info(`Creating notification window: ${label}`)
 
-      // Get screen dimensions for positioning
-      const screenWidth = window.innerWidth || 1024 // Fallback width if not available
+      // Get the notification URL first
+      const notificationUrl = await this.getNotificationUrl(type, duration, ANIMATION_DURATION)
+      info(`Using notification URL: ${notificationUrl}`)
 
-      info(`Screen width: ${screenWidth}`)
-
-      // Create the window first
-      const notificationWindow = new Window(label, {
+      // Create the WebviewWindow
+      const webviewWindow = new WebviewWindow(label, {
+        url: notificationUrl,
         width: this.NOTIFICATION_WIDTH,
         height: this.NOTIFICATION_HEIGHT,
         x: Math.round((screen.width - this.NOTIFICATION_WIDTH) / 2),
@@ -163,50 +163,31 @@ class NotificationManager {
         skipTaskbar: true,
         titleBarStyle: 'transparent',
         hiddenTitle: true,
-        transparent: true,
-        windowEffects: {
-          radius: 8,
-          effects: [Effect.Blur]
-        }
+        transparent: true
       })
 
-      const ANIMATION_DURATION = 500 // Animation duration in ms
-
-      // Since getNotificationUrl is now async, we need to await it
-      const notificationUrl = await this.getNotificationUrl(type, duration, ANIMATION_DURATION)
-      info(`Using notification URL: ${notificationUrl}`)
-      
-      const webview = new Webview(notificationWindow, label, {
-        url: notificationUrl,
-        x: 0,
-        y: 0,
-        width: this.NOTIFICATION_WIDTH,
-        height: this.NOTIFICATION_HEIGHT,
-        transparent: true,
-      })
-
-      // Add these debug listeners
-      webview.once('tauri://load-start', () => {
+      // Add debug listeners
+      webviewWindow.once('tauri://load-start', () => {
         info('Webview started loading')
       })
 
-      webview.once('tauri://load-end', () => {
+      webviewWindow.once('tauri://load-end', () => {
         info('Webview finished loading')
       })
 
-      webview.once('tauri://error', (e) => {
+      webviewWindow.once('tauri://error', (e) => {
         error(`Webview error: ${JSON.stringify(e)}`)
       })
 
       // Wait for the webview to be created
       await new Promise<void>((resolve, reject) => {
-        webview.once('tauri://created', () => {
+        webviewWindow.once('tauri://created', () => {
           info('Notification webview created successfully')
-          this.notifications.push(webview)
+          this.notifications.push(webviewWindow)
           resolve()
         })
         
-        webview.once('tauri://error', (event) => {
+        webviewWindow.once('tauri://error', (event) => {
           error(`Error creating notification webview: ${JSON.stringify(event)}`)
           reject(new Error('Failed to create notification webview'))
         })
@@ -215,12 +196,12 @@ class NotificationManager {
       // Wait for the full duration plus exit animation
       await new Promise<void>((resolve) => {
         setTimeout(async () => {
-          const index = this.notifications.indexOf(webview)
+          const index = this.notifications.indexOf(webviewWindow)
           if (index > -1) {
             this.notifications.splice(index, 1)
           }
-          await notificationWindow.close()
-          info('Notification window closed')
+          await webviewWindow.destroy()
+          info('Notification window destroyed')
           resolve()
         }, duration + ANIMATION_DURATION)
       })
