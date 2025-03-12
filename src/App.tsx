@@ -10,6 +10,7 @@ import { initSentry } from '@/components/Sentry'
 const App = () => {
   useEffect(() => {
     initSentry()
+
     const init = async () => {
       await supabase.auth.getSession()
       await setupTray()
