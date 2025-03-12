@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { Card, CardContent } from '@/components/ui/card'
 import { DateTime } from 'luxon'
 import { TopNav } from '@/components/TopNav'
-import { LogoContainer } from '@/components/LogoContainer'
+import { Logo } from '@/components/ui/logo'
 import { MonitorApi, AppsWithTime, GraphableTimeByHourBlock } from '../api/monitorApi/monitorApi'
 import { UsageSummary } from '@/components/UsageSummary'
 
@@ -76,7 +76,9 @@ export const FlowRecapPage = () => {
   return (
     <div className="flex flex-col h-screen">
       <div className="flex">
-        <LogoContainer />
+        <div className="h-14 border-b flex items-center px-2">
+          <Logo />
+        </div>
         <TopNav variant="modal" />
       </div>
       <div className="flex-1 flex items-center justify-center bg-background/80 backdrop-blur-sm pt-8">
