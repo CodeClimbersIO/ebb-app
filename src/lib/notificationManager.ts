@@ -42,12 +42,12 @@ class NotificationManager {
 
       if (isDev) {
         // In development, use relative paths
-        htmlPath = `/src-tauri/resources/notifications/html/notification-${type}.html`
-        soundPath = `/src-tauri/resources/notifications/sounds/${soundMap[type]}`
+        htmlPath = `/src-tauri/notifications/html/notification-${type}.html`
+        soundPath = `/src-tauri/notifications/sounds/${soundMap[type]}`
       } else {
         // In production, resolve the resource paths
-        htmlPath = await resolveResource(`resources/notifications/html/notification-${type}.html`)
-        soundPath = await resolveResource(`resources/notifications/sounds/${soundMap[type]}`)
+        htmlPath = await resolveResource(`notifications/html/notification-${type}.html`)
+        soundPath = await resolveResource(`notifications/sounds/${soundMap[type]}`)
         
         // Convert to file URLs
         htmlPath = convertFileSrc(htmlPath)
