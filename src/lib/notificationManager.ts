@@ -115,19 +115,19 @@ class NotificationManager {
       info(`Showing notification: ${JSON.stringify(options)}`)
       
       // Set different durations based on notification type
-      let duration = 6000 // default 6s
+      let duration = 5000 // default 6s
       switch (options.type) {
         case 'session-warning':
-          duration = 15000
+          duration = 10000
           break
         case 'session-end':
-          duration = 10000 // 10s for warning and end notifications
+          duration = 8000
           break
         case 'session-start':
-          duration = 5000 // 5s for session start
+          duration = 5000
           break
         case 'blocked-app':
-          duration = 5000 // 5s for blocked app
+          duration = 5000
           break
       }
 
