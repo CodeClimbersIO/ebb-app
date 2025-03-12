@@ -24,13 +24,7 @@
     ],
     "macOSPrivateApi": true,
     "security": {
-      "csp": null,
-      "assetProtocol": {
-        "enable": true,
-        "scope": {
-          "allow": ["**"]
-        }
-      }
+      "csp": null
     }
   },
   "plugins": {
@@ -45,7 +39,15 @@
     "targets": "all",
     "resources": [
       "icons/tray.png",
-      "resources/**/*"
+      "resources/notifications/html/notification-session-start.html",
+      "resources/notifications/html/notification-session-end.html",
+      "resources/notifications/html/notification-session-warning.html",
+      "resources/notifications/html/notification-blocked-app.html",
+      "resources/notifications/sounds/session_start.mp3",
+      "resources/notifications/sounds/session_end.mp3",
+      "resources/notifications/sounds/session_warning.mp3",
+      "resources/notifications/sounds/app_blocked.mp3",
+      "resources/notifications/Notifications.css"
     ],
     "icon": [
       "icons/32x32.png",
