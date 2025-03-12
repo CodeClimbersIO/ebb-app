@@ -35,22 +35,20 @@ class NotificationManager {
       const isDev = import.meta.env.DEV
       info(`Is development environment: ${isDev}`)
 
-      // HTML path
       let htmlPath
       let soundPath
 
       if (isDev) {
-        // In development, use relative paths
+        // Development paths remain the same
         htmlPath = `/src-tauri/notifications/html/notification-${type}.html`
         soundPath = `/src-tauri/notifications/sounds/${soundMap[type]}`
       } else {
-        // In production, resolve the resource paths
-        htmlPath = await resolveResource(`notifications/html/notification-${type}.html`)
-        soundPath = await resolveResource(`notifications/sounds/${soundMap[type]}`)
+        // For both HTML and sound files, use resolveResource and convertFileSrc
+        const htmlResourcePath = await resolveResource(`notifications/html/notification-${type}.html`)
+        const soundResourcePath = await resolveResource(`notifications/sounds/${soundMap[type]}`)
         
-        // Convert to file URLs
-        htmlPath = convertFileSrc(htmlPath)
-        soundPath = convertFileSrc(soundPath)
+        htmlPath = convertFileSrc(htmlResourcePath)
+        soundPath = convertFileSrc(soundResourcePath)
       }
       
       info(`HTML path: ${htmlPath}`)
@@ -68,32 +66,17 @@ class NotificationManager {
       const resources = await this.getNotificationResources(type)
       const isDev = import.meta.env.DEV
       
-      // Construct the URL
-      const baseUrl = isDev ? 'http://localhost:1420' : ''
-      let fullUrl
-
-      if (isDev) {
-        fullUrl = `${baseUrl}${resources.html}`
-      } else {
-        fullUrl = resources.html
-      }
+      // Construct the URL - resources.html is now already a proper URL in both dev and prod
+      const fullUrl = isDev ? `http://localhost:1420${resources.html}` : resources.html
       
       // Create URL object to add parameters
       const url = new URL(fullUrl)
       url.searchParams.set('duration', duration.toString())
       url.searchParams.set('animationDuration', animationDuration.toString())
       
-      // Ensure the sound URL is properly encoded
       if (resources.sound) {
-        // Log the raw sound URL for debugging
-        info(`Raw sound URL before encoding: ${resources.sound}`)
-        
-        // In production, the sound URL is already a file:// URL from convertFileSrc
-        // In development, we need to make it absolute
-        const soundUrl = isDev ? `${baseUrl}${resources.sound}` : resources.sound
+        const soundUrl = isDev ? `http://localhost:1420${resources.sound}` : resources.sound
         url.searchParams.set('sound', soundUrl)
-        
-        // Log the final sound URL for debugging
         info(`Final sound URL after encoding: ${url.searchParams.get('sound')}`)
       } else {
         error('No sound URL available')
