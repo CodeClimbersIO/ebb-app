@@ -39,14 +39,8 @@
     "targets": "all",
     "resources": [
       "icons/tray.png",
-      "notifications/html/notification-session-start.html",
-      "notifications/html/notification-session-end.html",
-      "notifications/html/notification-session-warning.html",
-      "notifications/html/notification-blocked-app.html",
-      "notifications/sounds/session_start.mp3",
-      "notifications/sounds/session_end.mp3",
-      "notifications/sounds/session_warning.mp3",
-      "notifications/sounds/app_blocked.mp3"
+      "notifications/html/*",
+      "notifications/sounds/*"
     ],
     "icon": [
       "icons/32x32.png",
