@@ -1,6 +1,8 @@
 import { Effect, Window } from '@tauri-apps/api/window'
 import { Webview } from '@tauri-apps/api/webview'
-import { trace, error } from '@tauri-apps/plugin-log'
+import { error, info } from '@tauri-apps/plugin-log'
+import { convertFileSrc } from '@tauri-apps/api/core'
+import { resolveResource } from '@tauri-apps/api/path'
 
 interface NotificationOptions {
   duration?: number
@@ -22,31 +24,95 @@ class NotificationManager {
     return NotificationManager.instance
   }
 
+  private async getNotificationResources(type: NotificationOptions['type']) {
+    try {
+      const soundMap = {
+        'session-start': 'session_start.mp3',
+        'session-end': 'session_end.mp3',
+        'session-warning': 'session_warning.mp3',
+        'blocked-app': 'app_blocked.mp3'
+      }
+
+      const isDev = import.meta.env.DEV
+      info(`Is development environment: ${isDev}`)
+
+      // HTML path
+      let htmlPath
+      let soundPath
+
+      if (isDev) {
+        // In development, use relative paths
+        htmlPath = `/src-tauri/resources/notifications/html/notification-${type}.html`
+        soundPath = `/src-tauri/resources/notifications/sounds/${soundMap[type]}`
+      } else {
+        // In production, resolve the resource paths
+        htmlPath = await resolveResource(`resources/notifications/html/notification-${type}.html`)
+        soundPath = await resolveResource(`resources/notifications/sounds/${soundMap[type]}`)
+        
+        // Convert to file URLs
+        htmlPath = convertFileSrc(htmlPath)
+        soundPath = convertFileSrc(soundPath)
+      }
+      
+      info(`HTML path: ${htmlPath}`)
+      info(`Sound path: ${soundPath}`)
+      
+      return { html: htmlPath, sound: soundPath }
+    } catch (err) {
+      error(`Error getting notification resources: ${err}`)
+      throw err
+    }
+  }
+
   private async getNotificationUrl(type: NotificationOptions['type'], duration: number, animationDuration: number): Promise<string> {
     try {
-      if (import.meta.env.DEV) {
-        // In development, use the local file path
-        const url = new URL(`http://localhost:1420/src-tauri/resources/notifications/html/notification-${type}.html`)
-        url.searchParams.set('duration', duration.toString())
-        url.searchParams.set('animationDuration', animationDuration.toString())
-        return url.toString()
+      const resources = await this.getNotificationResources(type)
+      const isDev = import.meta.env.DEV
+      
+      // Construct the URL
+      const baseUrl = isDev ? 'http://localhost:1420' : ''
+      let fullUrl
+
+      if (isDev) {
+        fullUrl = `${baseUrl}${resources.html}`
       } else {
-        // In production, use the bundled path
-        const url = new URL(`tauri://localhost/resources/notifications/html/notification-${type}.html`)
-        url.searchParams.set('duration', duration.toString())
-        url.searchParams.set('animationDuration', animationDuration.toString())
-        return url.toString()
+        fullUrl = resources.html
       }
+      
+      // Create URL object to add parameters
+      const url = new URL(fullUrl)
+      url.searchParams.set('duration', duration.toString())
+      url.searchParams.set('animationDuration', animationDuration.toString())
+      
+      // Ensure the sound URL is properly encoded
+      if (resources.sound) {
+        // Log the raw sound URL for debugging
+        info(`Raw sound URL before encoding: ${resources.sound}`)
+        
+        // In production, the sound URL is already a file:// URL from convertFileSrc
+        // In development, we need to make it absolute
+        const soundUrl = isDev ? `${baseUrl}${resources.sound}` : resources.sound
+        url.searchParams.set('sound', soundUrl)
+        
+        // Log the final sound URL for debugging
+        info(`Final sound URL after encoding: ${url.searchParams.get('sound')}`)
+      } else {
+        error('No sound URL available')
+      }
+      
+      const finalUrl = url.toString()
+      info(`Final notification URL: ${finalUrl}`)
+      
+      return finalUrl
     } catch (err) {
-      console.error('Error constructing notification URL:', err)
+      error(`Error constructing notification URL: ${err}`)
       throw err
     }
   }
 
   public async show(options: NotificationOptions): Promise<void> {
     try {
-      trace(`Showing notification: ${JSON.stringify(options)}`)
-      console.log('Showing notification with options:', options)
+      info(`Showing notification: ${JSON.stringify(options)}`)
       
       // Set different durations based on notification type
       let duration = 6000 // default 6s
@@ -58,10 +124,10 @@ class NotificationManager {
           duration = 10000 // 10s for warning and end notifications
           break
         case 'session-start':
-          duration = 5000 // 6s for session start
+          duration = 5000 // 5s for session start
           break
         case 'blocked-app':
-          duration = 5000 // 6s for blocked app
+          duration = 5000 // 5s for blocked app
           break
       }
 
@@ -74,11 +140,15 @@ class NotificationManager {
 
       // Create a unique label for the notification window
       const label = `notification-${Date.now()}`
-      trace(`Creating notification window: ${label}`)
-      console.log('Creating notification window:', label)
+      info(`Creating notification window: ${label}`)
+
+      // Get screen dimensions for positioning
+      const screenWidth = window.innerWidth || 1024 // Fallback width if not available
+
+      info(`Screen width: ${screenWidth}`)
 
       // Create the window first
-      const window = new Window(label, {
+      const notificationWindow = new Window(label, {
         width: this.NOTIFICATION_WIDTH,
         height: this.NOTIFICATION_HEIGHT,
         x: Math.round((screen.width - this.NOTIFICATION_WIDTH) / 2),
@@ -104,8 +174,9 @@ class NotificationManager {
 
       // Since getNotificationUrl is now async, we need to await it
       const notificationUrl = await this.getNotificationUrl(type, duration, ANIMATION_DURATION)
+      info(`Using notification URL: ${notificationUrl}`)
       
-      const webview = new Webview(window, label, {
+      const webview = new Webview(notificationWindow, label, {
         url: notificationUrl,
         x: 0,
         y: 0,
@@ -116,27 +187,27 @@ class NotificationManager {
 
       // Add these debug listeners
       webview.once('tauri://load-start', () => {
-        console.log('Webview started loading')
+        info('Webview started loading')
       })
 
       webview.once('tauri://load-end', () => {
-        console.log('Webview finished loading')
+        info('Webview finished loading')
       })
 
       webview.once('tauri://error', (e) => {
-        console.error('Webview error:', e)
+        error(`Webview error: ${JSON.stringify(e)}`)
       })
 
       // Wait for the webview to be created
       await new Promise<void>((resolve, reject) => {
         webview.once('tauri://created', () => {
-          console.log('Notification webview created successfully')
+          info('Notification webview created successfully')
           this.notifications.push(webview)
           resolve()
         })
         
         webview.once('tauri://error', (event) => {
-          console.error('Error creating notification webview:', event)
+          error(`Error creating notification webview: ${JSON.stringify(event)}`)
           reject(new Error('Failed to create notification webview'))
         })
       })
@@ -148,15 +219,15 @@ class NotificationManager {
           if (index > -1) {
             this.notifications.splice(index, 1)
           }
-          await window.close()
+          await notificationWindow.close()
+          info('Notification window closed')
           resolve()
         }, duration + ANIMATION_DURATION)
       })
 
-      trace('Notification complete')
+      info('Notification complete')
     } catch (err) {
       error(`Error showing notification: ${err}`)
-      console.error('Error showing notification:', err)
       throw err
     }
   }

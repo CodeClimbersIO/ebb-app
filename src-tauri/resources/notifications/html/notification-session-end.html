@@ -4,39 +4,160 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Session Ended</title>
-    <link rel="stylesheet" href="../Notifications.css">
-    <script type="module">
-      import { event } from '@tauri-apps/api';
-      
+    <style>
+      /* Base notification styles */
+      body {
+        margin: 0;
+        padding: 12px;
+        font-family: system-ui, -apple-system, sans-serif;
+        min-height: 100vh;
+        box-sizing: border-box;
+      }
+
+      /* Notification container */
+      .notification {
+        position: relative;
+        display: flex;
+        align-items: center;
+        padding: 16px;
+        gap: 12px;
+        background: hsl(224 71.4% 4.1% / 0.95);
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        margin: 0;
+        border-radius: 8px;
+        overflow: hidden;
+        animation: slideIn 0.3s ease-out forwards;
+        animation-fill-mode: forwards;
+      }
+
+      /* Progress bar animation */
+      .notification::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        height: 2px;
+        width: 100%;
+        transform-origin: left;
+        animation: progress linear forwards;
+        animation-duration: var(--progress-duration, 10000ms);
+      }
+
+      /* Icon styles */
+      .icon {
+        width: 24px;
+        height: 24px;
+        color: #7C3AED;
+      }
+
+      /* Content container */
+      .content {
+        flex: 1;
+      }
+
+      /* Title styles */
+      .title {
+        color: #f5f3ff;
+        font-weight: 600;
+        margin: 0;
+        font-size: 16px;
+      }
+
+      /* Ghost button styles */
+      .button-ghost {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: 36px;
+        padding: 0 16px;
+        font-size: 12px;
+        font-weight: 500;
+        color: #f5f3ff;
+        background: transparent;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+
+      .button-ghost:hover {
+        background-color: rgba(245, 243, 255, 0.1);
+      }
+
+      /* Info notification styles */
+      .notification.info .icon {
+        color: #7C3AED;
+      }
+
+      .notification.info::before,
+      .notification.info::after {
+        background-color: #7C3AED;
+      }
+
+      @keyframes progress {
+        from {
+          transform: scaleX(1);
+        }
+        to {
+          transform: scaleX(0);
+        }
+      }
+
+      /* Add slide and fade animations */
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateY(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes slideOut {
+        from {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        to {
+          opacity: 0;
+          transform: translateY(-20px);
+        }
+      }
+    </style>
+    <script>
       window.onload = function() {
         const params = new URLSearchParams(window.location.search);
-        const duration = parseInt(params.get('duration'));
-        const animationDuration = parseInt(params.get('animationDuration'));
+        const duration = parseInt(params.get('duration') || '10000');
         const notification = document.querySelector('.notification');
-
-        // Add audio element and play sound
-        const audio = new Audio('../sounds/session_end.mp3');
-        audio.play();
         
-        console.log('Duration received:', duration);
-        console.log('Animation duration received:', animationDuration);
-        
+        // Set the progress animation duration
         document.documentElement.style.setProperty('--progress-duration', `${duration}ms`);
         
+        // Try to play sound if available
+        const soundUrl = params.get('sound');
+        if (soundUrl) {
+          const audio = new Audio(soundUrl);
+          audio.addEventListener('canplaythrough', () => {
+            audio.play();
+          });
+        }
+        
+        // Add button click handler
+        const button = document.querySelector('.button-ghost');
+        if (button) {
+          button.addEventListener('click', () => {
+            // This would typically emit an event to the main app
+          });
+        }
+        
+        // Handle exit animation
         setTimeout(() => {
-          notification.style.animation = `slideOut ${animationDuration}ms ease-in forwards`;
+          notification.style.animation = 'slideOut 0.5s ease-in forwards';
         }, duration);
       }
     </script>
-    <style>
-      .notification {
-        animation: slideIn 0.3s ease-out forwards;
-      }
-      
-      .notification::after {
-        animation-duration: var(--progress-duration);
-      }
-    </style>
   </head>
   <body>
     <div class="notification info">
