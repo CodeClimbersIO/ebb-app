@@ -41,6 +41,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
+    "date-fns": "^4.1.0",
     "lucide-react": "^0.469.0",
     "luxon": "^3.5.0",
     "motion": "^11.17.0",
