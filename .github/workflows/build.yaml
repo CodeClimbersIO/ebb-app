@@ -60,6 +60,9 @@ jobs:
           echo "CERT_ID=$CERT_ID" >> $GITHUB_ENV
           echo "Certificate imported."
 
+      - name: Install SQLx CLI
+        run: cargo install sqlx-cli --no-default-features --features native-tls,sqlite
+
       - name: build and publish
         uses: tauri-apps/tauri-action@v0
         env:
@@ -69,6 +72,7 @@ jobs:
           APPLE_API_KEY: ${{ env.APPLE_API_KEY }}
           APPLE_API_KEY_PATH: ${{ env.APPLE_API_KEY_PATH }}
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          # Add sentry token
         with:
           tagName: app-v__VERSION__ # the action automatically replaces \_\_VERSION\_\_ with the app version.
           releaseName: "App v__VERSION__"
