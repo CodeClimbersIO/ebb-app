@@ -44,7 +44,7 @@ export const LoginPage = () => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background">
       <div className="mb-8">
-        <Logo />
+        <Logo width={100} height={36} />
       </div>
       <p className="text-lg mb-8 text-muted-foreground">Focus starts here.</p>
       {error && <p className="text-sm text-destructive mb-4">{error}</p>}
