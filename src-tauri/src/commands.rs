@@ -195,8 +195,8 @@ pub fn detect_spotify() -> bool {
     {
         let program_files = std::env::var("PROGRAMFILES").unwrap_or_default();
         let program_files_x86 = std::env::var("PROGRAMFILES(X86)").unwrap_or_default();
-        std::path::Path::new(&format!("{}/Spotify/Spotify.exe", program_files)).exists() ||
-        std::path::Path::new(&format!("{}/Spotify/Spotify.exe", program_files_x86)).exists()
+        std::path::Path::new(&format!("{}/Spotify/Spotify.exe", program_files)).exists()
+            || std::path::Path::new(&format!("{}/Spotify/Spotify.exe", program_files_x86)).exists()
     }
     #[cfg(target_os = "linux")]
     {
