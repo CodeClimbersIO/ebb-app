@@ -22,9 +22,17 @@
         "backgroundColor": "#FCF8EDCC"
       }
     ],
+    "macOSPrivateApi": true,
     "security": {
-      "csp": null
-    }
+      "csp": null,
+      "assetProtocol": {
+        "enable": true,
+        "scope": {
+          "allow": ["$ASSET/**", "$RESOURCE/**"]
+        }
+      }
+    },
+    "withGlobalTauri": true
   },
   "plugins": {
     "deep-link": {
@@ -36,7 +44,11 @@
   "bundle": {
     "active": true,
     "targets": "all",
-    "resources": ["icons/tray.png"],
+    "resources": [
+      "icons/tray.png",
+      "notifications/html/*",
+      "notifications/sounds/*"
+    ],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

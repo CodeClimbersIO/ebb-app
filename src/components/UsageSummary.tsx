@@ -79,8 +79,6 @@ export const UsageSummary = ({
   const sortedAppUsage = [...appUsage].sort((a, b) => b.duration - a.duration)
   const appUsageRef = useRef<HTMLDivElement>(null)
 
-  console.log('UsageSummary - Received Chart Data:', chartData)
-
   const scrollToAppUsage = () => {
     appUsageRef.current?.scrollIntoView({ behavior: 'smooth' })
   }

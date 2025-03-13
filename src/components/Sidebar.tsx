@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { Home, Users, Settings, UserCircle, LogOut } from 'lucide-react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { LogoContainer } from './LogoContainer'
+import { Logo } from '@/components/ui/logo'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,7 +29,9 @@ export function Sidebar() {
 
   return (
     <div className="w-56 border-r h-screen flex flex-col">
-      <LogoContainer />
+      <div className="h-14 border-b flex items-center px-2">
+        <Logo />
+      </div>
       <nav className="px-3 pt-4 space-y-2 flex-1">
         <Button
           variant="ghost"

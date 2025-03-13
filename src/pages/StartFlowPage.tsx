@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Music, Plus, Minus } from 'lucide-react'
 import { TopNav } from '@/components/TopNav'
-import { LogoContainer } from '@/components/LogoContainer'
+import { Logo } from '@/components/ui/logo'
 import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
 import {
   Select,
@@ -312,6 +312,8 @@ export const StartFlowPage = () => {
                   className="w-full"
                   onClick={() => SpotifyAuthService.connect()}
                   disabled={isLoading}
+                  size="lg"
+                  iconSize={6}
                 >
                   <SpotifyIcon />
                   <span className="ml-2">Connect Spotify</span>
@@ -325,6 +327,8 @@ export const StartFlowPage = () => {
                           variant="outline"
                           className="w-full"
                           disabled={true}
+                          size="lg"
+                          iconSize={6}
                         >
                           <AppleMusicIcon />
                           <span className="ml-2">Coming Soon</span>
@@ -400,7 +404,9 @@ export const StartFlowPage = () => {
   return (
     <div className="flex flex-col h-screen">
       <div className="flex">
-        <LogoContainer />
+        <div className="h-14 border-b flex items-center px-2">
+          <Logo />
+        </div>
         <TopNav variant="modal" />
       </div>
       <div className="flex-1 flex items-center justify-center bg-background/80 backdrop-blur-sm">

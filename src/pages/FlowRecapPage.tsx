@@ -3,9 +3,10 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { Card, CardContent } from '@/components/ui/card'
 import { DateTime } from 'luxon'
 import { TopNav } from '@/components/TopNav'
-import { LogoContainer } from '@/components/LogoContainer'
+import { Logo } from '@/components/ui/logo'
 import { MonitorApi, AppsWithTime, GraphableTimeByHourBlock } from '../api/monitorApi/monitorApi'
 import { UsageSummary } from '@/components/UsageSummary'
+import NotificationManager from '@/lib/notificationManager'
 
 interface LocationState {
   sessionId: string
@@ -16,6 +17,9 @@ interface LocationState {
   startTime: string
   endTime: string
 }
+
+// Initialize the notification manager
+const notificationManager = NotificationManager.getInstance()
 
 export const FlowRecapPage = () => {
   const location = useLocation()
@@ -31,6 +35,11 @@ export const FlowRecapPage = () => {
     if (effectRan.current) return
     effectRan.current = true
 
+    // Show session end notification
+    notificationManager.show({
+      type: 'session-end'
+    })
+
     const init = async () => {
       if (!state?.startTime || !state?.endTime) return
 
@@ -39,8 +48,6 @@ export const FlowRecapPage = () => {
       
       const rawChartData = await MonitorApi.getTimeCreatingByHour(start, end)
       const topApps = await MonitorApi.getTopAppsByPeriod(start, end)
-
-      console.log('FlowRecapPage - Raw Chart Data:', rawChartData)
       
       setAppUsage(topApps)
       
@@ -56,7 +63,6 @@ export const FlowRecapPage = () => {
       // Use the same approach as HomePage - just slice the data
       // This is simpler and more compatible than using generateTimeBlocks
       const processedChartData = rawChartData.slice(6)
-      console.log('FlowRecapPage - Processed Chart Data:', processedChartData)
       setChartData(processedChartData)
     }
     init()
@@ -76,7 +82,9 @@ export const FlowRecapPage = () => {
   return (
     <div className="flex flex-col h-screen">
       <div className="flex">
-        <LogoContainer />
+        <div className="h-14 border-b flex items-center px-2">
+          <Logo />
+        </div>
         <TopNav variant="modal" />
       </div>
       <div className="flex-1 flex items-center justify-center bg-background/80 backdrop-blur-sm pt-8">

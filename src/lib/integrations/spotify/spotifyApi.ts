@@ -107,7 +107,7 @@ export class SpotifyApiService {
     if (!accessToken) throw new Error('Not connected to Spotify')
     
     const player = new window.Spotify.Player({
-      name: 'Ebb Flow Player',
+      name: 'Ebb Player',
       getOAuthToken: async (cb) => {
         try {
           // Get a fresh token each time this callback is invoked
@@ -167,7 +167,6 @@ export class SpotifyApiService {
       method: 'PUT',
       body: JSON.stringify({
         context_uri: `spotify:playlist:${playlistId}`,
-        // Remove shuffle from here, as it's handled by the API call above.
       }),
     })
   }
@@ -179,24 +178,6 @@ export class SpotifyApiService {
       })
     } catch (error) {
       logError(`Error stopping playback: ${error}`)
-    }
-  }
-
-  static async controlPlayback(action: 'play' | 'pause' | 'next' | 'previous', deviceId: string): Promise<void> {
-    try {
-      if (action === 'play') {
-        await this.spotifyApiRequest(`me/player/play?device_id=${deviceId}`, {
-          method: 'PUT',
-        })
-      } else if (action === 'pause') {
-        await this.stopPlayback(deviceId)
-      } else {
-        await this.spotifyApiRequest(`me/player/${action}?device_id=${deviceId}`, {
-          method: 'POST',
-        })
-      }
-    } catch (error) {
-      logError(`Error controlling playback (${action}): ${error}`)
     }
   }
 
