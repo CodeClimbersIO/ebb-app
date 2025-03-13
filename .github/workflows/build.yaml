@@ -24,6 +24,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          # Optionally specify the cache prefix
+          prefix-key: "rust-cache"
+          # Optionally specify the shared key
+          shared-key: "macos-build"
+
       - name: setup node
         uses: actions/setup-node@v4
         with:
@@ -33,11 +41,6 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
-
-      - name: print env
-        run: |
-          echo "$APPLE_SIGNING_IDENTITY"
-          echo "$APPLE_API_ISSUER"
 
       - name: install frontend dependencies
         run: yarn install # change this to npm, pnpm or bun depending on which one you use.
@@ -77,6 +80,7 @@ jobs:
           APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           # Add sentry token
         with:
           tagName: app-v__VERSION__ # the action automatically replaces \_\_VERSION\_\_ with the app version.

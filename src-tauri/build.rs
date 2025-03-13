@@ -55,11 +55,7 @@ fn main() {
                     let dest_path = target_dir.join("libMacMonitor.dylib");
                     fs::copy(&dylib_path, &dest_path).expect("Failed to copy libMacMonitor.dylib");
 
-                    println!(
-                        "cargo:warning=Successfully copied libMacMonitor.dylib to target directory"
-                    );
-                    // print out the full path to the copied dylib
-                    println!("cargo:warning=Copied dylib to: {}", dest_path.display());
+                    println!("Successfully copied libMacMonitor.dylib to target directory");
 
                     // Tell Cargo to link with rpath for the dev build
                     println!("cargo:rustc-link-arg=-Wl,-rpath,@executable_path");
