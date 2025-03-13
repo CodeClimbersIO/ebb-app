@@ -27,10 +27,9 @@ jobs:
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
         with:
-          # Optionally specify the cache prefix
           prefix-key: "rust-cache"
-          # Optionally specify the shared key
-          shared-key: "macos-build"
+          shared-key: ${{ matrix.platform }}
+          workspaces: "./src-tauri -> target"
 
       - name: setup node
         uses: actions/setup-node@v4
@@ -83,8 +82,8 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           # Add sentry token
         with:
-          tagName: app-v__VERSION__ # the action automatically replaces \_\_VERSION\_\_ with the app version.
-          releaseName: "App v__VERSION__"
+          tagName: v__VERSION__ # the action automatically replaces \_\_VERSION\_\_ with the app version.
+          releaseName: "v__VERSION__"
           releaseBody: "See the assets to download this version and install."
           releaseDraft: true
           prerelease: false
