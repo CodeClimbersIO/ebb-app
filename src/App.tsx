@@ -6,11 +6,14 @@ import supabase from '@/lib/integrations/supabase'
 import { invoke } from '@tauri-apps/api/core'
 import { setupTray } from './lib/tray'
 import { initSentry } from '@/components/Sentry'
+import { useUpdate } from './hooks/useUpdate'
 
 const App = () => {
+  const { beginCheckForUpdates } = useUpdate()
   useEffect(() => {
     initSentry()
 
+    beginCheckForUpdates()
     const init = async () => {
       await supabase.auth.getSession()
       await setupTray()
