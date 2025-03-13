@@ -118,7 +118,6 @@ const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
     // Listen for add-time events from notification
     const setupListener = async () => {
       const unlisten = await listen<{ action: string, minutes: number }>('add-time-event', (event) => {
-        console.log('Received add-time event:', event)
         if (event.payload.action === 'add-time') {
           handleAddTime()
         }

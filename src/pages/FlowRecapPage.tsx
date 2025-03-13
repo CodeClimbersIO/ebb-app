@@ -48,8 +48,6 @@ export const FlowRecapPage = () => {
       
       const rawChartData = await MonitorApi.getTimeCreatingByHour(start, end)
       const topApps = await MonitorApi.getTopAppsByPeriod(start, end)
-
-      console.log('FlowRecapPage - Raw Chart Data:', rawChartData)
       
       setAppUsage(topApps)
       
@@ -65,7 +63,6 @@ export const FlowRecapPage = () => {
       // Use the same approach as HomePage - just slice the data
       // This is simpler and more compatible than using generateTimeBlocks
       const processedChartData = rawChartData.slice(6)
-      console.log('FlowRecapPage - Processed Chart Data:', processedChartData)
       setChartData(processedChartData)
     }
     init()
