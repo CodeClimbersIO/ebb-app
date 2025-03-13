@@ -36,8 +36,8 @@ jobs:
 
       - name: print env
         run: |
-          echo ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          echo ${{ secrets.APPLE_API_ISSUER }}
+          echo "$APPLE_SIGNING_IDENTITY"
+          echo "$APPLE_API_ISSUER"
 
       - name: install frontend dependencies
         run: yarn install # change this to npm, pnpm or bun depending on which one you use.
