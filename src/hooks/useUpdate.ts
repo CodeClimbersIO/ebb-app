@@ -36,7 +36,8 @@ export const useUpdate = () => {
     if (import.meta.env.DEV) {
       return
     }
-    const interval = setInterval(checkAndUpdate, 1000 * 60)
+    checkAndUpdate()
+    const interval = setInterval(checkAndUpdate,60 * 1000)
     return () => clearInterval(interval)
   }
   return {

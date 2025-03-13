@@ -13,11 +13,11 @@ const App = () => {
   useEffect(() => {
     initSentry()
 
-    beginCheckForUpdates()
     const init = async () => {
       await supabase.auth.getSession()
       await setupTray()
       const hasPermissions = await invoke<boolean>('check_accessibility_permissions')
+      beginCheckForUpdates()
 
       if (hasPermissions) {
         await invoke('start_system_monitoring')
