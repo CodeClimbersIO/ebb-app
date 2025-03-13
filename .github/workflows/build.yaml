@@ -16,9 +16,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # for Universal macOS builds (arm64 and x86_64)
+          # for ARM64 macOS builds (Apple Silicon only)
           - platform: "macos-latest"
-            args: "--target universal-apple-darwin"
+            args: "--target aarch64-apple-darwin"
 
     runs-on: ${{ matrix.platform }}
     steps:
