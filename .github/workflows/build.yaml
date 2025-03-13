@@ -78,6 +78,12 @@ jobs:
           echo "$APPLE_API_KEY" | base64 --decode > ~/private_keys/AuthKey.p8
           echo "Created API key file at ~/private_keys/AuthKey.p8"
 
+      - name: Get Version
+        id: get_version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
       - name: build and publish
         uses: tauri-apps/tauri-action@v0
         env:
@@ -90,6 +96,7 @@ jobs:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_RELEASE: ${{ env.VERSION }}
         with:
           tagName: v__VERSION__
           releaseName: "v__VERSION__"
