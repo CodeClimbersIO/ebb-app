@@ -78,6 +78,7 @@
         border-radius: 6px;
         cursor: pointer;
         transition: background-color 0.2s;
+        text-decoration: none;
       }
 
       .button-ghost:hover {
@@ -127,35 +128,51 @@
       }
     </style>
     <script>
-      window.onload = function() {
-        const params = new URLSearchParams(window.location.search);
-        const duration = parseInt(params.get('duration') || '10000');
-        const notification = document.querySelector('.notification');
+      window.onload = async function() {
+        const params = new URLSearchParams(window.location.search)
+        const duration = parseInt(params.get('duration') || '10000')
+        const notification = document.querySelector('.notification')
         
         // Set the progress animation duration
-        document.documentElement.style.setProperty('--progress-duration', `${duration}ms`);
+        document.documentElement.style.setProperty('--progress-duration', `${duration}ms`)
         
         // Try to play sound if available
-        const soundUrl = params.get('sound');
+        const soundUrl = params.get('sound')
         if (soundUrl) {
-          const audio = new Audio(soundUrl);
+          const audio = new Audio(soundUrl)
           audio.addEventListener('canplaythrough', () => {
-            audio.play();
-          });
+            audio.play()
+          })
         }
         
         // Add button click handler
-        const button = document.querySelector('.button-ghost');
+        const button = document.querySelector('.button-ghost')
         if (button) {
-          button.addEventListener('click', () => {
-            // This would typically emit an event to the main app
-          });
+          button.addEventListener('click', async (e) => {
+            e.preventDefault()
+            console.log('Button clicked, attempting to show window and open deep link...')
+            
+            try {
+              // Show the main window if it's hidden
+              const windows = await window.__TAURI__.window.getAllWindows()
+              const mainWindow = windows.find(w => w.label === 'main')
+              if (mainWindow) {
+                await mainWindow.show()
+                await mainWindow.setFocus()
+              }
+              
+              // Use shell plugin for the deep link
+              await window.__TAURI__.shell.open('ebb://flow-recap')
+            } catch (error) {
+              console.error('Error:', error)
+            }
+          })
         }
         
         // Handle exit animation
         setTimeout(() => {
-          notification.style.animation = 'slideOut 0.5s ease-in forwards';
-        }, duration);
+          notification.style.animation = 'slideOut 0.5s ease-in forwards'
+        }, duration)
       }
     </script>
   </head>
@@ -167,7 +184,7 @@
       <div class="content">
         <h3 class="title">Focus Complete!</h3>
       </div>
-      <button class="button-ghost">See Recap</button>
+      <a href="#" class="button-ghost">See Recap</a>
     </div>
   </body>
 </html> 

@@ -29,7 +29,8 @@
         "enable": true,
         "scope": ["**"]
       }
-    }
+    },
+    "withGlobalTauri": true
   },
   "plugins": {
     "deep-link": {

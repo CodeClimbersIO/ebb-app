@@ -6,6 +6,7 @@ import { TopNav } from '@/components/TopNav'
 import { Logo } from '@/components/ui/logo'
 import { MonitorApi, AppsWithTime, GraphableTimeByHourBlock } from '../api/monitorApi/monitorApi'
 import { UsageSummary } from '@/components/UsageSummary'
+import NotificationManager from '@/lib/notificationManager'
 
 interface LocationState {
   sessionId: string
@@ -16,6 +17,9 @@ interface LocationState {
   startTime: string
   endTime: string
 }
+
+// Initialize the notification manager
+const notificationManager = NotificationManager.getInstance()
 
 export const FlowRecapPage = () => {
   const location = useLocation()
@@ -30,6 +34,11 @@ export const FlowRecapPage = () => {
   useEffect(() => {
     if (effectRan.current) return
     effectRan.current = true
+
+    // Show session end notification
+    notificationManager.show({
+      type: 'session-end'
+    })
 
     const init = async () => {
       if (!state?.startTime || !state?.endTime) return

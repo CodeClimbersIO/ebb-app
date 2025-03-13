@@ -28,7 +28,8 @@ import { SpotifyIcon } from '@/components/icons/SpotifyIcon'
 import { PlaybackState, SpotifyApiService } from '@/lib/integrations/spotify/spotifyApi'
 import { SpotifyAuthService } from '@/lib/integrations/spotify/spotifyAuth'
 import { invoke } from '@tauri-apps/api/core'
-import { openUrl } from '@tauri-apps/plugin-opener'
+import NotificationManager from '@/lib/notificationManager'
+import { listen } from '@tauri-apps/api/event'
 
 const getDurationFormatFromSeconds = (seconds: number) => {
   const duration = Duration.fromMillis(seconds * 1000)
@@ -42,41 +43,7 @@ const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
   const [time, setTime] = useState<string>('00:00')
   const [isAddingTime, setIsAddingTime] = useState(false)
   const [cooldown, setCooldown] = useState(false)
-
-  useEffect(() => {
-    if (!flowSession) return
-
-    const updateTimer = () => {
-      const now = DateTime.now()
-      const nowAsSeconds = now.toSeconds()
-      const startTime = DateTime.fromISO(flowSession.start).toSeconds()
-      const diff = nowAsSeconds - startTime
-
-      // Check for max duration limit for unlimited sessions
-      if (!flowSession.duration && diff >= MAX_SESSION_DURATION) {
-        window.dispatchEvent(new CustomEvent('flowSessionComplete'))
-        return
-      }
-
-      if (flowSession.duration) {
-        const remaining = (flowSession.duration) - diff
-        if (remaining <= 0) {
-          window.dispatchEvent(new CustomEvent('flowSessionComplete'))
-          return
-        }
-        const duration = getDurationFormatFromSeconds(remaining)
-        setTime(duration)
-      } else {
-        const duration = getDurationFormatFromSeconds(diff)
-        setTime(duration)
-      }
-    }
-
-    updateTimer()
-    const interval = setInterval(updateTimer, 1000)
-
-    return () => clearInterval(interval)
-  }, [flowSession])
+  const [hasShownWarning, setHasShownWarning] = useState(false)
 
   const handleAddTime = async () => {
     if (!flowSession || !flowSession.duration || isAddingTime || cooldown) return
@@ -104,6 +71,68 @@ const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
       }, 1000)
     }
   }
+
+  useEffect(() => {
+    if (!flowSession) return
+
+    const updateTimer = () => {
+      const now = DateTime.now()
+      const nowAsSeconds = now.toSeconds()
+      const startTime = DateTime.fromISO(flowSession.start).toSeconds()
+      const diff = nowAsSeconds - startTime
+
+      // Check for max duration limit for unlimited sessions
+      if (!flowSession.duration && diff >= MAX_SESSION_DURATION) {
+        window.dispatchEvent(new CustomEvent('flowSessionComplete'))
+        return
+      }
+
+      if (flowSession.duration) {
+        const remaining = (flowSession.duration) - diff
+        if (remaining <= 0) {
+          window.dispatchEvent(new CustomEvent('flowSessionComplete'))
+          return
+        }
+
+        // Show warning notification when 1 minute remains
+        if (remaining <= 60 && !hasShownWarning) {
+          NotificationManager.getInstance().show({ type: 'session-warning' })
+          setHasShownWarning(true)
+        }
+
+        const duration = getDurationFormatFromSeconds(remaining)
+        setTime(duration)
+      } else {
+        const duration = getDurationFormatFromSeconds(diff)
+        setTime(duration)
+      }
+    }
+
+    updateTimer()
+    const interval = setInterval(updateTimer, 1000)
+
+    return () => clearInterval(interval)
+  }, [flowSession, hasShownWarning])
+
+  useEffect(() => {
+    // Listen for add-time events from notification
+    const setupListener = async () => {
+      const unlisten = await listen<{ action: string, minutes: number }>('add-time-event', (event) => {
+        console.log('Received add-time event:', event)
+        if (event.payload.action === 'add-time') {
+          handleAddTime()
+        }
+      })
+
+      return unlisten
+    }
+
+    const unlistenPromise = setupListener()
+    
+    return () => {
+      unlistenPromise.then(unlisten => unlisten())
+    }
+  }, [handleAddTime])
 
   return (
     <>
@@ -501,17 +530,17 @@ export const FlowPage = () => {
                             const spotifyUri = selectedPlaylistId 
                               ? `spotify:playlist:${selectedPlaylistId}`
                               : 'spotify:'
-                            await openUrl(spotifyUri)
+                            await invoke('plugin:shell|open', { path: spotifyUri })
                           } catch (error) {
                             console.error('Failed to open Spotify:', error)
                             // Fallback to web version if native app fails to open
                             const webUrl = selectedPlaylistId
                               ? `https://open.spotify.com/playlist/${selectedPlaylistId}`
                               : 'https://open.spotify.com'
-                            await openUrl(webUrl)
+                            await invoke('plugin:shell|open', { path: webUrl })
                           }
                         } else {
-                          await openUrl('https://open.spotify.com/download')
+                          await invoke('plugin:shell|open', { path: 'https://open.spotify.com/download' })
                         }
                       }}
                       className="text-sm text-muted-foreground hover:underline cursor-pointer"

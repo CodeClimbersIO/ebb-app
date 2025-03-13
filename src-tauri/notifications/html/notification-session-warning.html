@@ -77,11 +77,28 @@
         border: none;
         border-radius: 6px;
         cursor: pointer;
-        transition: background-color 0.2s;
+        transition: all 0.2s;
       }
 
-      .button-ghost:hover {
+      .button-ghost:not(:disabled):hover {
         background-color: rgba(245, 243, 255, 0.1);
+      }
+
+      .button-ghost:disabled {
+        opacity: 0.5;
+        background-color: rgba(245, 243, 255, 0.05);
+      }
+
+      /* Success state */
+      .button-ghost.success {
+        color: #10b981;
+        background-color: rgba(16, 185, 129, 0.1);
+      }
+
+      /* Error state */
+      .button-ghost.error {
+        color: #ef4444;
+        background-color: rgba(239, 68, 68, 0.1);
       }
 
       /* Warning notification styles */
@@ -146,9 +163,34 @@
         
         // Add button click handler
         const button = document.querySelector('.button-ghost');
+        let hasClicked = false;
+
         if (button) {
-          button.addEventListener('click', () => {
-            // This would typically emit an event to the main app
+          button.addEventListener('click', async () => {
+            if (hasClicked) return;
+            hasClicked = true;
+            
+            try {
+              button.textContent = 'Adding...';
+              button.disabled = true;
+              // Import and use Tauri's event API
+              const { emit } = window.__TAURI__.event;
+              await emit('add-time-event', {
+                action: 'add-time',
+                minutes: 15
+              });
+              button.textContent = '15 min added!';
+              button.classList.add('success');
+              // Close the notification after a short delay
+              setTimeout(() => {
+                window.close();
+              }, 1000);
+            } catch (error) {
+              console.error('Failed to emit add-time event:', error);
+              button.textContent = 'Failed to add time';
+              button.classList.add('error');
+              button.disabled = true;
+            }
           });
         }
         

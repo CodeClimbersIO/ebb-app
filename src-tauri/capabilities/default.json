@@ -16,18 +16,6 @@
     "log:default",
     "deep-link:default",
     "opener:allow-default-urls",
-    "opener:allow-open-url",
-    {
-      "identifier": "opener:allow-open-url",
-      "allow": [
-        {
-          "url": "spotify:playlist:*"
-        },
-        {
-          "url": "^https://open\\.spotify\\.com.*"
-        }
-      ]
-    },
     "global-shortcut:allow-is-registered",
     "global-shortcut:allow-register",
     "global-shortcut:allow-unregister",
@@ -38,6 +26,9 @@
     "core:window:allow-show",
     "core:window:allow-minimize",
     "core:window:allow-destroy",
-    "core:webview:allow-create-webview-window"
+    "core:webview:allow-create-webview-window",
+    "shell:default",
+    "shell:allow-open",
+    "shell:allow-execute"
   ]
 }
