@@ -72,7 +72,7 @@ jobs:
 
       - name: Setup Apple API Key for notarization
         env:
-          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY_PATH }}
         run: |
           mkdir -p ~/private_keys
           echo "$APPLE_API_KEY" | base64 --decode > ~/private_keys/AuthKey.p8
@@ -89,7 +89,7 @@ jobs:
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          # Add sentry token
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         with:
           tagName: v__VERSION__
           releaseName: "v__VERSION__"
