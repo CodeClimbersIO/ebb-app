@@ -27,7 +27,9 @@
       "csp": null,
       "assetProtocol": {
         "enable": true,
-        "scope": ["**"]
+        "scope": {
+          "allow": ["$ASSET/**", "$RESOURCE/**"]
+        }
       }
     },
     "withGlobalTauri": true

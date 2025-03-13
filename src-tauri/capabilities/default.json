@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Capability for the main window",
+  "description": "Capabilities for Ebb windows",
   "windows": [
     "main",
     "session-start",
@@ -30,6 +30,10 @@
     "shell:default",
     "shell:allow-open",
     "shell:allow-execute",
-    "core:event:default"
-  ]
+    "core:event:default",
+    "core:event:allow-emit"
+  ],
+  "remote": {
+    "urls": ["asset://localhost"]
+  }
 }
