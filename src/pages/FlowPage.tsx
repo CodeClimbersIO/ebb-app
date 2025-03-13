@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { FlowSession } from '@/db/ebb/flowSessionRepo'
 import { DateTime, Duration } from 'luxon'
@@ -166,19 +166,20 @@ const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
 
 export const FlowPage = () => {
   const navigate = useNavigate()
-  const location = useLocation()
   const [flowSession, setFlowSession] = useState<FlowSession | null>(null)
   const [showEndDialog, setShowEndDialog] = useState(false)
   const [player, setPlayer] = useState<Spotify.Player | null>(null)
   const [deviceId, setDeviceId] = useState<string>('')
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTrack, setCurrentTrack] = useState<{
-    name: string;
-    artist: string;
-    duration_ms: number;
-    position_ms: number;
+    name: string
+    artist: string
+    duration_ms: number
+    position_ms: number
   } | null>(null)
-  const [selectedPlaylistId, setSelectedPlaylistId] = useState<string>('')
+  const [selectedPlaylistId, setSelectedPlaylistId] = useState<string>(() => {
+    return localStorage.getItem('lastPlaylist') || ''
+  })
   const [isSpotifyAuthenticated, setIsSpotifyAuthenticated] = useState(false)
   const [playlistData, setPlaylistData] = useState<{
     playlists: { id: string; name: string }[];
@@ -233,10 +234,9 @@ export const FlowPage = () => {
 
         newPlayer.addListener('ready', ({ device_id }: { device_id: string }) => {
           setDeviceId(device_id)
-          // Start playback if playlist was selected
-          const playlist = location.state?.playlist
-          if (playlist?.id) {
-            SpotifyApiService.startPlayback(playlist.id, device_id)
+          const savedPlaylist = localStorage.getItem('lastPlaylist')
+          if (savedPlaylist) {
+            SpotifyApiService.startPlayback(savedPlaylist, device_id)
           }
         })
 
@@ -252,11 +252,7 @@ export const FlowPage = () => {
           })
         })
 
-        // Handle player disconnection events, which might be caused by token issues
-        newPlayer.addListener('not_ready', ({ device_id }: { device_id: string }) => {
-          console.log('Device ID has gone offline', device_id)
-
-          // Attempt to reconnect if possible
+        newPlayer.addListener('not_ready', () => {
           setTimeout(async () => {
             try {
               const isConnected = await SpotifyAuthService.isConnected()
@@ -266,7 +262,7 @@ export const FlowPage = () => {
             } catch (error) {
               console.error('Error reconnecting player:', error)
             }
-          }, 2000) // Short delay before attempting to reconnect
+          }, 2000)
         })
 
         setPlayer(newPlayer)
@@ -291,12 +287,6 @@ export const FlowPage = () => {
       if (cached) {
         const parsedData = JSON.parse(cached)
         setPlaylistData(parsedData)
-
-        // Set initial playlist from location state
-        const initialPlaylist = location.state?.playlist?.id
-        if (initialPlaylist) {
-          setSelectedPlaylistId(initialPlaylist)
-        }
         return
       }
 
@@ -315,12 +305,6 @@ export const FlowPage = () => {
         const newPlaylistData = { playlists, images }
         setPlaylistData(newPlaylistData)
         localStorage.setItem('playlistData', JSON.stringify(newPlaylistData))
-
-        // Set initial playlist from location state
-        const initialPlaylist = location.state?.playlist?.id
-        if (initialPlaylist) {
-          setSelectedPlaylistId(initialPlaylist)
-        }
       } catch (error) {
         console.error('Error loading playlist data:', error)
       }
