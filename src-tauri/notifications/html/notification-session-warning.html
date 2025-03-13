@@ -145,59 +145,58 @@
     </style>
     <script>
       window.onload = function() {
-        const params = new URLSearchParams(window.location.search);
-        const duration = parseInt(params.get('duration') || '15000');
-        const notification = document.querySelector('.notification');
+        const { event } = window.__TAURI__
+        const params = new URLSearchParams(window.location.search)
+        const duration = parseInt(params.get('duration') || '15000')
+        const notification = document.querySelector('.notification')
         
         // Set the progress animation duration
-        document.documentElement.style.setProperty('--progress-duration', `${duration}ms`);
+        document.documentElement.style.setProperty('--progress-duration', `${duration}ms`)
         
         // Try to play sound if available
-        const soundUrl = params.get('sound');
+        const soundUrl = params.get('sound')
         if (soundUrl) {
-          const audio = new Audio(soundUrl);
+          const audio = new Audio(soundUrl)
           audio.addEventListener('canplaythrough', () => {
-            audio.play();
-          });
+            audio.play()
+          })
         }
         
         // Add button click handler
-        const button = document.querySelector('.button-ghost');
-        let hasClicked = false;
+        const button = document.querySelector('.button-ghost')
+        let hasClicked = false
 
         if (button) {
           button.addEventListener('click', async () => {
-            if (hasClicked) return;
-            hasClicked = true;
+            if (hasClicked) return
+            hasClicked = true
             
             try {
-              button.textContent = 'Adding...';
-              button.disabled = true;
-              // Import and use Tauri's event API
-              const { emit } = window.__TAURI__.event;
-              await emit('add-time-event', {
+              button.textContent = 'Adding...'
+              button.disabled = true
+              await event.emit('add-time-event', {
                 action: 'add-time',
                 minutes: 15
-              });
-              button.textContent = '15 min added!';
-              button.classList.add('success');
+              })
+              button.textContent = '15 min added!'
+              button.classList.add('success')
               // Close the notification after a short delay
               setTimeout(() => {
-                window.close();
-              }, 1000);
+                window.close()
+              }, 1000)
             } catch (error) {
-              console.error('Failed to emit add-time event:', error);
-              button.textContent = 'Failed to add time';
-              button.classList.add('error');
-              button.disabled = true;
+              console.error('Failed to emit add-time event:', error)
+              button.textContent = 'Failed to add time'
+              button.classList.add('error')
+              button.disabled = true
             }
-          });
+          })
         }
         
         // Handle exit animation
         setTimeout(() => {
-          notification.style.animation = 'slideOut 0.5s ease-in forwards';
-        }, duration);
+          notification.style.animation = 'slideOut 0.5s ease-in forwards'
+        }, duration)
       }
     </script>
   </head>

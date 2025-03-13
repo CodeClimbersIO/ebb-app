@@ -129,6 +129,7 @@
     </style>
     <script>
       window.onload = async function() {
+        const { window: tauriWindow, shell } = window.__TAURI__
         const params = new URLSearchParams(window.location.search)
         const duration = parseInt(params.get('duration') || '10000')
         const notification = document.querySelector('.notification')
@@ -154,7 +155,7 @@
             
             try {
               // Show the main window if it's hidden
-              const windows = await window.__TAURI__.window.getAllWindows()
+              const windows = await tauriWindow.getAllWindows()
               const mainWindow = windows.find(w => w.label === 'main')
               if (mainWindow) {
                 await mainWindow.show()
@@ -162,7 +163,7 @@
               }
               
               // Use shell plugin for the deep link
-              await window.__TAURI__.shell.open('ebb://flow-recap')
+              await shell.open('ebb://flow-recap')
             } catch (error) {
               console.error('Error:', error)
             }
