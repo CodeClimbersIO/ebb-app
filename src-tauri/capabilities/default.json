@@ -15,7 +15,6 @@
     "sql:allow-execute",
     "log:default",
     "deep-link:default",
-    "opener:allow-default-urls",
     "global-shortcut:allow-is-registered",
     "global-shortcut:allow-register",
     "global-shortcut:allow-unregister",
@@ -34,6 +33,8 @@
     "core:event:allow-emit"
   ],
   "remote": {
-    "urls": ["asset://localhost"]
+    "urls": [
+      "asset://localhost"
+    ]
   }
 }
