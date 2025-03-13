@@ -19,10 +19,6 @@ import { useNavigate } from 'react-router-dom'
 import { SpotifyApiService } from '@/lib/integrations/spotify/spotifyApi'
 import { SpotifyAuthService } from '@/lib/integrations/spotify/spotifyAuth'
 import supabase from '@/lib/integrations/supabase'
-import NotificationManager from '@/lib/notificationManager'
-
-// Initialize the notification manager
-const notificationManager = NotificationManager.getInstance()
 import { ResetAppData } from '@/components/developer/ResetAppData'
 
 export const SettingsPage = () => {
@@ -138,42 +134,6 @@ export const SettingsPage = () => {
                   </div>
                   <div className="relative">
                     <ModeToggle />
-                  </div>
-                </div>
-              </div>
-
-              <div className="border rounded-lg p-6">
-                <h2 className="text-lg font-semibold mb-4">Notifications</h2>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium">Test Notifications</div>
-                      <div className="text-sm text-muted-foreground">
-                        Try out different notification types
-                      </div>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <Button onClick={() => notificationManager.show({
-                      type: 'session-start'
-                    })}>
-                      Test Session Start
-                    </Button>
-                    <Button onClick={() => notificationManager.show({
-                      type: 'session-end'
-                    })}>
-                      Test Session End
-                    </Button>
-                    <Button onClick={() => notificationManager.show({
-                      type: 'session-warning'
-                    })}>
-                      Test Session Warning
-                    </Button>
-                    <Button onClick={() => notificationManager.show({
-                      type: 'blocked-app'
-                    })}>
-                      Test Blocked App
-                    </Button>
                   </div>
                 </div>
               </div>
