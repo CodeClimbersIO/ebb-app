@@ -31,6 +31,15 @@
       "desktop": {
         "schemes": ["ebb"]
       }
+    },
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEU5RjdFOTk2QjlCNzdBRUYKUldUdmVyZTVsdW4zNlh1MnR0cDVRZTVPaXQ0OU12bjJqTWdkUWorV29jc2o4YjA1anlGRnBRV1cK",
+      "endpoints": [
+        "https://github.com/ebb-ai/ebb/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
     }
   },
   "bundle": {
@@ -46,6 +55,8 @@
     ],
     "macOS": {
       "frameworks": ["./target/libMacMonitor.dylib"]
-    }
+    },
+    "createUpdaterArtifacts": true,
+    "publisher": "Ebb"
   }
 }
