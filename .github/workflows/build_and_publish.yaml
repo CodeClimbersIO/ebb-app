@@ -5,9 +5,6 @@ on:
     branches:
       - release
 
-# This is the example for publishing a Universal macOS app with a signing certificate.
-# On each push to the `release` branch it will create or update a GitHub release, build your app, and upload the artifacts to the release.
-
 jobs:
   publish-tauri:
     permissions:
