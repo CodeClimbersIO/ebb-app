@@ -13,7 +13,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # for ARM64 macOS builds (Apple Silicon only)
           - platform: "macos-latest"
             args: "--target aarch64-apple-darwin"
 
@@ -39,10 +38,9 @@ jobs:
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
       - name: install frontend dependencies
-        run: yarn install # change this to npm, pnpm or bun depending on which one you use.
+        run: yarn install
 
       - name: import Apple Developer Certificate
-        # Prevents keychain from locking automatically for 3600 seconds.
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
@@ -105,8 +103,6 @@ jobs:
           tagName: v__VERSION__
           releaseName: "v__VERSION__"
           releaseBody: "See the assets to download this version and install."
-          releaseDraft: true
-          prerelease: false
           args: ${{ matrix.args }}
           includeUpdaterJson: true
           includeDebug: true

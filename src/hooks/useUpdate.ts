@@ -4,7 +4,7 @@ import { info } from '@tauri-apps/plugin-log'
 
 export const checkAndUpdate = async () => {
   const update = await check()
-    if (update) {
+  if (update) {
     info(
       `found update ${update.version} from ${update.date} with notes ${update.body}`
     )
@@ -33,9 +33,6 @@ export const checkAndUpdate = async () => {
 
 export const useUpdate = () => {
   const beginCheckForUpdates = () => {
-    if (import.meta.env.DEV) {
-      return
-    }
     checkAndUpdate()
     const interval = setInterval(checkAndUpdate,60 * 1000)
     return () => clearInterval(interval)
