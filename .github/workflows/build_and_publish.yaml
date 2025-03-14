@@ -2,8 +2,8 @@ name: "build and publish"
 
 on:
   push:
-    branches:
-      - release
+    tags:
+      - "v*" # Trigger on any tag that starts with 'v'
 
 jobs:
   publish-tauri:
@@ -84,7 +84,7 @@ jobs:
       - name: Get last release
         id: last_release
         run: |
-          last_release=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          last_release=$(curl -s -H "Authorization: token ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}" \
             "https://api.github.com/repos/${{ github.repository }}/releases/latest" | \
             jq -r .tag_name)
           echo "Last release tag: $last_release"
@@ -101,7 +101,7 @@ jobs:
       - name: build and publish
         uses: tauri-apps/tauri-action@v0
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
           APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
           APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
