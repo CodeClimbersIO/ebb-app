@@ -184,3 +184,26 @@ pub fn restore_app_data_from_backup() -> Result<String, String> {
         latest_backup_dir
     ))
 }
+
+#[command]
+pub fn detect_spotify() -> bool {
+    #[cfg(target_os = "macos")]
+    {
+        std::path::Path::new("/Applications/Spotify.app").exists()
+    }
+    #[cfg(target_os = "windows")]
+    {
+        let program_files = std::env::var("PROGRAMFILES").unwrap_or_default();
+        let program_files_x86 = std::env::var("PROGRAMFILES(X86)").unwrap_or_default();
+        std::path::Path::new(&format!("{}/Spotify/Spotify.exe", program_files)).exists()
+            || std::path::Path::new(&format!("{}/Spotify/Spotify.exe", program_files_x86)).exists()
+    }
+    #[cfg(target_os = "linux")]
+    {
+        std::process::Command::new("which")
+            .arg("spotify")
+            .output()
+            .map(|output| output.status.success())
+            .unwrap_or(false)
+    }
+}

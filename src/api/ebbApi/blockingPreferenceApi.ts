@@ -34,7 +34,6 @@ const getBlockingPreferencesAsSearchOptions = async (): Promise<SearchOption[]> 
 
 const getAllBlockedApps = async (): Promise<App[]> => {
   const { preferences } = await BlockingPreferenceRepo.getBlockingPreferences()
-  console.log('preferences', preferences)
   // get all app ids from preferences
   const prefAppIds = preferences
     .filter(pref => pref.app_id)
@@ -43,11 +42,8 @@ const getAllBlockedApps = async (): Promise<App[]> => {
     .filter(pref => pref.tag_id)
     .map(pref => pref.tag_id as string)
 
-  console.log('prefAppIds', prefAppIds)
-  console.log('prefTagIds', prefTagIds)
   // get all apps that belong to the tags of type category
   const categoryApps = await AppRepo.getAppsByCategoryTags(prefTagIds)
-  console.log('categoryApps', categoryApps)
   const apps = await AppRepo.getAppsByIds([...prefAppIds])
   return [...apps, ...categoryApps]
 }

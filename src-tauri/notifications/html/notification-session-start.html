@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Session Start</title>
+    <style>
+      /* Base notification styles */
+      body {
+        margin: 0;
+        padding: 12px;
+        font-family: system-ui, -apple-system, sans-serif;
+        min-height: 100vh;
+        box-sizing: border-box;
+      }
+
+      /* Notification container */
+      .notification {
+        position: relative;
+        display: flex;
+        align-items: center;
+        padding: 16px;
+        gap: 12px;
+        background: hsl(224 71.4% 4.1% / 0.95);
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        margin: 0;
+        border-radius: 8px;
+        overflow: hidden;
+        animation: slideIn 0.3s ease-out forwards;
+        animation-fill-mode: forwards;
+      }
+
+      /* Progress bar animation */
+      .notification::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        height: 2px;
+        width: 100%;
+        transform-origin: left;
+        animation: progress linear forwards;
+        animation-duration: var(--progress-duration, 5000ms);
+      }
+
+      /* Icon styles */
+      .icon {
+        width: 24px;
+        height: 24px;
+        color: #7C3AED;
+      }
+
+      /* Content container */
+      .content {
+        flex: 1;
+      }
+
+      /* Title styles */
+      .title {
+        color: #f5f3ff;
+        font-weight: 600;
+        margin: 0;
+        font-size: 16px;
+      }
+
+      /* Success notification styles */
+      .notification.success .icon {
+        color: #7C3AED;
+      }
+
+      .notification.success::before,
+      .notification.success::after {
+        background-color: #7C3AED;
+      }
+
+      @keyframes progress {
+        from {
+          transform: scaleX(1);
+        }
+        to {
+          transform: scaleX(0);
+        }
+      }
+
+      /* Add slide and fade animations */
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateY(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes slideOut {
+        from {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        to {
+          opacity: 0;
+          transform: translateY(-20px);
+        }
+      }
+    </style>
+    <script>
+      window.onload = function() {
+        const params = new URLSearchParams(window.location.search);
+        const duration = parseInt(params.get('duration') || '5000');
+        const notification = document.querySelector('.notification');
+        
+        // Set the progress animation duration
+        document.documentElement.style.setProperty('--progress-duration', `${duration}ms`);
+        
+        // Try to play sound if available
+        const soundUrl = params.get('sound');
+        if (soundUrl) {
+          const audio = new Audio(soundUrl);
+          audio.addEventListener('canplaythrough', () => {
+            audio.play();
+          });
+        }
+        
+        // Handle exit animation
+        setTimeout(() => {
+          notification.style.animation = 'slideOut 0.5s ease-in forwards';
+        }, duration);
+      }
+    </script>
+  </head>
+  <body>
+    <div class="notification success">
+      <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <div class="content">
+        <h3 class="title">Session Start</h3>
+      </div>
+    </div>
+  </body>
+</html> 

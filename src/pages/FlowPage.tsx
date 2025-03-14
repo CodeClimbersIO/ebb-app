@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { FlowSession } from '@/db/ebb/flowSessionRepo'
 import { DateTime, Duration } from 'luxon'
@@ -28,6 +28,8 @@ import { SpotifyIcon } from '@/components/icons/SpotifyIcon'
 import { PlaybackState, SpotifyApiService } from '@/lib/integrations/spotify/spotifyApi'
 import { SpotifyAuthService } from '@/lib/integrations/spotify/spotifyAuth'
 import { invoke } from '@tauri-apps/api/core'
+import NotificationManager from '@/lib/notificationManager'
+import { listen } from '@tauri-apps/api/event'
 
 const getDurationFormatFromSeconds = (seconds: number) => {
   const duration = Duration.fromMillis(seconds * 1000)
@@ -41,41 +43,7 @@ const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
   const [time, setTime] = useState<string>('00:00')
   const [isAddingTime, setIsAddingTime] = useState(false)
   const [cooldown, setCooldown] = useState(false)
-
-  useEffect(() => {
-    if (!flowSession) return
-
-    const updateTimer = () => {
-      const now = DateTime.now()
-      const nowAsSeconds = now.toSeconds()
-      const startTime = DateTime.fromISO(flowSession.start).toSeconds()
-      const diff = nowAsSeconds - startTime
-
-      // Check for max duration limit for unlimited sessions
-      if (!flowSession.duration && diff >= MAX_SESSION_DURATION) {
-        window.dispatchEvent(new CustomEvent('flowSessionComplete'))
-        return
-      }
-
-      if (flowSession.duration) {
-        const remaining = (flowSession.duration) - diff
-        if (remaining <= 0) {
-          window.dispatchEvent(new CustomEvent('flowSessionComplete'))
-          return
-        }
-        const duration = getDurationFormatFromSeconds(remaining)
-        setTime(duration)
-      } else {
-        const duration = getDurationFormatFromSeconds(diff)
-        setTime(duration)
-      }
-    }
-
-    updateTimer()
-    const interval = setInterval(updateTimer, 1000)
-
-    return () => clearInterval(interval)
-  }, [flowSession])
+  const [hasShownWarning, setHasShownWarning] = useState(false)
 
   const handleAddTime = async () => {
     if (!flowSession || !flowSession.duration || isAddingTime || cooldown) return
@@ -103,6 +71,67 @@ const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
       }, 1000)
     }
   }
+
+  useEffect(() => {
+    if (!flowSession) return
+
+    const updateTimer = () => {
+      const now = DateTime.now()
+      const nowAsSeconds = now.toSeconds()
+      const startTime = DateTime.fromISO(flowSession.start).toSeconds()
+      const diff = nowAsSeconds - startTime
+
+      // Check for max duration limit for unlimited sessions
+      if (!flowSession.duration && diff >= MAX_SESSION_DURATION) {
+        window.dispatchEvent(new CustomEvent('flowSessionComplete'))
+        return
+      }
+
+      if (flowSession.duration) {
+        const remaining = (flowSession.duration) - diff
+        if (remaining <= 0) {
+          window.dispatchEvent(new CustomEvent('flowSessionComplete'))
+          return
+        }
+
+        // Show warning notification when 1 minute remains
+        if (remaining <= 60 && !hasShownWarning) {
+          NotificationManager.getInstance().show({ type: 'session-warning' })
+          setHasShownWarning(true)
+        }
+
+        const duration = getDurationFormatFromSeconds(remaining)
+        setTime(duration)
+      } else {
+        const duration = getDurationFormatFromSeconds(diff)
+        setTime(duration)
+      }
+    }
+
+    updateTimer()
+    const interval = setInterval(updateTimer, 1000)
+
+    return () => clearInterval(interval)
+  }, [flowSession, hasShownWarning])
+
+  useEffect(() => {
+    // Listen for add-time events from notification
+    const setupListener = async () => {
+      const unlisten = await listen<{ action: string, minutes: number }>('add-time-event', (event) => {
+        if (event.payload.action === 'add-time') {
+          handleAddTime()
+        }
+      })
+
+      return unlisten
+    }
+
+    const unlistenPromise = setupListener()
+    
+    return () => {
+      unlistenPromise.then(unlisten => unlisten())
+    }
+  }, [handleAddTime])
 
   return (
     <>
@@ -136,19 +165,20 @@ const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
 
 export const FlowPage = () => {
   const navigate = useNavigate()
-  const location = useLocation()
   const [flowSession, setFlowSession] = useState<FlowSession | null>(null)
   const [showEndDialog, setShowEndDialog] = useState(false)
   const [player, setPlayer] = useState<Spotify.Player | null>(null)
   const [deviceId, setDeviceId] = useState<string>('')
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTrack, setCurrentTrack] = useState<{
-    name: string;
-    artist: string;
-    duration_ms: number;
-    position_ms: number;
+    name: string
+    artist: string
+    duration_ms: number
+    position_ms: number
   } | null>(null)
-  const [selectedPlaylistId, setSelectedPlaylistId] = useState<string>('')
+  const [selectedPlaylistId, setSelectedPlaylistId] = useState<string>(() => {
+    return localStorage.getItem('lastPlaylist') || ''
+  })
   const [isSpotifyAuthenticated, setIsSpotifyAuthenticated] = useState(false)
   const [playlistData, setPlaylistData] = useState<{
     playlists: { id: string; name: string }[];
@@ -157,7 +187,8 @@ export const FlowPage = () => {
     const saved = localStorage.getItem('playlistData')
     return saved ? JSON.parse(saved) : { playlists: [], images: {} }
   })
-  const [isLoadingPlayback, setIsLoadingPlayback] = useState<'prev' | 'play' | 'next' | null>(null)
+  const [isSpotifyInstalled, setIsSpotifyInstalled] = useState<boolean>(false)
+  const [clickedButton, setClickedButton] = useState<'prev' | 'play' | 'next' | null>(null)
 
   useEffect(() => {
     const init = async () => {
@@ -173,7 +204,7 @@ export const FlowPage = () => {
   useEffect(() => {
     const handleSessionComplete = async () => {
       if (player && deviceId) {
-        await SpotifyApiService.controlPlayback('pause', deviceId)
+        await player.pause()
         await SpotifyApiService.transferPlaybackToComputerDevice()
         player.disconnect() // Disconnect the Web Playback SDK player
         setIsPlaying(false)
@@ -202,10 +233,9 @@ export const FlowPage = () => {
 
         newPlayer.addListener('ready', ({ device_id }: { device_id: string }) => {
           setDeviceId(device_id)
-          // Start playback if playlist was selected
-          const playlist = location.state?.playlist
-          if (playlist?.id) {
-            SpotifyApiService.startPlayback(playlist.id, device_id)
+          const savedPlaylist = localStorage.getItem('lastPlaylist')
+          if (savedPlaylist) {
+            SpotifyApiService.startPlayback(savedPlaylist, device_id)
           }
         })
 
@@ -221,11 +251,7 @@ export const FlowPage = () => {
           })
         })
 
-        // Handle player disconnection events, which might be caused by token issues
-        newPlayer.addListener('not_ready', ({ device_id }: { device_id: string }) => {
-          console.log('Device ID has gone offline', device_id)
-
-          // Attempt to reconnect if possible
+        newPlayer.addListener('not_ready', () => {
           setTimeout(async () => {
             try {
               const isConnected = await SpotifyAuthService.isConnected()
@@ -235,7 +261,7 @@ export const FlowPage = () => {
             } catch (error) {
               console.error('Error reconnecting player:', error)
             }
-          }, 2000) // Short delay before attempting to reconnect
+          }, 2000)
         })
 
         setPlayer(newPlayer)
@@ -260,12 +286,6 @@ export const FlowPage = () => {
       if (cached) {
         const parsedData = JSON.parse(cached)
         setPlaylistData(parsedData)
-
-        // Set initial playlist from location state
-        const initialPlaylist = location.state?.playlist?.id
-        if (initialPlaylist) {
-          setSelectedPlaylistId(initialPlaylist)
-        }
         return
       }
 
@@ -284,12 +304,6 @@ export const FlowPage = () => {
         const newPlaylistData = { playlists, images }
         setPlaylistData(newPlaylistData)
         localStorage.setItem('playlistData', JSON.stringify(newPlaylistData))
-
-        // Set initial playlist from location state
-        const initialPlaylist = location.state?.playlist?.id
-        if (initialPlaylist) {
-          setSelectedPlaylistId(initialPlaylist)
-        }
       } catch (error) {
         console.error('Error loading playlist data:', error)
       }
@@ -313,12 +327,27 @@ export const FlowPage = () => {
     return () => clearInterval(tokenRefreshInterval)
   }, [isSpotifyAuthenticated])
 
+  useEffect(() => {
+    // Check if Spotify is installed when component mounts
+    const checkSpotifyInstallation = async () => {
+      try {
+        const installed = await invoke<boolean>('detect_spotify')
+        setIsSpotifyInstalled(installed)
+      } catch (error) {
+        console.error('Error detecting Spotify:', error)
+        setIsSpotifyInstalled(false)
+      }
+    }
+
+    checkSpotifyInstallation()
+  }, [])
+
   const handleEndSession = async () => {
     if (!flowSession) return
 
     // Stop playback, transfer to computer device, and clear player state
     if (player && deviceId) {
-      await SpotifyApiService.controlPlayback('pause', deviceId)
+      await player.pause()
       await SpotifyApiService.transferPlaybackToComputerDevice()
       player.disconnect() // Disconnect the Web Playback SDK player
       setIsPlaying(false)
@@ -344,41 +373,45 @@ export const FlowPage = () => {
   }
 
   const handlePlayPause = async () => {
-    if (!player || !deviceId) return
+    if (!player) return
     try {
-      setIsLoadingPlayback('play')
-      await SpotifyApiService.controlPlayback(isPlaying ? 'pause' : 'play', deviceId)
+      setClickedButton('play')
+      if (isPlaying) {
+        await player.pause()
+      } else {
+        await player.resume()
+      }
     } catch (error) {
       console.error('Playback control error:', error)
-      // Optionally add user feedback here
     } finally {
-      setIsLoadingPlayback(null)
+      // Remove animation after 200ms
+      setTimeout(() => setClickedButton(null), 200)
     }
   }
 
   const handleNext = async () => {
-    if (!player || !deviceId) return
+    if (!player) return
     try {
-      setIsLoadingPlayback('next')
-      await SpotifyApiService.controlPlayback('next', deviceId)
+      setClickedButton('next')
+      await player.nextTrack()
     } catch (error) {
       console.error('Next track error:', error)
-      // Optionally add user feedback here
     } finally {
-      setIsLoadingPlayback(null)
+      // Remove animation after 200ms
+      setTimeout(() => setClickedButton(null), 200)
     }
   }
 
   const handlePrevious = async () => {
-    if (!player || !deviceId) return
+    if (!player) return
     try {
-      setIsLoadingPlayback('prev')
-      await SpotifyApiService.controlPlayback('previous', deviceId)
+      setClickedButton('prev')
+      await player.previousTrack()
     } catch (error) {
       console.error('Previous track error:', error)
-      // Optionally add user feedback here
     } finally {
-      setIsLoadingPlayback(null)
+      // Remove animation after 200ms
+      setTimeout(() => setClickedButton(null), 200)
     }
   }
 
@@ -411,28 +444,32 @@ export const FlowPage = () => {
       </div>
 
       <div className="flex items-center space-x-4">
-        <Button variant="ghost" size="icon" onClick={handlePrevious} disabled={isLoadingPlayback === 'prev'}>
-          {isLoadingPlayback === 'prev' ? (
-            <Loader2 className="h-6 w-6 animate-spin" />
-          ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="19 20 9 12 19 4 19 20"></polygon><line x1="5" y1="19" x2="5" y2="5"></line></svg>
-          )}
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={handlePrevious} 
+          className={clickedButton === 'prev' ? 'scale-90 transition-transform' : 'transition-transform'}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="19 20 9 12 19 4 19 20"></polygon><line x1="5" y1="19" x2="5" y2="5"></line></svg>
         </Button>
-        <Button size="icon" className="h-12 w-12" onClick={handlePlayPause} disabled={isLoadingPlayback === 'play'}>
-          {isLoadingPlayback === 'play' ? (
-            <Loader2 className="h-6 w-6 animate-spin" />
-          ) : isPlaying ? (
+        <Button 
+          size="icon" 
+          className={`h-12 w-12 ${clickedButton === 'play' ? 'scale-90 transition-transform' : 'transition-transform'}`} 
+          onClick={handlePlayPause}
+        >
+          {isPlaying ? (
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
           ) : (
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
           )}
         </Button>
-        <Button variant="ghost" size="icon" onClick={handleNext} disabled={isLoadingPlayback === 'next'}>
-          {isLoadingPlayback === 'next' ? (
-            <Loader2 className="h-6 w-6 animate-spin" />
-          ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg>
-          )}
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={handleNext}
+          className={clickedButton === 'next' ? 'scale-90 transition-transform' : 'transition-transform'}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg>
         </Button>
       </div>
     </div>
@@ -474,9 +511,33 @@ export const FlowPage = () => {
               <CardContent className="space-y-12">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 rounded-full bg-green-500" />
                     <SpotifyIcon />
-                    <span className="text-sm text-muted-foreground">Connected</span>
+                    <a 
+                      href="#"
+                      onClick={async (e) => {
+                        e.preventDefault()
+                        if (isSpotifyInstalled) {
+                          try {
+                            const spotifyUri = selectedPlaylistId 
+                              ? `spotify:playlist:${selectedPlaylistId}`
+                              : 'spotify:'
+                            await invoke('plugin:shell|open', { path: spotifyUri })
+                          } catch (error) {
+                            console.error('Failed to open Spotify:', error)
+                            // Fallback to web version if native app fails to open
+                            const webUrl = selectedPlaylistId
+                              ? `https://open.spotify.com/playlist/${selectedPlaylistId}`
+                              : 'https://open.spotify.com'
+                            await invoke('plugin:shell|open', { path: webUrl })
+                          }
+                        } else {
+                          await invoke('plugin:shell|open', { path: 'https://open.spotify.com/download' })
+                        }
+                      }}
+                      className="text-sm text-muted-foreground hover:underline cursor-pointer"
+                    >
+                      {isSpotifyInstalled ? 'Open Spotify' : 'Get Spotify Free'}
+                    </a>
                   </div>
                   <Select value={selectedPlaylistId} onValueChange={handlePlaylistChange}>
                     <SelectTrigger className="w-[200px]">

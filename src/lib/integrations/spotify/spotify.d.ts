@@ -21,6 +21,14 @@ declare global {
                   callback: (data: { message: string }) => void): void;
       connect(): Promise<boolean>;
       disconnect(): void;
+      pause(): Promise<void>;
+      resume(): Promise<void>;
+      togglePlay(): Promise<void>;
+      seek(position_ms: number): Promise<void>;
+      previousTrack(): Promise<void>;
+      nextTrack(): Promise<void>;
+      getCurrentState(): Promise<PlaybackState | null>;
+      setVolume(volume: number): Promise<void>;
     }
   }
 

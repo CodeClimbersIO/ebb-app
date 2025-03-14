@@ -1,4 +1,4 @@
-import { openUrl } from '@tauri-apps/plugin-opener'
+import { invoke } from '@tauri-apps/api/core'
 import { SpotifyApiService } from './spotifyApi'
 
 const SPOTIFY_CONFIG = {
@@ -101,7 +101,7 @@ export class SpotifyAuthService {
     if (import.meta.env.DEV) {
       window.location.href = url
     } else {
-      await openUrl(url)
+      await invoke('plugin:shell|open', { path: url })
     }
   }
 

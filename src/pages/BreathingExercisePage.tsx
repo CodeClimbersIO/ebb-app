@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
+import NotificationManager from '@/lib/notificationManager'
+
+// Initialize the notification manager
+const notificationManager = NotificationManager.getInstance()
 
 interface LocationState {
   startTime: number
@@ -14,6 +18,13 @@ export const BreathingExercisePage = () => {
   const [isBreathingIn, setIsBreathingIn] = useState(true)
   const [cycleCount, setCycleCount] = useState(0)
   const state = location.state as LocationState
+
+  // Separate useEffect for the notification - runs only once on mount
+  useEffect(() => {
+    notificationManager.show({
+      type: 'session-start'
+    })
+  }, []) // Empty dependency array means it only runs once when mounted
 
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {

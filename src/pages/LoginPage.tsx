@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Logo } from '@/components/ui/logo'
 import supabase from '@/lib/integrations/supabase'
-import { openUrl } from '@tauri-apps/plugin-opener'
+import { invoke } from '@tauri-apps/api/core'
 import { OnboardingUtils } from '@/lib/utils/onboarding'
 
 export const LoginPage = () => {
@@ -33,7 +33,7 @@ export const LoginPage = () => {
       if (import.meta.env.DEV) {
         window.location.href = data.url
       } else {
-        await openUrl(data.url)
+        await invoke('plugin:shell|open', { path: data.url })
       }
     } catch (err) {
       setError('Failed to login with Google.')
@@ -44,7 +44,7 @@ export const LoginPage = () => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background">
       <div className="mb-8">
-        <Logo className="text-5xl" />
+        <Logo />
       </div>
       <p className="text-lg mb-8 text-muted-foreground">Focus starts here.</p>
       {error && <p className="text-sm text-destructive mb-4">{error}</p>}
