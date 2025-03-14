@@ -20,6 +20,7 @@ import { SpotifyApiService } from '@/lib/integrations/spotify/spotifyApi'
 import { SpotifyAuthService } from '@/lib/integrations/spotify/spotifyAuth'
 import supabase from '@/lib/integrations/supabase'
 import { ResetAppData } from '@/components/developer/ResetAppData'
+import { version } from '../../package.json'
 
 export const SettingsPage = () => {
   const [showUnlinkDialog, setShowUnlinkDialog] = useState(false)
@@ -271,7 +272,7 @@ export const SettingsPage = () => {
             )}
 
             <div className="mt-12 flex justify-between text-sm text-muted-foreground/50">
-              <div>Ebb Version 1.0.0</div>
+              <div>Ebb Version {version}</div>
               <div>Slop by Paul Hovley and Nathan Covey</div>
             </div>
           </div>

@@ -26,6 +26,8 @@
     "core:window:allow-show",
     "core:window:allow-minimize",
     "core:window:allow-destroy",
+    "process:allow-restart",
+    "updater:default",
     "core:webview:allow-create-webview-window",
     "shell:default",
     "shell:allow-open",
