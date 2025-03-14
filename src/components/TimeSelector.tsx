@@ -20,8 +20,7 @@ const presetTimes = [
   { value: '15', label: '15 minutes' },
   { value: '30', label: '30 minutes' },
   { value: '60', label: '1 hour' },
-  { value: '90', label: '1 hour 30 minutes' },
-  { value: 'workday', label: 'Workday (8 am to 6 pm)' },
+  { value: '90', label: '1 hour 30 minutes' }
 ]
 
 const parseTimeInput = (input: string): number | null => {
@@ -135,7 +134,7 @@ export function TimeSelector({ value: externalValue, onChange }: TimeSelectorPro
       }
       
       // If input is a valid duration, check if it matches the preset's duration
-      if (parsedInput !== null && option.value !== 'no-limit' && option.value !== 'workday') {
+      if (parsedInput !== null && option.value !== 'no-limit') {
         const presetMinutes = parseTimeInput(option.value)
         return presetMinutes === parsedInput
       }
@@ -178,7 +177,7 @@ export function TimeSelector({ value: externalValue, onChange }: TimeSelectorPro
     setOpen(false)
     setInputValue('') // Clear input when selection is made
 
-    if (currentValue === 'no-limit' || currentValue === 'workday') {
+    if (currentValue === 'no-limit') {
       onChange(null)
     } else {
       const numericValue = Number(currentValue)
