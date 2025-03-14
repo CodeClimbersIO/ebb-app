@@ -1,5 +1,6 @@
 use tauri::Manager;
 use tokio;
+use tauri_plugin_dialog::DialogExt;
 
 mod commands;
 mod db;
@@ -22,13 +23,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let migrations = db::get_migrations();
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_dialog::init())
         .on_window_event(|window, event| match event {
             tauri::WindowEvent::CloseRequested { api, .. } => {
                 api.prevent_close();
                 window.hide().unwrap();
             }
             _ => {}
-        })
+        }) // hides window instead of closing app when someone clicks the X button
         .plugin(
             tauri_plugin_log::Builder::new()
                 .clear_targets()
@@ -66,16 +68,34 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             commands::detect_spotify,
         ])
         .build(tauri::generate_context!())?
-        .run(
-            |app: &tauri::AppHandle<tauri::Wry>, event: tauri::RunEvent| match event {
-                tauri::RunEvent::Reopen { .. } => {
-                    if let Some(window) = app.get_webview_window("main") {
-                        window.show().unwrap();
-                        window.set_focus().unwrap();
+        .run(|app: &tauri::AppHandle<tauri::Wry>, event: tauri::RunEvent| match event {
+            tauri::RunEvent::ExitRequested { api, .. } => {
+                // Prevent the exit and show confirmation dialog
+                api.prevent_exit();
+                
+                let window = app.get_webview_window("main");
+                if let Some(window) = window {
+                    // Show the window if it's hidden
+                    window.show().unwrap();
+                    window.set_focus().unwrap();
+                    
+                    // Ask for confirmation using the newer dialog API
+                    if app.dialog()
+                        .message("Are you sure you want to quit?\nScreen time data will stop being generated and any active focus sessions will end.")
+                        .title("Quit Ebb?")
+                        .blocking_show() {
+                        // User confirmed, actually quit the app
+                        std::process::exit(0);
                     }
                 }
-                _ => {}
-            },
-        );
+            }
+            tauri::RunEvent::Reopen { .. } => {
+                if let Some(window) = app.get_webview_window("main") {
+                    window.show().unwrap();
+                    window.set_focus().unwrap();
+                }
+            }
+            _ => {}
+        });
     Ok(())
 }
