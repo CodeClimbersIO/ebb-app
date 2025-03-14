@@ -42,11 +42,9 @@ export const chartConfig = {
 export const formatTime = (minutes: number) => {
   const hours = Math.floor(minutes / 60)
   const remainingMinutes = Math.round(minutes % 60)
-  
   if (remainingMinutes === 60) {
     return `${hours + 1}h 0m`
   }
-  
   return `${hours}h ${remainingMinutes}m`
 }
 
@@ -324,9 +322,9 @@ export const UsageSummary = ({
                         className={
                           app.rating >= 4
                             ? 'bg-[rgb(124,58,237)]/20 [&>div]:bg-[rgb(124,58,237)]' :
-                          app.rating <= 2
-                            ? 'bg-[rgb(239,68,68)]/20 [&>div]:bg-[rgb(239,68,68)]' :
-                            'bg-gray-500/20 [&>div]:bg-gray-500'
+                            app.rating <= 2
+                              ? 'bg-[rgb(239,68,68)]/20 [&>div]:bg-[rgb(239,68,68)]' :
+                              'bg-gray-500/20 [&>div]:bg-gray-500'
                         }
                       />
                     </div>

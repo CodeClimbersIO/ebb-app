@@ -6,14 +6,18 @@ import supabase from '@/lib/integrations/supabase'
 import { invoke } from '@tauri-apps/api/core'
 import { setupTray } from './lib/tray'
 import { initSentry } from '@/components/Sentry'
+import { useUpdate } from './hooks/useUpdate'
 
 const App = () => {
+  const { beginCheckForUpdates } = useUpdate()
   useEffect(() => {
     initSentry()
+
     const init = async () => {
       await supabase.auth.getSession()
       await setupTray()
       const hasPermissions = await invoke<boolean>('check_accessibility_permissions')
+      beginCheckForUpdates()
 
       if (hasPermissions) {
         await invoke('start_system_monitoring')

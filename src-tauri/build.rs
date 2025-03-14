@@ -48,7 +48,10 @@ fn main() {
 
                 if dylib_path.exists() {
                     // Copy the dylib to the target directory
-                    let target_dir = target_release_dir.parent().unwrap();
+                    let target_dir = target_release_dir
+                        .ancestors()
+                        .find(|p| p.ends_with("target"))
+                        .expect("Could not find target directory");
                     let dest_path = target_dir.join("libMacMonitor.dylib");
                     fs::copy(&dylib_path, &dest_path).expect("Failed to copy libMacMonitor.dylib");
 
