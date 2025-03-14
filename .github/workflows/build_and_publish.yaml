@@ -5,9 +5,6 @@ on:
     branches:
       - release
 
-# This is the example for publishing a Universal macOS app with a signing certificate.
-# On each push to the `release` branch it will create or update a GitHub release, build your app, and upload the artifacts to the release.
-
 jobs:
   publish-tauri:
     permissions:
@@ -16,13 +13,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # for ARM64 macOS builds (Apple Silicon only)
           - platform: "macos-latest"
             args: "--target aarch64-apple-darwin"
 
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch all history for all tags and branches
 
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
@@ -42,10 +40,9 @@ jobs:
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
       - name: install frontend dependencies
-        run: yarn install # change this to npm, pnpm or bun depending on which one you use.
+        run: yarn install
 
       - name: import Apple Developer Certificate
-        # Prevents keychain from locking automatically for 3600 seconds.
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
@@ -84,6 +81,23 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
+      - name: Get last release
+        id: last_release
+        run: |
+          last_release=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/latest" | \
+            jq -r .tag_name)
+          echo "Last release tag: $last_release"
+          echo "last_release=$last_release" >> $GITHUB_OUTPUT
+
+      - name: Create Changelog
+        id: create_changelog
+        run: |
+          git log ${{ steps.last_release.outputs.last_release }}..HEAD --pretty=format:"- %s %h%n" > changelog.md
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$(cat changelog.md)" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: build and publish
         uses: tauri-apps/tauri-action@v0
         env:
@@ -107,8 +121,10 @@ jobs:
         with:
           tagName: v__VERSION__
           releaseName: "v__VERSION__"
-          releaseBody: "See the assets to download this version and install."
-          releaseDraft: true
-          prerelease: false
+          releaseBody: |
+            Changes in this Release:
+
+            ${{ steps.create_changelog.outputs.changelog }}
           args: ${{ matrix.args }}
           includeUpdaterJson: true
+          includeDebug: true
