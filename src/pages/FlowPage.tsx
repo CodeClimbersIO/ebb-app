@@ -30,6 +30,7 @@ import { SpotifyAuthService } from '@/lib/integrations/spotify/spotifyAuth'
 import { invoke } from '@tauri-apps/api/core'
 import NotificationManager from '@/lib/notificationManager'
 import { listen } from '@tauri-apps/api/event'
+import { useRustEvents } from '@/hooks/useRustEvents'
 
 const getDurationFormatFromSeconds = (seconds: number) => {
   const duration = Duration.fromMillis(seconds * 1000)
@@ -127,7 +128,7 @@ const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
     }
 
     const unlistenPromise = setupListener()
-    
+
     return () => {
       unlistenPromise.then(unlisten => unlisten())
     }
@@ -164,6 +165,8 @@ const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
 }
 
 export const FlowPage = () => {
+  console.log('FlowPage')
+  useRustEvents()
   const navigate = useNavigate()
   const [flowSession, setFlowSession] = useState<FlowSession | null>(null)
   const [showEndDialog, setShowEndDialog] = useState(false)
@@ -444,17 +447,17 @@ export const FlowPage = () => {
       </div>
 
       <div className="flex items-center space-x-4">
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={handlePrevious} 
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handlePrevious}
           className={clickedButton === 'prev' ? 'scale-90 transition-transform' : 'transition-transform'}
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="19 20 9 12 19 4 19 20"></polygon><line x1="5" y1="19" x2="5" y2="5"></line></svg>
         </Button>
-        <Button 
-          size="icon" 
-          className={`h-12 w-12 ${clickedButton === 'play' ? 'scale-90 transition-transform' : 'transition-transform'}`} 
+        <Button
+          size="icon"
+          className={`h-12 w-12 ${clickedButton === 'play' ? 'scale-90 transition-transform' : 'transition-transform'}`}
           onClick={handlePlayPause}
         >
           {isPlaying ? (
@@ -463,9 +466,9 @@ export const FlowPage = () => {
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
           )}
         </Button>
-        <Button 
-          variant="ghost" 
-          size="icon" 
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={handleNext}
           className={clickedButton === 'next' ? 'scale-90 transition-transform' : 'transition-transform'}
         >
@@ -512,13 +515,13 @@ export const FlowPage = () => {
                 <div className="flex justify-between items-center">
                   <div className="flex items-center space-x-2">
                     <SpotifyIcon />
-                    <a 
+                    <a
                       href="#"
                       onClick={async (e) => {
                         e.preventDefault()
                         if (isSpotifyInstalled) {
                           try {
-                            const spotifyUri = selectedPlaylistId 
+                            const spotifyUri = selectedPlaylistId
                               ? `spotify:playlist:${selectedPlaylistId}`
                               : 'spotify:'
                             await invoke('plugin:shell|open', { path: spotifyUri })
