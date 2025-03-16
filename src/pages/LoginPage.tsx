@@ -41,17 +41,27 @@ export const LoginPage = () => {
     }
   }
 
+  const openLink = async (url: string) => {
+    try {
+      await invoke('plugin:shell|open', { path: url })
+    } catch (err) {
+      console.error('Failed to open link:', err)
+    }
+  }
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background">
       <div className="mb-8">
-        <Logo />
+        <Logo width={100} height={36} />
       </div>
       <p className="text-lg mb-8 text-muted-foreground">Focus starts here.</p>
       {error && <p className="text-sm text-destructive mb-4">{error}</p>}
       <Button 
         type="button" 
         variant="outline" 
-        className="flex items-center justify-center gap-2"
+        size="lg"
+        iconSize={5}
+        className="flex items-center justify-center gap-2 min-w-[240px]"
         onClick={handleGoogleLogin}
       >
         <svg className="h-5 w-5" viewBox="0 0 24 24">
@@ -74,6 +84,25 @@ export const LoginPage = () => {
         </svg>
         Continue with Google
       </Button>
+      <div className="mt-6 max-w-[240px] w-full">
+        <div className="h-px bg-border mb-6" />
+        <p className="text-xs text-muted-foreground/80 text-center">
+          By continuing with Google, you agree to our{' '}
+          <button 
+            onClick={() => openLink('https://ebb.cool/terms')}
+            className="text-blue-500 hover:underline dark:text-blue-400"
+          >
+            Terms of Use
+          </button>{' '}
+          and{' '}
+          <button 
+            onClick={() => openLink('https://ebb.cool/privacy')}
+            className="text-blue-500 hover:underline dark:text-blue-400"
+          >
+            Privacy Policy
+          </button>
+        </p>
+      </div>
     </div>
   )
 }

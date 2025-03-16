@@ -100,7 +100,7 @@ class NotificationManager {
       let duration = 5000 // default 6s
       switch (options.type) {
         case 'session-warning':
-          duration = 10000
+          duration = 12000
           break
         case 'session-end':
           duration = 8000

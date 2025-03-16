@@ -14,7 +14,7 @@ export const AccessibilityPage = () => {
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null
 
-    const checkPermissions = async () => {
+    const checkPermissions = async (): Promise<boolean> => {
       try {
         setPermissionStatus('checking')
 
@@ -35,6 +35,7 @@ export const AccessibilityPage = () => {
             }
           }, 3000)
         }
+        return hasPermissions
       } catch (error) {
         logError(`❌ Error during permission check: ${error}`)
         setPermissionStatus('not_granted')
