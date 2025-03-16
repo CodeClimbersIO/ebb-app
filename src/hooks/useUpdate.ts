@@ -1,8 +1,12 @@
 import { check } from '@tauri-apps/plugin-updater'
 import { relaunch } from '@tauri-apps/plugin-process'
 import { info } from '@tauri-apps/plugin-log'
+import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
 
 export const checkAndUpdate = async () => {
+  const flowSession = await FlowSessionApi.getInProgressFlowSession()
+  if (flowSession) return // don't update if flow is in progress
+  
   const update = await check()
   if (update) {
     info(
@@ -33,8 +37,10 @@ export const checkAndUpdate = async () => {
 
 export const useUpdate = () => {
   const beginCheckForUpdates = () => {
+    if (import.meta.env.DEV) return
+    
     checkAndUpdate()
-    const interval = setInterval(checkAndUpdate,60 * 1000)
+    const interval = setInterval(checkAndUpdate, 60 * 1000)
     return () => clearInterval(interval)
   }
   return {

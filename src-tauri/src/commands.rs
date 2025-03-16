@@ -34,8 +34,8 @@ pub fn request_system_permissions() -> bool {
 }
 
 #[command]
-pub fn start_system_monitoring() {
-    system_monitor::start_monitoring();
+pub fn start_system_monitoring(app_handle: tauri::AppHandle) {
+    system_monitor::start_monitoring(app_handle);
 }
 
 #[command]
