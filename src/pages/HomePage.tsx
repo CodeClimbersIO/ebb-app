@@ -35,7 +35,7 @@ export const HomePage = () => {
   const [date, setDate] = useState<Date>(new Date())
   const [appUsage, setAppUsage] = useState<AppsWithTime[]>([])
   const [totalCreating, setTotalCreating] = useState(0)
-  const [totalOnline, setTotalOnline] = useState(0)
+  const [totalTime, setTotalTime] = useState(0)
   const [chartData, setChartData] = useState<GraphableTimeByHourBlock[]>([])
   const [tags, setTags] = useState<Tag[]>([])
   const refreshIntervalRef = useRef<number | null>(null)
@@ -54,7 +54,7 @@ export const HomePage = () => {
     // Calculate total online time (creating + neutral + consuming)
     const online = chartData.reduce((acc, curr) =>
       acc + curr.creating + curr.neutral + curr.consuming, 0)
-    setTotalOnline(online)
+    setTotalTime(online)
 
     setChartData(chartData.slice(6))
   }
@@ -150,7 +150,8 @@ export const HomePage = () => {
 
           <UsageSummary
             totalTimeLabel="Total Time"
-            totalOnline={totalOnline}
+            totalTimeTooltip="Total time spent online today"
+            totalTime={totalTime}
             totalCreating={totalCreating}
             chartData={chartData}
             appUsage={appUsage}
