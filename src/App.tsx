@@ -7,9 +7,14 @@ import { invoke } from '@tauri-apps/api/core'
 import { setupTray } from './lib/tray'
 import { initSentry } from '@/components/Sentry'
 import { useUpdate } from './hooks/useUpdate'
+import { useAuth } from './hooks/useAuth'
+import { usePostHog } from 'posthog-js/react'
 
 const App = () => {
+  const posthog = usePostHog()
   const { beginCheckForUpdates } = useUpdate()
+  const { user } = useAuth()
+
   useEffect(() => {
     initSentry()
 
@@ -26,6 +31,14 @@ const App = () => {
 
     init()
   }, [])
+
+  useEffect(() => {
+    if (user) {
+      posthog.identify(user.id, {
+        email: user.email,
+      })
+    }
+  }, [user])
 
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
