@@ -78,9 +78,32 @@ const getAppsByCategoryTags = async (tagIds: string[]): Promise<AppDb[]> => {
   return monitorDb.select<AppDb[]>(query, [...tagIds])
 }
 
+const createApp = async (externalId: string, isBrowser: boolean, name = ''): Promise<string> => {
+  const monitorDb = await MonitorDb.getMonitorDb()
+  const id = crypto.randomUUID()
+  await monitorDb.execute(
+    `INSERT INTO app (id, name, app_external_id, is_browser) VALUES ('${id}', '${name}', '${externalId}', ${isBrowser});`
+  )
+  try {
+    const [neutralTag] = await monitorDb.select<AppTagJoined[]>(`
+      SELECT * FROM tag WHERE tag_type = 'default' AND name = 'neutral';
+    `)
+    const appTagId = crypto.randomUUID()
+    await monitorDb.execute(
+      `INSERT INTO app_tag (id, app_id, tag_id, weight) VALUES ('${appTagId}', '${id}', '${neutralTag.id}', 1);`
+    )
+  } catch (error) {
+    await monitorDb.execute(`DELETE FROM app WHERE id = '${id}';`)
+    throw error
+  }
+
+  return id
+}
+
 export const AppRepo = {
   setAppTag,
   getApps,
   getAppsByIds,
-  getAppsByCategoryTags
+  getAppsByCategoryTags,
+  createApp
 }

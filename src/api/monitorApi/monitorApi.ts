@@ -215,6 +215,11 @@ export const getApps = async (): Promise<App[]> => {
   return apps
 }
 
+export const createApp = async (externalId: string, isBrowser: boolean, name = ''): Promise<string> => {
+  const id = await AppRepo.createApp(externalId, isBrowser, name)
+  return id
+}
+
 
 export const MonitorApi = {
   getApps,
@@ -222,4 +227,5 @@ export const MonitorApi = {
   getTimeCreatingByHour,
   getTopAppsByPeriod,
   setAppDefaultTag,
+  createApp
 }
