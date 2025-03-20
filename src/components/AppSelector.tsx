@@ -220,7 +220,6 @@ export function AppSelector({
       .slice(0, maxItems)
   }, [search, maxItems, categoryOptions, selectedApps, apps])
 
-  // Update click outside handler
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (inputRef.current && !inputRef.current.contains(event.target as Node)) {
@@ -232,7 +231,6 @@ export function AppSelector({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Add keyboard event handler
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!open) return
 
@@ -257,33 +255,22 @@ export function AppSelector({
     }
   }
 
-  // Reset selected index when filtered apps change
   React.useEffect(() => {
     setSelected(0)
   }, [filteredOptions])
 
-  const handleSelect = (option: SearchOption) => {
+  const handleSelect = async (option: SearchOption) => {
     const { key } = getOptionDetails(option)
 
-    // For custom website option, create a new app-like object
     if (option.type === 'custom') {
-      // Create a custom app option
+      const customAppId = await MonitorApi.createApp(option.url, true)
       const customApp: AppOption = {
         type: 'app',
         app: {
-          id: `custom-${Date.now()}`,
+          id: customAppId,
           name: option.url,
           app_external_id: option.url,
           is_browser: true,
-          // Add any other required properties with default values
-          category_tag: {
-            id: 'custom',
-            app_id: `custom-${Date.now()}`,
-            tag_id: 'custom',
-            weight: 3,
-            tag_name: 'Website',
-            tag_type: 'category'
-          }
         }
       }
 
