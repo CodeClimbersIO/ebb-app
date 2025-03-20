@@ -3122,9 +3122,9 @@ dependencies = [
 
 [[package]]
 name = "os-monitor-service"
-version = "0.3.22"
+version = "0.3.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e635cd66356923b1fb3a803956234f4edbb5ca752603d2f3875740db665f2a80"
+checksum = "f9df6700e0a469d0da19ae8fdda394230aad00af47ee3b33f41be166a330981a"
 dependencies = [
  "dirs 6.0.0",
  "dotenv",

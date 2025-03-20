@@ -8,6 +8,7 @@
     "dev": "tsc && vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
+    "monitor:update": "node scripts/os-monitor-update.js",
     "tauri": "tauri",
     "tauri:build": "tauri build",
     "tauri:build:x86_64": "tauri build --target x86_64-apple-darwin",
