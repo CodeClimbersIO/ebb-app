@@ -193,6 +193,13 @@ export const FlowPage = () => {
   const [isSpotifyInstalled, setIsSpotifyInstalled] = useState<boolean>(false)
   const [clickedButton, setClickedButton] = useState<'prev' | 'play' | 'next' | null>(null)
 
+  // Show session start notification when page loads
+  useEffect(() => {
+    NotificationManager.getInstance().show({
+      type: 'session-start'
+    })
+  }, [])
+
   useEffect(() => {
     const init = async () => {
       const flowSession = await FlowSessionApi.getInProgressFlowSession()
