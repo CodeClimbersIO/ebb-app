@@ -165,7 +165,6 @@ const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
 }
 
 export const FlowPage = () => {
-  console.log('FlowPage')
   useRustEvents()
   const navigate = useNavigate()
   const [flowSession, setFlowSession] = useState<FlowSession | null>(null)

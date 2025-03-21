@@ -35,6 +35,7 @@ interface WorkflowData {
     hasBreathing: boolean
     hasMusic: boolean
     isAllowList: boolean
+    defaultDuration: number | null
   }
 }
 
@@ -58,11 +59,18 @@ export function WorkflowEdit({ workflow, onSave, onDelete }: WorkflowEditProps) 
   const [selectedPlaylist, setSelectedPlaylist] = useState<string | null>(null)
   const [selectedPlaylistName, setSelectedPlaylistName] = useState<string | null>(null)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-  const [settings, setSettings] = useState({
+  const [settings, setSettings] = useState<{
+    hasTypewriter: boolean
+    hasBreathing: boolean
+    hasMusic: boolean
+    isAllowList: boolean
+    defaultDuration: number | null
+  }>({
     hasTypewriter: workflow.hasTypewriter,
-    hasBreathing: false,
+    hasBreathing: true,
     hasMusic: workflow.hasMusic,
     isAllowList: false,
+    defaultDuration: null,
   })
 
   // Load workflow data from local storage on mount
@@ -224,6 +232,28 @@ export function WorkflowEdit({ workflow, onSave, onDelete }: WorkflowEditProps) 
 
             <TabsContent value="advanced" className="space-y-4">
               <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <div className="text-base font-medium">Default Duration</div>
+                    <div className="text-xs text-muted-foreground">
+                      Set a default duration for this workflow (in minutes)
+                    </div>
+                  </div>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="999"
+                    maxLength={3}
+                    placeholder="###"
+                    value={settings.defaultDuration || ''}
+                    onChange={(e) => {
+                      const value = e.target.value ? Math.min(parseInt(e.target.value), 999) : null
+                      setSettings({ ...settings, defaultDuration: value })
+                    }}
+                    className="w-22"
+                  />
+                </div>
+
                 <div className="flex items-center justify-between">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
