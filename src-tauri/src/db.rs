@@ -82,5 +82,27 @@ pub fn get_migrations() -> Vec<Migration> {
             );"#,
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 7,
+            description: "create_workflow",
+            sql: r#"
+            CREATE TABLE IF NOT EXISTS workflow (
+                id TEXT PRIMARY KEY NOT NULL,
+                name TEXT NOT NULL,
+                settings TEXT NOT NULL,
+                last_selected TIMESTAMP,
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+            );"#,
+            kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 8,
+            description: "add_workflow_id_to_blocking_preference",
+            sql: r#"
+            ALTER TABLE blocking_preference ADD COLUMN workflow_id TEXT;
+            "#,
+            kind: MigrationKind::Up,
+        },
     ]
 }

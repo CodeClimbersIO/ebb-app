@@ -1,12 +1,9 @@
 import { QueryResult } from '@tauri-apps/plugin-sql'
 import { FlowSession, FlowSessionRepo, FlowSessionSchema } from '../../db/ebb/flowSessionRepo'
-import { SearchOption } from '@/components/AppSelector'
-import { BlockingPreferenceApi } from './blockingPreferenceApi'
 
 const startFlowSession = async (
   objective: string, 
-  duration?: number, 
-  blocks?: SearchOption[],
+  duration?: number,
 ): Promise<string> => {
   const flowSession: FlowSessionSchema = {
     id: self.crypto.randomUUID(),
@@ -22,9 +19,8 @@ const startFlowSession = async (
   
   await FlowSessionRepo.createFlowSession(flowSession)
   
-  if (blocks) {
-    await BlockingPreferenceApi.saveBlockingPreferences(blocks)
-  }
+  // We no longer need to save blocking preferences since they're already 
+  // associated with the workflow and accessed via the workflowId
   
   return flowSession.id
 }

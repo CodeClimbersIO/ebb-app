@@ -8,12 +8,7 @@ import { Logo } from '@/components/ui/logo'
 import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
 import { TimeSelector } from '@/components/TimeSelector'
 import { WorkflowSelector } from '@/components/WorkflowSelector'
-
-// Load workflows from local storage
-const loadWorkflows = () => {
-  const saved = localStorage.getItem('workflows')
-  return saved ? JSON.parse(saved) : {}
-}
+import { WorkflowApi } from '@/api/ebbApi/workflowApi'
 
 export const StartFlowPage = () => {
   const [duration, setDuration] = useState<number | null>(null)
@@ -25,51 +20,64 @@ export const StartFlowPage = () => {
   const navigate = useNavigate()
 
   // Handle workflow switching
-  const switchWorkflow = (direction: 'left' | 'right') => {
-    const workflows = loadWorkflows()
-    const workflowIds = Object.keys(workflows)
-    if (workflowIds.length <= 1) return
+  const switchWorkflow = async (direction: 'left' | 'right') => {
+    try {
+      const workflows = await WorkflowApi.getWorkflows()
+      if (workflows.length <= 1) return
 
-    const currentIndex = workflowIds.indexOf(selectedWorkflowId || workflowIds[0])
-    let newIndex
+      const currentIndex = workflows.findIndex(w => w.id === selectedWorkflowId)
+      let newIndex
 
-    if (direction === 'left') {
-      newIndex = currentIndex <= 0 ? workflowIds.length - 1 : currentIndex - 1
-    } else {
-      newIndex = currentIndex >= workflowIds.length - 1 ? 0 : currentIndex + 1
-    }
+      if (direction === 'left') {
+        newIndex = currentIndex <= 0 ? workflows.length - 1 : currentIndex - 1
+      } else {
+        newIndex = currentIndex >= workflows.length - 1 ? 0 : currentIndex + 1
+      }
 
-    const newWorkflowId = workflowIds[newIndex]
-    setSlideDirection(direction)
-    setSelectedWorkflowId(newWorkflowId)
-    
-    // Just set the initial selection to the workflow's default duration
-    const workflow = workflows[newWorkflowId]
-    setDuration(workflow?.settings?.defaultDuration || null)
-  }
-
-  // Set initial workflow from local storage
-  useEffect(() => {
-    const workflows = loadWorkflows()
-    const workflowIds = Object.keys(workflows)
-    if (workflowIds.length > 0) {
-      const initialWorkflowId = workflowIds[0]
-      setSelectedWorkflowId(initialWorkflowId)
+      const newWorkflowId = workflows[newIndex].id
+      setSlideDirection(direction)
+      if (newWorkflowId) setSelectedWorkflowId(newWorkflowId)
       
       // Set initial selection to the workflow's default duration
-      const workflow = workflows[initialWorkflowId]
-      setDuration(workflow?.settings?.defaultDuration || null)
+      setDuration(workflows[newIndex].settings.defaultDuration)
+    } catch (error) {
+      console.error('Failed to switch workflow:', error)
     }
+  }
+
+  // Set initial workflow from database
+  useEffect(() => {
+    const loadInitialWorkflow = async () => {
+      try {
+        const workflows = await WorkflowApi.getWorkflows()
+        if (workflows.length > 0) {
+          const initialWorkflowId = workflows[0].id
+          if (initialWorkflowId) setSelectedWorkflowId(initialWorkflowId)
+          
+          // Set initial selection to the workflow's default duration
+          setDuration(workflows[0].settings.defaultDuration)
+        }
+      } catch (error) {
+        console.error('Failed to load initial workflow:', error)
+      }
+    }
+    
+    loadInitialWorkflow()
   }, [])
 
   // Update workflow selection in WorkflowSelector
-  const handleWorkflowSelect = (workflowId: string) => {
-    setSelectedWorkflowId(workflowId)
-    
-    // Set initial selection to the workflow's default duration
-    const workflows = loadWorkflows()
-    const workflow = workflows[workflowId]
-    setDuration(workflow?.settings?.defaultDuration || null)
+  const handleWorkflowSelect = async (workflowId: string) => {
+    try {
+      setSelectedWorkflowId(workflowId)
+      
+      // Set initial selection to the workflow's default duration
+      const workflow = await WorkflowApi.getWorkflowById(workflowId)
+      if (workflow) {
+        setDuration(workflow.settings.defaultDuration)
+      }
+    } catch (error) {
+      console.error('Failed to select workflow:', error)
+    }
   }
 
   // Add keyboard navigation
@@ -91,37 +99,39 @@ export const StartFlowPage = () => {
   const handleBegin = async () => {
     if (!selectedWorkflowId) return
 
-    const workflows = loadWorkflows()
-    const workflow = workflows[selectedWorkflowId]
-    if (!workflow) return
+    try {
+      const workflow = await WorkflowApi.getWorkflowById(selectedWorkflowId)
+      if (!workflow) return
 
-    const sessionId = await FlowSessionApi.startFlowSession(
-      workflow.name,
-      duration || undefined,
-      workflow.blockedApps || [],
-    )
+      const sessionId = await FlowSessionApi.startFlowSession(
+        workflow.name,
+        duration || undefined
+      )
 
-    if (!sessionId) {
-      throw new Error('No session ID returned from API')
-    }
+      if (!sessionId) {
+        throw new Error('No session ID returned from API')
+      }
 
-    const sessionState = {
-      startTime: Date.now(),
-      objective: workflow.name,
-      sessionId,
-      duration: duration || undefined,
-      workflowId: selectedWorkflowId,
-      hasBreathing: workflow.settings?.hasBreathing,
-      hasTypewriter: workflow.settings?.hasTypewriter,
-      hasMusic: workflow.settings?.hasMusic,
-      selectedPlaylist: workflow.selectedPlaylist,
-    }
+      const sessionState = {
+        startTime: Date.now(),
+        objective: workflow.name,
+        sessionId,
+        duration: duration || undefined,
+        workflowId: selectedWorkflowId,
+        hasBreathing: workflow.settings.hasBreathing,
+        hasTypewriter: workflow.settings.hasTypewriter,
+        hasMusic: workflow.settings.hasMusic,
+        selectedPlaylist: workflow.selectedPlaylist,
+      }
 
-    // Skip breathing exercise if disabled in settings
-    if (!workflow.settings?.hasBreathing) {
-      navigate('/session', { state: sessionState })
-    } else {
-      navigate('/breathing-exercise', { state: sessionState })
+      // Skip breathing exercise if disabled in settings
+      if (!workflow.settings.hasBreathing) {
+        navigate('/session', { state: sessionState })
+      } else {
+        navigate('/breathing-exercise', { state: sessionState })
+      }
+    } catch (error) {
+      console.error('Failed to start flow session:', error)
     }
   }
 
@@ -197,11 +207,17 @@ export const StartFlowPage = () => {
               onClick={handleBegin}
               disabled={!selectedWorkflowId}
             >
-              Start Focus Session
-              <div className="ml-2 flex items-center gap-1">
-                <kbd className="rounded bg-violet-900 px-1.5 font-mono text-sm">⌘</kbd>
-                <kbd className="rounded bg-violet-900 px-1.5 font-mono text-sm">↵</kbd>
-              </div>
+              {selectedWorkflowId ? (
+                <>
+                  Start Focus Session
+                  <div className="ml-2 flex items-center gap-1">
+                    <kbd className="rounded bg-violet-900 px-1.5 font-mono text-sm">⌘</kbd>
+                    <kbd className="rounded bg-violet-900 px-1.5 font-mono text-sm">↵</kbd>
+                  </div>
+                </>
+              ) : (
+                <>Create a workflow to start</>
+              )}
             </Button>
           </CardContent>
         </Card>

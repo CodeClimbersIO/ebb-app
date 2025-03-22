@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Button } from './ui/button'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs'
 import { Switch } from './ui/switch'
@@ -8,46 +8,12 @@ import { AppSelector, type SearchOption } from './AppSelector'
 import { MusicSelector } from './MusicSelector'
 import { Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { Workflow, WorkflowApi } from '../api/ebbApi/workflowApi'
 
 interface WorkflowEditProps {
-  workflow: {
-    id: string
-    name: string
-    hasMusic: boolean
-    hasTypewriter: boolean
-    blockedApps: string[]
-  }
-  onSave: () => void
+  workflow: Workflow
+  onSave: (savedWorkflow: Workflow) => void
   onDelete?: () => void
-}
-
-interface WorkflowData {
-  id: string
-  name: string
-  hasMusic: boolean
-  hasTypewriter: boolean
-  blockedApps: string[]
-  selectedApps: SearchOption[]
-  selectedPlaylist: string | null
-  selectedPlaylistName: string | null
-  settings: {
-    hasTypewriter: boolean
-    hasBreathing: boolean
-    hasMusic: boolean
-    isAllowList: boolean
-    defaultDuration: number | null
-  }
-}
-
-// Load workflows from local storage
-const loadWorkflows = (): Record<string, WorkflowData> => {
-  const saved = localStorage.getItem('workflows')
-  return saved ? JSON.parse(saved) : {}
-}
-
-// Save workflows to local storage
-const saveWorkflows = (workflows: Record<string, WorkflowData>) => {
-  localStorage.setItem('workflows', JSON.stringify(workflows))
 }
 
 export function WorkflowEdit({ workflow, onSave, onDelete }: WorkflowEditProps) {
@@ -55,52 +21,42 @@ export function WorkflowEdit({ workflow, onSave, onDelete }: WorkflowEditProps) 
   const [activeTab, setActiveTab] = useState('blocking')
   const [isEditing, setIsEditing] = useState(false)
   const [name, setName] = useState(workflow.name)
-  const [selectedApps, setSelectedApps] = useState<SearchOption[]>([])
-  const [selectedPlaylist, setSelectedPlaylist] = useState<string | null>(null)
-  const [selectedPlaylistName, setSelectedPlaylistName] = useState<string | null>(null)
+  const [selectedApps, setSelectedApps] = useState<SearchOption[]>(workflow.selectedApps || [])
+  const [selectedPlaylist, setSelectedPlaylist] = useState<string | null>(workflow.selectedPlaylist || null)
+  const [selectedPlaylistName, setSelectedPlaylistName] = useState<string | null>(workflow.selectedPlaylistName || null)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-  const [settings, setSettings] = useState<{
-    hasTypewriter: boolean
-    hasBreathing: boolean
-    hasMusic: boolean
-    isAllowList: boolean
-    defaultDuration: number | null
-  }>({
-    hasTypewriter: workflow.hasTypewriter,
-    hasBreathing: true,
-    hasMusic: workflow.hasMusic,
-    isAllowList: false,
-    defaultDuration: null,
+  const [settings, setSettings] = useState({
+    hasTypewriter: workflow.settings.hasTypewriter,
+    hasBreathing: workflow.settings.hasBreathing ?? true,
+    hasMusic: workflow.settings.hasMusic,
+    isAllowList: workflow.settings.isAllowList ?? false,
+    defaultDuration: workflow.settings.defaultDuration,
   })
 
-  // Load workflow data from local storage on mount
-  useEffect(() => {
-    const workflows = loadWorkflows()
-    const savedWorkflow = workflows[workflow.id]
-    if (savedWorkflow) {
-      setName(savedWorkflow.name)
-      setSelectedApps(savedWorkflow.selectedApps || [])
-      setSelectedPlaylist(savedWorkflow.selectedPlaylist)
-      setSelectedPlaylistName(savedWorkflow.selectedPlaylistName)
-      setSettings(savedWorkflow.settings || settings)
-    }
-  }, [workflow.id])
-
-  const handleSave = () => {
+  const handleSave = async () => {
     if (name.trim().length === 0) {
       return
     }
-    const workflows = loadWorkflows()
-    workflows[workflow.id] = {
-      ...workflow,
+    
+    // Create updated workflow object
+    const updatedWorkflow: Workflow = {
+      id: workflow.id,
       name,
       selectedApps,
       selectedPlaylist,
       selectedPlaylistName,
-      settings,
+      settings: {
+        ...settings,
+      }
     }
-    saveWorkflows(workflows)
-    onSave()
+    
+    try {
+      // Save to database
+      const savedWorkflow = await WorkflowApi.saveWorkflow(updatedWorkflow)
+      onSave(savedWorkflow)
+    } catch (error) {
+      console.error('Failed to save workflow:', error)
+    }
   }
 
   const handleNameChange = (value: string) => {
@@ -109,12 +65,16 @@ export function WorkflowEdit({ workflow, onSave, onDelete }: WorkflowEditProps) 
     }
   }
 
-  const handleDelete = () => {
-    const workflows = loadWorkflows()
-    delete workflows[workflow.id]
-    saveWorkflows(workflows)
-    setShowDeleteDialog(false)
-    onDelete?.()
+  const handleDelete = async () => {
+    if (!workflow.id) return
+    
+    try {
+      await WorkflowApi.deleteWorkflow(workflow.id)
+      setShowDeleteDialog(false)
+      onDelete?.()
+    } catch (error) {
+      console.error('Failed to delete workflow:', error)
+    }
   }
 
   return (

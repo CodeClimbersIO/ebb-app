@@ -15,34 +15,11 @@ import {
 import { useState, useEffect } from 'react'
 import { WorkflowEdit } from './WorkflowEdit'
 import { SearchOption } from './AppSelector'
+import { Workflow, WorkflowApi } from '../api/ebbApi/workflowApi'
 
 interface WorkflowSelectorProps {
   selectedId: string | null
   onSelect: (workflowId: string) => void
-}
-
-interface Workflow {
-  id: string
-  name: string
-  hasMusic: boolean
-  hasTypewriter: boolean
-  blockedApps: string[]
-  selectedApps?: SearchOption[]
-  selectedPlaylist?: string | null
-  selectedPlaylistName?: string | null
-  lastSelected?: number
-  settings?: {
-    hasTypewriter: boolean
-    hasBreathing: boolean
-    hasMusic: boolean
-    isAllowList?: boolean
-  }
-}
-
-// Load workflows from local storage
-const loadWorkflows = (): Record<string, Workflow> => {
-  const saved = localStorage.getItem('workflows')
-  return saved ? JSON.parse(saved) : {}
 }
 
 function WorkflowCard({ 
@@ -105,7 +82,7 @@ function WorkflowCard({
       <div className={`flex ${variant === 'horizontal' ? 'flex-row items-center justify-between' : 'flex-col items-start gap-4'}`}>
         <span className="font-medium">{workflow.name}</span>
         <div className="flex items-center gap-3">
-          {workflow.settings?.hasMusic && workflow.selectedPlaylist && (
+          {workflow.settings.hasMusic && workflow.selectedPlaylist && (
             <TooltipProvider delayDuration={300}>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -118,7 +95,7 @@ function WorkflowCard({
             </TooltipProvider>
           )}
           
-          {workflow.settings?.hasTypewriter && (
+          {workflow.settings.hasTypewriter && (
             <TooltipProvider delayDuration={300}>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -169,45 +146,70 @@ export function WorkflowSelector({ selectedId, onSelect }: WorkflowSelectorProps
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [editingWorkflow, setEditingWorkflow] = useState<Workflow | null>(null)
-  const [workflows, setWorkflows] = useState<Record<string, Workflow>>({})
+  const [workflows, setWorkflows] = useState<Workflow[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  // Load workflows from local storage
+  // Load workflows from database
   useEffect(() => {
-    const savedWorkflows = loadWorkflows()
-    setWorkflows(savedWorkflows)
+    const loadWorkflows = async () => {
+      try {
+        setIsLoading(true)
+        const workflows = await WorkflowApi.getWorkflows()
+        setWorkflows(workflows)
+        setIsLoading(false)
+      } catch (error) {
+        console.error('Failed to load workflows:', error)
+        setIsLoading(false)
+      }
+    }
+    
+    loadWorkflows()
   }, [])
 
-  const selectedWorkflow = workflows[selectedId || '']
+  const selectedWorkflow = workflows.find(w => w.id === selectedId)
 
-  const handleSelect = (workflowId: string) => {
+  const handleSelect = async (workflowId: string) => {
     if (workflowId === 'new') {
-      if (Object.keys(workflows).length >= 6) {
+      if (workflows.length >= 6) {
         // TODO: Show toast or alert that max workflows reached
         return
       }
       const newWorkflow: Workflow = {
-        id: crypto.randomUUID(),
         name: 'New Workflow',
-        hasMusic: false,
-        hasTypewriter: false,
-        blockedApps: [],
-        lastSelected: Date.now()
+        selectedApps: [],
+        lastSelected: Date.now(),
+        settings: {
+          hasTypewriter: false,
+          hasBreathing: true,
+          hasMusic: false,
+          isAllowList: false,
+          defaultDuration: null
+        }
       }
       setEditingWorkflow(newWorkflow)
       setIsCreateDialogOpen(true)
     } else {
-      // Update lastSelected timestamp
-      const updatedWorkflows = {
-        ...workflows,
-        [workflowId]: {
-          ...workflows[workflowId],
-          lastSelected: Date.now()
-        }
+      try {
+        // Update lastSelected timestamp in the database
+        await WorkflowApi.updateLastSelected(workflowId)
+        
+        // Optimistically update the UI
+        const updatedWorkflows = workflows.map(workflow => {
+          if (workflow.id === workflowId) {
+            return { 
+              ...workflow, 
+              lastSelected: Date.now() 
+            }
+          }
+          return workflow
+        })
+        
+        setWorkflows(updatedWorkflows)
+        onSelect(workflowId)
+        setIsDialogOpen(false)
+      } catch (error) {
+        console.error('Failed to update workflow:', error)
       }
-      localStorage.setItem('workflows', JSON.stringify(updatedWorkflows))
-      setWorkflows(updatedWorkflows)
-      onSelect(workflowId)
-      setIsDialogOpen(false)
     }
   }
 
@@ -216,36 +218,55 @@ export function WorkflowSelector({ selectedId, onSelect }: WorkflowSelectorProps
     setIsEditDialogOpen(true)
   }
 
-  const handleSaveWorkflow = () => {
+  const handleSaveWorkflow = async (savedWorkflow: Workflow) => {
+    // Refresh workflows from database
+    const updatedWorkflows = await WorkflowApi.getWorkflows()
+    setWorkflows(updatedWorkflows)
+    
+    // Select the saved workflow
+    onSelect(savedWorkflow.id!)
+    
     setIsEditDialogOpen(false)
     setIsCreateDialogOpen(false)
-    // Refresh workflows from storage
-    const updatedWorkflows = loadWorkflows()
-    setWorkflows(updatedWorkflows)
-    // If this was a new workflow, select it
-    if (editingWorkflow && isCreateDialogOpen) {
-      onSelect(editingWorkflow.id)
-    }
   }
 
-  const handleDeleteWorkflow = () => {
-    setIsEditDialogOpen(false)
-    setIsCreateDialogOpen(false)
-    // Refresh workflows from storage
-    const updatedWorkflows = loadWorkflows()
-    setWorkflows(updatedWorkflows)
-    // If the deleted workflow was selected, select the first available one
-    if (selectedId && !updatedWorkflows[selectedId]) {
-      const firstWorkflowId = Object.keys(updatedWorkflows)[0]
-      if (firstWorkflowId) {
-        onSelect(firstWorkflowId)
+  const handleDeleteWorkflow = async () => {
+    if (!editingWorkflow || !editingWorkflow.id) return
+    
+    try {
+      await WorkflowApi.deleteWorkflow(editingWorkflow.id)
+      
+      // Refresh workflows from database
+      const updatedWorkflows = await WorkflowApi.getWorkflows()
+      setWorkflows(updatedWorkflows)
+      
+      // If the deleted workflow was selected, select the first available one
+      if (selectedId === editingWorkflow.id && updatedWorkflows.length > 0 && updatedWorkflows[0].id) {
+        onSelect(updatedWorkflows[0].id)
       }
+    } catch (error) {
+      console.error('Failed to delete workflow:', error)
     }
+    
+    setIsEditDialogOpen(false)
+    setIsCreateDialogOpen(false)
   }
 
-  if (!selectedWorkflow && Object.keys(workflows).length > 0) {
+  if (isLoading) {
+    return (
+      <Card className="p-4 animate-pulse">
+        <div className="h-6 bg-accent rounded w-24 mb-2"></div>
+        <div className="h-4 bg-accent rounded w-full"></div>
+      </Card>
+    )
+  }
+
+  if (!selectedWorkflow && workflows.length > 0) {
     // Auto-select first workflow if none selected
-    onSelect(Object.keys(workflows)[0])
+    const firstWorkflow = workflows[0]
+    if (firstWorkflow.id) {
+      onSelect(firstWorkflow.id)
+    }
     return null
   }
 
@@ -261,8 +282,9 @@ export function WorkflowSelector({ selectedId, onSelect }: WorkflowSelectorProps
           />
         ) : (
           <Card className="p-4 cursor-pointer hover:bg-accent transition-colors border-dashed">
-            <div className="flex items-center justify-center h-full">
-              <span className="text-primary">Create Workflow +</span>
+            <div className="flex flex-col items-center justify-center gap-2 py-2">
+              <span className="text-primary font-medium">Create Your First Workflow</span>
+              <span className="text-sm text-muted-foreground">Set up your focus preferences</span>
             </div>
           </Card>
         )}
@@ -274,20 +296,22 @@ export function WorkflowSelector({ selectedId, onSelect }: WorkflowSelectorProps
             <DialogTitle className="text-xl font-normal">Select Workflow</DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-4 mt-4">
-            {Object.values(workflows)
+            {workflows
               .sort((a, b) => (b.lastSelected || 0) - (a.lastSelected || 0))
               .map((workflow) => (
-              <WorkflowCard
-                key={workflow.id}
-                workflow={workflow}
-                isSelected={workflow.id === selectedId}
-                onClick={() => handleSelect(workflow.id)}
-                onSettingsClick={() => handleSettingsClick(workflow)}
-                showSettings
-                variant="vertical"
-              />
+                workflow.id && (
+                  <WorkflowCard
+                    key={workflow.id}
+                    workflow={workflow}
+                    isSelected={workflow.id === selectedId}
+                    onClick={() => handleSelect(workflow.id!)}
+                    onSettingsClick={() => handleSettingsClick(workflow)}
+                    showSettings
+                    variant="vertical"
+                  />
+                )
             ))}
-            {Object.keys(workflows).length < 6 && (
+            {workflows.length < 6 && (
               <Card
                 className="p-4 cursor-pointer hover:bg-accent transition-colors border-dashed"
                 onClick={() => handleSelect('new')}
