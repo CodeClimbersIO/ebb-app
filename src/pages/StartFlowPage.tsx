@@ -16,9 +16,7 @@ export const StartFlowPage = () => {
   const [duration, setDuration] = useState<number | null>(null)
   const [selectedWorkflowId, setSelectedWorkflowId] = useState<string | null>(null)
   const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('left')
-  const [showHint, setShowHint] = useState(() => {
-    return localStorage.getItem('workflowHintShown') !== 'true'
-  })
+  const [showHint, setShowHint] = useState(false)
   const navigate = useNavigate()
 
   // Handle workflow switching
@@ -47,7 +45,7 @@ export const StartFlowPage = () => {
     }
   }
 
-  // Set initial workflow from database
+  // Set initial workflow and check for hint display
   useEffect(() => {
     const loadInitialWorkflow = async () => {
       try {
@@ -58,6 +56,11 @@ export const StartFlowPage = () => {
           
           // Set initial selection to the workflow's default duration
           setDuration(workflows[0].settings.defaultDuration)
+
+          // Only show hint if there are 2+ workflows and it hasn't been dismissed
+          if (workflows.length >= 2 && localStorage.getItem('workflowHintShown') !== 'true') {
+            setShowHint(true)
+          }
         }
       } catch (error) {
         console.error('Failed to load initial workflow:', error)
