@@ -143,7 +143,7 @@ function WorkflowCard({
                     )}
                     <span className="text-xs text-muted-foreground">
                       {workflow.selectedApps.length > 3 
-                        ? `+${workflow.selectedApps.length}` 
+                        ? `${workflow.selectedApps.length}` 
                         : workflow.selectedApps.length}
                     </span>
                   </div>
