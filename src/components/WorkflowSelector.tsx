@@ -171,10 +171,6 @@ export function WorkflowSelector({ selectedId, onSelect }: WorkflowSelectorProps
 
   const handleSelect = async (workflowId: string) => {
     if (workflowId === 'new') {
-      if (workflows.length >= 6) {
-        // TODO: Show toast or alert that max workflows reached
-        return
-      }
       const newWorkflow: Workflow = {
         name: 'New Workflow',
         selectedApps: [],

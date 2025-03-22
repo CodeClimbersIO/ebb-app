@@ -1,10 +1,6 @@
 import { SearchOption } from '@/components/AppSelector'
 import { WorkflowDb, WorkflowRepo, WorkflowSettings } from '@/db/ebb/workflowRepo'
 import { BlockingPreferenceApi } from './blockingPreferenceApi'
-
-// Remove the hard-coded user ID
-// const CURRENT_USER_ID = 'default-user'
-
 export interface Workflow {
   id?: string
   name: string
