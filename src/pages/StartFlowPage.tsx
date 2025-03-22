@@ -225,17 +225,11 @@ export const StartFlowPage = () => {
               onClick={handleBegin}
               disabled={!selectedWorkflowId}
             >
-              {selectedWorkflowId ? (
-                <>
-                  Start Focus Session
-                  <div className="ml-2 flex items-center gap-1">
-                    <kbd className="rounded bg-violet-900 px-1.5 font-mono text-sm">⌘</kbd>
-                    <kbd className="rounded bg-violet-900 px-1.5 font-mono text-sm">↵</kbd>
-                  </div>
-                </>
-              ) : (
-                <>Create a workflow to start</>
-              )}
+              Start Focus Session
+              <div className="ml-2 flex items-center gap-1">
+                <kbd className="rounded bg-violet-900 px-1.5 font-mono text-sm">⌘</kbd>
+                <kbd className="rounded bg-violet-900 px-1.5 font-mono text-sm">↵</kbd>
+              </div>
             </Button>
           </CardContent>
         </Card>

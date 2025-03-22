@@ -147,24 +147,25 @@ export function WorkflowSelector({ selectedId, onSelect }: WorkflowSelectorProps
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [editingWorkflow, setEditingWorkflow] = useState<Workflow | null>(null)
   const [workflows, setWorkflows] = useState<Workflow[]>([])
-  const [isLoading, setIsLoading] = useState(true)
 
   // Load workflows from database
   useEffect(() => {
     const loadWorkflows = async () => {
       try {
-        setIsLoading(true)
-        const workflows = await WorkflowApi.getWorkflows()
-        setWorkflows(workflows)
-        setIsLoading(false)
+        const loadedWorkflows = await WorkflowApi.getWorkflows()
+        setWorkflows(loadedWorkflows)
+        
+        // Auto-select first workflow if none selected
+        if (!selectedId && loadedWorkflows.length > 0 && loadedWorkflows[0].id) {
+          onSelect(loadedWorkflows[0].id)
+        }
       } catch (error) {
         console.error('Failed to load workflows:', error)
-        setIsLoading(false)
       }
     }
     
     loadWorkflows()
-  }, [])
+  }, [selectedId, onSelect])
 
   const selectedWorkflow = workflows.find(w => w.id === selectedId)
 
@@ -252,24 +253,6 @@ export function WorkflowSelector({ selectedId, onSelect }: WorkflowSelectorProps
     setIsCreateDialogOpen(false)
   }
 
-  if (isLoading) {
-    return (
-      <Card className="p-4 animate-pulse">
-        <div className="h-6 bg-accent rounded w-24 mb-2"></div>
-        <div className="h-4 bg-accent rounded w-full"></div>
-      </Card>
-    )
-  }
-
-  if (!selectedWorkflow && workflows.length > 0) {
-    // Auto-select first workflow if none selected
-    const firstWorkflow = workflows[0]
-    if (firstWorkflow.id) {
-      onSelect(firstWorkflow.id)
-    }
-    return null
-  }
-
   return (
     <>
       <div onClick={() => setIsDialogOpen(true)} className="cursor-pointer">
@@ -282,9 +265,11 @@ export function WorkflowSelector({ selectedId, onSelect }: WorkflowSelectorProps
           />
         ) : (
           <Card className="p-4 cursor-pointer hover:bg-accent transition-colors border-dashed">
-            <div className="flex flex-col items-center justify-center gap-2 py-2">
-              <span className="text-primary font-medium">Create Your First Workflow</span>
-              <span className="text-sm text-muted-foreground">Set up your focus preferences</span>
+            <div className="flex flex-row items-center justify-between">
+              <span className="font-medium text-primary w-full text-center">Create Your First Workflow</span>
+              <div className="flex items-center gap-3">
+                {/* Empty div to maintain same height as WorkflowCard */}
+              </div>
             </div>
           </Card>
         )}
