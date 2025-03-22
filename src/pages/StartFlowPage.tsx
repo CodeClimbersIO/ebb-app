@@ -97,11 +97,16 @@ export const StartFlowPage = () => {
   }, [selectedWorkflowId, duration])
 
   const handleBegin = async () => {
-    if (!selectedWorkflowId) return
+    if (!objective) return
 
-    try {
-      const workflow = await WorkflowApi.getWorkflowById(selectedWorkflowId)
-      if (!workflow) return
+    await BlockingPreferenceApi.saveBlockingPreferences(selectedBlocks)
+
+    const allBlockedApps = await BlockingPreferenceApi.getAllBlockedApps()
+    const blockingApps = allBlockedApps.map(app => ({
+      external_id: app.app_external_id,
+      is_browser: app.is_browser === 1
+    }))
+    await invoke('start_blocking', { blockingApps, isBlockList: true })
 
       const sessionId = await FlowSessionApi.startFlowSession(
         workflow.name,

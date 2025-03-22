@@ -281,7 +281,7 @@ export function AppSelector({
           id: customAppId,
           name: option.url,
           app_external_id: option.url,
-          is_browser: true,
+          is_browser: 1,
         }
       }
 

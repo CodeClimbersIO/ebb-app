@@ -1,13 +1,14 @@
 {
   "name": "app-codeclimbers",
   "private": true,
-  "version": "0.1.16",
+  "version": "0.1.17",
   "type": "module",
   "author": "Paul Hovley <rphovley@gmail.com>",
   "scripts": {
     "dev": "tsc && vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
+    "monitor:update": "node scripts/os-monitor-update.js",
     "tauri": "tauri",
     "tauri:build": "tauri build",
     "tauri:build:x86_64": "tauri build --target x86_64-apple-darwin",

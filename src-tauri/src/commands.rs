@@ -1,6 +1,6 @@
 use os_monitor::{
     get_application_icon_data, has_accessibility_permissions, request_accessibility_permissions,
-    start_blocking as os_start_blocking, stop_blocking as os_stop_blocking,
+    start_blocking as os_start_blocking, stop_blocking as os_stop_blocking, BlockableItem,
 };
 use std::fs;
 use std::path::PathBuf;
@@ -8,14 +8,28 @@ use tauri::command;
 
 use crate::system_monitor;
 
+#[derive(Debug, serde::Deserialize)]
+pub struct BlockingApp {
+    external_id: String,
+    is_browser: bool,
+}
+
 #[command]
 pub async fn get_app_icon(bundle_id: String) -> Result<String, String> {
     get_application_icon_data(&bundle_id).ok_or_else(|| "Failed to get app icon".to_string())
 }
 
 #[command]
-pub fn start_blocking(blocking_urls: Vec<String>) {
-    os_start_blocking(&blocking_urls, "https://ebb.cool/vibes");
+pub fn start_blocking(blocking_apps: Vec<BlockingApp>, is_block_list: bool) {
+    let apps: Vec<BlockableItem> = blocking_apps
+        .iter()
+        .map(|app| BlockableItem {
+            app_external_id: app.external_id.clone(),
+            is_browser: app.is_browser,
+        })
+        .collect();
+    println!("Starting blocking {:?}", apps);
+    os_start_blocking(&apps, "https://ebb.cool/vibes", is_block_list);
 }
 
 #[command]
