@@ -50,7 +50,8 @@ export const formatTime = (minutes: number) => {
 
 export interface UsageSummaryProps {
   totalTimeLabel?: string;
-  totalOnline: number;
+  totalTimeTooltip?: string;
+  totalTime: number;
   totalCreating: number;
   chartData: GraphableTimeByHourBlock[];
   appUsage: AppsWithTime[];
@@ -63,7 +64,8 @@ export interface UsageSummaryProps {
 
 export const UsageSummary = ({
   totalTimeLabel = 'Total Time',
-  totalOnline,
+  totalTimeTooltip = 'Total time spent online',
+  totalTime,
   totalCreating,
   chartData,
   appUsage,
@@ -97,10 +99,10 @@ export const UsageSummary = ({
             <CardContent>
               <Tooltip>
                 <TooltipTrigger>
-                  <div className="text-2xl font-bold">{formatTime(totalOnline)}</div>
+                  <div className="text-2xl font-bold">{formatTime(totalTime)}</div>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Total time spent online</p>
+                  <p>{totalTimeTooltip}</p>
                 </TooltipContent>
               </Tooltip>
             </CardContent>

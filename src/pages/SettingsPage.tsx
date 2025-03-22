@@ -13,7 +13,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog'
-import { AlertCircle, ArrowRight } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { useNavigate } from 'react-router-dom'
 import { SpotifyApiService } from '@/lib/integrations/spotify/spotifyApi'
@@ -37,27 +37,60 @@ export const SettingsPage = () => {
   const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
-    const checkSpotifyConnection = async () => {
+    const handleSpotifyCallback = async () => {
       try {
-        const isConnected = await SpotifyAuthService.isConnected()
+        const hashParams = window.location.hash.replace('#', '')
+        const searchParams = new URLSearchParams(window.location.search || hashParams.substring(hashParams.indexOf('?')))
+        const code = searchParams.get('code')
+        const state = searchParams.get('state')
 
-        if (isConnected) {
-          const profile = await SpotifyApiService.getUserProfile()
-          if (profile) {
-            setSpotifyProfile(profile)
-            setActiveService('spotify')
-          }
+        if (code && state) {
+          setIsLoading(true)
+          await SpotifyAuthService.handleCallback(code, state)
+          // Clear URL parameters
+          window.history.replaceState({}, '', '/settings')
+          // Force a full page refresh to get updated Spotify state
+          window.location.reload()
+          return
         }
 
-        setIsLoading(false)
+        // Always check connection status after handling callback or on initial load
+        await checkSpotifyConnection()
       } catch (error) {
-        console.error('Error checking Spotify connection:', error)
+        console.error('Error handling Spotify callback:', error)
         setIsLoading(false)
       }
     }
 
-    checkSpotifyConnection()
+    handleSpotifyCallback()
+
+    // Scroll to music integrations section if hash is present
+    if (window.location.hash === '#music-integrations') {
+      const section = document.getElementById('music-integrations')
+      if (section) {
+        section.scrollIntoView({ behavior: 'smooth' })
+      }
+    }
   }, [])
+
+  const checkSpotifyConnection = async () => {
+    try {
+      const isConnected = await SpotifyAuthService.isConnected()
+
+      if (isConnected) {
+        const profile = await SpotifyApiService.getUserProfile()
+        if (profile) {
+          setSpotifyProfile(profile)
+          setActiveService('spotify')
+        }
+      }
+
+      setIsLoading(false)
+    } catch (error) {
+      console.error('Error checking Spotify connection:', error)
+      setIsLoading(false)
+    }
+  }
 
   const handleUnlink = (service: 'spotify' | 'apple') => {
     setServiceToUnlink(service)
@@ -75,7 +108,11 @@ export const SettingsPage = () => {
   }
 
   const handleSpotifyConnect = async () => {
-    navigate('/start-flow?expandMusic=true')
+    try {
+      await SpotifyAuthService.connect()
+    } catch (error) {
+      console.error('Error connecting to Spotify:', error)
+    }
   }
 
   const handleDeleteAccount = async () => {
@@ -139,7 +176,7 @@ export const SettingsPage = () => {
                 </div>
               </div>
 
-              <div className="border rounded-lg p-6">
+              <div id="music-integrations" className="border rounded-lg p-6">
                 <h2 className="text-lg font-semibold mb-4">Integrations</h2>
                 <div className="space-y-4">
                   {spotifyProfile && spotifyProfile.product !== 'premium' && (
@@ -175,7 +212,7 @@ export const SettingsPage = () => {
                           size="sm"
                           onClick={() => handleUnlink('spotify')}
                         >
-                          Unlink
+                          Disconnect
                         </Button>
                       ) : (
                         <Tooltip>
@@ -188,7 +225,6 @@ export const SettingsPage = () => {
                                 onClick={handleSpotifyConnect}
                               >
                                 Connect
-                                <ArrowRight className="w-4 h-4 ml-2" />
                               </Button>
                             </span>
                           </TooltipTrigger>
