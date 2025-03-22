@@ -203,7 +203,7 @@ export const StartFlowPage = () => {
       external_id: app.app_external_id,
       is_browser: app.is_browser === 1
     }))
-    await invoke('start_blocking', { blockingApps, isBlockList: false })
+    await invoke('start_blocking', { blockingApps, isBlockList: true })
 
     const sessionId = await FlowSessionApi.startFlowSession(
       objective,
