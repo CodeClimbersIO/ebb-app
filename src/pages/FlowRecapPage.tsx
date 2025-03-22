@@ -28,7 +28,7 @@ export const FlowRecapPage = () => {
   const effectRan = useRef(false)
   const [appUsage, setAppUsage] = useState<AppsWithTime[]>([])
   const [totalCreating, setTotalCreating] = useState(0)
-  const [totalOnline, setTotalOnline] = useState(0)
+  const [totalTime, setTotalTime] = useState(0)
   const [chartData, setChartData] = useState<GraphableTimeByHourBlock[]>([])
 
   useEffect(() => {
@@ -55,10 +55,9 @@ export const FlowRecapPage = () => {
       const creating = rawChartData.reduce((acc, curr) => acc + curr.creating, 0)
       setTotalCreating(creating)
       
-      // Calculate total online time
-      const online = rawChartData.reduce((acc, curr) => 
-        acc + curr.creating + curr.neutral + curr.consuming, 0)
-      setTotalOnline(online)
+      // Calculate total session duration in minutes
+      const totalDuration = end.diff(start).as('minutes')
+      setTotalTime(totalDuration)
       
       // Use the same approach as HomePage - just slice the data
       // This is simpler and more compatible than using generateTimeBlocks
@@ -101,7 +100,8 @@ export const FlowRecapPage = () => {
 
             <UsageSummary
               totalTimeLabel="Duration"
-              totalOnline={totalOnline}
+              totalTimeTooltip="Total duration of the session"
+              totalTime={totalTime}
               totalCreating={totalCreating}
               chartData={chartData}
               appUsage={appUsage}

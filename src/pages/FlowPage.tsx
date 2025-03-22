@@ -165,7 +165,6 @@ const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
 }
 
 export const FlowPage = () => {
-  console.log('FlowPage')
   useRustEvents()
   const navigate = useNavigate()
   const [flowSession, setFlowSession] = useState<FlowSession | null>(null)
@@ -192,6 +191,13 @@ export const FlowPage = () => {
   })
   const [isSpotifyInstalled, setIsSpotifyInstalled] = useState<boolean>(false)
   const [clickedButton, setClickedButton] = useState<'prev' | 'play' | 'next' | null>(null)
+
+  // Show session start notification when page loads
+  useEffect(() => {
+    NotificationManager.getInstance().show({
+      type: 'session-start'
+    })
+  }, [])
 
   useEffect(() => {
     const init = async () => {

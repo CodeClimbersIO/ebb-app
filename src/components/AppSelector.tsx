@@ -74,11 +74,22 @@ const getCategoryTooltipContent = (category: AppCategory, apps: App[]): string =
 }
 
 export function AppSelector({
-  placeholder = 'Search apps...',
-  emptyText = 'Keep typing for custom website',
+  placeholder = 'Search apps & websites to add...',
+  emptyText = 'Enter full URL to add website',
   maxItems = 5,
   selectedApps,
-  excludedCategories = [],
+  excludedCategories = [
+    'ai',
+    'browser',
+    'coding',
+    'data/analytics',
+    'designing',
+    'learning',
+    'music/sound',
+    'photo/video',
+    'utilities',
+    'writing'
+  ],
   onAppSelect,
   onAppRemove
 }: AppSelectorProps) {

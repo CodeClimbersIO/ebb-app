@@ -4,8 +4,8 @@ import { App, AppRepo } from '@/db/monitor/appRepo'
 import { TagRepo } from '@/db/monitor/tagRepo'
 import { AppCategory } from '../../lib/app-directory/apps-types'
 
-
-const saveBlockingPreferences = async (
+const saveWorkflowBlockingPreferences = async (
+  workflowId: string,
   blocks: SearchOption[],
 ): Promise<void> => {
   const preferences: Partial<BlockingPreferenceDb>[] = []
@@ -14,26 +14,29 @@ const saveBlockingPreferences = async (
       preferences.push({
         id: crypto.randomUUID(),
         app_id: block.app.id,
+        workflow_id: workflowId
       })
     } else if (block.type === 'category') {
       if (block.tag?.id) {
         preferences.push({
           id: crypto.randomUUID(),
           tag_id: block.tag.id,
+          workflow_id: workflowId
         })
       }
     }
   }
-  await BlockingPreferenceRepo.saveBlockingPreferences(preferences)
+  
+  await BlockingPreferenceRepo.saveWorkflowBlockingPreferences(workflowId, preferences)
 }
 
-const getBlockingPreferencesAsSearchOptions = async (): Promise<SearchOption[]> => {
-  const { preferences } = await BlockingPreferenceRepo.getBlockingPreferences()
+const getWorkflowBlockingPreferencesAsSearchOptions = async (workflowId: string): Promise<SearchOption[]> => {
+  const { preferences } = await BlockingPreferenceRepo.getWorkflowBlockingPreferences(workflowId)
   return await convertToSearchOptions(preferences)
 }
 
-const getAllBlockedApps = async (): Promise<App[]> => {
-  const { preferences } = await BlockingPreferenceRepo.getBlockingPreferences()
+const getWorkflowBlockedApps = async (workflowId: string): Promise<App[]> => {
+  const { preferences } = await BlockingPreferenceRepo.getWorkflowBlockingPreferences(workflowId)
   // get all app ids from preferences
   const prefAppIds = preferences
     .filter(pref => pref.app_id)
@@ -47,8 +50,6 @@ const getAllBlockedApps = async (): Promise<App[]> => {
   const apps = await AppRepo.getAppsByIds([...prefAppIds])
   return [...apps, ...categoryApps]
 }
-
-
 
 const convertToSearchOptions = async (
   preferences: BlockingPreferenceDb[]
@@ -93,8 +94,8 @@ const convertToSearchOptions = async (
 } 
 
 export const BlockingPreferenceApi = {
-  getBlockingPreferencesAsSearchOptions,
-  saveBlockingPreferences,
-  getAllBlockedApps
+  getWorkflowBlockingPreferencesAsSearchOptions,
+  saveWorkflowBlockingPreferences,
+  getWorkflowBlockedApps
 }
 
