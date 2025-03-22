@@ -46,7 +46,7 @@ export function WorkflowEdit({ workflow, onSave, onDelete }: WorkflowEditProps) 
       selectedPlaylist,
       selectedPlaylistName,
       settings: {
-        ...settings,
+        ...settings
       }
     }
     
@@ -141,14 +141,12 @@ export function WorkflowEdit({ workflow, onSave, onDelete }: WorkflowEditProps) 
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <span className="text-base font-medium">Allow List</span>
-                    <span className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">Coming Soon</span>
                   </div>
                   <div className="text-xs text-muted-foreground">Only allow selected apps and websites</div>
                 </div>
                 <Switch 
                   checked={settings.isAllowList}
                   onCheckedChange={(checked) => setSettings({ ...settings, isAllowList: checked })}
-                  disabled={true}
                 />
               </div>
             </TabsContent>

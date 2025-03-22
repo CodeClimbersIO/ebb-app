@@ -9,6 +9,8 @@ import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
 import { TimeSelector } from '@/components/TimeSelector'
 import { WorkflowSelector } from '@/components/WorkflowSelector'
 import { WorkflowApi } from '@/api/ebbApi/workflowApi'
+import { BlockingPreferenceApi } from '@/api/ebbApi/blockingPreferenceApi'
+import { invoke } from '@tauri-apps/api/core'
 
 export const StartFlowPage = () => {
   const [duration, setDuration] = useState<number | null>(null)
@@ -97,16 +99,24 @@ export const StartFlowPage = () => {
   }, [selectedWorkflowId, duration])
 
   const handleBegin = async () => {
-    if (!objective) return
+    if (!selectedWorkflowId) return
 
-    await BlockingPreferenceApi.saveBlockingPreferences(selectedBlocks)
+    try {
+      const workflow = await WorkflowApi.getWorkflowById(selectedWorkflowId)
+      if (!workflow) return
 
-    const allBlockedApps = await BlockingPreferenceApi.getAllBlockedApps()
-    const blockingApps = allBlockedApps.map(app => ({
-      external_id: app.app_external_id,
-      is_browser: app.is_browser === 1
-    }))
-    await invoke('start_blocking', { blockingApps, isBlockList: true })
+      // Get all blocked apps for this workflow
+      const blockedApps = await BlockingPreferenceApi.getWorkflowBlockedApps(selectedWorkflowId)
+      const blockingApps = blockedApps.map(app => ({
+        external_id: app.app_external_id,
+        is_browser: app.is_browser === 1
+      }))
+
+      // Start blocking with the workflow's preferences
+      await invoke('start_blocking', { 
+        blockingApps, 
+        isBlockList: !workflow.settings.isAllowList // Invert because isAllowList true means we want to block everything except these apps
+      })
 
       const sessionId = await FlowSessionApi.startFlowSession(
         workflow.name,
