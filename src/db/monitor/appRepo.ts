@@ -13,7 +13,7 @@ export interface AppDb {
   name: string
   tags_json?: string
   app_external_id: string
-  is_browser: boolean
+  is_browser: 0 | 1
 }
 
 export type App = AppDb & {

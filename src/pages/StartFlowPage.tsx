@@ -199,8 +199,11 @@ export const StartFlowPage = () => {
     await BlockingPreferenceApi.saveBlockingPreferences(selectedBlocks)
 
     const allBlockedApps = await BlockingPreferenceApi.getAllBlockedApps()
-    const blockingUrls = allBlockedApps.map(app => app.app_external_id)
-    await invoke('start_blocking', { blockingUrls })
+    const blockingApps = allBlockedApps.map(app => ({
+      external_id: app.app_external_id,
+      is_browser: app.is_browser === 1
+    }))
+    await invoke('start_blocking', { blockingApps, isBlockList: false })
 
     const sessionId = await FlowSessionApi.startFlowSession(
       objective,
