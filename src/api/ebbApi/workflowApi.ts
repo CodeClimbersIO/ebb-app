@@ -76,17 +76,13 @@ const toDbWorkflow = (workflow: Workflow): Partial<WorkflowDb> => {
   return dbWorkflow
 }
 
-// Get all workflows
 const getWorkflows = async (): Promise<Workflow[]> => {
-  console.log('Fetching workflows')
   
   // Get workflows
   const workflowsDb = await WorkflowRepo.getWorkflows()
-  console.log('Retrieved workflows from DB:', workflowsDb)
   
   // Convert to frontend format
   const workflows = await Promise.all(workflowsDb.map(fromDbWorkflow))
-  console.log('Converted to frontend format:', workflows)
   
   return workflows
 }

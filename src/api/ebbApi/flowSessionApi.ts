@@ -19,9 +19,6 @@ const startFlowSession = async (
   
   await FlowSessionRepo.createFlowSession(flowSession)
   
-  // We no longer need to save blocking preferences since they're already 
-  // associated with the workflow and accessed via the workflowId
-  
   return flowSession.id
 }
 

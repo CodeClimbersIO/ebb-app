@@ -46,11 +46,8 @@ const saveWorkflow = async (workflow: Partial<WorkflowDb>): Promise<string> => {
   const ebbDb = await getEbbDb()
   const now = new Date().toISOString()
   
-  console.log('Saving workflow:', workflow)
-  
   if (workflow.id) {
     // Update existing workflow
-    console.log('Updating existing workflow:', workflow.id)
     await ebbDb.execute(
       `UPDATE workflow 
        SET name = ?, settings = ?, last_selected = ?, updated_at = ? 
@@ -67,15 +64,6 @@ const saveWorkflow = async (workflow: Partial<WorkflowDb>): Promise<string> => {
   } else {
     // Generate new ID for new workflow
     const newId = crypto.randomUUID()
-    console.log('Creating new workflow with ID:', newId)
-    console.log('Workflow data:', {
-      id: newId,
-      name: workflow.name,
-      settings: workflow.settings,
-      last_selected: workflow.last_selected || null,
-      created_at: now,
-      updated_at: now
-    })
     
     // Insert new workflow
     await ebbDb.execute(
