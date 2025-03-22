@@ -68,6 +68,17 @@ export const StartFlowPage = () => {
     }
     
     loadInitialWorkflow()
+
+    // Add listener for workflow saved event
+    const handleWorkflowSaved = async () => {
+      const workflows = await WorkflowApi.getWorkflows()
+      if (workflows.length >= 2 && localStorage.getItem('workflowHintShown') !== 'true') {
+        setShowHint(true)
+      }
+    }
+
+    window.addEventListener('workflowSaved', handleWorkflowSaved)
+    return () => window.removeEventListener('workflowSaved', handleWorkflowSaved)
   }, [])
 
   // Update workflow selection in WorkflowSelector

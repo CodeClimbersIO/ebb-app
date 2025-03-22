@@ -53,6 +53,8 @@ export function WorkflowEdit({ workflow, onSave, onDelete }: WorkflowEditProps) 
     try {
       // Save to database
       const savedWorkflow = await WorkflowApi.saveWorkflow(updatedWorkflow)
+      // Dispatch a custom event when a workflow is saved
+      window.dispatchEvent(new CustomEvent('workflowSaved'))
       onSave(savedWorkflow)
     } catch (error) {
       console.error('Failed to save workflow:', error)
