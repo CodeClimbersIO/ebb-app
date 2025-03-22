@@ -150,7 +150,8 @@ export const StartFlowPage = () => {
         hasBreathing: workflow.settings.hasBreathing,
         hasTypewriter: workflow.settings.hasTypewriter,
         hasMusic: workflow.settings.hasMusic,
-        selectedPlaylist: workflow.selectedPlaylist,
+        selectedPlaylist: workflow.selectedPlaylist || undefined,
+        selectedPlaylistName: workflow.selectedPlaylistName || undefined
       }
 
       // Skip breathing exercise if disabled in settings

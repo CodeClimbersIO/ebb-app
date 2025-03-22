@@ -179,7 +179,8 @@ export const FlowPage = () => {
     position_ms: number
   } | null>(null)
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string>(() => {
-    return localStorage.getItem('lastPlaylist') || ''
+    const state = window.history.state?.usr
+    return state?.selectedPlaylist || ''
   })
   const [isSpotifyAuthenticated, setIsSpotifyAuthenticated] = useState(false)
   const [playlistData, setPlaylistData] = useState<{
@@ -242,9 +243,9 @@ export const FlowPage = () => {
 
         newPlayer.addListener('ready', ({ device_id }: { device_id: string }) => {
           setDeviceId(device_id)
-          const savedPlaylist = localStorage.getItem('lastPlaylist')
-          if (savedPlaylist) {
-            SpotifyApiService.startPlayback(savedPlaylist, device_id)
+          const state = window.history.state?.usr
+          if (state?.selectedPlaylist) {
+            SpotifyApiService.startPlayback(state.selectedPlaylist, device_id)
           }
         })
 
