@@ -27,6 +27,7 @@ export function WorkflowEdit({ workflow, onSave, onDelete }: WorkflowEditProps) 
   const [selectedPlaylistName, setSelectedPlaylistName] = useState<string | null>(workflow.selectedPlaylistName || null)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showSavedIndicator, setShowSavedIndicator] = useState(false)
+  const [currentWorkflowId, setCurrentWorkflowId] = useState<string | undefined>(workflow.id)
   const [settings, setSettings] = useState({
     hasTypewriter: workflow.settings.hasTypewriter,
     hasBreathing: workflow.settings.hasBreathing ?? true,
@@ -37,10 +38,10 @@ export function WorkflowEdit({ workflow, onSave, onDelete }: WorkflowEditProps) 
 
   const [hasChanges, setHasChanges] = useState(false)
   const [saveCompleted, setSaveCompleted] = useState(false)
+  const [tempName, setTempName] = useState(workflow.name)
   
   useEffect(() => {
     const initialState = JSON.stringify({
-      name: workflow.name,
       selectedApps: workflow.selectedApps,
       selectedPlaylist: workflow.selectedPlaylist,
       selectedPlaylistName: workflow.selectedPlaylistName,
@@ -48,7 +49,6 @@ export function WorkflowEdit({ workflow, onSave, onDelete }: WorkflowEditProps) 
     })
     
     const currentState = JSON.stringify({
-      name,
       selectedApps,
       selectedPlaylist,
       selectedPlaylistName,
@@ -61,16 +61,35 @@ export function WorkflowEdit({ workflow, onSave, onDelete }: WorkflowEditProps) 
     if (stateChanged) {
       setSaveCompleted(false)
     }
-  }, [name, selectedApps, selectedPlaylist, selectedPlaylistName, settings, workflow])
+  }, [selectedApps, selectedPlaylist, selectedPlaylistName, settings, workflow])
 
-  const autoSaveWorkflow = useCallback(async () => {
-    if (name.trim().length === 0 || !hasChanges || saveCompleted) {
+  const handleNameChange = (value: string) => {
+    if (value.length <= 15) {
+      setTempName(value)
+    }
+  }
+
+  const handleNameSave = async () => {
+    if (tempName.trim().length === 0) {
+      setTempName(workflow.name)
+      return
+    }
+
+    if (tempName !== workflow.name) {
+      setName(tempName)
+      await autoSaveWorkflow(true)
+    }
+    setIsEditing(false)
+  }
+
+  const autoSaveWorkflow = useCallback(async (includeNameChange = false) => {
+    if ((!hasChanges && !includeNameChange) || (!includeNameChange && saveCompleted)) {
       return
     }
     
     const updatedWorkflow: Workflow = {
-      id: workflow.id,
-      name,
+      id: currentWorkflowId,
+      name: includeNameChange ? tempName : name,
       selectedApps,
       selectedPlaylist,
       selectedPlaylistName,
@@ -82,6 +101,11 @@ export function WorkflowEdit({ workflow, onSave, onDelete }: WorkflowEditProps) 
     try {
       const savedWorkflow = await WorkflowApi.saveWorkflow(updatedWorkflow)
       window.dispatchEvent(new CustomEvent('workflowSaved'))
+      
+      if (!currentWorkflowId && savedWorkflow.id) {
+        setCurrentWorkflowId(savedWorkflow.id)
+      }
+      
       onSave(savedWorkflow, false)
       setSaveCompleted(true)
       
@@ -92,23 +116,17 @@ export function WorkflowEdit({ workflow, onSave, onDelete }: WorkflowEditProps) 
     } catch (error) {
       console.error('Failed to save workflow:', error)
     }
-  }, [name, selectedApps, selectedPlaylist, selectedPlaylistName, settings, workflow.id, onSave, hasChanges, saveCompleted])
+  }, [name, tempName, selectedApps, selectedPlaylist, selectedPlaylistName, settings, currentWorkflowId, onSave, hasChanges, saveCompleted])
 
   useEffect(() => {
-    if (hasChanges && !saveCompleted && name.trim().length > 0) {
+    if (hasChanges && !saveCompleted) {
       const timeoutId = setTimeout(() => {
-        autoSaveWorkflow()
+        autoSaveWorkflow(false)
       }, 150)
       
       return () => clearTimeout(timeoutId)
     }
-  }, [name, selectedApps, selectedPlaylist, selectedPlaylistName, settings, autoSaveWorkflow, hasChanges, saveCompleted])
-
-  const handleNameChange = (value: string) => {
-    if (value.length <= 15) {
-      setName(value)
-    }
-  }
+  }, [selectedApps, selectedPlaylist, selectedPlaylistName, settings, autoSaveWorkflow, hasChanges, saveCompleted])
 
   const handleDelete = async () => {
     if (!workflow.id) return
@@ -129,20 +147,12 @@ export function WorkflowEdit({ workflow, onSave, onDelete }: WorkflowEditProps) 
           {isEditing ? (
             <div className="flex items-center gap-2">
               <Input
-                value={name}
+                value={tempName}
                 onChange={(e) => handleNameChange(e.target.value)}
-                onBlur={() => {
-                  if (name.trim().length === 0) {
-                    setName(workflow.name)
-                  }
-                  setIsEditing(false)
-                }}
+                onBlur={handleNameSave}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
-                    if (name.trim().length === 0) {
-                      setName(workflow.name)
-                    }
-                    setIsEditing(false)
+                    handleNameSave()
                   }
                 }}
                 autoFocus
@@ -150,7 +160,7 @@ export function WorkflowEdit({ workflow, onSave, onDelete }: WorkflowEditProps) 
                 className="text-xl font-normal h-8 -mt-1 w-[200px]"
               />
               <span className="text-xs text-muted-foreground">
-                {name.length}/15
+                {tempName.length}/15
               </span>
             </div>
           ) : (

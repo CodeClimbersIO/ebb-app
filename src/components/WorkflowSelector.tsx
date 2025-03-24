@@ -155,9 +155,12 @@ export function WorkflowSelector({ selectedId, onSelect }: WorkflowSelectorProps
         const loadedWorkflows = await WorkflowApi.getWorkflows()
         setWorkflows(loadedWorkflows)
         
-        // Auto-select first workflow if none selected
-        if (!selectedId && loadedWorkflows.length > 0 && loadedWorkflows[0].id) {
-          onSelect(loadedWorkflows[0].id)
+        // If no workflow is selected and we have workflows, select the most recent one
+        if (!selectedId && loadedWorkflows.length > 0) {
+          const sortedWorkflows = [...loadedWorkflows].sort((a, b) => (b.lastSelected || 0) - (a.lastSelected || 0))
+          if (sortedWorkflows[0].id) {
+            onSelect(sortedWorkflows[0].id)
+          }
         }
       } catch (error) {
         console.error('Failed to load workflows:', error)
