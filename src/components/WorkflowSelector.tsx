@@ -215,16 +215,23 @@ export function WorkflowSelector({ selectedId, onSelect }: WorkflowSelectorProps
     setIsEditDialogOpen(true)
   }
 
-  const handleSaveWorkflow = async (savedWorkflow: Workflow) => {
+  const handleSaveWorkflow = async (savedWorkflow: Workflow, shouldCloseDialog = true) => {
     // Refresh workflows from database
     const updatedWorkflows = await WorkflowApi.getWorkflows()
     setWorkflows(updatedWorkflows)
     
-    // Select the saved workflow
-    onSelect(savedWorkflow.id!)
-    
-    setIsEditDialogOpen(false)
-    setIsCreateDialogOpen(false)
+    // For new workflows (no previous ID), don't auto-select or close unless explicitly requested
+    const isNewWorkflow = !editingWorkflow?.id
+    if (!isNewWorkflow || shouldCloseDialog) {
+      // Select the saved workflow
+      onSelect(savedWorkflow.id!)
+      
+      // Only close dialogs if explicitly requested (not during auto-save)
+      if (shouldCloseDialog) {
+        setIsEditDialogOpen(false)
+        setIsCreateDialogOpen(false)
+      }
+    }
   }
 
   const handleDeleteWorkflow = async () => {

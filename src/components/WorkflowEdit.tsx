@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from './ui/button'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs'
 import { Switch } from './ui/switch'
@@ -6,13 +6,14 @@ import { DialogHeader, DialogTitle, Dialog, DialogContent, DialogDescription, Di
 import { Input } from './ui/input'
 import { AppSelector, type SearchOption } from './AppSelector'
 import { MusicSelector } from './MusicSelector'
-import { Trash2 } from 'lucide-react'
+import { Trash2, Check } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Workflow, WorkflowApi } from '../api/ebbApi/workflowApi'
+import { motion, AnimatePresence } from 'motion/react'
 
 interface WorkflowEditProps {
   workflow: Workflow
-  onSave: (savedWorkflow: Workflow) => void
+  onSave: (savedWorkflow: Workflow, shouldCloseDialog?: boolean) => void
   onDelete?: () => void
 }
 
@@ -25,6 +26,7 @@ export function WorkflowEdit({ workflow, onSave, onDelete }: WorkflowEditProps) 
   const [selectedPlaylist, setSelectedPlaylist] = useState<string | null>(workflow.selectedPlaylist || null)
   const [selectedPlaylistName, setSelectedPlaylistName] = useState<string | null>(workflow.selectedPlaylistName || null)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [showSavedIndicator, setShowSavedIndicator] = useState(false)
   const [settings, setSettings] = useState({
     hasTypewriter: workflow.settings.hasTypewriter,
     hasBreathing: workflow.settings.hasBreathing ?? true,
@@ -33,12 +35,39 @@ export function WorkflowEdit({ workflow, onSave, onDelete }: WorkflowEditProps) 
     defaultDuration: workflow.settings.defaultDuration,
   })
 
-  const handleSave = async () => {
-    if (name.trim().length === 0) {
+  const [hasChanges, setHasChanges] = useState(false)
+  const [saveCompleted, setSaveCompleted] = useState(false)
+  
+  useEffect(() => {
+    const initialState = JSON.stringify({
+      name: workflow.name,
+      selectedApps: workflow.selectedApps,
+      selectedPlaylist: workflow.selectedPlaylist,
+      selectedPlaylistName: workflow.selectedPlaylistName,
+      settings: workflow.settings
+    })
+    
+    const currentState = JSON.stringify({
+      name,
+      selectedApps,
+      selectedPlaylist,
+      selectedPlaylistName,
+      settings
+    })
+    
+    const stateChanged = initialState !== currentState
+    setHasChanges(stateChanged)
+    
+    if (stateChanged) {
+      setSaveCompleted(false)
+    }
+  }, [name, selectedApps, selectedPlaylist, selectedPlaylistName, settings, workflow])
+
+  const autoSaveWorkflow = useCallback(async () => {
+    if (name.trim().length === 0 || !hasChanges || saveCompleted) {
       return
     }
     
-    // Create updated workflow object
     const updatedWorkflow: Workflow = {
       id: workflow.id,
       name,
@@ -51,15 +80,29 @@ export function WorkflowEdit({ workflow, onSave, onDelete }: WorkflowEditProps) 
     }
     
     try {
-      // Save to database
       const savedWorkflow = await WorkflowApi.saveWorkflow(updatedWorkflow)
-      // Dispatch a custom event when a workflow is saved
       window.dispatchEvent(new CustomEvent('workflowSaved'))
-      onSave(savedWorkflow)
+      onSave(savedWorkflow, false)
+      setSaveCompleted(true)
+      
+      setShowSavedIndicator(true)
+      setTimeout(() => {
+        setShowSavedIndicator(false)
+      }, 2000)
     } catch (error) {
       console.error('Failed to save workflow:', error)
     }
-  }
+  }, [name, selectedApps, selectedPlaylist, selectedPlaylistName, settings, workflow.id, onSave, hasChanges, saveCompleted])
+
+  useEffect(() => {
+    if (hasChanges && !saveCompleted && name.trim().length > 0) {
+      const timeoutId = setTimeout(() => {
+        autoSaveWorkflow()
+      }, 150)
+      
+      return () => clearTimeout(timeoutId)
+    }
+  }, [name, selectedApps, selectedPlaylist, selectedPlaylistName, settings, autoSaveWorkflow, hasChanges, saveCompleted])
 
   const handleNameChange = (value: string) => {
     if (value.length <= 15) {
@@ -171,7 +214,6 @@ export function WorkflowEdit({ workflow, onSave, onDelete }: WorkflowEditProps) 
                     selectedPlaylist={selectedPlaylist}
                     onPlaylistSelect={(playlist) => {
                       setSelectedPlaylist(playlist.id)
-                      // Get playlist name from the playlistData in localStorage
                       const playlistData = localStorage.getItem('playlistData')
                       if (playlistData) {
                         const { playlists } = JSON.parse(playlistData)
@@ -257,9 +299,27 @@ export function WorkflowEdit({ workflow, onSave, onDelete }: WorkflowEditProps) 
           >
             <Trash2 className="h-4 w-4" />
           </Button>
-          <Button onClick={handleSave} variant="outline" size="sm" className="text-muted-foreground">
-            Save
-          </Button>
+          
+          <div className="h-6 flex items-center">
+            <AnimatePresence>
+              {showSavedIndicator && (
+                <motion.div 
+                  className="flex items-center gap-2 text-muted-foreground text-sm"
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -5 }}
+                  transition={{ 
+                    type: 'spring',
+                    stiffness: 300, 
+                    damping: 25
+                  }}
+                >
+                  <Check className="h-4 w-4 text-green-500" />
+                  <span>Saved</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </div>
 
