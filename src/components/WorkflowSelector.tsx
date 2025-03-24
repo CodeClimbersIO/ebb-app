@@ -88,7 +88,7 @@ function WorkflowCard({
                 <TooltipTrigger asChild>
                   <Music className="h-4 w-4 text-muted-foreground" />
                 </TooltipTrigger>
-                <TooltipContent>
+                <TooltipContent className="max-w-[300px]">
                   <p>Playing "{workflow.selectedPlaylistName || 'Selected Playlist'}" with Spotify</p>
                 </TooltipContent>
               </Tooltip>
@@ -101,7 +101,7 @@ function WorkflowCard({
                 <TooltipTrigger asChild>
                   <ScanEye className="h-4 w-4 text-muted-foreground" />
                 </TooltipTrigger>
-                <TooltipContent>
+                <TooltipContent className="max-w-[300px]">
                   <p>Typewriter mode enabled</p>
                 </TooltipContent>
               </Tooltip>
@@ -125,7 +125,7 @@ function WorkflowCard({
                     </span>
                   </div>
                 </TooltipTrigger>
-                <TooltipContent>
+                <TooltipContent className="max-w-[300px]">
                   <p>
                     {workflow.settings?.isAllowList 
                       ? `Only allowing ${formatAppsList(workflow.selectedApps)}` 
