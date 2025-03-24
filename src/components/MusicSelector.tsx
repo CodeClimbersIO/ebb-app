@@ -18,6 +18,7 @@ import {
   TooltipTrigger,
 } from './ui/tooltip'
 import { useNavigate } from 'react-router-dom'
+import { Skeleton } from './ui/skeleton'
 
 interface MusicSelectorProps {
   selectedPlaylist: string | null
@@ -105,11 +106,17 @@ export function MusicSelector({ selectedPlaylist, onPlaylistSelect, onConnectCli
 
   return (
     <div className="space-y-4">
-      {!musicService.connected ? (
+      {isLoading ? (
+        // Loading skeleton state
+        <div className="grid grid-cols-2 gap-4">
+          <Skeleton className="h-[56px] w-full" />
+          <Skeleton className="h-[56px] w-full" />
+        </div>
+      ) : !musicService.connected ? (
         <div className="grid grid-cols-2 gap-4">
           <div
-            onClick={() => !isLoading && onConnectClick?.()}
-            className={`flex items-center justify-center gap-2 p-4 rounded-lg border cursor-pointer hover:bg-accent transition-colors ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            onClick={() => onConnectClick?.()}
+            className="flex items-center justify-center gap-2 p-4 rounded-lg border cursor-pointer hover:bg-accent transition-colors"
           >
             <SpotifyIcon />
             <span>Connect Spotify</span>

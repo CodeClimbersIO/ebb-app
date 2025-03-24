@@ -36,7 +36,9 @@ export const StartFlowPage = () => {
 
       const newWorkflowId = workflows[newIndex].id
       setSlideDirection(direction)
-      if (newWorkflowId) setSelectedWorkflowId(newWorkflowId)
+      if (newWorkflowId) {
+        setSelectedWorkflowId(newWorkflowId)
+      }
       
       // Set initial selection to the workflow's default duration
       setDuration(workflows[newIndex].settings.defaultDuration)
@@ -116,6 +118,9 @@ export const StartFlowPage = () => {
     if (!selectedWorkflowId) return
 
     try {
+      // Update lastSelected timestamp when starting a session
+      await WorkflowApi.updateLastSelected(selectedWorkflowId)
+
       const workflow = await WorkflowApi.getWorkflowById(selectedWorkflowId)
       if (!workflow) return
 

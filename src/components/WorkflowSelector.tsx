@@ -88,7 +88,7 @@ function WorkflowCard({
                 <TooltipTrigger asChild>
                   <Music className="h-4 w-4 text-muted-foreground" />
                 </TooltipTrigger>
-                <TooltipContent>
+                <TooltipContent className="max-w-[300px]">
                   <p>Playing "{workflow.selectedPlaylistName || 'Selected Playlist'}" with Spotify</p>
                 </TooltipContent>
               </Tooltip>
@@ -101,7 +101,7 @@ function WorkflowCard({
                 <TooltipTrigger asChild>
                   <ScanEye className="h-4 w-4 text-muted-foreground" />
                 </TooltipTrigger>
-                <TooltipContent>
+                <TooltipContent className="max-w-[300px]">
                   <p>Typewriter mode enabled</p>
                 </TooltipContent>
               </Tooltip>
@@ -125,7 +125,7 @@ function WorkflowCard({
                     </span>
                   </div>
                 </TooltipTrigger>
-                <TooltipContent>
+                <TooltipContent className="max-w-[300px]">
                   <p>
                     {workflow.settings?.isAllowList 
                       ? `Only allowing ${formatAppsList(workflow.selectedApps)}` 
@@ -155,9 +155,12 @@ export function WorkflowSelector({ selectedId, onSelect }: WorkflowSelectorProps
         const loadedWorkflows = await WorkflowApi.getWorkflows()
         setWorkflows(loadedWorkflows)
         
-        // Auto-select first workflow if none selected
-        if (!selectedId && loadedWorkflows.length > 0 && loadedWorkflows[0].id) {
-          onSelect(loadedWorkflows[0].id)
+        // If no workflow is selected and we have workflows, select the most recent one
+        if (!selectedId && loadedWorkflows.length > 0) {
+          const sortedWorkflows = [...loadedWorkflows].sort((a, b) => (b.lastSelected || 0) - (a.lastSelected || 0))
+          if (sortedWorkflows[0].id) {
+            onSelect(sortedWorkflows[0].id)
+          }
         }
       } catch (error) {
         console.error('Failed to load workflows:', error)
@@ -186,27 +189,8 @@ export function WorkflowSelector({ selectedId, onSelect }: WorkflowSelectorProps
       setEditingWorkflow(newWorkflow)
       setIsCreateDialogOpen(true)
     } else {
-      try {
-        // Update lastSelected timestamp in the database
-        await WorkflowApi.updateLastSelected(workflowId)
-        
-        // Optimistically update the UI
-        const updatedWorkflows = workflows.map(workflow => {
-          if (workflow.id === workflowId) {
-            return { 
-              ...workflow, 
-              lastSelected: Date.now() 
-            }
-          }
-          return workflow
-        })
-        
-        setWorkflows(updatedWorkflows)
-        onSelect(workflowId)
-        setIsDialogOpen(false)
-      } catch (error) {
-        console.error('Failed to update workflow:', error)
-      }
+      onSelect(workflowId)
+      setIsDialogOpen(false)
     }
   }
 
@@ -215,16 +199,17 @@ export function WorkflowSelector({ selectedId, onSelect }: WorkflowSelectorProps
     setIsEditDialogOpen(true)
   }
 
-  const handleSaveWorkflow = async (savedWorkflow: Workflow) => {
+  const handleSaveWorkflow = async (savedWorkflow: Workflow, shouldCloseDialog = true) => {
     // Refresh workflows from database
     const updatedWorkflows = await WorkflowApi.getWorkflows()
     setWorkflows(updatedWorkflows)
     
-    // Select the saved workflow
-    onSelect(savedWorkflow.id!)
-    
-    setIsEditDialogOpen(false)
-    setIsCreateDialogOpen(false)
+    if (shouldCloseDialog) {
+      // Only select the workflow and close dialogs if explicitly requested
+      onSelect(savedWorkflow.id!)
+      setIsEditDialogOpen(false)
+      setIsCreateDialogOpen(false)
+    }
   }
 
   const handleDeleteWorkflow = async () => {
