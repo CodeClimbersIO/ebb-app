@@ -25,31 +25,23 @@ export const StartFlowPage = () => {
       const workflows = await WorkflowApi.getWorkflows()
       if (workflows.length <= 1) return
 
-      // Sort workflows by ID to maintain a consistent order
-      const sortedWorkflows = [...workflows].sort((a, b) => {
-        if (!a.id || !b.id) return 0
-        return a.id.localeCompare(b.id)
-      })
-
-      const currentIndex = sortedWorkflows.findIndex(w => w.id === selectedWorkflowId)
+      const currentIndex = workflows.findIndex(w => w.id === selectedWorkflowId)
       let newIndex
 
       if (direction === 'left') {
-        newIndex = currentIndex <= 0 ? sortedWorkflows.length - 1 : currentIndex - 1
+        newIndex = currentIndex <= 0 ? workflows.length - 1 : currentIndex - 1
       } else {
-        newIndex = currentIndex >= sortedWorkflows.length - 1 ? 0 : currentIndex + 1
+        newIndex = currentIndex >= workflows.length - 1 ? 0 : currentIndex + 1
       }
 
-      const newWorkflowId = sortedWorkflows[newIndex].id
+      const newWorkflowId = workflows[newIndex].id
       setSlideDirection(direction)
       if (newWorkflowId) {
-        // Update lastSelected timestamp
-        await WorkflowApi.updateLastSelected(newWorkflowId)
         setSelectedWorkflowId(newWorkflowId)
       }
       
       // Set initial selection to the workflow's default duration
-      setDuration(sortedWorkflows[newIndex].settings.defaultDuration)
+      setDuration(workflows[newIndex].settings.defaultDuration)
     } catch (error) {
       console.error('Failed to switch workflow:', error)
     }
@@ -126,6 +118,9 @@ export const StartFlowPage = () => {
     if (!selectedWorkflowId) return
 
     try {
+      // Update lastSelected timestamp when starting a session
+      await WorkflowApi.updateLastSelected(selectedWorkflowId)
+
       const workflow = await WorkflowApi.getWorkflowById(selectedWorkflowId)
       if (!workflow) return
 

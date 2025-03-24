@@ -189,27 +189,8 @@ export function WorkflowSelector({ selectedId, onSelect }: WorkflowSelectorProps
       setEditingWorkflow(newWorkflow)
       setIsCreateDialogOpen(true)
     } else {
-      try {
-        // Update lastSelected timestamp in the database
-        await WorkflowApi.updateLastSelected(workflowId)
-        
-        // Optimistically update the UI
-        const updatedWorkflows = workflows.map(workflow => {
-          if (workflow.id === workflowId) {
-            return { 
-              ...workflow, 
-              lastSelected: Date.now() 
-            }
-          }
-          return workflow
-        })
-        
-        setWorkflows(updatedWorkflows)
-        onSelect(workflowId)
-        setIsDialogOpen(false)
-      } catch (error) {
-        console.error('Failed to update workflow:', error)
-      }
+      onSelect(workflowId)
+      setIsDialogOpen(false)
     }
   }
 
