@@ -25,21 +25,31 @@ export const StartFlowPage = () => {
       const workflows = await WorkflowApi.getWorkflows()
       if (workflows.length <= 1) return
 
-      const currentIndex = workflows.findIndex(w => w.id === selectedWorkflowId)
+      // Sort workflows by ID to maintain a consistent order
+      const sortedWorkflows = [...workflows].sort((a, b) => {
+        if (!a.id || !b.id) return 0
+        return a.id.localeCompare(b.id)
+      })
+
+      const currentIndex = sortedWorkflows.findIndex(w => w.id === selectedWorkflowId)
       let newIndex
 
       if (direction === 'left') {
-        newIndex = currentIndex <= 0 ? workflows.length - 1 : currentIndex - 1
+        newIndex = currentIndex <= 0 ? sortedWorkflows.length - 1 : currentIndex - 1
       } else {
-        newIndex = currentIndex >= workflows.length - 1 ? 0 : currentIndex + 1
+        newIndex = currentIndex >= sortedWorkflows.length - 1 ? 0 : currentIndex + 1
       }
 
-      const newWorkflowId = workflows[newIndex].id
+      const newWorkflowId = sortedWorkflows[newIndex].id
       setSlideDirection(direction)
-      if (newWorkflowId) setSelectedWorkflowId(newWorkflowId)
+      if (newWorkflowId) {
+        // Update lastSelected timestamp
+        await WorkflowApi.updateLastSelected(newWorkflowId)
+        setSelectedWorkflowId(newWorkflowId)
+      }
       
       // Set initial selection to the workflow's default duration
-      setDuration(workflows[newIndex].settings.defaultDuration)
+      setDuration(sortedWorkflows[newIndex].settings.defaultDuration)
     } catch (error) {
       console.error('Failed to switch workflow:', error)
     }
