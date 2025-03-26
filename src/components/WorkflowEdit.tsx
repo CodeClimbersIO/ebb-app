@@ -29,11 +29,11 @@ export function WorkflowEdit({ workflow, onSave, onDelete }: WorkflowEditProps) 
   const [showSavedIndicator, setShowSavedIndicator] = useState(false)
   const [currentWorkflowId, setCurrentWorkflowId] = useState<string | undefined>(workflow.id)
   const [settings, setSettings] = useState({
-    hasTypewriter: workflow.settings.hasTypewriter,
-    hasBreathing: workflow.settings.hasBreathing ?? true,
-    hasMusic: workflow.settings.hasMusic,
-    isAllowList: workflow.settings.isAllowList ?? false,
-    defaultDuration: workflow.settings.defaultDuration,
+    hasTypewriter: workflow.settings?.hasTypewriter ?? false,
+    hasBreathing: workflow.settings?.hasBreathing ?? true,
+    hasMusic: workflow.settings?.hasMusic ?? true,
+    isAllowList: workflow.settings?.isAllowList ?? false,
+    defaultDuration: workflow.settings?.defaultDuration ?? null,
   })
 
   const [hasChanges, setHasChanges] = useState(false)
@@ -190,6 +190,8 @@ export function WorkflowEdit({ workflow, onSave, onDelete }: WorkflowEditProps) 
                     ? a.app.app_external_id !== app.app.app_external_id
                     : a !== app
                 ))}
+                isAllowList={settings.isAllowList}
+                onIsAllowListChange={(value) => setSettings({ ...settings, isAllowList: value })}
               />
 
               <div className="flex items-center justify-between">

@@ -8,16 +8,45 @@ import { Logo } from '@/components/ui/logo'
 import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
 import { TimeSelector } from '@/components/TimeSelector'
 import { WorkflowSelector } from '@/components/WorkflowSelector'
-import { WorkflowApi } from '@/api/ebbApi/workflowApi'
-import { BlockingPreferenceApi } from '@/api/ebbApi/blockingPreferenceApi'
+import { WorkflowApi, type Workflow } from '@/api/ebbApi/workflowApi'
 import { invoke } from '@tauri-apps/api/core'
+import { MusicSelector } from '@/components/MusicSelector'
+import { AppSelector, type SearchOption } from '@/components/AppSelector'
 
 export const StartFlowPage = () => {
   const [duration, setDuration] = useState<number | null>(null)
   const [selectedWorkflowId, setSelectedWorkflowId] = useState<string | null>(null)
-  const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('left')
+  const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(null)
   const [showHint, setShowHint] = useState(false)
+  const [selectedPlaylist, setSelectedPlaylist] = useState<string | null>(null)
+  const [selectedApps, setSelectedApps] = useState<SearchOption[]>([])
+  const [isAllowList, setIsAllowList] = useState(false)
+  const [hasModifiedSettings, setHasModifiedSettings] = useState(false)
   const navigate = useNavigate()
+
+  // Compare current settings with workflow defaults
+  useEffect(() => {
+    if (!selectedWorkflow) {
+      setHasModifiedSettings(false)
+      return
+    }
+
+    const initialState = JSON.stringify({
+      duration: selectedWorkflow.settings.defaultDuration,
+      selectedPlaylist: selectedWorkflow.selectedPlaylist,
+      selectedApps: selectedWorkflow.selectedApps,
+      isAllowList: selectedWorkflow.settings.isAllowList
+    })
+    
+    const currentState = JSON.stringify({
+      duration,
+      selectedPlaylist,
+      selectedApps,
+      isAllowList
+    })
+    
+    setHasModifiedSettings(initialState !== currentState)
+  }, [selectedWorkflow, duration, selectedPlaylist, selectedApps, isAllowList])
 
   // Handle workflow switching
   const switchWorkflow = async (direction: 'left' | 'right') => {
@@ -34,14 +63,21 @@ export const StartFlowPage = () => {
         newIndex = currentIndex >= workflows.length - 1 ? 0 : currentIndex + 1
       }
 
-      const newWorkflowId = workflows[newIndex].id
-      setSlideDirection(direction)
+      const newWorkflow = workflows[newIndex]
+      const newWorkflowId = newWorkflow.id
+      
       if (newWorkflowId) {
         setSelectedWorkflowId(newWorkflowId)
+        setSelectedWorkflow(newWorkflow)
+        // Set duration from workflow's default duration
+        setDuration(newWorkflow.settings.defaultDuration)
+        // Set music preferences
+        setSelectedPlaylist(newWorkflow.selectedPlaylist || null)
+        // Set blocking preferences
+        setSelectedApps(newWorkflow.selectedApps || [])
+        // Set allow list preference
+        setIsAllowList(newWorkflow.settings.isAllowList || false)
       }
-      
-      // Set initial selection to the workflow's default duration
-      setDuration(workflows[newIndex].settings.defaultDuration)
     } catch (error) {
       console.error('Failed to switch workflow:', error)
     }
@@ -53,11 +89,20 @@ export const StartFlowPage = () => {
       try {
         const workflows = await WorkflowApi.getWorkflows()
         if (workflows.length > 0) {
-          const initialWorkflowId = workflows[0].id
-          if (initialWorkflowId) setSelectedWorkflowId(initialWorkflowId)
-          
-          // Set initial selection to the workflow's default duration
-          setDuration(workflows[0].settings.defaultDuration)
+          const initialWorkflow = workflows[0]
+          const initialWorkflowId = initialWorkflow.id
+          if (initialWorkflowId) {
+            setSelectedWorkflowId(initialWorkflowId)
+            setSelectedWorkflow(initialWorkflow)
+            // Set initial selection to the workflow's default duration
+            setDuration(initialWorkflow.settings.defaultDuration)
+            // Set initial music preferences
+            setSelectedPlaylist(initialWorkflow.selectedPlaylist || null)
+            // Set initial blocking preferences
+            setSelectedApps(initialWorkflow.selectedApps || [])
+            // Set initial allow list preference
+            setIsAllowList(initialWorkflow.settings.isAllowList || false)
+          }
 
           // Only show hint if there are 2+ workflows and it hasn't been dismissed
           if (workflows.length >= 2 && localStorage.getItem('workflowHintShown') !== 'true') {
@@ -88,10 +133,18 @@ export const StartFlowPage = () => {
     try {
       setSelectedWorkflowId(workflowId)
       
-      // Set initial selection to the workflow's default duration
+      // Get the full workflow data
       const workflow = await WorkflowApi.getWorkflowById(workflowId)
       if (workflow) {
+        setSelectedWorkflow(workflow)
+        // Set duration from workflow's default duration
         setDuration(workflow.settings.defaultDuration)
+        // Set music preferences
+        setSelectedPlaylist(workflow.selectedPlaylist || null)
+        // Set blocking preferences
+        setSelectedApps(workflow.selectedApps || [])
+        // Set allow list preference
+        setIsAllowList(workflow.settings.isAllowList || false)
       }
     } catch (error) {
       console.error('Failed to select workflow:', error)
@@ -115,30 +168,37 @@ export const StartFlowPage = () => {
   }, [selectedWorkflowId, duration])
 
   const handleBegin = async () => {
-    if (!selectedWorkflowId) return
-
     try {
-      // Update lastSelected timestamp when starting a session
-      await WorkflowApi.updateLastSelected(selectedWorkflowId)
+      // Get all blocked apps - use current selections regardless of workflow
+      const blockingApps = selectedApps.map((app: SearchOption) => {
+        if (app.type === 'app') {
+          return {
+            external_id: app.app.app_external_id,
+            is_browser: app.app.is_browser === 1
+          }
+        }
+        if (app.type === 'custom') {
+          return {
+            external_id: app.url,
+            is_browser: true
+          }
+        }
+        return null
+      }).filter(Boolean)
 
-      const workflow = await WorkflowApi.getWorkflowById(selectedWorkflowId)
-      if (!workflow) return
-
-      // Get all blocked apps for this workflow
-      const blockedApps = await BlockingPreferenceApi.getWorkflowBlockedApps(selectedWorkflowId)
-      const blockingApps = blockedApps.map(app => ({
-        external_id: app.app_external_id,
-        is_browser: app.is_browser === 1
-      }))
-
-      // Start blocking with the workflow's preferences
+      // Start blocking with the current isAllowList preference
       await invoke('start_blocking', { 
         blockingApps, 
-        isBlockList: !workflow.settings.isAllowList // Invert because isAllowList true means we want to block everything except these apps
+        isBlockList: !isAllowList
       })
 
+      // If workflow is selected, update its lastSelected timestamp
+      if (selectedWorkflowId) {
+        await WorkflowApi.updateLastSelected(selectedWorkflowId)
+      }
+
       const sessionId = await FlowSessionApi.startFlowSession(
-        workflow.name,
+        selectedWorkflow?.name || 'Focus Session',
         duration || undefined
       )
 
@@ -148,19 +208,19 @@ export const StartFlowPage = () => {
 
       const sessionState = {
         startTime: Date.now(),
-        objective: workflow.name,
+        objective: selectedWorkflow?.name || 'Focus Session',
         sessionId,
         duration: duration || undefined,
-        workflowId: selectedWorkflowId,
-        hasBreathing: workflow.settings.hasBreathing,
-        hasTypewriter: workflow.settings.hasTypewriter,
-        hasMusic: workflow.settings.hasMusic,
-        selectedPlaylist: workflow.selectedPlaylist || undefined,
-        selectedPlaylistName: workflow.selectedPlaylistName || undefined
+        workflowId: selectedWorkflowId || null,
+        hasBreathing: selectedWorkflow?.settings.hasBreathing || false,
+        hasTypewriter: selectedWorkflow?.settings.hasTypewriter || false,
+        hasMusic: selectedWorkflow?.settings.hasMusic || false,
+        selectedPlaylist: selectedPlaylist || selectedWorkflow?.selectedPlaylist || null,
+        selectedPlaylistName: selectedWorkflow?.selectedPlaylistName || null
       }
 
-      // Skip breathing exercise if disabled in settings
-      if (!workflow.settings.hasBreathing) {
+      // Skip breathing exercise if no workflow selected or if disabled in settings
+      if (!selectedWorkflow?.settings.hasBreathing) {
         navigate('/session', { state: sessionState })
       } else {
         navigate('/breathing-exercise', { state: sessionState })
@@ -184,7 +244,7 @@ export const StartFlowPage = () => {
         <TopNav variant="modal" />
       </div>
       <div className="flex-1 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-        <Card className="w-[400px]">
+        <Card className="w-[450px]">
           <CardContent className="pt-6 space-y-6">
             {showHint && (
               <motion.div 
@@ -207,15 +267,7 @@ export const StartFlowPage = () => {
             )}
 
             <motion.div
-              key={selectedWorkflowId}
-              initial={{ 
-                x: slideDirection === 'right' ? -50 : 50,
-                opacity: 0 
-              }}
-              animate={{ 
-                x: 0,
-                opacity: 1 
-              }}
+              layout
               transition={{ 
                 type: 'spring',
                 stiffness: 300,
@@ -224,9 +276,39 @@ export const StartFlowPage = () => {
             >
               <WorkflowSelector 
                 selectedId={selectedWorkflowId} 
-                onSelect={handleWorkflowSelect} 
+                onSelect={handleWorkflowSelect}
+                hasModifiedSettings={hasModifiedSettings}
               />
             </motion.div>
+
+            <div>
+              <AppSelector
+                selectedApps={selectedApps}
+                onAppSelect={(app) => setSelectedApps([...selectedApps, app])}
+                onAppRemove={(app) => setSelectedApps(selectedApps.filter(a => 
+                  a.type === 'app' && app.type === 'app' 
+                    ? a.app.app_external_id !== app.app.app_external_id
+                    : a !== app
+                ))}
+                isAllowList={isAllowList}
+                onIsAllowListChange={setIsAllowList}
+              />
+            </div>
+
+            {/* Show music selector by default unless explicitly disabled by workflow */}
+            {(!selectedWorkflow || selectedWorkflow.settings.hasMusic !== false) && (
+              <div>
+                <MusicSelector
+                  selectedPlaylist={selectedPlaylist}
+                  onPlaylistSelect={(playlist) => {
+                    setSelectedPlaylist(playlist.id)
+                  }}
+                  onConnectClick={() => {
+                    navigate('/settings#music-integrations')
+                  }}
+                />
+              </div>
+            )}
 
             <div>
               <TimeSelector
@@ -240,7 +322,7 @@ export const StartFlowPage = () => {
             <Button
               className="w-full"
               onClick={handleBegin}
-              disabled={!selectedWorkflowId}
+              disabled={false}
             >
               Start Focus Session
               <div className="ml-2 flex items-center gap-1">

@@ -1,5 +1,6 @@
 import { SearchOption } from '@/components/AppSelector'
 import { WorkflowDb, WorkflowRepo, WorkflowSettings } from '@/db/ebb/workflowRepo'
+import { getEbbDb } from '@/db/ebb/ebbDb'
 import { BlockingPreferenceApi } from './blockingPreferenceApi'
 export interface Workflow {
   id?: string
@@ -72,14 +73,15 @@ const toDbWorkflow = (workflow: Workflow): Partial<WorkflowDb> => {
   return dbWorkflow
 }
 
+// Get all workflows
 const getWorkflows = async (): Promise<Workflow[]> => {
+  const ebbDb = await getEbbDb()
+  const rows = await ebbDb.select<WorkflowDb[]>(
+    'SELECT * FROM workflow ORDER BY created_at DESC'
+  )
   
-  // Get workflows
-  const workflowsDb = await WorkflowRepo.getWorkflows()
-  
-  // Convert to frontend format
-  const workflows = await Promise.all(workflowsDb.map(fromDbWorkflow))
-  
+  // Convert each DB workflow to frontend format
+  const workflows = await Promise.all(rows.map(fromDbWorkflow))
   return workflows
 }
 
@@ -96,7 +98,7 @@ const saveWorkflow = async (workflow: Workflow): Promise<Workflow> => {
   // Save the workflow metadata to the workflow table
   const dbWorkflow = toDbWorkflow(workflow)
   
-  // If this is a new workflow (no ID), remove the ID field
+  // If this is a new preset (no ID), remove the ID field
   const isNewWorkflow = !workflow.id
   if (isNewWorkflow) {
     delete dbWorkflow.id

@@ -12,6 +12,7 @@ import { MonitorApi } from '../api/monitorApi/monitorApi'
 import { App } from '../db/monitor/appRepo'
 import { AppIcon } from './AppIcon'
 import { Tag } from '../db/monitor/tagRepo'
+import { Button } from '@/components/ui/button'
 
 interface CategoryOption {
   type: 'category'
@@ -41,6 +42,8 @@ interface AppSelectorProps {
   excludedCategories?: AppCategory[]
   onAppSelect: (option: SearchOption) => void
   onAppRemove: (option: SearchOption) => void
+  isAllowList?: boolean
+  onIsAllowListChange?: (value: boolean) => void
 }
 
 // Simplified helper function to get display text and key
@@ -74,7 +77,7 @@ const getCategoryTooltipContent = (category: AppCategory, apps: App[]): string =
 }
 
 export function AppSelector({
-  placeholder = 'Search apps & websites to add...',
+  placeholder = 'Search apps & websites...',
   emptyText = 'Enter full URL to add website',
   maxItems = 5,
   selectedApps,
@@ -91,7 +94,9 @@ export function AppSelector({
     'writing'
   ],
   onAppSelect,
-  onAppRemove
+  onAppRemove,
+  isAllowList = false,
+  onIsAllowListChange
 }: AppSelectorProps) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
@@ -499,6 +504,30 @@ export function AppSelector({
             )}
           </div>
         </div>
+        {onIsAllowListChange && (
+          <div className="absolute bottom-2 right-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onIsAllowListChange(!isAllowList)
+                    }}
+                  >
+                    {isAllowList ? 'Allow List' : 'Block List'}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" align="end">
+                  <p>Toggle between Allow and Block List mode</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        )}
       </div>
     </div>
   )
