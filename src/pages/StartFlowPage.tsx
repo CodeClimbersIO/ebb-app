@@ -10,6 +10,9 @@ import { TimeSelector } from '@/components/TimeSelector'
 import { WorkflowSelector } from '@/components/WorkflowSelector'
 import { WorkflowApi, type Workflow } from '@/api/ebbApi/workflowApi'
 import { invoke } from '@tauri-apps/api/core'
+import { DateTime, Duration } from 'luxon'
+import { startFlowTimer } from '../lib/tray'
+import { getDurationFromDefault, useFlowTimer } from '../lib/stores/flowTimer'
 import { MusicSelector } from '@/components/MusicSelector'
 import { AppSelector, type SearchOption } from '@/components/AppSelector'
 import { BlockingPreferenceApi } from '../api/ebbApi/blockingPreferenceApi'
@@ -19,7 +22,7 @@ import { App } from '../db/monitor/appRepo'
 export const LOCAL_STORAGE_PREFERENCES_KEY = 'flow-preferences'
 
 export const StartFlowPage = () => {
-  const [duration, setDuration] = useState<number | null>(null)
+  const { duration, setDuration } = useFlowTimer()
   const [selectedWorkflowId, setSelectedWorkflowId] = useState<string | null>(null)
   const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(null)
   const [showHint, setShowHint] = useState(false)
@@ -136,16 +139,10 @@ export const StartFlowPage = () => {
       
       if (newWorkflowId) {
         setSelectedWorkflowId(newWorkflowId)
-        setSelectedWorkflow(newWorkflow)
-        // Set duration from workflow's default duration
-        setDuration(newWorkflow.settings.defaultDuration)
-        // Set music preferences
-        setSelectedPlaylist(newWorkflow.selectedPlaylist || null)
-        // Set blocking preferences
-        setSelectedApps(newWorkflow.selectedApps || [])
-        // Set allow list preference
-        setIsAllowList(newWorkflow.settings.isAllowList || false)
       }
+
+      // Set initial selection to the workflow's default duration
+      setDuration(getDurationFromDefault(workflows[newIndex].settings.defaultDuration))
     } catch (error) {
       console.error('Failed to switch workflow:', error)
     }
@@ -161,9 +158,9 @@ export const StartFlowPage = () => {
           const initialWorkflowId = initialWorkflow.id
           if (initialWorkflowId) {
             setSelectedWorkflowId(initialWorkflowId)
-            setSelectedWorkflow(initialWorkflow)
-            // Set initial selection to the workflow's default duration
-            setDuration(initialWorkflow.settings.defaultDuration)
+  setSelectedWorkflow(initialWorkflow)
+            // Update to use store's setDuration
+            setDuration(getDurationFromDefault(initialWorkflow.settings.defaultDuration))
             // Set initial music preferences
             setSelectedPlaylist(initialWorkflow.selectedPlaylist || null)
             // Set initial blocking preferences
@@ -181,7 +178,7 @@ export const StartFlowPage = () => {
         console.error('Failed to load initial workflow:', error)
       }
     }
-    
+
     loadInitialWorkflow()
 
     // Add listener for workflow saved event
@@ -194,7 +191,7 @@ export const StartFlowPage = () => {
 
     window.addEventListener('workflowSaved', handleWorkflowSaved)
     return () => window.removeEventListener('workflowSaved', handleWorkflowSaved)
-  }, [])
+  }, [setDuration])
 
   // Update workflow selection in WorkflowSelector
   const handleWorkflowSelect = async (workflowId: string) => {
@@ -206,7 +203,7 @@ export const StartFlowPage = () => {
       if (workflow) {
         setSelectedWorkflow(workflow)
         // Set duration from workflow's default duration
-        setDuration(workflow.settings.defaultDuration)
+        setDuration(getDurationFromDefault(workflow.settings.defaultDuration))
         // Set music preferences
         setSelectedPlaylist(workflow.selectedPlaylist || null)
         // Set blocking preferences
@@ -269,18 +266,20 @@ export const StartFlowPage = () => {
 
         const sessionId = await FlowSessionApi.startFlowSession(
           workflow.name,
-          duration || undefined
+          duration ? duration.as('minutes') : undefined
         )
 
         if (!sessionId) {
           throw new Error('No session ID returned from API')
         }
 
+      await startFlowTimer(DateTime.now())
+
         const sessionState = {
           startTime: Date.now(),
           objective: workflow.name,
           sessionId,
-          duration: duration || undefined,
+          duration: duration ? duration.as('minutes') : undefined,
           workflowId: selectedWorkflowId,
           hasBreathing: workflow.settings.hasBreathing,
           hasTypewriter: workflow.settings.hasTypewriter,
@@ -292,7 +291,7 @@ export const StartFlowPage = () => {
         // Start blocking
         await invoke('start_blocking', { blockingApps, isBlockList })
 
-        // Skip breathing exercise if disabled in settings
+  
         if (!workflow.settings.hasBreathing) {
           navigate('/session', { state: sessionState })
         } else {
@@ -388,7 +387,7 @@ export const StartFlowPage = () => {
         <Card className="w-[450px]">
           <CardContent className="pt-6 space-y-6">
             {showHint && (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
@@ -396,7 +395,7 @@ export const StartFlowPage = () => {
               >
                 <div className="bg-muted/50 rounded-lg py-1.5 px-3 pr-8">
                   Use <kbd className="px-1.5 py-0.5 bg-muted rounded-md">←</kbd> and <kbd className="px-1.5 py-0.5 bg-muted rounded-md">→</kbd> to switch workflows
-                  <button 
+                  <button
                     onClick={dismissHint}
                     className="absolute right-2 top-1/2 -translate-y-1/2 hover:text-foreground"
                     aria-label="Dismiss hint"

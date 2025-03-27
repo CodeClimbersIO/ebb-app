@@ -23,6 +23,7 @@ import { invoke } from '@tauri-apps/api/core'
 import NotificationManager from '@/lib/notificationManager'
 import { listen } from '@tauri-apps/api/event'
 import { useRustEvents } from '@/hooks/useRustEvents'
+import { useFlowTimer } from '../lib/stores/flowTimer'
 
 const getDurationFormatFromSeconds = (seconds: number) => {
   const duration = Duration.fromMillis(seconds * 1000)
@@ -51,6 +52,7 @@ const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
 
       // Update the session duration on the server
       await FlowSessionApi.updateFlowSessionDuration(flowSession.id, newTotalDuration)
+      useFlowTimer.setState({ duration: Duration.fromObject({ seconds: newTotalDuration }) })
 
       // Update the flowSession object directly
       flowSession.duration = newTotalDuration
