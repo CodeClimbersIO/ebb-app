@@ -98,34 +98,34 @@ export function WorkflowSelector({ selectedId, onSelect }: WorkflowSelectorProps
 
   // Auto-scroll selected workflow into view
   useEffect(() => {
-    if (selectedId && scrollContainerRef.current) {
-      const container = scrollContainerRef.current
-      const selectedElement = container.querySelector(`[data-workflow-id="${selectedId}"]`) as HTMLElement
-      
-      if (selectedElement) {
-        // Get the visible area of the container
-        const containerRect = container.getBoundingClientRect()
-        const elementRect = selectedElement.getBoundingClientRect()
-        
-        // Check if the element is not fully visible
-        const isFullyVisible = 
-          elementRect.left >= containerRect.left && 
-          elementRect.right <= containerRect.right
-        
-        if (!isFullyVisible) {
-          // Calculate distance from element center to container center
-          const containerCenter = containerRect.left + containerRect.width / 2
-          const elementCenter = elementRect.left + elementRect.width / 2
-          const scrollDistance = elementCenter - containerCenter
-          
-          // Scroll the container
-          container.scrollBy({
-            left: scrollDistance,
-            behavior: 'smooth'
-          })
-        }
-      }
-    }
+    if (!selectedId || !scrollContainerRef.current) return
+    
+    const container = scrollContainerRef.current
+    const selectedElement = container.querySelector(`[data-workflow-id="${selectedId}"]`) as HTMLElement
+    
+    if (!selectedElement) return
+    
+    // Get the visible area of the container
+    const containerRect = container.getBoundingClientRect()
+    const elementRect = selectedElement.getBoundingClientRect()
+    
+    // Check if the element is not fully visible
+    const isFullyVisible = 
+      elementRect.left >= containerRect.left && 
+      elementRect.right <= containerRect.right
+    
+    if (isFullyVisible) return
+    
+    // Calculate distance from element center to container center
+    const containerCenter = containerRect.left + containerRect.width / 2
+    const elementCenter = elementRect.left + elementRect.width / 2
+    const scrollDistance = elementCenter - containerCenter
+    
+    // Scroll the container
+    container.scrollBy({
+      left: scrollDistance,
+      behavior: 'smooth'
+    })
   }, [selectedId])
 
   // Load workflows from database and sort by last selected
