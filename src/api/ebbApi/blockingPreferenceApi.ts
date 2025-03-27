@@ -3,6 +3,7 @@ import { BlockingPreferenceRepo, BlockingPreferenceDb } from '@/db/ebb/blockingP
 import { App, AppRepo } from '@/db/monitor/appRepo'
 import { TagRepo } from '@/db/monitor/tagRepo'
 import { AppCategory } from '../../lib/app-directory/apps-types'
+import { LOCAL_STORAGE_PREFERENCES_KEY } from '../../pages/StartFlowPage'
 
 const saveWorkflowBlockingPreferences = async (
   workflowId: string,
@@ -91,11 +92,59 @@ const convertToSearchOptions = async (
   }
   
   return searchOptions
-} 
+}
+
+// Get blocked apps from local preferences
+const getBlockedAppsFromLocalPreferences = async (): Promise<App[]> => {
+  try {
+    // Get preferences from local storage
+    const savedPreferences = localStorage.getItem(LOCAL_STORAGE_PREFERENCES_KEY)
+    if (!savedPreferences) return []
+    
+    const preferences = JSON.parse(savedPreferences)
+    if (!preferences.selectedApps || !Array.isArray(preferences.selectedApps)) return []
+    
+    // Extract app IDs and category IDs from the selectedApps
+    const appIds: string[] = []
+    const categoryTagIds: string[] = []
+    const customWebsites: string[] = []
+    
+    for (const app of preferences.selectedApps) {
+      if (app.type === 'app' && app.app?.id) {
+        appIds.push(app.app.id)
+      } else if (app.type === 'category' && app.tag?.id) {
+        categoryTagIds.push(app.tag.id)
+      } else if (app.type === 'custom' && app.url) {
+        customWebsites.push(app.url)
+      }
+    }
+    
+    // Fetch apps by IDs and categories
+    const [directApps, categoryApps] = await Promise.all([
+      AppRepo.getAppsByIds(appIds),
+      AppRepo.getAppsByCategoryTags(categoryTagIds)
+    ])
+    
+    // Create App objects for custom websites
+    const customApps: App[] = customWebsites.map(url => ({
+      id: `custom-${url}`,
+      app_external_id: url,
+      name: url,
+      is_browser: 1
+    } as App))
+    
+    // Combine and return all blocked apps
+    return [...directApps, ...categoryApps, ...customApps]
+  } catch (error) {
+    console.error('Error getting blocked apps from local preferences:', error)
+    return []
+  }
+}
 
 export const BlockingPreferenceApi = {
   getWorkflowBlockingPreferencesAsSearchOptions,
   saveWorkflowBlockingPreferences,
-  getWorkflowBlockedApps
+  getWorkflowBlockedApps,
+  getBlockedAppsFromLocalPreferences
 }
 

@@ -16,17 +16,16 @@ import { WorkflowEdit } from './WorkflowEdit'
 import { Workflow, WorkflowApi } from '../api/ebbApi/workflowApi'
 import { Badge } from './ui/badge'
 import { cn } from '@/lib/utils/tailwind.util'
+import { LOCAL_STORAGE_PREFERENCES_KEY } from '../pages/StartFlowPage'
 
 interface WorkflowSelectorProps {
   selectedId: string | null
   onSelect: (workflowId: string) => void
-  hasModifiedSettings?: boolean
 }
 
 function WorkflowBadge({ 
   workflow, 
   isSelected,
-  hasModifiedSettings,
   onClick,
   onSettingsClick,
   onCreateClick,
@@ -35,10 +34,8 @@ function WorkflowBadge({
 }: { 
   workflow: Workflow
   isSelected: boolean
-  hasModifiedSettings?: boolean
   onClick: () => void
   onSettingsClick?: () => void
-  onDeleteClick?: () => void
   onCreateClick?: () => void
   className?: string
   'data-workflow-id'?: string
@@ -48,7 +45,7 @@ function WorkflowBadge({
       <ContextMenu modal={false}>
         <ContextMenuTrigger>
           <Badge
-            variant={isSelected && !hasModifiedSettings ? 'default' : 'secondary'}
+            variant={isSelected ? 'default' : 'secondary'}
             className={cn(
               'cursor-pointer whitespace-nowrap overflow-hidden text-ellipsis px-4',
               className
@@ -75,7 +72,7 @@ function WorkflowBadge({
   )
 }
 
-export function WorkflowSelector({ selectedId, onSelect, hasModifiedSettings }: WorkflowSelectorProps) {
+export function WorkflowSelector({ selectedId, onSelect }: WorkflowSelectorProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
@@ -158,20 +155,37 @@ export function WorkflowSelector({ selectedId, onSelect, hasModifiedSettings }: 
 
   const handleSelect = async (workflowId: string) => {
     if (workflowId === 'new') {
+      // Get local preferences if they exist
+      const savedPreferences = localStorage.getItem(LOCAL_STORAGE_PREFERENCES_KEY)
+      let localPrefs = null
+      if (savedPreferences) {
+        try {
+          localPrefs = JSON.parse(savedPreferences)
+        } catch (error) {
+          console.error('Failed to parse local preferences:', error)
+        }
+      }
+
       const newWorkflow: Workflow = {
         name: 'New Preset',
-        selectedApps: [],
+        selectedApps: localPrefs?.selectedApps || [],
+        selectedPlaylist: localPrefs?.selectedPlaylist || null,
         lastSelected: Date.now(),
         settings: {
           hasTypewriter: false,
           hasBreathing: true,
           hasMusic: true,
-          isAllowList: false,
-          defaultDuration: null
+          isAllowList: localPrefs?.isAllowList || false,
+          defaultDuration: localPrefs?.duration || null
         }
       }
       setEditingWorkflow(newWorkflow)
       setIsCreateDialogOpen(true)
+
+      // Clear local preferences since they're now in a workflow
+      if (savedPreferences) {
+        localStorage.removeItem(LOCAL_STORAGE_PREFERENCES_KEY)
+      }
     } else {
       onSelect(workflowId)
     }
@@ -184,25 +198,6 @@ export function WorkflowSelector({ selectedId, onSelect, hasModifiedSettings }: 
     // Set the workflow and open edit dialog
     setEditingWorkflow(workflow)
     setIsEditDialogOpen(true)
-  }
-
-  const handleDeleteClick = async (workflow: Workflow) => {
-    if (!workflow.id) return
-    
-    try {
-      await WorkflowApi.deleteWorkflow(workflow.id)
-      
-      // Refresh workflows from database
-      const updatedWorkflows = await WorkflowApi.getWorkflows()
-      setWorkflows(updatedWorkflows)
-      
-      // If the deleted workflow was selected, select the first available one
-      if (selectedId === workflow.id && updatedWorkflows.length > 0 && updatedWorkflows[0].id) {
-        onSelect(updatedWorkflows[0].id)
-      }
-    } catch (error) {
-      console.error('Failed to delete workflow:', error)
-    }
   }
 
   const handleSaveWorkflow = async (savedWorkflow: Workflow, shouldCloseDialog = true) => {
@@ -279,10 +274,8 @@ export function WorkflowSelector({ selectedId, onSelect, hasModifiedSettings }: 
                   key={workflow.id}
                   workflow={workflow}
                   isSelected={workflow.id === selectedId}
-                  hasModifiedSettings={hasModifiedSettings}
                   onClick={() => workflow.id && onSelect(workflow.id)}
                   onSettingsClick={() => handleSettingsClick(workflow)}
-                  onDeleteClick={() => handleDeleteClick(workflow)}
                   onCreateClick={() => handleSelect('new')}
                   className="shrink-0"
                   data-workflow-id={workflow.id}

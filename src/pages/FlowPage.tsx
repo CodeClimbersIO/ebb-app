@@ -175,12 +175,13 @@ export const FlowPage = () => {
   } | null>(null)
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string>(() => {
     const state = window.history.state?.usr
-    return state?.selectedPlaylist || ''
+    // Try getting from session state first, then fall back to localStorage for non-workflow sessions
+    return state?.selectedPlaylist || localStorage.getItem('lastPlaylist') || ''
   })
   const [isSpotifyAuthenticated, setIsSpotifyAuthenticated] = useState(false)
   const [playlistData, setPlaylistData] = useState<{
-    playlists: { id: string; name: string }[];
-    images: Record<string, string>;
+    playlists: { id: string; name: string }[]
+    images: Record<string, string>
   }>(() => {
     const saved = localStorage.getItem('playlistData')
     return saved ? JSON.parse(saved) : { playlists: [], images: {} }
@@ -238,9 +239,11 @@ export const FlowPage = () => {
 
         newPlayer.addListener('ready', ({ device_id }: { device_id: string }) => {
           setDeviceId(device_id)
+          // Check for playlist in both session state and localStorage
           const state = window.history.state?.usr
-          if (state?.selectedPlaylist) {
-            SpotifyApiService.startPlayback(state.selectedPlaylist, device_id)
+          const playlistToUse = state?.selectedPlaylist || localStorage.getItem('lastPlaylist')
+          if (playlistToUse) {
+            SpotifyApiService.startPlayback(playlistToUse, device_id)
           }
         })
 
@@ -388,6 +391,7 @@ export const FlowPage = () => {
       setSelectedPlaylistId('')
     }
 
+    // Stop blocking apps
     await invoke('stop_blocking')
     await FlowSessionApi.endFlowSession(flowSession.id)
 
@@ -451,12 +455,9 @@ export const FlowPage = () => {
     if (!deviceId) return
     setSelectedPlaylistId(playlistId)
 
-    // Save the selected playlist to local storage using the same key as StartFlowPage
-    const playlist = playlistData.playlists.find(p => p.id === playlistId)
-    if (playlist) {
-      localStorage.setItem('lastPlaylist', playlistId)
-    }
-
+    // Always save the selected playlist to localStorage
+    localStorage.setItem('lastPlaylist', playlistId)
+    
     await SpotifyApiService.startPlayback(playlistId, deviceId)
   }
 
@@ -544,9 +545,9 @@ export const FlowPage = () => {
           ) : countdown ? (
             <span className="inline-block w-full text-center opacity-80">{countdown}</span>
           ) : canEndSession ? (
-            'End Session'
+            'End Early'
           ) : (
-            'End Session'
+            'End Early'
           )}
         </Button>
       </div>

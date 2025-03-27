@@ -193,19 +193,6 @@ export function WorkflowEdit({ workflow, onSave, onDelete }: WorkflowEditProps) 
                 isAllowList={settings.isAllowList}
                 onIsAllowListChange={(value) => setSettings({ ...settings, isAllowList: value })}
               />
-
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-base font-medium">Allow List</span>
-                  </div>
-                  <div className="text-xs text-muted-foreground">Only allow selected apps and websites</div>
-                </div>
-                <Switch 
-                  checked={settings.isAllowList}
-                  onCheckedChange={(checked) => setSettings({ ...settings, isAllowList: checked })}
-                />
-              </div>
             </TabsContent>
 
             <TabsContent value="music" className="space-y-4">

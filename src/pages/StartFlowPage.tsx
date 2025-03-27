@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'motion/react'
 import { Button } from '@/components/ui/button'
@@ -12,6 +12,11 @@ import { WorkflowApi, type Workflow } from '@/api/ebbApi/workflowApi'
 import { invoke } from '@tauri-apps/api/core'
 import { MusicSelector } from '@/components/MusicSelector'
 import { AppSelector, type SearchOption } from '@/components/AppSelector'
+import { BlockingPreferenceApi } from '../api/ebbApi/blockingPreferenceApi'
+import { App } from '../db/monitor/appRepo'
+
+// Local storage key for preferences when no workflow is selected
+export const LOCAL_STORAGE_PREFERENCES_KEY = 'flow-preferences'
 
 export const StartFlowPage = () => {
   const [duration, setDuration] = useState<number | null>(null)
@@ -21,14 +26,51 @@ export const StartFlowPage = () => {
   const [selectedPlaylist, setSelectedPlaylist] = useState<string | null>(null)
   const [selectedApps, setSelectedApps] = useState<SearchOption[]>([])
   const [isAllowList, setIsAllowList] = useState(false)
-  const [hasModifiedSettings, setHasModifiedSettings] = useState(false)
   const navigate = useNavigate()
 
-  // Compare current settings with workflow defaults
+  // Auto-save changes to either workflow or local storage
+  const saveChanges = useCallback(async () => {
+    if (selectedWorkflow?.id && selectedWorkflowId) {
+      // Save to workflow
+      const updatedWorkflow: Workflow = {
+        ...selectedWorkflow,
+        selectedApps,
+        selectedPlaylist,
+        selectedPlaylistName: selectedWorkflow.selectedPlaylistName,
+        settings: {
+          ...selectedWorkflow.settings,
+          defaultDuration: duration,
+          isAllowList
+        }
+      }
+
+      try {
+        await WorkflowApi.saveWorkflow(updatedWorkflow)
+        console.log('Saved to workflow:', updatedWorkflow) // Debug log
+      } catch (error) {
+        console.error('Failed to save workflow changes:', error)
+      }
+    } else {
+      // Save to local storage when no workflow is selected
+      const preferences = {
+        duration,
+        selectedPlaylist,
+        selectedApps,
+        isAllowList
+      }
+      localStorage.setItem(LOCAL_STORAGE_PREFERENCES_KEY, JSON.stringify(preferences))
+      console.log('Saved to local storage:', preferences) // Debug log
+    }
+  }, [duration, selectedPlaylist, selectedApps, isAllowList, selectedWorkflow, selectedWorkflowId])
+
+  // Compare current settings with workflow defaults and trigger auto-save
   useEffect(() => {
     if (!selectedWorkflow) {
-      setHasModifiedSettings(false)
-      return
+      // When no workflow is selected, just save to local storage
+      const timeoutId = setTimeout(() => {
+        saveChanges()
+      }, 150)
+      return () => clearTimeout(timeoutId)
     }
 
     const initialState = JSON.stringify({
@@ -45,8 +87,34 @@ export const StartFlowPage = () => {
       isAllowList
     })
     
-    setHasModifiedSettings(initialState !== currentState)
-  }, [selectedWorkflow, duration, selectedPlaylist, selectedApps, isAllowList])
+    const hasChanges = initialState !== currentState
+    
+    if (hasChanges) {
+      const timeoutId = setTimeout(() => {
+        saveChanges()
+      }, 150)
+      return () => clearTimeout(timeoutId)
+    }
+  }, [selectedWorkflow, duration, selectedPlaylist, selectedApps, isAllowList, saveChanges])
+
+  // Load preferences from local storage when no workflow is selected
+  useEffect(() => {
+    if (!selectedWorkflow) {
+      const savedPreferences = localStorage.getItem(LOCAL_STORAGE_PREFERENCES_KEY)
+      if (savedPreferences) {
+        try {
+          const preferences = JSON.parse(savedPreferences)
+          console.log('Loading from local storage:', preferences) // Debug log
+          setDuration(preferences.duration)
+          setSelectedPlaylist(preferences.selectedPlaylist)
+          setSelectedApps(preferences.selectedApps)
+          setIsAllowList(preferences.isAllowList ?? false) // Add default value
+        } catch (error) {
+          console.error('Failed to parse local preferences:', error)
+        }
+      }
+    }
+  }, [selectedWorkflow])
 
   // Handle workflow switching
   const switchWorkflow = async (direction: 'left' | 'right') => {
@@ -157,9 +225,9 @@ export const StartFlowPage = () => {
       if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
         handleBegin()
       } else if (event.key === 'ArrowLeft') {
-        switchWorkflow('right')
-      } else if (event.key === 'ArrowRight') {
         switchWorkflow('left')
+      } else if (event.key === 'ArrowRight') {
+        switchWorkflow('right')
       }
     }
 
@@ -169,60 +237,108 @@ export const StartFlowPage = () => {
 
   const handleBegin = async () => {
     try {
-      // Get all blocked apps - use current selections regardless of workflow
-      const blockingApps = selectedApps.map((app: SearchOption) => {
-        if (app.type === 'app') {
-          return {
-            external_id: app.app.app_external_id,
-            is_browser: app.app.is_browser === 1
-          }
-        }
-        if (app.type === 'custom') {
-          return {
-            external_id: app.url,
-            is_browser: true
-          }
-        }
-        return null
-      }).filter(Boolean)
+      let blockingApps
+      let isBlockList
 
-      // Start blocking with the current isAllowList preference
-      await invoke('start_blocking', { 
-        blockingApps, 
-        isBlockList: !isAllowList
-      })
+      // Check if we have any workflows at all
+      const workflows = await WorkflowApi.getWorkflows()
+      const hasWorkflows = workflows.length > 0
 
-      // If workflow is selected, update its lastSelected timestamp
-      if (selectedWorkflowId) {
+      // If selectedWorkflowId is set but no workflows exist, clear it
+      if (selectedWorkflowId && !hasWorkflows) {
+        setSelectedWorkflowId(null)
+      }
+
+      if (selectedWorkflowId && hasWorkflows) {
+        // Workflow case
+        const workflow = await WorkflowApi.getWorkflowById(selectedWorkflowId)
+        if (!workflow) {
+          throw new Error('Selected workflow not found')
+        }
+
+        // Get blocked apps for this workflow
+        const blockedApps = await BlockingPreferenceApi.getWorkflowBlockedApps(selectedWorkflowId)
+        blockingApps = blockedApps.map((app: App) => ({
+          external_id: app.app_external_id,
+          is_browser: app.is_browser === 1
+        }))
+        isBlockList = !workflow.settings.isAllowList
+
+        // Update lastSelected timestamp
         await WorkflowApi.updateLastSelected(selectedWorkflowId)
-      }
 
-      const sessionId = await FlowSessionApi.startFlowSession(
-        selectedWorkflow?.name || 'Focus Session',
-        duration || undefined
-      )
+        const sessionId = await FlowSessionApi.startFlowSession(
+          workflow.name,
+          duration || undefined
+        )
 
-      if (!sessionId) {
-        throw new Error('No session ID returned from API')
-      }
+        if (!sessionId) {
+          throw new Error('No session ID returned from API')
+        }
 
-      const sessionState = {
-        startTime: Date.now(),
-        objective: selectedWorkflow?.name || 'Focus Session',
-        sessionId,
-        duration: duration || undefined,
-        workflowId: selectedWorkflowId || null,
-        hasBreathing: selectedWorkflow?.settings.hasBreathing || false,
-        hasTypewriter: selectedWorkflow?.settings.hasTypewriter || false,
-        hasMusic: selectedWorkflow?.settings.hasMusic || false,
-        selectedPlaylist: selectedPlaylist || selectedWorkflow?.selectedPlaylist || null,
-        selectedPlaylistName: selectedWorkflow?.selectedPlaylistName || null
-      }
+        const sessionState = {
+          startTime: Date.now(),
+          objective: workflow.name,
+          sessionId,
+          duration: duration || undefined,
+          workflowId: selectedWorkflowId,
+          hasBreathing: workflow.settings.hasBreathing,
+          hasTypewriter: workflow.settings.hasTypewriter,
+          hasMusic: workflow.settings.hasMusic,
+          selectedPlaylist: workflow.selectedPlaylist,
+          selectedPlaylistName: workflow.selectedPlaylistName
+        }
 
-      // Skip breathing exercise if no workflow selected or if disabled in settings
-      if (!selectedWorkflow?.settings.hasBreathing) {
-        navigate('/session', { state: sessionState })
+        // Start blocking
+        await invoke('start_blocking', { blockingApps, isBlockList })
+
+        // Skip breathing exercise if disabled in settings
+        if (!workflow.settings.hasBreathing) {
+          navigate('/session', { state: sessionState })
+        } else {
+          navigate('/breathing-exercise', { state: sessionState })
+        }
       } else {
+        // Non-workflow case
+        // Get blocked apps from local storage preferences
+        const blockedApps = await BlockingPreferenceApi.getBlockedAppsFromLocalPreferences()
+        blockingApps = blockedApps.map((app: App) => ({
+          external_id: app.app_external_id,
+          is_browser: app.is_browser === 1
+        }))
+        isBlockList = !isAllowList
+
+        // Save selected playlist to localStorage for FlowPage to access
+        if (selectedPlaylist) {
+          localStorage.setItem('lastPlaylist', selectedPlaylist)
+        }
+
+        const sessionId = await FlowSessionApi.startFlowSession(
+          'Focus Session',
+          duration || undefined
+        )
+
+        if (!sessionId) {
+          throw new Error('No session ID returned from API')
+        }
+
+        const sessionState = {
+          startTime: Date.now(),
+          objective: 'Focus Session',
+          sessionId,
+          duration: duration || undefined,
+          workflowId: null,
+          hasBreathing: true, // Enable breathing by default
+          hasTypewriter: false,
+          hasMusic: true,
+          selectedPlaylist: selectedPlaylist,
+          selectedPlaylistName: undefined
+        }
+
+        // Start blocking
+        await invoke('start_blocking', { blockingApps, isBlockList })
+
+        // Navigate to breathing exercise for non-workflow sessions
         navigate('/breathing-exercise', { state: sessionState })
       }
     } catch (error) {
@@ -233,6 +349,31 @@ export const StartFlowPage = () => {
   const dismissHint = () => {
     localStorage.setItem('workflowHintShown', 'true')
     setShowHint(false)
+  }
+
+  // Update the handlers to use the new state management
+  const handleDurationChange = (value: number | null) => {
+    setDuration(value)
+  }
+
+  const handlePlaylistSelect = (playlist: { id: string, service: 'spotify' | 'apple' | null }) => {
+    setSelectedPlaylist(playlist.id)
+  }
+
+  const handleAppSelect = (app: SearchOption) => {
+    setSelectedApps([...selectedApps, app])
+  }
+
+  const handleAppRemove = (app: SearchOption) => {
+    setSelectedApps(selectedApps.filter(a => 
+      a.type === 'app' && app.type === 'app' 
+        ? a.app.app_external_id !== app.app.app_external_id
+        : a !== app
+    ))
+  }
+
+  const handleIsAllowListChange = (value: boolean) => {
+    setIsAllowList(value)
   }
 
   return (
@@ -277,21 +418,16 @@ export const StartFlowPage = () => {
               <WorkflowSelector 
                 selectedId={selectedWorkflowId} 
                 onSelect={handleWorkflowSelect}
-                hasModifiedSettings={hasModifiedSettings}
               />
             </motion.div>
 
             <div>
               <AppSelector
                 selectedApps={selectedApps}
-                onAppSelect={(app) => setSelectedApps([...selectedApps, app])}
-                onAppRemove={(app) => setSelectedApps(selectedApps.filter(a => 
-                  a.type === 'app' && app.type === 'app' 
-                    ? a.app.app_external_id !== app.app.app_external_id
-                    : a !== app
-                ))}
+                onAppSelect={handleAppSelect}
+                onAppRemove={handleAppRemove}
                 isAllowList={isAllowList}
-                onIsAllowListChange={setIsAllowList}
+                onIsAllowListChange={handleIsAllowListChange}
               />
             </div>
 
@@ -300,9 +436,7 @@ export const StartFlowPage = () => {
               <div>
                 <MusicSelector
                   selectedPlaylist={selectedPlaylist}
-                  onPlaylistSelect={(playlist) => {
-                    setSelectedPlaylist(playlist.id)
-                  }}
+                  onPlaylistSelect={handlePlaylistSelect}
                   onConnectClick={() => {
                     navigate('/settings#music-integrations')
                   }}
@@ -313,9 +447,7 @@ export const StartFlowPage = () => {
             <div>
               <TimeSelector
                 value={duration}
-                onChange={(value) => {
-                  setDuration(value)
-                }}
+                onChange={handleDurationChange}
               />
             </div>
 
