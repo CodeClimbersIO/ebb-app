@@ -449,7 +449,7 @@ export function AppSelector({
               className="w-full outline-none border-0 bg-transparent focus:border-0 focus:outline-none focus:ring-0 p-0"
             />
             {open && (
-              <Command className="absolute left-0 top-full z-50 max-w-[250px] rounded-md border bg-popover shadow-md h-fit mt-2">
+              <Command className="absolute left-0 top-full z-50 w-full rounded-md border bg-popover shadow-md h-fit mt-2">
                 <CommandList className="max-h-[300px] overflow-y-auto">
                   {filteredOptions.length === 0 ? (
                     <CommandEmpty>
@@ -506,47 +506,29 @@ export function AppSelector({
         </div>
         {onIsAllowListChange && (
           <div className="absolute bottom-2 right-2 flex gap-1">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant={!isAllowList ? 'secondary' : 'ghost'}
-                    size="sm"
-                    className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onIsAllowListChange(false)
-                    }}
-                  >
-                    Block
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top" align="end">
-                  <p>Block selected apps/websites</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <Button
+              variant={!isAllowList ? 'secondary' : 'ghost'}
+              size="sm"
+              className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+              onClick={(e) => {
+                e.stopPropagation()
+                onIsAllowListChange(false)
+              }}
+            >
+              Block
+            </Button>
 
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant={isAllowList ? 'secondary' : 'ghost'}
-                    size="sm"
-                    className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onIsAllowListChange(true)
-                    }}
-                  >
-                    Allow
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top" align="end">
-                  <p>Only allow selected apps/websites</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <Button
+              variant={isAllowList ? 'secondary' : 'ghost'}
+              size="sm"
+              className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+              onClick={(e) => {
+                e.stopPropagation()
+                onIsAllowListChange(true)
+              }}
+            >
+              Allow
+            </Button>
           </div>
         )}
       </div>
