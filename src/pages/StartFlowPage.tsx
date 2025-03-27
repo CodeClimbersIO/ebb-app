@@ -42,7 +42,7 @@ export const StartFlowPage = () => {
         selectedPlaylistName: selectedWorkflow.selectedPlaylistName,
         settings: {
           ...selectedWorkflow.settings,
-          defaultDuration: duration,
+          defaultDuration: duration?.as('minutes') ?? null,
           isAllowList
         }
       }
@@ -56,7 +56,7 @@ export const StartFlowPage = () => {
     } else {
       // Save to local storage when no workflow is selected
       const preferences = {
-        duration,
+        duration: duration?.as('minutes') ?? null,
         selectedPlaylist,
         selectedApps,
         isAllowList
@@ -108,7 +108,7 @@ export const StartFlowPage = () => {
         try {
           const preferences = JSON.parse(savedPreferences)
           console.log('Loading from local storage:', preferences) // Debug log
-          setDuration(preferences.duration)
+          setDuration(preferences.duration !== null ? Duration.fromObject({ minutes: preferences.duration }) : null)
           setSelectedPlaylist(preferences.selectedPlaylist)
           setSelectedApps(preferences.selectedApps)
           setIsAllowList(preferences.isAllowList ?? false) // Add default value
@@ -314,7 +314,7 @@ export const StartFlowPage = () => {
 
         const sessionId = await FlowSessionApi.startFlowSession(
           'Focus Session',
-          duration || undefined
+          duration ? duration.as('minutes') : undefined
         )
 
         if (!sessionId) {
@@ -325,7 +325,7 @@ export const StartFlowPage = () => {
           startTime: Date.now(),
           objective: 'Focus Session',
           sessionId,
-          duration: duration || undefined,
+          duration: duration ? duration.as('minutes') : undefined,
           workflowId: null,
           hasBreathing: true, // Enable breathing by default
           hasTypewriter: false,
@@ -352,7 +352,7 @@ export const StartFlowPage = () => {
 
   // Update the handlers to use the new state management
   const handleDurationChange = (value: number | null) => {
-    setDuration(value)
+    setDuration(value ? Duration.fromObject({ minutes: value }) : null)
   }
 
   const handlePlaylistSelect = (playlist: { id: string, service: 'spotify' | 'apple' | null }) => {
@@ -445,7 +445,7 @@ export const StartFlowPage = () => {
 
             <div>
               <TimeSelector
-                value={duration}
+                value={duration?.as('minutes') ?? null}
                 onChange={handleDurationChange}
               />
             </div>
