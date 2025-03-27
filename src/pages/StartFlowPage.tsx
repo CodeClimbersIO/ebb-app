@@ -154,7 +154,7 @@ export const StartFlowPage = () => {
   // Add keyboard navigation
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.key === 'Enter' && selectedWorkflowId) {
+      if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
         handleBegin()
       } else if (event.key === 'ArrowLeft') {
         switchWorkflow('left')
