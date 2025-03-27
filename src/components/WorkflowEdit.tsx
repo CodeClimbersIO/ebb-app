@@ -338,7 +338,7 @@ export function WorkflowEdit({ workflow, onSave, onDelete }: WorkflowEditProps) 
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Workflow</DialogTitle>
+            <DialogTitle>Delete Preset</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete "{name}"? This action cannot be undone.
             </DialogDescription>

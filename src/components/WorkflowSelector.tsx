@@ -1,4 +1,4 @@
-import { Settings, Trash2, Plus } from 'lucide-react'
+import { Settings, Plus } from 'lucide-react'
 import { motion } from 'motion/react'
 import {
   Dialog,
@@ -29,7 +29,6 @@ function WorkflowBadge({
   hasModifiedSettings,
   onClick,
   onSettingsClick,
-  onDeleteClick,
   onCreateClick,
   className,
   ...props
@@ -64,13 +63,6 @@ function WorkflowBadge({
         <ContextMenuItem onClick={onSettingsClick} className="cursor-pointer">
             <Settings className="mr-2 h-4 w-4" />
             <span>Configure</span>
-          </ContextMenuItem>
-          <ContextMenuItem 
-            onClick={onDeleteClick}
-            className="cursor-pointer text-destructive focus:text-destructive"
-          >
-            <Trash2 className="mr-2 h-4 w-4" />
-            <span>Delete</span>
           </ContextMenuItem>
           <ContextMenuSeparator />
           <ContextMenuItem onClick={onCreateClick} className="cursor-pointer">
@@ -278,7 +270,7 @@ export function WorkflowSelector({ selectedId, onSelect, hasModifiedSettings }: 
               className='cursor-pointer border-dashed shrink-0'
               onClick={() => handleSelect('new')}
             >
-              Create first preset
+              Create preset
             </Badge>
           ) : (
             <>
