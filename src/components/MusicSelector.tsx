@@ -53,34 +53,63 @@ export function MusicSelector({ selectedPlaylist, onPlaylistSelect, onConnectCli
   })
 
   useEffect(() => {
-    const checkSpotifyConnection = async () => {
+    const handleSpotifyCallback = async () => {
       try {
-        const isConnected = await SpotifyAuthService.isConnected()
+        const hashParams = window.location.hash.replace('#', '')
+        const searchParams = new URLSearchParams(window.location.search || hashParams.substring(hashParams.indexOf('?')))
+        const code = searchParams.get('code')
+        const state = searchParams.get('state')
 
-        if (isConnected) {
-          const [profile, playlists] = await Promise.all([
-            SpotifyApiService.getUserProfile(),
-            SpotifyApiService.getUserPlaylists()
-          ])
-
-          if (profile) {
-            setSpotifyProfile(profile)
-            setMusicService({
-              type: 'spotify',
-              connected: true,
-              playlists: playlists
-            })
+        if (code && state) {
+          setIsLoading(true)
+          await SpotifyAuthService.handleCallback(code, state)
+          // Clear URL parameters and redirect to start-flow
+          if (window.location.pathname !== '/start-flow') {
+            window.location.href = '/start-flow'
+            return
           }
+          window.history.replaceState({}, '', '/start-flow')
+          // Check connection status after handling callback
+          await checkSpotifyConnection()
+          return
         }
+
+        // Always check connection status after handling callback or on initial load
+        await checkSpotifyConnection()
       } catch (error) {
-        console.error('Error checking Spotify connection:', error)
-      } finally {
+        console.error('Error handling Spotify callback:', error)
         setIsLoading(false)
       }
     }
 
-    checkSpotifyConnection()
+    handleSpotifyCallback()
   }, [])
+
+  const checkSpotifyConnection = async () => {
+    try {
+      const isConnected = await SpotifyAuthService.isConnected()
+
+      if (isConnected) {
+        const [profile, playlists] = await Promise.all([
+          SpotifyApiService.getUserProfile(),
+          SpotifyApiService.getUserPlaylists()
+        ])
+
+        if (profile) {
+          setSpotifyProfile(profile)
+          setMusicService({
+            type: 'spotify',
+            connected: true,
+            playlists: playlists
+          })
+        }
+      }
+    } catch (error) {
+      console.error('Error checking Spotify connection:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   useEffect(() => {
     const loadPlaylistData = async () => {
@@ -107,6 +136,14 @@ export function MusicSelector({ selectedPlaylist, onPlaylistSelect, onConnectCli
 
     loadPlaylistData()
   }, [musicService.connected, musicService.type])
+
+  const handleSpotifyConnect = async () => {
+    try {
+      await SpotifyAuthService.connect()
+    } catch (error) {
+      console.error('Error connecting to Spotify:', error)
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -183,7 +220,7 @@ export function MusicSelector({ selectedPlaylist, onPlaylistSelect, onConnectCli
             <div
               onClick={() => {
                 setShowConnectDialog(false)
-                onConnectClick?.()
+                handleSpotifyConnect()
               }}
               className="flex items-center justify-center gap-2 p-4 rounded-lg border cursor-pointer hover:bg-accent transition-colors"
             >

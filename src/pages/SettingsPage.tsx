@@ -254,7 +254,7 @@ export const SettingsPage = () => {
                     <div>
                       {activeService === 'apple' ? (
                         <Button variant="ghost" size="sm" onClick={() => handleUnlink('apple')}>
-                          Unlink
+                          Disconnect
                         </Button>
                       ) : (
                         <Tooltip>
@@ -317,14 +317,14 @@ export const SettingsPage = () => {
         <Dialog open={showUnlinkDialog} onOpenChange={setShowUnlinkDialog}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Unlink {serviceToUnlink === 'spotify' ? 'Spotify' : 'Apple Music'}?</DialogTitle>
+              <DialogTitle>Disconnect {serviceToUnlink === 'spotify' ? 'Spotify' : 'Apple Music'}?</DialogTitle>
               <DialogDescription>
                 This will remove access to your {serviceToUnlink === 'spotify' ? 'Spotify' : 'Apple Music'} account.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
               <Button variant="outline" onClick={() => setShowUnlinkDialog(false)}>Cancel</Button>
-              <Button variant="destructive" onClick={confirmUnlink}>Unlink</Button>
+              <Button variant="destructive" onClick={confirmUnlink}>Disconnect</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
