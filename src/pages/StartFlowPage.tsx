@@ -49,7 +49,6 @@ export const StartFlowPage = () => {
 
       try {
         await WorkflowApi.saveWorkflow(updatedWorkflow)
-        console.log('Saved to workflow:', updatedWorkflow) // Debug log
       } catch (error) {
         console.error('Failed to save workflow changes:', error)
       }
@@ -62,7 +61,6 @@ export const StartFlowPage = () => {
         isAllowList
       }
       localStorage.setItem(LOCAL_STORAGE_PREFERENCES_KEY, JSON.stringify(preferences))
-      console.log('Saved to local storage:', preferences) // Debug log
     }
   }, [duration, selectedPlaylist, selectedApps, isAllowList, selectedWorkflow, selectedWorkflowId])
 
@@ -107,7 +105,6 @@ export const StartFlowPage = () => {
       if (savedPreferences) {
         try {
           const preferences = JSON.parse(savedPreferences)
-          console.log('Loading from local storage:', preferences) // Debug log
           setDuration(preferences.duration !== null ? Duration.fromObject({ minutes: preferences.duration }) : null)
           setSelectedPlaylist(preferences.selectedPlaylist)
           setSelectedApps(preferences.selectedApps)
