@@ -52,7 +52,7 @@ export const useDeepLinkAuth = () => {
         const state = searchParams.get('state')
         if (code && state) {
           await SpotifyAuthService.handleCallback(code, state)
-          navigate('/settings', { replace: true })
+          navigate('/start-flow', { replace: true })
           window.location.reload()
           return
         }
