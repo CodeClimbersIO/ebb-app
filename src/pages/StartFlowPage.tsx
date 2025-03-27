@@ -450,7 +450,6 @@ export const StartFlowPage = () => {
             <Button
               className="w-full"
               onClick={handleBegin}
-              disabled={false}
             >
               Start Focus Session
               <div className="ml-2 flex items-center gap-1">

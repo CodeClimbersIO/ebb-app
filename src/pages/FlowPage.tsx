@@ -24,6 +24,7 @@ import NotificationManager from '@/lib/notificationManager'
 import { listen } from '@tauri-apps/api/event'
 import { useRustEvents } from '@/hooks/useRustEvents'
 import { useFlowTimer } from '../lib/stores/flowTimer'
+import { stopFlowTimer } from '../lib/tray'
 
 const getDurationFormatFromSeconds = (seconds: number) => {
   const duration = Duration.fromMillis(seconds * 1000)
@@ -219,6 +220,7 @@ export const FlowPage = () => {
         setCurrentTrack(null)
         setSelectedPlaylistId('')
       }
+      await stopFlowTimer()
       handleEndSession()
     }
     window.addEventListener('flowSessionComplete', handleSessionComplete)
@@ -393,8 +395,9 @@ export const FlowPage = () => {
       setSelectedPlaylistId('')
     }
 
-    // Stop blocking apps
+    // Stop blocking apps and timer
     await invoke('stop_blocking')
+    await stopFlowTimer()
     await FlowSessionApi.endFlowSession(flowSession.id)
 
     // Navigate to recap page with session data
