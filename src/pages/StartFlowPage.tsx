@@ -157,9 +157,9 @@ export const StartFlowPage = () => {
       if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
         handleBegin()
       } else if (event.key === 'ArrowLeft') {
-        switchWorkflow('left')
-      } else if (event.key === 'ArrowRight') {
         switchWorkflow('right')
+      } else if (event.key === 'ArrowRight') {
+        switchWorkflow('left')
       }
     }
 

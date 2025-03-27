@@ -507,9 +507,12 @@ export function AppSelector({
         {onIsAllowListChange && (
           <div className="absolute bottom-2 right-2 flex gap-1">
             <Button
-              variant={!isAllowList ? 'secondary' : 'ghost'}
+              variant="ghost"
               size="sm"
-              className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+              className={cn(
+                'h-6 px-2 text-xs text-muted-foreground/80 hover:text-foreground',
+                !isAllowList && 'bg-muted/50'
+              )}
               onClick={(e) => {
                 e.stopPropagation()
                 onIsAllowListChange(false)
@@ -519,9 +522,12 @@ export function AppSelector({
             </Button>
 
             <Button
-              variant={isAllowList ? 'secondary' : 'ghost'}
+              variant="ghost"
               size="sm"
-              className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+              className={cn(
+                'h-6 px-2 text-xs text-muted-foreground/80 hover:text-foreground',
+                isAllowList && 'bg-muted/50'
+              )}
               onClick={(e) => {
                 e.stopPropagation()
                 onIsAllowListChange(true)
