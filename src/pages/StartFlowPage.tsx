@@ -11,6 +11,8 @@ import { WorkflowSelector } from '@/components/WorkflowSelector'
 import { WorkflowApi } from '@/api/ebbApi/workflowApi'
 import { BlockingPreferenceApi } from '@/api/ebbApi/blockingPreferenceApi'
 import { invoke } from '@tauri-apps/api/core'
+import { DateTime, Duration } from 'luxon'
+import { startFlowTimer } from '../lib/tray'
 
 export const StartFlowPage = () => {
   const [duration, setDuration] = useState<number | null>(null)
@@ -39,7 +41,7 @@ export const StartFlowPage = () => {
       if (newWorkflowId) {
         setSelectedWorkflowId(newWorkflowId)
       }
-      
+
       // Set initial selection to the workflow's default duration
       setDuration(workflows[newIndex].settings.defaultDuration)
     } catch (error) {
@@ -55,7 +57,7 @@ export const StartFlowPage = () => {
         if (workflows.length > 0) {
           const initialWorkflowId = workflows[0].id
           if (initialWorkflowId) setSelectedWorkflowId(initialWorkflowId)
-          
+
           // Set initial selection to the workflow's default duration
           setDuration(workflows[0].settings.defaultDuration)
 
@@ -68,7 +70,7 @@ export const StartFlowPage = () => {
         console.error('Failed to load initial workflow:', error)
       }
     }
-    
+
     loadInitialWorkflow()
 
     // Add listener for workflow saved event
@@ -87,7 +89,7 @@ export const StartFlowPage = () => {
   const handleWorkflowSelect = async (workflowId: string) => {
     try {
       setSelectedWorkflowId(workflowId)
-      
+
       // Set initial selection to the workflow's default duration
       const workflow = await WorkflowApi.getWorkflowById(workflowId)
       if (workflow) {
@@ -132,8 +134,8 @@ export const StartFlowPage = () => {
       }))
 
       // Start blocking with the workflow's preferences
-      await invoke('start_blocking', { 
-        blockingApps, 
+      await invoke('start_blocking', {
+        blockingApps,
         isBlockList: !workflow.settings.isAllowList // Invert because isAllowList true means we want to block everything except these apps
       })
 
@@ -145,6 +147,8 @@ export const StartFlowPage = () => {
       if (!sessionId) {
         throw new Error('No session ID returned from API')
       }
+
+      await startFlowTimer(DateTime.now(), duration ? Duration.fromObject({ minutes: duration }) : undefined)
 
       const sessionState = {
         startTime: Date.now(),
@@ -187,7 +191,7 @@ export const StartFlowPage = () => {
         <Card className="w-[400px]">
           <CardContent className="pt-6 space-y-6">
             {showHint && (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
@@ -195,7 +199,7 @@ export const StartFlowPage = () => {
               >
                 <div className="bg-muted/50 rounded-lg py-1.5 px-3 pr-8">
                   Use <kbd className="px-1.5 py-0.5 bg-muted rounded-md">←</kbd> and <kbd className="px-1.5 py-0.5 bg-muted rounded-md">→</kbd> to switch workflows
-                  <button 
+                  <button
                     onClick={dismissHint}
                     className="absolute right-2 top-1/2 -translate-y-1/2 hover:text-foreground"
                     aria-label="Dismiss hint"
@@ -208,23 +212,23 @@ export const StartFlowPage = () => {
 
             <motion.div
               key={selectedWorkflowId}
-              initial={{ 
+              initial={{
                 x: slideDirection === 'right' ? -50 : 50,
-                opacity: 0 
+                opacity: 0
               }}
-              animate={{ 
+              animate={{
                 x: 0,
-                opacity: 1 
+                opacity: 1
               }}
-              transition={{ 
+              transition={{
                 type: 'spring',
                 stiffness: 300,
                 damping: 30
               }}
             >
-              <WorkflowSelector 
-                selectedId={selectedWorkflowId} 
-                onSelect={handleWorkflowSelect} 
+              <WorkflowSelector
+                selectedId={selectedWorkflowId}
+                onSelect={handleWorkflowSelect}
               />
             </motion.div>
 
