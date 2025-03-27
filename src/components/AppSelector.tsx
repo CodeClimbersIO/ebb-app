@@ -46,6 +46,27 @@ interface AppSelectorProps {
   onIsAllowListChange?: (value: boolean) => void
 }
 
+// Add this constant at the top of the file, after the imports
+const CATEGORY_ORDER: Record<AppCategory, number> = {
+  'social media': 1,
+  'communication': 2,
+  'entertainment': 3,
+  'gaming': 4,
+  'shopping': 5,
+  'news': 6,
+  'travel': 7,
+  'coding': 8,
+  'designing': 9,
+  'writing': 10,
+  'photo/video': 11,
+  'music/sound': 12,
+  'data/analytics': 13,
+  'learning': 14,
+  'ai': 15,
+  'browser': 16,
+  'utilities': 17
+}
+
 // Simplified helper function to get display text and key
 const getOptionDetails = (option: SearchOption) => {
   if (option.type === 'app') {
@@ -142,12 +163,15 @@ export function AppSelector({
     const searchLower = search.toLowerCase()
 
     if (!search) {
-      // When no search term, return all categories that aren't already selected
       return categoryOptions
         .filter(cat => !selectedApps.some(selected =>
           'category' in selected && selected.category === cat.category
         ))
-        .sort((a, b) => a.category.localeCompare(b.category))
+        .sort((a, b) => {
+          const orderA = CATEGORY_ORDER[a.category] || Number.MAX_VALUE
+          const orderB = CATEGORY_ORDER[b.category] || Number.MAX_VALUE
+          return orderA - orderB
+        })
     }
 
     let results: SearchOption[] = categoryOptions

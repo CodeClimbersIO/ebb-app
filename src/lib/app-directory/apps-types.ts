@@ -20,7 +20,7 @@ export type AppCategory =
 
 export const categoryEmojis: Record<AppCategory, string> = {
   'news': '📰',
-  'social media': '📱',
+  'social media': '👤',
   'entertainment': '🎬',
   'communication': '💬',
   'gaming': '🎮',
