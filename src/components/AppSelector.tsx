@@ -420,9 +420,9 @@ export function AppSelector({
 
   return (
     <div className="relative w-full" ref={inputRef}>
-      <div className="relative min-h-[100px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+      <div className="relative min-h-[120px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         onClick={() => setOpen(true)}>
-        <div className="flex flex-wrap gap-2 items-start pb-8">
+        <div className="flex flex-wrap gap-2 items-start pb-12">
           {selectedApps.map((option) => {
             const key = getOptionDetails(option).key
             const isCategory = 'category' in option && 'count' in option
@@ -529,7 +529,7 @@ export function AppSelector({
           </div>
         </div>
         {onIsAllowListChange && (
-          <div className="absolute bottom-2 right-2 flex gap-1">
+          <div className="absolute bottom-0 left-0 right-0 flex justify-end gap-1 pt-2 px-3 pb-2 border-t">
             <Button
               variant="ghost"
               size="sm"
