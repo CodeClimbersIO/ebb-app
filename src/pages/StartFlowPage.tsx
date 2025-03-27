@@ -13,9 +13,10 @@ import { BlockingPreferenceApi } from '@/api/ebbApi/blockingPreferenceApi'
 import { invoke } from '@tauri-apps/api/core'
 import { DateTime, Duration } from 'luxon'
 import { startFlowTimer } from '../lib/tray'
+import { getDurationFromDefault, useFlowTimer } from '../lib/stores/flowTimer'
 
 export const StartFlowPage = () => {
-  const [duration, setDuration] = useState<number | null>(null)
+  const { duration, setDuration } = useFlowTimer()
   const [selectedWorkflowId, setSelectedWorkflowId] = useState<string | null>(null)
   const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('left')
   const [showHint, setShowHint] = useState(false)
@@ -43,7 +44,7 @@ export const StartFlowPage = () => {
       }
 
       // Set initial selection to the workflow's default duration
-      setDuration(workflows[newIndex].settings.defaultDuration)
+      setDuration(getDurationFromDefault(workflows[newIndex].settings.defaultDuration))
     } catch (error) {
       console.error('Failed to switch workflow:', error)
     }
@@ -58,8 +59,8 @@ export const StartFlowPage = () => {
           const initialWorkflowId = workflows[0].id
           if (initialWorkflowId) setSelectedWorkflowId(initialWorkflowId)
 
-          // Set initial selection to the workflow's default duration
-          setDuration(workflows[0].settings.defaultDuration)
+          // Update to use store's setDuration
+          setDuration(getDurationFromDefault(workflows[0].settings.defaultDuration))
 
           // Only show hint if there are 2+ workflows and it hasn't been dismissed
           if (workflows.length >= 2 && localStorage.getItem('workflowHintShown') !== 'true') {
@@ -83,17 +84,15 @@ export const StartFlowPage = () => {
 
     window.addEventListener('workflowSaved', handleWorkflowSaved)
     return () => window.removeEventListener('workflowSaved', handleWorkflowSaved)
-  }, [])
+  }, [setDuration])
 
   // Update workflow selection in WorkflowSelector
   const handleWorkflowSelect = async (workflowId: string) => {
     try {
       setSelectedWorkflowId(workflowId)
-
-      // Set initial selection to the workflow's default duration
       const workflow = await WorkflowApi.getWorkflowById(workflowId)
       if (workflow) {
-        setDuration(workflow.settings.defaultDuration)
+        setDuration(getDurationFromDefault(workflow.settings.defaultDuration))
       }
     } catch (error) {
       console.error('Failed to select workflow:', error)
@@ -141,20 +140,20 @@ export const StartFlowPage = () => {
 
       const sessionId = await FlowSessionApi.startFlowSession(
         workflow.name,
-        duration || undefined
+        duration ? duration.as('minutes') : undefined
       )
 
       if (!sessionId) {
         throw new Error('No session ID returned from API')
       }
 
-      await startFlowTimer(DateTime.now(), duration ? Duration.fromObject({ minutes: duration }) : undefined)
+      await startFlowTimer(DateTime.now())
 
       const sessionState = {
         startTime: Date.now(),
         objective: workflow.name,
         sessionId,
-        duration: duration || undefined,
+        duration: duration ? duration.as('minutes') : undefined,
         workflowId: selectedWorkflowId,
         hasBreathing: workflow.settings.hasBreathing,
         hasTypewriter: workflow.settings.hasTypewriter,
@@ -163,7 +162,7 @@ export const StartFlowPage = () => {
         selectedPlaylistName: workflow.selectedPlaylistName || undefined
       }
 
-      // Skip breathing exercise if disabled in settings
+
       if (!workflow.settings.hasBreathing) {
         navigate('/session', { state: sessionState })
       } else {
@@ -234,9 +233,9 @@ export const StartFlowPage = () => {
 
             <div>
               <TimeSelector
-                value={duration}
+                value={duration ? duration.as('minutes') : null}
                 onChange={(value) => {
-                  setDuration(value)
+                  setDuration(value ? Duration.fromObject({ minutes: value }) : null)
                 }}
               />
             </div>

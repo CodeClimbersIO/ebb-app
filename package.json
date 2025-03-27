@@ -57,7 +57,8 @@
     "recharts": "^2.15.0",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
-    "use-sound": "^4.0.3"
+    "use-sound": "^4.0.3",
+    "zustand": "^5.0.3"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2",
