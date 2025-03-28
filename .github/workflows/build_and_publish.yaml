@@ -127,4 +127,13 @@ jobs:
             ${{ steps.create_changelog.outputs.changelog }}
           args: ${{ matrix.args }}
           includeUpdaterJson: true
-          includeDebug: true
+
+      - name: Add platform-only DMG to release
+        run: |
+          chmod +x .github/scripts/process_dmg_releases.js
+          .github/scripts/process_dmg_releases.js \
+            "${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}" \
+            "${{ github.repository }}" \
+            "${{ env.VERSION }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
