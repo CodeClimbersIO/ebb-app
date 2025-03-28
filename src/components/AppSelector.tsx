@@ -473,7 +473,7 @@ export function AppSelector({
               className="w-full outline-none border-0 bg-transparent focus:border-0 focus:outline-none focus:ring-0 p-0"
             />
             {open && (
-              <Command className="absolute left-0 top-full z-50 w-full rounded-md border bg-popover shadow-md h-fit mt-2">
+              <Command className="absolute left-0 top-full z-50 w-[300px] rounded-md border bg-popover shadow-md h-fit mt-2">
                 <CommandList className="max-h-[300px] overflow-y-auto">
                   {filteredOptions.length === 0 ? (
                     <CommandEmpty>

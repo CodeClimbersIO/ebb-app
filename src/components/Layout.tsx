@@ -7,16 +7,16 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   return (
-    <>
-      <div className="flex h-screen">
-        <Sidebar />
-        <div className="flex-1 flex flex-col">
-          <TopNav />
-          <div className="flex-1 overflow-y-auto">
-            {children}
-          </div>
-        </div>
+    <div className="h-screen flex flex-col">
+      <div className="w-full">
+        <TopNav />
       </div>
-    </>
+      <div className="flex-1 flex min-h-0">
+        <Sidebar />
+        <main className="flex-1 overflow-y-auto">
+          {children}
+        </main>
+      </div>
+    </div>
   )
 } 

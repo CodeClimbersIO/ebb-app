@@ -81,10 +81,14 @@ export const FlowRecapPage = () => {
   return (
     <div className="flex flex-col h-screen">
       <div className="flex">
-        <div className="h-14 border-b flex items-center px-2">
-          <Logo />
+        <div className="w-16 shrink-0">
+          <div className="h-14 border-b flex items-center justify-center">
+            <Logo width={32} height={32} />
+          </div>
         </div>
-        <TopNav variant="modal" />
+        <div className="-ml-16 flex-1">
+          <TopNav variant="modal" />
+        </div>
       </div>
       <div className="flex-1 flex items-center justify-center bg-background/80 backdrop-blur-sm pt-8">
         <Card className="w-full max-w-3xl transition-all duration-300">

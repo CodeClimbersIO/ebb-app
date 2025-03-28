@@ -13,9 +13,9 @@
     "windows": [
       {
         "title": "Ebb",
-        "width": 950,
+        "width": 850,
         "height": 675,
-        "minWidth": 950,
+        "minWidth": 850,
         "minHeight": 675,
         "hiddenTitle": true,
         "titleBarStyle": "Transparent",

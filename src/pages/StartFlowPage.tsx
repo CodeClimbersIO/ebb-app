@@ -4,7 +4,6 @@ import { motion } from 'motion/react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { TopNav } from '@/components/TopNav'
-import { Logo } from '@/components/ui/logo'
 import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
 import { TimeSelector } from '@/components/TimeSelector'
 import { WorkflowSelector } from '@/components/WorkflowSelector'
@@ -215,12 +214,7 @@ export const StartFlowPage = () => {
 
   return (
     <div className="flex flex-col h-screen">
-      <div className="flex">
-        <div className="h-14 border-b flex items-center px-2">
-          <Logo />
-        </div>
-        <TopNav variant="modal" />
-      </div>
+      <TopNav variant="modal" />
       <div className="flex-1 flex items-center justify-center bg-background/80 backdrop-blur-sm">
         <Card className="w-[420px]">
           <CardContent className="pt-6 space-y-6">
