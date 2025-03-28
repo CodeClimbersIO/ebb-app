@@ -94,7 +94,6 @@ const convertToSearchOptions = async (
 }
 
 const getBlockedAppsFromLocalPreferences = async (): Promise<App[]> => {
-  // Return empty array since we no longer use local storage
   return []
 }
 
