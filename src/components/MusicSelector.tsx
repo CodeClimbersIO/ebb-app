@@ -1,16 +1,23 @@
 import { useState, useEffect } from 'react'
-import { Music } from 'lucide-react'
+import { Music, Check, ChevronsUpDown } from 'lucide-react'
 import { SpotifyIcon } from './icons/SpotifyIcon'
 import { AppleMusicIcon } from './icons/AppleMusicIcon'
 import { SpotifyAuthService } from '@/lib/integrations/spotify/spotifyAuth'
 import { SpotifyApiService } from '@/lib/integrations/spotify/spotifyApi'
+import { Button } from './ui/button'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from './ui/select'
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from './ui/command'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from './ui/popover'
 import {
   Tooltip,
   TooltipContent,
@@ -33,6 +40,7 @@ interface MusicSelectorProps {
 
 export function MusicSelector({ selectedPlaylist, onPlaylistSelect, onConnectClick }: MusicSelectorProps) {
   const [showConnectDialog, setShowConnectDialog] = useState(false)
+  const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [musicService, setMusicService] = useState<{
     type: 'spotify' | 'apple' | null
@@ -147,65 +155,103 @@ export function MusicSelector({ selectedPlaylist, onPlaylistSelect, onConnectCli
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4">
         <div className="flex-1">
-          <Select
-            value={selectedPlaylist || ''}
-            onValueChange={(value) => onPlaylistSelect({ id: value, service: musicService.type })}
-            onOpenChange={() => {
-              if (!musicService.connected) {
-                setShowConnectDialog(true)
-              }
-            }}
-          >
-            <SelectTrigger 
-              className="w-full"
-              onClick={() => {
-                if (!musicService.connected) {
-                  setShowConnectDialog(true)
-                }
-              }}
-            >
-              <SelectValue placeholder={musicService.connected ? 'Select a playlist' : 'Connect music'} />
-            </SelectTrigger>
+          <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                className="w-full justify-between"
+                onClick={() => {
+                  if (!musicService.connected) {
+                    setShowConnectDialog(true)
+                  }
+                }}
+              >
+                {selectedPlaylist ? (
+                  <div className="flex items-center">
+                    {playlistData.images[selectedPlaylist] ? (
+                      <img
+                        src={playlistData.images[selectedPlaylist]}
+                        alt=""
+                        className="h-6 w-6 rounded mr-2 object-cover"
+                      />
+                    ) : (
+                      <Music className="h-4 w-4 mr-2" />
+                    )}
+                    <span className="truncate">
+                      {playlistData.playlists.find(p => p.id === selectedPlaylist)?.name || 'Select a playlist'}
+                    </span>
+                  </div>
+                ) : (
+                  musicService.connected ? 'Select a playlist' : 'Connect music'
+                )}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
             {musicService.connected && spotifyProfile?.product === 'premium' && (
-              <SelectContent className="max-h-[250px]">
-                {playlistData.playlists.map(playlist => (
-                  <SelectItem key={playlist.id} value={playlist.id}>
-                    <div className="flex items-center">
-                      {playlistData.images[playlist.id] ? (
-                        <img
-                          src={playlistData.images[playlist.id]}
-                          alt={playlist.name}
-                          className="h-6 w-6 rounded mr-2 object-cover"
-                        />
-                      ) : (
-                        <Music className="h-4 w-4 mr-2" />
-                      )}
-                      <span className="truncate">{playlist.name}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
+              <PopoverContent 
+                side="bottom" 
+                align="start" 
+                sideOffset={4} 
+                className="w-[--radix-popover-trigger-width] p-0 data-[side=bottom]:slide-in-from-top-2 animate-none"
+              >
+                <Command>
+                  <CommandInput placeholder="Search playlists..." />
+                  <CommandList className="max-h-[240px]">
+                    <CommandEmpty>No playlists found</CommandEmpty>
+                    <CommandGroup>
+                      {playlistData.playlists.map(playlist => (
+                        <CommandItem
+                          key={playlist.id}
+                          value={playlist.name}
+                          onSelect={() => {
+                            onPlaylistSelect({ id: playlist.id, service: musicService.type })
+                            setOpen(false)
+                          }}
+                        >
+                          <div className="flex items-center w-full">
+                            {playlistData.images[playlist.id] ? (
+                              <img
+                                src={playlistData.images[playlist.id]}
+                                alt={playlist.name}
+                                className="h-6 w-6 rounded mr-2 object-cover"
+                              />
+                            ) : (
+                              <Music className="h-4 w-4 mr-2" />
+                            )}
+                            <span className="truncate">{playlist.name}</span>
+                            <Check
+                              className={`ml-auto h-4 w-4 ${
+                                selectedPlaylist === playlist.id ? 'opacity-100' : 'opacity-0'
+                              }`}
+                            />
+                          </div>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
             )}
-          </Select>
+          </Popover>
         </div>
-        <div className="w-[24px] h-[24px]">
+        <div className="flex items-center">
           {isLoading ? (
-            <Skeleton className="w-full h-full rounded" />
-          ) : musicService.connected ? (
-            <div 
-              onClick={onConnectClick}
-              className="cursor-pointer hover:opacity-80 transition-opacity transform-gpu"
-            >
-              {musicService.type === 'spotify' ? <SpotifyIcon /> : <AppleMusicIcon />}
-            </div>
+            <Skeleton className="h-9 w-9 rounded" />
           ) : (
             <div 
-              onClick={() => setShowConnectDialog(true)}
-              className="cursor-pointer hover:opacity-80 transition-opacity transform-gpu text-muted-foreground h-6 w-6 flex items-center justify-center"
+              onClick={musicService.connected ? onConnectClick : () => setShowConnectDialog(true)}
+              className="h-9 w-9 rounded-md flex items-center justify-center hover:bg-accent cursor-pointer"
             >
-              <Music className="h-4 w-4" />
+              {musicService.connected ? (
+                <div className="h-6 w-6">
+                  {musicService.type === 'spotify' ? <SpotifyIcon /> : <AppleMusicIcon />}
+                </div>
+              ) : (
+                <Music className="h-4 w-4 text-muted-foreground" />
+              )}
             </div>
           )}
         </div>

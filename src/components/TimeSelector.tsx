@@ -219,7 +219,7 @@ export function TimeSelector({ value: externalValue, onChange }: TimeSelectorPro
             <CommandEmpty>
               <div className='text-muted-foreground'>
                 <div>Please enter a valid duration</div>
-                <div>(e.g., 15 min, 1:15, 2h)</div>
+                <div>(15 min, 1:15, 2h...)</div>
               </div>
             </CommandEmpty>
             <CommandGroup>
