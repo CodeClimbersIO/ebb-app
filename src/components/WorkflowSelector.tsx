@@ -143,6 +143,10 @@ function WorkflowBadge({
                 contentEditable={isEditing}
                 onBlur={handleNameSave}
                 onKeyDown={(e) => {
+                  if (isEditing) {
+                    e.stopPropagation()
+                  }
+                  
                   if (e.key === 'Enter') {
                     e.preventDefault()
                     handleNameSave()
@@ -395,6 +399,10 @@ export function WorkflowSelector({ selectedId, onSelect }: WorkflowSelectorProps
     try {
       const savedWorkflow = await WorkflowApi.saveWorkflow(updatedWorkflow)
       setWorkflows(workflows.map(w => w.id === savedWorkflow.id ? savedWorkflow : w))
+      // Force parent to refresh by re-selecting the workflow
+      if (onSelect && workflow.id) {
+        onSelect(workflow.id)
+      }
     } catch (error) {
       console.error('Failed to update workflow name:', error)
     }

@@ -116,6 +116,23 @@ export const StartFlowPage = () => {
     }
   }
 
+  // Add this effect to keep selectedWorkflow in sync
+  useEffect(() => {
+    if (selectedWorkflowId) {
+      const refreshWorkflow = async () => {
+        try {
+          const workflow = await WorkflowApi.getWorkflowById(selectedWorkflowId)
+          if (workflow) {
+            setSelectedWorkflow(workflow)
+          }
+        } catch (error) {
+          console.error('Failed to refresh workflow:', error)
+        }
+      }
+      refreshWorkflow()
+    }
+  }, [selectedWorkflowId])
+
   const handleBegin = async () => {
     try {
       const workflowId = selectedWorkflowId
@@ -124,10 +141,11 @@ export const StartFlowPage = () => {
       // If this is the first session (no workflows), create one from current settings
       if (workflows.length === 0) {
         const newWorkflow: Workflow = {
-          name: 'My First Preset',
+          name: 'New Preset',
           selectedApps,
           selectedPlaylist,
           selectedPlaylistName: null,
+          lastSelected: Date.now(),
           settings: {
             defaultDuration: duration?.as('minutes') ?? null,
             isAllowList,
