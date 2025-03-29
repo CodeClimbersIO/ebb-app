@@ -91,7 +91,7 @@ const convertToSearchOptions = async (
   }
   
   return searchOptions
-} 
+}
 
 export const BlockingPreferenceApi = {
   getWorkflowBlockingPreferencesAsSearchOptions,

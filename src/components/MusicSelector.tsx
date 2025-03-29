@@ -1,23 +1,35 @@
 import { useState, useEffect } from 'react'
-import { Music } from 'lucide-react'
+import { Music, Check, ChevronsUpDown } from 'lucide-react'
 import { SpotifyIcon } from './icons/SpotifyIcon'
 import { AppleMusicIcon } from './icons/AppleMusicIcon'
 import { SpotifyAuthService } from '@/lib/integrations/spotify/spotifyAuth'
 import { SpotifyApiService } from '@/lib/integrations/spotify/spotifyApi'
+import { Button } from './ui/button'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from './ui/select'
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from './ui/command'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from './ui/popover'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from './ui/tooltip'
-import { useNavigate } from 'react-router-dom'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from './ui/dialog'
 import { Skeleton } from './ui/skeleton'
 
 interface MusicSelectorProps {
@@ -27,7 +39,8 @@ interface MusicSelectorProps {
 }
 
 export function MusicSelector({ selectedPlaylist, onPlaylistSelect, onConnectClick }: MusicSelectorProps) {
-  const navigate = useNavigate()
+  const [showConnectDialog, setShowConnectDialog] = useState(false)
+  const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [musicService, setMusicService] = useState<{
     type: 'spotify' | 'apple' | null
@@ -48,35 +61,63 @@ export function MusicSelector({ selectedPlaylist, onPlaylistSelect, onConnectCli
   })
 
   useEffect(() => {
-    const checkSpotifyConnection = async () => {
+    const handleSpotifyCallback = async () => {
       try {
-        const isConnected = await SpotifyAuthService.isConnected()
+        const hashParams = window.location.hash.replace('#', '')
+        const searchParams = new URLSearchParams(window.location.search || hashParams.substring(hashParams.indexOf('?')))
+        const code = searchParams.get('code')
+        const state = searchParams.get('state')
 
-        if (isConnected) {
-          const [profile, playlists] = await Promise.all([
-            SpotifyApiService.getUserProfile(),
-            SpotifyApiService.getUserPlaylists()
-          ])
-
-          if (profile) {
-            setSpotifyProfile(profile)
-            setMusicService({
-              type: 'spotify',
-              connected: true,
-              playlists: playlists
-            })
+        if (code && state) {
+          setIsLoading(true)
+          await SpotifyAuthService.handleCallback(code, state)
+          // Clear URL parameters and redirect to start-flow
+          if (window.location.pathname !== '/start-flow') {
+            window.location.href = '/start-flow'
+            return
           }
+          window.history.replaceState({}, '', '/start-flow')
+          // Check connection status after handling callback
+          await checkSpotifyConnection()
+          return
         }
 
-        setIsLoading(false)
+        // Always check connection status after handling callback or on initial load
+        await checkSpotifyConnection()
       } catch (error) {
-        console.error('Error checking Spotify connection:', error)
+        console.error('Error handling Spotify callback:', error)
         setIsLoading(false)
       }
     }
 
-    checkSpotifyConnection()
+    handleSpotifyCallback()
   }, [])
+
+  const checkSpotifyConnection = async () => {
+    try {
+      const isConnected = await SpotifyAuthService.isConnected()
+
+      if (isConnected) {
+        const [profile, playlists] = await Promise.all([
+          SpotifyApiService.getUserProfile(),
+          SpotifyApiService.getUserPlaylists()
+        ])
+
+        if (profile) {
+          setSpotifyProfile(profile)
+          setMusicService({
+            type: 'spotify',
+            connected: true,
+            playlists: playlists
+          })
+        }
+      }
+    } catch (error) {
+      console.error('Error checking Spotify connection:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   useEffect(() => {
     const loadPlaylistData = async () => {
@@ -104,91 +145,151 @@ export function MusicSelector({ selectedPlaylist, onPlaylistSelect, onConnectCli
     loadPlaylistData()
   }, [musicService.connected, musicService.type])
 
+  const handleSpotifyConnect = async () => {
+    try {
+      await SpotifyAuthService.connect()
+    } catch (error) {
+      console.error('Error connecting to Spotify:', error)
+    }
+  }
+
   return (
     <div className="space-y-4">
-      {isLoading ? (
-        // Loading skeleton state
-        <div className="grid grid-cols-2 gap-4">
-          <Skeleton className="h-[56px] w-full" />
-          <Skeleton className="h-[56px] w-full" />
+      <div className="flex items-center gap-4">
+        <div className="flex-1">
+          <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                className="w-full justify-between"
+                onClick={() => {
+                  if (!musicService.connected) {
+                    setShowConnectDialog(true)
+                  }
+                }}
+              >
+                {selectedPlaylist ? (
+                  <div className="flex items-center">
+                    {playlistData.images[selectedPlaylist] ? (
+                      <img
+                        src={playlistData.images[selectedPlaylist]}
+                        alt=""
+                        className="h-6 w-6 rounded mr-2 object-cover"
+                      />
+                    ) : (
+                      <Music className="h-4 w-4 mr-2" />
+                    )}
+                    <span className="truncate">
+                      {playlistData.playlists.find(p => p.id === selectedPlaylist)?.name || 'Select a playlist'}
+                    </span>
+                  </div>
+                ) : (
+                  musicService.connected ? 'Select a playlist' : 'Connect music'
+                )}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            {musicService.connected && spotifyProfile?.product === 'premium' && (
+              <PopoverContent 
+                side="bottom" 
+                align="start" 
+                sideOffset={4} 
+                className="w-[--radix-popover-trigger-width] p-0 data-[side=bottom]:slide-in-from-top-2 animate-none"
+              >
+                <Command>
+                  <CommandInput placeholder="Search playlists..." />
+                  <CommandList className="max-h-[240px]">
+                    <CommandEmpty>No playlists found</CommandEmpty>
+                    <CommandGroup>
+                      {playlistData.playlists.map(playlist => (
+                        <CommandItem
+                          key={playlist.id}
+                          value={playlist.name}
+                          onSelect={() => {
+                            onPlaylistSelect({ id: playlist.id, service: musicService.type })
+                            setOpen(false)
+                          }}
+                        >
+                          <div className="flex items-center w-full">
+                            {playlistData.images[playlist.id] ? (
+                              <img
+                                src={playlistData.images[playlist.id]}
+                                alt={playlist.name}
+                                className="h-6 w-6 rounded mr-2 object-cover"
+                              />
+                            ) : (
+                              <Music className="h-4 w-4 mr-2" />
+                            )}
+                            <span className="truncate">{playlist.name}</span>
+                            <Check
+                              className={`ml-auto h-4 w-4 ${
+                                selectedPlaylist === playlist.id ? 'opacity-100' : 'opacity-0'
+                              }`}
+                            />
+                          </div>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            )}
+          </Popover>
         </div>
-      ) : !musicService.connected ? (
-        <div className="grid grid-cols-2 gap-4">
-          <div
-            onClick={() => onConnectClick?.()}
-            className="flex items-center justify-center gap-2 p-4 rounded-lg border cursor-pointer hover:bg-accent transition-colors"
-          >
-            <SpotifyIcon />
-            <span>Connect Spotify</span>
-          </div>
-
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="flex items-center justify-center gap-2 p-4 rounded-lg border opacity-50 cursor-not-allowed">
-                  <AppleMusicIcon />
-                  <span>Coming Soon</span>
+        <div className="flex items-center">
+          {isLoading ? (
+            <Skeleton className="h-9 w-9 rounded" />
+          ) : (
+            <div 
+              onClick={musicService.connected ? onConnectClick : () => setShowConnectDialog(true)}
+              className="h-9 w-9 rounded-md flex items-center justify-center hover:bg-accent cursor-pointer"
+            >
+              {musicService.connected ? (
+                <div className="h-6 w-6">
+                  {musicService.type === 'spotify' ? <SpotifyIcon /> : <AppleMusicIcon />}
                 </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Apple Music integration coming soon</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+              ) : (
+                <Music className="h-4 w-4 text-muted-foreground" />
+              )}
+            </div>
+          )}
         </div>
-      ) : (
-        <>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="scale-110">
-                {musicService.type === 'spotify' ? <SpotifyIcon /> : <AppleMusicIcon />}
-              </div>
-              <div className="flex items-center gap-2">
-                <span 
-                  onClick={() => navigate('/settings#music-integrations')}
-                  className="text-base text-muted-foreground hover:underline cursor-pointer"
-                >
-                  Connected
-                </span>
-                <div className="h-2.5 w-2.5 rounded-full bg-green-500" />
-              </div>
+      </div>
+
+      <Dialog open={showConnectDialog} onOpenChange={setShowConnectDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-lg font-normal mb-4">Connect your music</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4">
+            <div
+              onClick={() => {
+                setShowConnectDialog(false)
+                handleSpotifyConnect()
+              }}
+              className="flex items-center justify-center gap-2 p-4 rounded-lg border cursor-pointer hover:bg-accent transition-colors"
+            >
+              <SpotifyIcon />
+              <span>Connect Spotify</span>
             </div>
 
-            {spotifyProfile?.product === 'premium' ? (
-              <Select
-                value={selectedPlaylist || ''}
-                onValueChange={(value) => onPlaylistSelect({ id: value, service: musicService.type })}
-              >
-                <SelectTrigger className="w-[300px]">
-                  <SelectValue placeholder="Select a playlist" />
-                </SelectTrigger>
-                <SelectContent className="max-h-[250px]">
-                  {playlistData.playlists.map(playlist => (
-                    <SelectItem key={playlist.id} value={playlist.id}>
-                      <div className="flex items-center">
-                        {playlistData.images[playlist.id] ? (
-                          <img
-                            src={playlistData.images[playlist.id]}
-                            alt={playlist.name}
-                            className="h-6 w-6 rounded mr-2 object-cover"
-                          />
-                        ) : (
-                          <Music className="h-4 w-4 mr-2" />
-                        )}
-                        <span className="truncate">{playlist.name}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : (
-              <div className="text-sm text-destructive">
-                Error: Spotify Premium required
-              </div>
-            )}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center justify-center gap-2 p-4 rounded-lg border opacity-50 cursor-not-allowed">
+                    <AppleMusicIcon />
+                    <span>Coming Soon</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Apple Music integration coming soon</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
-        </>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 } 

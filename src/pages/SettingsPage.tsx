@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip'
 import { SpotifyIcon } from '@/components/icons/SpotifyIcon'
 import { AppleMusicIcon } from '@/components/icons/AppleMusicIcon'
+import { GoogleIcon } from '@/components/icons/GoogleIcon'
 import {
   Dialog,
   DialogContent,
@@ -13,7 +14,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, LogOut } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { useNavigate } from 'react-router-dom'
 import { SpotifyApiService } from '@/lib/integrations/spotify/spotifyApi'
@@ -21,6 +22,8 @@ import { SpotifyAuthService } from '@/lib/integrations/spotify/spotifyAuth'
 import supabase from '@/lib/integrations/supabase'
 import { ResetAppData } from '@/components/developer/ResetAppData'
 import { version } from '../../package.json'
+import { useAuth } from '@/hooks/useAuth'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 export const SettingsPage = () => {
   const [showUnlinkDialog, setShowUnlinkDialog] = useState(false)
@@ -35,6 +38,7 @@ export const SettingsPage = () => {
   const navigate = useNavigate()
   const [showDeleteAccountDialog, setShowDeleteAccountDialog] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const { user } = useAuth()
 
   useEffect(() => {
     const handleSpotifyCallback = async () => {
@@ -153,6 +157,12 @@ export const SettingsPage = () => {
     }
   }
 
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut()
+    if (error) throw error
+    navigate('/login')
+  }
+
   return (
     <Layout>
       <TooltipProvider>
@@ -161,6 +171,32 @@ export const SettingsPage = () => {
             <h1 className="text-2xl font-semibold mb-8">Settings</h1>
 
             <div className="space-y-8">
+              <div className="border rounded-lg p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <Avatar className="h-12 w-12">
+                      <AvatarImage src={user?.user_metadata?.avatar_url} />
+                      <AvatarFallback>
+                        {(user?.user_metadata?.full_name || user?.email || 'U')[0].toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h2 className="text-lg font-semibold">
+                        {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'}
+                      </h2>
+                      <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                        <GoogleIcon className="h-3.5 w-3.5" />
+                        <span>{user?.email}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <Button variant="outline" onClick={handleLogout}>
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Logout
+                  </Button>
+                </div>
+              </div>
+
               <div className="border rounded-lg p-6">
                 <h2 className="text-lg font-semibold mb-4">Appearance</h2>
                 <div className="flex items-center justify-between">
@@ -254,7 +290,7 @@ export const SettingsPage = () => {
                     <div>
                       {activeService === 'apple' ? (
                         <Button variant="ghost" size="sm" onClick={() => handleUnlink('apple')}>
-                          Unlink
+                          Disconnect
                         </Button>
                       ) : (
                         <Tooltip>
@@ -317,14 +353,14 @@ export const SettingsPage = () => {
         <Dialog open={showUnlinkDialog} onOpenChange={setShowUnlinkDialog}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Unlink {serviceToUnlink === 'spotify' ? 'Spotify' : 'Apple Music'}?</DialogTitle>
+              <DialogTitle>Disconnect {serviceToUnlink === 'spotify' ? 'Spotify' : 'Apple Music'}?</DialogTitle>
               <DialogDescription>
                 This will remove access to your {serviceToUnlink === 'spotify' ? 'Spotify' : 'Apple Music'} account.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
               <Button variant="outline" onClick={() => setShowUnlinkDialog(false)}>Cancel</Button>
-              <Button variant="destructive" onClick={confirmUnlink}>Unlink</Button>
+              <Button variant="destructive" onClick={confirmUnlink}>Disconnect</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

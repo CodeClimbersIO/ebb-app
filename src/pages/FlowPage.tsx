@@ -3,14 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { FlowSession } from '@/db/ebb/flowSessionRepo'
 import { DateTime, Duration } from 'luxon'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
 import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
 import {
   Card,
@@ -32,6 +24,7 @@ import NotificationManager from '@/lib/notificationManager'
 import { listen } from '@tauri-apps/api/event'
 import { useRustEvents } from '@/hooks/useRustEvents'
 import { useFlowTimer } from '../lib/stores/flowTimer'
+import { stopFlowTimer } from '../lib/tray'
 
 const getDurationFormatFromSeconds = (seconds: number) => {
   const duration = Duration.fromMillis(seconds * 1000)
@@ -170,7 +163,10 @@ export const FlowPage = () => {
   useRustEvents()
   const navigate = useNavigate()
   const [flowSession, setFlowSession] = useState<FlowSession | null>(null)
-  const [showEndDialog, setShowEndDialog] = useState(false)
+  const [isEndingSession, setIsEndingSession] = useState(false)
+  const [countdown, setCountdown] = useState<number | null>(null)
+  const [canEndSession, setCanEndSession] = useState(false)
+  const [lastInteraction, setLastInteraction] = useState<number | null>(null)
   const [player, setPlayer] = useState<Spotify.Player | null>(null)
   const [deviceId, setDeviceId] = useState<string>('')
   const [isPlaying, setIsPlaying] = useState(false)
@@ -182,12 +178,13 @@ export const FlowPage = () => {
   } | null>(null)
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string>(() => {
     const state = window.history.state?.usr
-    return state?.selectedPlaylist || ''
+    // Try getting from session state first, then fall back to localStorage for non-workflow sessions
+    return state?.selectedPlaylist || localStorage.getItem('lastPlaylist') || ''
   })
   const [isSpotifyAuthenticated, setIsSpotifyAuthenticated] = useState(false)
   const [playlistData, setPlaylistData] = useState<{
-    playlists: { id: string; name: string }[];
-    images: Record<string, string>;
+    playlists: { id: string; name: string }[]
+    images: Record<string, string>
   }>(() => {
     const saved = localStorage.getItem('playlistData')
     return saved ? JSON.parse(saved) : { playlists: [], images: {} }
@@ -223,6 +220,7 @@ export const FlowPage = () => {
         setCurrentTrack(null)
         setSelectedPlaylistId('')
       }
+      await stopFlowTimer()
       handleEndSession()
     }
     window.addEventListener('flowSessionComplete', handleSessionComplete)
@@ -245,9 +243,11 @@ export const FlowPage = () => {
 
         newPlayer.addListener('ready', ({ device_id }: { device_id: string }) => {
           setDeviceId(device_id)
+          // Check for playlist in both session state and localStorage
           const state = window.history.state?.usr
-          if (state?.selectedPlaylist) {
-            SpotifyApiService.startPlayback(state.selectedPlaylist, device_id)
+          const playlistToUse = state?.selectedPlaylist || localStorage.getItem('lastPlaylist')
+          if (playlistToUse) {
+            SpotifyApiService.startPlayback(playlistToUse, device_id)
           }
         })
 
@@ -354,8 +354,36 @@ export const FlowPage = () => {
     checkSpotifyInstallation()
   }, [])
 
+  useEffect(() => {
+    let timer: NodeJS.Timeout | null = null
+
+    if (lastInteraction && !canEndSession) {
+      const tick = () => {
+        const elapsed = Date.now() - lastInteraction
+        const remaining = 3 - Math.floor(elapsed / 1000)
+
+        if (remaining <= 0) {
+          setCountdown(null)
+          setCanEndSession(true)
+          if (timer) clearInterval(timer)
+        } else {
+          setCountdown(remaining)
+        }
+      }
+
+      // Start immediately and then every second
+      tick()
+      timer = setInterval(tick, 1000)
+    }
+
+    return () => {
+      if (timer) clearInterval(timer)
+    }
+  }, [lastInteraction, canEndSession])
+
   const handleEndSession = async () => {
-    if (!flowSession) return
+    if (!flowSession || isEndingSession || !canEndSession) return
+    setIsEndingSession(true)
 
     // Stop playback, transfer to computer device, and clear player state
     if (player && deviceId) {
@@ -367,9 +395,10 @@ export const FlowPage = () => {
       setSelectedPlaylistId('')
     }
 
+    // Stop blocking apps and timer
     await invoke('stop_blocking')
+    await stopFlowTimer()
     await FlowSessionApi.endFlowSession(flowSession.id)
-    setShowEndDialog(false)
 
     // Navigate to recap page with session data
     navigate('/flow-recap', {
@@ -431,12 +460,9 @@ export const FlowPage = () => {
     if (!deviceId) return
     setSelectedPlaylistId(playlistId)
 
-    // Save the selected playlist to local storage using the same key as StartFlowPage
-    const playlist = playlistData.playlists.find(p => p.id === playlistId)
-    if (playlist) {
-      localStorage.setItem('lastPlaylist', playlistId)
-    }
-
+    // Always save the selected playlist to localStorage
+    localStorage.setItem('lastPlaylist', playlistId)
+    
     await SpotifyApiService.startPlayback(playlistId, deviceId)
   }
 
@@ -490,29 +516,45 @@ export const FlowPage = () => {
   return (
     <div className="flex flex-col h-screen">
       <div className="flex justify-end p-4">
-        <Dialog open={showEndDialog} onOpenChange={setShowEndDialog}>
-          <DialogTrigger asChild>
-            <Button variant="destructive">
-              End Session
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader className='gap-y-4'>
-              <DialogTitle>End Focus Session</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to end this focus session? This action cannot be undone.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={() => setShowEndDialog(false)}>
-                Cancel
-              </Button>
-              <Button variant="destructive" onClick={handleEndSession}>
-                End Session
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <Button
+          variant="destructive"
+          onClick={handleEndSession}
+          disabled={isEndingSession}
+          onMouseEnter={() => {
+            if (!isEndingSession && !canEndSession) {
+              setLastInteraction(Date.now())
+            }
+          }}
+          onMouseLeave={() => {
+            if (canEndSession) {
+              // Give 1 second grace period only if they completed the countdown
+              setTimeout(() => {
+                setLastInteraction(null)
+                setCountdown(null)
+                setCanEndSession(false)
+              }, 1000)
+            } else {
+              // Reset immediately if they haven't completed the countdown
+              setLastInteraction(null)
+              setCountdown(null)
+              setCanEndSession(false)
+            }
+          }}
+          className="transition-all duration-300 min-w-[120px] text-center"
+        >
+          {isEndingSession ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Ending...
+            </>
+          ) : countdown ? (
+            <span className="inline-block w-full text-center opacity-80">{countdown}</span>
+          ) : canEndSession ? (
+            'End Early'
+          ) : (
+            'End Early'
+          )}
+        </Button>
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center">

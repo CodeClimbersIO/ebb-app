@@ -14,7 +14,7 @@ const SPOTIFY_CONFIG = {
     'user-modify-playback-state',
   ].join(' '),
   redirectUri: import.meta.env.DEV 
-    ? 'http://localhost:1420/settings?spotify=callback'
+    ? 'http://localhost:1420/start-flow?spotify=callback'
     : 'https://ebb.cool/spotify-success'
 }
 

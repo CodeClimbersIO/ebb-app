@@ -93,7 +93,7 @@ export async function setupTray() {
     const menu = await Menu.new({
       items: [
         {
-          text: 'Start Focus Session',
+          text: 'Start Focus',
           accelerator: 'CommandOrControl+E',
           action: async () => {
             const window = await showAndFocusWindow()

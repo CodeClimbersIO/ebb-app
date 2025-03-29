@@ -1,5 +1,4 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { WandSparkles } from 'lucide-react'
 import {
   Tooltip,
   TooltipContent,
@@ -90,11 +89,6 @@ export const UsageSummary = ({
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">{totalTimeLabel}</CardTitle>
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 text-muted-foreground">
-                <rect x="2" y="3" width="20" height="14" rx="2" />
-                <line x1="8" x2="16" y1="21" y2="21" />
-                <line x1="12" x2="12" y1="17" y2="21" />
-              </svg>
             </CardHeader>
             <CardContent>
               <Tooltip>
@@ -113,7 +107,6 @@ export const UsageSummary = ({
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 Time Creating
               </CardTitle>
-              <WandSparkles className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <Tooltip>

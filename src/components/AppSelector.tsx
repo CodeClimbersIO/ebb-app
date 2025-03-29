@@ -12,6 +12,7 @@ import { MonitorApi } from '../api/monitorApi/monitorApi'
 import { App } from '../db/monitor/appRepo'
 import { AppIcon } from './AppIcon'
 import { Tag } from '../db/monitor/tagRepo'
+import { Button } from '@/components/ui/button'
 
 interface CategoryOption {
   type: 'category'
@@ -41,6 +42,29 @@ interface AppSelectorProps {
   excludedCategories?: AppCategory[]
   onAppSelect: (option: SearchOption) => void
   onAppRemove: (option: SearchOption) => void
+  isAllowList?: boolean
+  onIsAllowListChange?: (value: boolean) => void
+}
+
+// Add this constant at the top of the file, after the imports
+const CATEGORY_ORDER: Record<AppCategory, number> = {
+  'social media': 1,
+  'communication': 2,
+  'entertainment': 3,
+  'gaming': 4,
+  'shopping': 5,
+  'news': 6,
+  'travel': 7,
+  'coding': 8,
+  'designing': 9,
+  'writing': 10,
+  'photo/video': 11,
+  'music/sound': 12,
+  'data/analytics': 13,
+  'learning': 14,
+  'ai': 15,
+  'browser': 16,
+  'utilities': 17
 }
 
 // Simplified helper function to get display text and key
@@ -74,7 +98,7 @@ const getCategoryTooltipContent = (category: AppCategory, apps: App[]): string =
 }
 
 export function AppSelector({
-  placeholder = 'Search apps & websites to add...',
+  placeholder = 'Search apps & websites...',
   emptyText = 'Enter full URL to add website',
   maxItems = 5,
   selectedApps,
@@ -91,7 +115,9 @@ export function AppSelector({
     'writing'
   ],
   onAppSelect,
-  onAppRemove
+  onAppRemove,
+  isAllowList = false,
+  onIsAllowListChange
 }: AppSelectorProps) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
@@ -137,12 +163,15 @@ export function AppSelector({
     const searchLower = search.toLowerCase()
 
     if (!search) {
-      // When no search term, return all categories that aren't already selected
       return categoryOptions
         .filter(cat => !selectedApps.some(selected =>
           'category' in selected && selected.category === cat.category
         ))
-        .sort((a, b) => a.category.localeCompare(b.category))
+        .sort((a, b) => {
+          const orderA = CATEGORY_ORDER[a.category] || Number.MAX_VALUE
+          const orderB = CATEGORY_ORDER[b.category] || Number.MAX_VALUE
+          return orderA - orderB
+        })
     }
 
     let results: SearchOption[] = categoryOptions
@@ -391,9 +420,9 @@ export function AppSelector({
 
   return (
     <div className="relative w-full" ref={inputRef}>
-      <div className="relative min-h-[100px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+      <div className="relative min-h-[120px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         onClick={() => setOpen(true)}>
-        <div className="flex flex-wrap gap-2 items-start">
+        <div className="flex flex-wrap gap-2 items-start pb-12">
           {selectedApps.map((option) => {
             const key = getOptionDetails(option).key
             const isCategory = 'category' in option && 'count' in option
@@ -444,7 +473,7 @@ export function AppSelector({
               className="w-full outline-none border-0 bg-transparent focus:border-0 focus:outline-none focus:ring-0 p-0"
             />
             {open && (
-              <Command className="absolute left-0 top-full z-50 max-w-[250px] rounded-md border bg-popover shadow-md h-fit mt-2">
+              <Command className="absolute left-0 top-full z-50 w-[300px] rounded-md border bg-popover shadow-md h-fit mt-2">
                 <CommandList className="max-h-[300px] overflow-y-auto">
                   {filteredOptions.length === 0 ? (
                     <CommandEmpty>
@@ -499,6 +528,39 @@ export function AppSelector({
             )}
           </div>
         </div>
+        {onIsAllowListChange && (
+          <div className="absolute bottom-0 left-0 right-0 flex justify-end gap-1 pt-2 px-3 pb-2 border-t">
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                'h-6 px-2 text-xs text-muted-foreground/80 hover:text-foreground',
+                !isAllowList && 'bg-muted/50'
+              )}
+              onClick={(e) => {
+                e.stopPropagation()
+                onIsAllowListChange(false)
+              }}
+            >
+              Block
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                'h-6 px-2 text-xs text-muted-foreground/80 hover:text-foreground',
+                isAllowList && 'bg-muted/50'
+              )}
+              onClick={(e) => {
+                e.stopPropagation()
+                onIsAllowListChange(true)
+              }}
+            >
+              Allow
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   )

@@ -20,7 +20,8 @@ const presetTimes = [
   { value: '15', label: '15 minutes' },
   { value: '30', label: '30 minutes' },
   { value: '60', label: '1 hour' },
-  { value: '90', label: '1 hour 30 minutes' }
+  { value: '90', label: '1 hour 30 minutes' },
+  { value: '120', label: '2 hours' },
 ]
 
 const parseTimeInput = (input: string): number | null => {
@@ -218,7 +219,7 @@ export function TimeSelector({ value: externalValue, onChange }: TimeSelectorPro
             <CommandEmpty>
               <div className='text-muted-foreground'>
                 <div>Please enter a valid duration</div>
-                <div>(e.g., 15 min, 1:15, 2h)</div>
+                <div>(15 min, 1:15, 2h...)</div>
               </div>
             </CommandEmpty>
             <CommandGroup>
