@@ -143,6 +143,10 @@ function WorkflowBadge({
                 contentEditable={isEditing}
                 onBlur={handleNameSave}
                 onKeyDown={(e) => {
+                  if (isEditing) {
+                    e.stopPropagation()
+                  }
+                  
                   if (e.key === 'Enter') {
                     e.preventDefault()
                     handleNameSave()
