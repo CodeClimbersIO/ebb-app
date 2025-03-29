@@ -156,7 +156,7 @@ export function MusicSelector({ selectedPlaylist, onPlaylistSelect, onConnectCli
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-4">
-        <div className="flex-1">
+        <div className="flex-1 w-0 min-w-0">
           <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
               <Button
@@ -170,15 +170,15 @@ export function MusicSelector({ selectedPlaylist, onPlaylistSelect, onConnectCli
                 }}
               >
                 {selectedPlaylist ? (
-                  <div className="flex items-center">
+                  <div className="flex items-center w-full max-w-[calc(100%-24px)] overflow-hidden">
                     {playlistData.images[selectedPlaylist] ? (
                       <img
                         src={playlistData.images[selectedPlaylist]}
                         alt=""
-                        className="h-6 w-6 rounded mr-2 object-cover"
+                        className="h-6 w-6 rounded mr-2 flex-shrink-0 object-cover"
                       />
                     ) : (
-                      <Music className="h-4 w-4 mr-2" />
+                      <Music className="h-4 w-4 mr-2 flex-shrink-0" />
                     )}
                     <span className="truncate">
                       {playlistData.playlists.find(p => p.id === selectedPlaylist)?.name || 'Select a playlist'}
@@ -195,7 +195,7 @@ export function MusicSelector({ selectedPlaylist, onPlaylistSelect, onConnectCli
                 side="bottom" 
                 align="start" 
                 sideOffset={4} 
-                className="w-[--radix-popover-trigger-width] p-0 data-[side=bottom]:slide-in-from-top-2 animate-none"
+                className="w-[--radix-popover-trigger-width] p-0 data-[side=bottom]:slide-in-from-top-2 animate-none max-w-full"
               >
                 <Command>
                   <CommandInput placeholder="Search playlists..." />
@@ -211,19 +211,19 @@ export function MusicSelector({ selectedPlaylist, onPlaylistSelect, onConnectCli
                             setOpen(false)
                           }}
                         >
-                          <div className="flex items-center w-full">
+                          <div className="flex items-center w-full max-w-full overflow-hidden">
                             {playlistData.images[playlist.id] ? (
                               <img
                                 src={playlistData.images[playlist.id]}
                                 alt={playlist.name}
-                                className="h-6 w-6 rounded mr-2 object-cover"
+                                className="h-6 w-6 rounded mr-2 flex-shrink-0 object-cover"
                               />
                             ) : (
-                              <Music className="h-4 w-4 mr-2" />
+                              <Music className="h-4 w-4 mr-2 flex-shrink-0" />
                             )}
                             <span className="truncate">{playlist.name}</span>
                             <Check
-                              className={`ml-auto h-4 w-4 ${
+                              className={`ml-auto h-4 w-4 flex-shrink-0 ${
                                 selectedPlaylist === playlist.id ? 'opacity-100' : 'opacity-0'
                               }`}
                             />
