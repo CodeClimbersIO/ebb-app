@@ -148,9 +148,9 @@ export const StartFlowPage = () => {
       }
 
       // Get blocked apps
-      const blockedApps = workflowId 
-        ? await BlockingPreferenceApi.getWorkflowBlockedApps(workflowId)
-        : await BlockingPreferenceApi.getBlockedAppsFromLocalPreferences()
+      const blockedApps = workflowId ? 
+        await BlockingPreferenceApi.getWorkflowBlockedApps(workflowId) :
+        []
       
       const blockingApps = blockedApps.map((app: App) => ({
         external_id: app.app_external_id,
@@ -294,7 +294,7 @@ export const StartFlowPage = () => {
               className="w-full"
               onClick={handleBegin}
             >
-              Start Focus Session
+              Start Focus
               <div className="ml-2 flex items-center gap-1">
                 <kbd className="rounded bg-violet-900 px-1.5 font-mono text-sm">⌘</kbd>
                 <kbd className="rounded bg-violet-900 px-1.5 font-mono text-sm">↵</kbd>

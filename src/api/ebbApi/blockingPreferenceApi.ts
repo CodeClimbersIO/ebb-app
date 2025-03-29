@@ -93,14 +93,9 @@ const convertToSearchOptions = async (
   return searchOptions
 }
 
-const getBlockedAppsFromLocalPreferences = async (): Promise<App[]> => {
-  return []
-}
-
 export const BlockingPreferenceApi = {
   getWorkflowBlockingPreferencesAsSearchOptions,
   saveWorkflowBlockingPreferences,
-  getWorkflowBlockedApps,
-  getBlockedAppsFromLocalPreferences
+  getWorkflowBlockedApps
 }
 
