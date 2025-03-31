@@ -55,6 +55,9 @@ const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
       await FlowSessionApi.updateFlowSessionDuration(flowSession.id, newTotalDuration)
       useFlowTimer.setState({ duration: Duration.fromObject({ seconds: newTotalDuration }) })
 
+      // Reset warning flag when adding time
+      setHasShownWarning(false)
+
       // Update the flowSession object directly
       flowSession.duration = newTotalDuration
     } catch (error) {
@@ -221,7 +224,7 @@ export const FlowPage = () => {
         setSelectedPlaylistId('')
       }
       await stopFlowTimer()
-      handleEndSession()
+      handleEndSession(true)
     }
     window.addEventListener('flowSessionComplete', handleSessionComplete)
 
@@ -381,8 +384,8 @@ export const FlowPage = () => {
     }
   }, [lastInteraction, canEndSession])
 
-  const handleEndSession = async () => {
-    if (!flowSession || isEndingSession || !canEndSession) return
+  const handleEndSession = async (isAutomatic = false) => {
+    if (!flowSession || isEndingSession || (!canEndSession && !isAutomatic)) return
     setIsEndingSession(true)
 
     // Stop playback, transfer to computer device, and clear player state
@@ -518,7 +521,7 @@ export const FlowPage = () => {
       <div className="flex justify-end p-4">
         <Button
           variant="destructive"
-          onClick={handleEndSession}
+          onClick={() => handleEndSession(false)}
           disabled={isEndingSession}
           onMouseEnter={() => {
             if (!isEndingSession && !canEndSession) {
