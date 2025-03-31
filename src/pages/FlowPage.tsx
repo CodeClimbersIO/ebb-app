@@ -385,7 +385,15 @@ export const FlowPage = () => {
   }, [lastInteraction, canEndSession])
 
   const handleEndSession = async (isAutomatic = false) => {
-    if (!flowSession || isEndingSession || (!canEndSession && !isAutomatic)) return
+    // Guard clause for null session
+    if (!flowSession) return
+
+    // Prevent multiple end attempts
+    if (isEndingSession) return
+
+    // For manual ends (not automatic), require confirmation
+    if (!isAutomatic && !canEndSession) return
+
     setIsEndingSession(true)
 
     // Stop playback, transfer to computer device, and clear player state
