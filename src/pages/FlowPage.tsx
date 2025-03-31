@@ -388,7 +388,7 @@ export const FlowPage = () => {
     // Guard clause for null session
     if (!flowSession) return
 
-    // Prevent multiple end attempts
+    // Prevent multiple end attempts with countdown button
     if (isEndingSession) return
 
     // For manual ends (not automatic), require confirmation
