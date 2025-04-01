@@ -44,15 +44,19 @@ export const StartFlowPage = () => {
         setWorkflows(loadedWorkflows)
         
         if (loadedWorkflows.length > 0) {
-          const initialWorkflow = loadedWorkflows[0]
-          setSelectedWorkflowId(initialWorkflow.id || null)
-          setSelectedWorkflow(initialWorkflow)
-          setDuration(getDurationFromDefault(initialWorkflow.settings.defaultDuration))
-          setSelectedPlaylist(initialWorkflow.selectedPlaylist || null)
-          setSelectedApps(initialWorkflow.selectedApps || [])
-          setIsAllowList(initialWorkflow.settings.isAllowList || false)
-          setHasBreathing(initialWorkflow.settings.hasBreathing ?? true)
-          setHasTypewriter(initialWorkflow.settings.hasTypewriter ?? false)
+          // Find the most recently selected workflow
+          const mostRecentWorkflow = loadedWorkflows.reduce((prev, current) => {
+            return (prev.lastSelected || 0) > (current.lastSelected || 0) ? prev : current
+          }, loadedWorkflows[0])
+
+          setSelectedWorkflowId(mostRecentWorkflow.id || null)
+          setSelectedWorkflow(mostRecentWorkflow)
+          setDuration(getDurationFromDefault(mostRecentWorkflow.settings.defaultDuration))
+          setSelectedPlaylist(mostRecentWorkflow.selectedPlaylist || null)
+          setSelectedApps(mostRecentWorkflow.selectedApps || [])
+          setIsAllowList(mostRecentWorkflow.settings.isAllowList || false)
+          setHasBreathing(mostRecentWorkflow.settings.hasBreathing ?? true)
+          setHasTypewriter(mostRecentWorkflow.settings.hasTypewriter ?? false)
         }
       } catch (error) {
         console.error('Failed to load workflows:', error)

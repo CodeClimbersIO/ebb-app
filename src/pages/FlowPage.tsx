@@ -25,6 +25,7 @@ import { listen } from '@tauri-apps/api/event'
 import { useRustEvents } from '@/hooks/useRustEvents'
 import { useFlowTimer } from '../lib/stores/flowTimer'
 import { stopFlowTimer } from '../lib/tray'
+import { DifficultyButton } from '@/components/DifficultyButton'
 
 const getDurationFormatFromSeconds = (seconds: number) => {
   const duration = Duration.fromMillis(seconds * 1000)
@@ -167,9 +168,6 @@ export const FlowPage = () => {
   const navigate = useNavigate()
   const [flowSession, setFlowSession] = useState<FlowSession | null>(null)
   const [isEndingSession, setIsEndingSession] = useState(false)
-  const [countdown, setCountdown] = useState<number | null>(null)
-  const [canEndSession, setCanEndSession] = useState(false)
-  const [lastInteraction, setLastInteraction] = useState<number | null>(null)
   const [player, setPlayer] = useState<Spotify.Player | null>(null)
   const [deviceId, setDeviceId] = useState<string>('')
   const [isPlaying, setIsPlaying] = useState(false)
@@ -224,7 +222,7 @@ export const FlowPage = () => {
         setSelectedPlaylistId('')
       }
       await stopFlowTimer()
-      handleEndSession(true)
+      handleEndSession()
     }
     window.addEventListener('flowSessionComplete', handleSessionComplete)
 
@@ -357,42 +355,12 @@ export const FlowPage = () => {
     checkSpotifyInstallation()
   }, [])
 
-  useEffect(() => {
-    let timer: NodeJS.Timeout | null = null
-
-    if (lastInteraction && !canEndSession) {
-      const tick = () => {
-        const elapsed = Date.now() - lastInteraction
-        const remaining = 3 - Math.floor(elapsed / 1000)
-
-        if (remaining <= 0) {
-          setCountdown(null)
-          setCanEndSession(true)
-          if (timer) clearInterval(timer)
-        } else {
-          setCountdown(remaining)
-        }
-      }
-
-      // Start immediately and then every second
-      tick()
-      timer = setInterval(tick, 1000)
-    }
-
-    return () => {
-      if (timer) clearInterval(timer)
-    }
-  }, [lastInteraction, canEndSession])
-
-  const handleEndSession = async (isAutomatic = false) => {
+  const handleEndSession = async () => {
     // Guard clause for null session
     if (!flowSession) return
 
     // Prevent multiple end attempts with countdown button
     if (isEndingSession) return
-
-    // For manual ends (not automatic), require confirmation
-    if (!isAutomatic && !canEndSession) return
 
     setIsEndingSession(true)
 
@@ -527,45 +495,13 @@ export const FlowPage = () => {
   return (
     <div className="flex flex-col h-screen">
       <div className="flex justify-end p-4">
-        <Button
+        <DifficultyButton
           variant="destructive"
-          onClick={() => handleEndSession(false)}
-          disabled={isEndingSession}
-          onMouseEnter={() => {
-            if (!isEndingSession && !canEndSession) {
-              setLastInteraction(Date.now())
-            }
-          }}
-          onMouseLeave={() => {
-            if (canEndSession) {
-              // Give 1 second grace period only if they completed the countdown
-              setTimeout(() => {
-                setLastInteraction(null)
-                setCountdown(null)
-                setCanEndSession(false)
-              }, 1000)
-            } else {
-              // Reset immediately if they haven't completed the countdown
-              setLastInteraction(null)
-              setCountdown(null)
-              setCanEndSession(false)
-            }
-          }}
-          className="transition-all duration-300 min-w-[120px] text-center"
-        >
-          {isEndingSession ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Ending...
-            </>
-          ) : countdown ? (
-            <span className="inline-block w-full text-center opacity-80">{countdown}</span>
-          ) : canEndSession ? (
-            'End Early'
-          ) : (
-            'End Early'
-          )}
-        </Button>
+          onAction={handleEndSession}
+          isLoading={isEndingSession}
+          loadingText="Ending..."
+          actionText="End Early"
+        />
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center">
