@@ -17,6 +17,7 @@ export interface WorkflowSettings {
   defaultDuration: number | null
   selectedPlaylist?: string | null
   selectedPlaylistName?: string | null
+  difficulty?: 'easy' | 'medium' | 'hard' | null
 }
 
 // Get all workflows

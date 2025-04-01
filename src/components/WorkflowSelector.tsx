@@ -369,7 +369,8 @@ export function WorkflowSelector({ selectedId, onSelect }: WorkflowSelectorProps
           hasBreathing: true,
           hasMusic: true,
           isAllowList: false,
-          defaultDuration: null
+          defaultDuration: null,
+          difficulty: 'medium'
         }
       }
       

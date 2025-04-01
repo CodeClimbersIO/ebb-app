@@ -13,6 +13,7 @@ import { App } from '../db/monitor/appRepo'
 import { AppIcon } from './AppIcon'
 import { Tag } from '../db/monitor/tagRepo'
 import { Button } from '@/components/ui/button'
+import { DifficultySelector } from './DifficultySelector'
 
 interface CategoryOption {
   type: 'category'
@@ -44,6 +45,8 @@ interface AppSelectorProps {
   onAppRemove: (option: SearchOption) => void
   isAllowList?: boolean
   onIsAllowListChange?: (value: boolean) => void
+  difficulty?: 'easy' | 'medium' | 'hard' | null
+  onDifficultyChange?: (value: 'easy' | 'medium' | 'hard') => void
 }
 
 // Add this constant at the top of the file, after the imports
@@ -117,7 +120,9 @@ export function AppSelector({
   onAppSelect,
   onAppRemove,
   isAllowList = false,
-  onIsAllowListChange
+  onIsAllowListChange,
+  difficulty,
+  onDifficultyChange
 }: AppSelectorProps) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
@@ -528,39 +533,48 @@ export function AppSelector({
             )}
           </div>
         </div>
-        {onIsAllowListChange && (
-          <div className="absolute bottom-0 left-0 right-0 flex justify-end gap-1 pt-2 px-3 pb-2 border-t">
-            <Button
-              variant="ghost"
-              size="sm"
-              className={cn(
-                'h-6 px-2 text-xs text-muted-foreground/80 hover:text-foreground',
-                !isAllowList && 'bg-muted/50'
-              )}
-              onClick={(e) => {
-                e.stopPropagation()
-                onIsAllowListChange(false)
-              }}
-            >
-              Block
-            </Button>
+        <div className="absolute bottom-0 left-0 right-0 flex justify-between items-center gap-1 pt-2 px-3 pb-2 border-t">
+          {onDifficultyChange && (
+            <DifficultySelector
+              value={difficulty || null}
+              onChange={onDifficultyChange}
+            />
+          )}
+          
+          {onIsAllowListChange && (
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  'h-6 px-2 text-xs text-muted-foreground/80 hover:text-foreground',
+                  !isAllowList && 'bg-muted/50'
+                )}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onIsAllowListChange(false)
+                }}
+              >
+                Block
+              </Button>
 
-            <Button
-              variant="ghost"
-              size="sm"
-              className={cn(
-                'h-6 px-2 text-xs text-muted-foreground/80 hover:text-foreground',
-                isAllowList && 'bg-muted/50'
-              )}
-              onClick={(e) => {
-                e.stopPropagation()
-                onIsAllowListChange(true)
-              }}
-            >
-              Allow
-            </Button>
-          </div>
-        )}
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  'h-6 px-2 text-xs text-muted-foreground/80 hover:text-foreground',
+                  isAllowList && 'bg-muted/50'
+                )}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onIsAllowListChange(true)
+                }}
+              >
+                Allow
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

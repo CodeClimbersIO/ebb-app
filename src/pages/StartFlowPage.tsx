@@ -34,6 +34,7 @@ export const StartFlowPage = () => {
   const [hasBreathing, setHasBreathing] = useState(true)
   const [hasTypewriter, setHasTypewriter] = useState(false)
   const [workflows, setWorkflows] = useState<Workflow[]>([])
+  const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard' | null>(null)
   const navigate = useNavigate()
 
   // Load initial workflows
@@ -57,6 +58,7 @@ export const StartFlowPage = () => {
           setIsAllowList(mostRecentWorkflow.settings.isAllowList || false)
           setHasBreathing(mostRecentWorkflow.settings.hasBreathing ?? true)
           setHasTypewriter(mostRecentWorkflow.settings.hasTypewriter ?? false)
+          setDifficulty(mostRecentWorkflow.settings.difficulty || null)
         }
       } catch (error) {
         console.error('Failed to load workflows:', error)
@@ -81,7 +83,8 @@ export const StartFlowPage = () => {
         isAllowList,
         hasBreathing,
         hasTypewriter,
-        hasMusic: true
+        hasMusic: true,
+        difficulty
       }
     }
 
@@ -90,7 +93,7 @@ export const StartFlowPage = () => {
     } catch (error) {
       console.error('Failed to save workflow changes:', error)
     }
-  }, [duration, selectedPlaylist, selectedApps, isAllowList, selectedWorkflow, hasBreathing, hasTypewriter])
+  }, [duration, selectedPlaylist, selectedApps, isAllowList, selectedWorkflow, hasBreathing, hasTypewriter, difficulty])
 
   useEffect(() => {
     if (selectedWorkflow?.id) {
@@ -114,6 +117,7 @@ export const StartFlowPage = () => {
         setIsAllowList(workflow.settings.isAllowList || false)
         setHasBreathing(workflow.settings.hasBreathing ?? true)
         setHasTypewriter(workflow.settings.hasTypewriter ?? false)
+        setDifficulty(workflow.settings.difficulty || null)
       }
     } catch (error) {
       console.error('Failed to select workflow:', error)
@@ -155,7 +159,8 @@ export const StartFlowPage = () => {
             isAllowList,
             hasBreathing,
             hasTypewriter,
-            hasMusic: true
+            hasMusic: true,
+            difficulty
           }
         }
 
@@ -205,7 +210,8 @@ export const StartFlowPage = () => {
         hasTypewriter,
         hasMusic: true,
         selectedPlaylist,
-        selectedPlaylistName: selectedWorkflow?.selectedPlaylistName
+        selectedPlaylistName: selectedWorkflow?.selectedPlaylistName,
+        difficulty
       }
 
       // Start blocking
@@ -267,6 +273,8 @@ export const StartFlowPage = () => {
                 ))}
                 isAllowList={isAllowList}
                 onIsAllowListChange={setIsAllowList}
+                difficulty={difficulty}
+                onDifficultyChange={setDifficulty}
               />
             </div>
 

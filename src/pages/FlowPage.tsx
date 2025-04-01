@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { FlowSession } from '@/db/ebb/flowSessionRepo'
 import { DateTime, Duration } from 'luxon'
 import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
+import type { Difficulty } from '@/components/DifficultySelector'
 import {
   Card,
   CardContent,
@@ -168,6 +169,7 @@ export const FlowPage = () => {
   const navigate = useNavigate()
   const [flowSession, setFlowSession] = useState<FlowSession | null>(null)
   const [isEndingSession, setIsEndingSession] = useState(false)
+  const [difficulty, setDifficulty] = useState<Difficulty>()
   const [player, setPlayer] = useState<Spotify.Player | null>(null)
   const [deviceId, setDeviceId] = useState<string>('')
   const [isPlaying, setIsPlaying] = useState(false)
@@ -207,6 +209,9 @@ export const FlowPage = () => {
         navigate('/start-flow')
       }
       setFlowSession(flowSession)
+      // Get difficulty from navigation state
+      const state = window.history.state?.usr
+      setDifficulty(state?.difficulty || null)
     }
     init()
   }, [])
@@ -501,6 +506,7 @@ export const FlowPage = () => {
           isLoading={isEndingSession}
           loadingText="Ending..."
           actionText="End Early"
+          difficulty={difficulty}
         />
       </div>
 

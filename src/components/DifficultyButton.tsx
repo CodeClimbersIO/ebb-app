@@ -2,10 +2,10 @@
 
 import * as React from 'react'
 import { Button, ButtonProps } from './ui/button'
-import { Loader2, Skull } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils/tailwind.util'
 
-export type Difficulty = 'easy' | 'medium' | 'hardcore'
+export type Difficulty = 'easy' | 'medium' | 'hard'
 
 export interface DifficultyButtonProps extends ButtonProps {
   onAction: () => void
@@ -13,7 +13,7 @@ export interface DifficultyButtonProps extends ButtonProps {
   loadingText?: string
   actionText: string
   isLoading?: boolean
-  difficulty?: Difficulty
+  difficulty?: Difficulty | null
 }
 
 export function DifficultyButton({
@@ -29,6 +29,11 @@ export function DifficultyButton({
   const [lastInteraction, setLastInteraction] = React.useState<number | null>(null)
   const [countdown, setCountdown] = React.useState<number | null>(null)
   const [canExecute, setCanExecute] = React.useState(difficulty === 'easy')
+
+  // Update canExecute when difficulty changes
+  React.useEffect(() => {
+    setCanExecute(difficulty === 'easy')
+  }, [difficulty])
 
   React.useEffect(() => {
     let timer: NodeJS.Timeout | null = null
@@ -62,16 +67,16 @@ export function DifficultyButton({
     onAction()
   }
 
-  // Show disabled button for hardcore difficulty
-  if (difficulty === 'hardcore') {
+  // Show disabled button for hard difficulty
+  if (difficulty === 'hard') {
     return (
       <Button
         {...props}
         className={cn('transition-all duration-300 min-w-[120px] text-center opacity-50', className)}
         disabled
       >
-        <Skull className="mr-2 h-4 w-4" />
-        Hardcore Mode
+        <span className="mr-2">🔒</span>
+        Hard Mode
       </Button>
     )
   }

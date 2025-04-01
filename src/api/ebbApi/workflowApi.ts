@@ -15,6 +15,7 @@ export interface Workflow {
     hasMusic: boolean
     isAllowList?: boolean
     defaultDuration: number | null
+    difficulty?: 'easy' | 'medium' | 'hard' | null
   }
 }
 
@@ -42,7 +43,8 @@ const fromDbWorkflow = async (dbWorkflow: WorkflowDb): Promise<Workflow> => {
       hasBreathing: settings.hasBreathing,
       hasMusic: settings.hasMusic,
       isAllowList: settings.isAllowList || false,
-      defaultDuration: settings.defaultDuration
+      defaultDuration: settings.defaultDuration,
+      difficulty: settings.difficulty
     }
   }
 }
@@ -56,7 +58,8 @@ const toDbWorkflow = (workflow: Workflow): Partial<WorkflowDb> => {
     isAllowList: workflow.settings.isAllowList,
     defaultDuration: workflow.settings.defaultDuration,
     selectedPlaylist: workflow.selectedPlaylist,
-    selectedPlaylistName: workflow.selectedPlaylistName
+    selectedPlaylistName: workflow.selectedPlaylistName,
+    difficulty: workflow.settings.difficulty
   }
   
   const dbWorkflow: Partial<WorkflowDb> = {
