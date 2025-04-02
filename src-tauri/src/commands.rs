@@ -4,9 +4,14 @@ use os_monitor::{
 };
 use std::fs;
 use std::path::PathBuf;
+use std::sync::Mutex;
 use tauri::command;
+use tokio::time::{sleep, Duration};
 
 use crate::system_monitor;
+
+// Store the current blocking state
+static BLOCKING_STATE: Mutex<Option<(Vec<BlockableItem>, bool)>> = Mutex::new(None);
 
 #[derive(Debug, serde::Deserialize)]
 pub struct BlockingApp {
@@ -29,12 +34,42 @@ pub fn start_blocking(blocking_apps: Vec<BlockingApp>, is_block_list: bool) {
         })
         .collect();
     println!("Starting blocking {:?}", apps);
+    
+    // Store the blocking state
+    *BLOCKING_STATE.lock().unwrap() = Some((apps.clone(), is_block_list));
+    
     os_start_blocking(&apps, "https://ebb.cool/vibes", is_block_list);
 }
 
 #[command]
 pub fn stop_blocking() {
+    // Clear the blocking state
+    *BLOCKING_STATE.lock().unwrap() = None;
     os_stop_blocking();
+}
+
+#[command]
+pub async fn snooze_blocking(duration: u64) -> Result<(), String> {
+    // Get current blocking state
+    let blocking_state = BLOCKING_STATE.lock().unwrap().clone();
+    
+    if let Some((apps, is_block_list)) = blocking_state {
+        // Stop blocking temporarily
+        os_stop_blocking();
+        
+        // Wait for the specified duration
+        sleep(Duration::from_millis(duration)).await;
+        
+        // Check if blocking state still exists
+        if BLOCKING_STATE.lock().unwrap().is_some() {
+            // Resume blocking
+            os_start_blocking(&apps, "https://ebb.cool/vibes", is_block_list);
+        }
+        
+        Ok(())
+    } else {
+        Err("No active blocking to snooze".to_string())
+    }
 }
 
 #[command]

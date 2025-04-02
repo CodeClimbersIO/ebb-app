@@ -6,6 +6,7 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 interface NotificationOptions {
   duration?: number
   type: 'session-start' | 'session-end' | 'session-warning' | 'blocked-app'
+  difficulty?: 'easy' | 'medium' | 'hard'
 }
 
 class NotificationManager {
@@ -61,7 +62,12 @@ class NotificationManager {
     }
   }
 
-  private async getNotificationUrl(type: NotificationOptions['type'], duration: number, animationDuration: number): Promise<string> {
+  private async getNotificationUrl(
+    type: NotificationOptions['type'], 
+    duration: number, 
+    animationDuration: number,
+    difficulty?: NotificationOptions['difficulty']
+  ): Promise<string> {
     try {
       const resources = await this.getNotificationResources(type)
       const isDev = import.meta.env.DEV
@@ -73,6 +79,11 @@ class NotificationManager {
       const url = new URL(fullUrl)
       url.searchParams.set('duration', duration.toString())
       url.searchParams.set('animationDuration', animationDuration.toString())
+      
+      // Add difficulty parameter if provided
+      if (difficulty) {
+        url.searchParams.set('difficulty', difficulty)
+      }
       
       if (resources.sound) {
         const soundUrl = isDev ? `http://localhost:1420${resources.sound}` : resources.sound
@@ -109,7 +120,7 @@ class NotificationManager {
           duration = 5000
           break
         case 'blocked-app':
-          duration = 5000
+          duration = 12000
           break
       }
 
@@ -126,7 +137,7 @@ class NotificationManager {
       info(`Creating notification window: ${label}`)
 
       // Get the notification URL first
-      const notificationUrl = await this.getNotificationUrl(type, duration, ANIMATION_DURATION)
+      const notificationUrl = await this.getNotificationUrl(type, duration, ANIMATION_DURATION, options.difficulty)
       info(`Using notification URL: ${notificationUrl}`)
 
       // Create the WebviewWindow

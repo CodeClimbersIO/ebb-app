@@ -209,9 +209,9 @@ export const FlowPage = () => {
         navigate('/start-flow')
       }
       setFlowSession(flowSession)
-      // Get difficulty from navigation state
+      // Get difficulty from navigation state or default to medium
       const state = window.history.state?.usr
-      setDifficulty(state?.difficulty || null)
+      setDifficulty(state?.difficulty || 'medium')
     }
     init()
   }, [])

@@ -34,9 +34,10 @@
         content: '';
         position: absolute;
         bottom: 0;
-        left: 0;
+        left: 4px;
+        right: 4px;
         height: 2px;
-        width: 100%;
+        width: calc(100% - 8px);
         transform-origin: left;
         animation: progress linear forwards;
         animation-duration: var(--progress-duration, 5000ms);
@@ -138,35 +139,228 @@
         height: 12px;
         stroke-width: 2.5;
       }
+
+      /* Ghost button styles */
+      .button-ghost {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: 36px;
+        padding: 0 16px;
+        font-size: 12px;
+        font-weight: 500;
+        color: #f5f3ff;
+        background: rgba(245, 243, 255, 0.1);
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+        min-width: 100px;
+        text-align: center;
+      }
+
+      .button-ghost:hover:not(.disabled) {
+        background-color: rgba(245, 243, 255, 0.15);
+      }
+
+      .button-ghost.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
+      }
+
+      .button-ghost.medium {
+        pointer-events: auto;
+        cursor: pointer;
+      }
+
+      /* Success state */
+      .button-ghost.success {
+        color: #10b981;
+        background-color: rgba(16, 185, 129, 0.1);
+      }
+
+      .button-ghost.error {
+        color: #ef4444;
+        background-color: rgba(239, 68, 68, 0.1);
+      }
+
+      .button-ghost.hidden {
+        display: none;
+      }
+
+      /* Add transition styles */
+      .transition-all {
+        transition-property: all;
+        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        transition-duration: 300ms;
+      }
     </style>
     <script>
-      window.onload = function() {
-        const params = new URLSearchParams(window.location.search);
-        const duration = parseInt(params.get('duration') || '5000');
-        const notification = document.querySelector('.notification');
+      window.onload = async function() {
+        const { invoke } = window.__TAURI__.core
+        const { event } = window.__TAURI__
+        const params = new URLSearchParams(window.location.search)
+        const duration = parseInt(params.get('duration') || '5000')
+        const difficulty = params.get('difficulty') || 'medium'
+        const notification = document.querySelector('.notification')
+        const snoozeButton = document.querySelector('.button-ghost')
+        let canExecute = difficulty === 'easy'
+        let countdown = 3
+        let countdownInterval = null
+        let lastInteraction = null
+
+        console.log('Notification loaded:', { difficulty, duration })
+
+        // Function to update button text and state
+        const updateButtonText = () => {
+          if (difficulty === 'hard') {
+            snoozeButton.innerHTML = '<span style="margin-right: 8px">🔒</span>Hard Mode'
+            snoozeButton.classList.add('disabled')
+            snoozeButton.style.opacity = '0.5'
+          } else if (difficulty === 'medium' && !canExecute && lastInteraction) {
+            snoozeButton.textContent = countdown.toString()
+            snoozeButton.style.width = '100px' // Maintain width during countdown
+          } else {
+            snoozeButton.textContent = 'Snooze 1 min'
+            snoozeButton.style.width = '100px' // Maintain width during normal state
+          }
+          
+          if (!canExecute && difficulty === 'medium') {
+            snoozeButton.classList.add('disabled')
+          } else {
+            snoozeButton.classList.remove('disabled')
+          }
+        }
+        
+        // Set initial button state
+        if (difficulty === 'hard') {
+          snoozeButton.innerHTML = '<span style="margin-right: 8px">🔒</span>Hard Mode'
+          snoozeButton.classList.add('disabled')
+          snoozeButton.style.opacity = '0.5'
+        } else {
+          snoozeButton.textContent = 'Snooze 1 min'
+          if (difficulty === 'medium') {
+            snoozeButton.classList.add('medium')
+            updateButtonText()
+          }
+        }
         
         // Set the progress animation duration
-        document.documentElement.style.setProperty('--progress-duration', `${duration}ms`);
+        document.documentElement.style.setProperty('--progress-duration', `${duration}ms`)
         
         // Try to play sound if available
-        const soundUrl = params.get('sound');
+        const soundUrl = params.get('sound')
         if (soundUrl) {
-          const audio = new Audio(soundUrl);
+          const audio = new Audio(soundUrl)
           audio.addEventListener('canplaythrough', () => {
-            audio.play();
-          });
+            audio.play()
+          })
         }
         
         // Function to trigger exit animation
         const triggerExit = () => {
-          notification.style.animation = 'slideOut 0.5s ease-in forwards';
-        };
+          notification.style.animation = 'slideOut 0.5s ease-in forwards'
+        }
         
         // Handle automatic exit animation
-        setTimeout(triggerExit, duration);
+        setTimeout(triggerExit, duration)
 
         // Handle dismiss button click
-        document.querySelector('.dismiss-button').addEventListener('click', triggerExit);
+        document.querySelector('.dismiss-button').addEventListener('click', triggerExit)
+
+        // Handle snooze button click
+        let hasClicked = false
+        
+        snoozeButton.addEventListener('click', async (e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          
+          if (hasClicked) return
+          hasClicked = true
+          
+          if (!canExecute || snoozeButton.classList.contains('disabled')) {
+            console.log('Button click ignored - not executable or disabled')
+            hasClicked = false
+            return
+          }
+          
+          try {
+            snoozeButton.textContent = 'Snoozed!'
+            snoozeButton.disabled = true
+            snoozeButton.classList.add('success')
+            
+            // Call the snooze command
+            const result = await invoke('snooze_blocking', {
+              duration: 60000 // 1 minute in milliseconds
+            })
+            console.log('Snooze result:', result)
+            
+            // Trigger exit animation after a brief delay
+            setTimeout(() => {
+              triggerExit()
+            }, 400)
+            // Close the notification after a short delay
+            setTimeout(() => {
+              window.close()
+            }, 1000)
+          } catch (error) {
+            console.error('Snooze error:', error)
+            snoozeButton.textContent = 'Failed'
+            snoozeButton.classList.add('error')
+            snoozeButton.disabled = true
+            hasClicked = false
+          }
+        })
+
+        if (difficulty === 'medium') {
+          // Handle mouse enter for medium difficulty
+          snoozeButton.addEventListener('mouseenter', () => {
+            if (!canExecute) {
+              lastInteraction = Date.now()
+              countdown = 3
+              updateButtonText()
+              
+              countdownInterval = setInterval(() => {
+                const elapsed = Date.now() - lastInteraction
+                const remaining = 3 - Math.floor(elapsed / 1000)
+
+                if (remaining <= 0) {
+                  clearInterval(countdownInterval)
+                  canExecute = true
+                  updateButtonText()
+                } else {
+                  countdown = remaining
+                  updateButtonText()
+                }
+              }, 100)
+            }
+          })
+
+          // Handle mouse leave for medium difficulty
+          snoozeButton.addEventListener('mouseleave', () => {
+            if (countdownInterval) {
+              clearInterval(countdownInterval)
+            }
+            
+            if (canExecute) {
+              // Give 1 second grace period if they completed the countdown
+              setTimeout(() => {
+                lastInteraction = null
+                countdown = 3
+                canExecute = false
+                updateButtonText()
+              }, 1000)
+            } else {
+              // Reset immediately if they haven't completed the countdown
+              lastInteraction = null
+              countdown = 3
+              canExecute = false
+              updateButtonText()
+            }
+          })
+        }
       }
     </script>
   </head>
@@ -178,6 +372,7 @@
       <div class="content">
         <h3 class="title">Blocked</h3>
       </div>
+      <button class="button-ghost transition-all">Snooze 1 min</button>
       <button class="dismiss-button">
         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
