@@ -14,28 +14,53 @@ interface DifficultySelectorProps {
   className?: string
 }
 
+const SignalBars = ({ level }: { level: 1 | 2 | 3 }) => {
+  const bars = []
+  const heights = ['h-2', 'h-3', 'h-4']
+  const colors = ['bg-green-500', 'bg-yellow-500', 'bg-red-500']
+
+  for (let i = 0; i < 3; i++) {
+    bars.push(
+      <div
+        key={i}
+        className={cn(
+          'w-1 rounded-sm transition-colors',
+          i < level ? colors[level - 1] : 'bg-muted',
+          heights[i]
+        )}
+      />
+    )
+  }
+
+  return (
+    <div className="flex items-end gap-0.5 h-4">
+      {bars}
+    </div>
+  )
+}
+
 export function DifficultySelector({ value, onChange, className }: DifficultySelectorProps) {
   const difficulties = [
     { 
       value: 'easy', 
       label: 'Easy', 
       color: 'text-green-500',
-      icon: '🌱',
-      description: 'End session or snooze with no resistance'
+      description: 'End session or snooze with no resistance',
+      level: 1
     },
     { 
       value: 'medium', 
       label: 'Medium', 
       color: 'text-yellow-500',
-      icon: '⚡️',
-      description: 'Wait 3 sec before end session or snooze'
+      description: 'Wait 3 sec before end session or snooze',
+      level: 2
     },
     { 
       value: 'hard', 
       label: 'Hard', 
       color: 'text-red-500',
-      icon: '🔒',
-      description: 'Don\'t allow end session or snooze'
+      description: 'No end session or snooze',
+      level: 3
     }
   ] as const
 
@@ -55,7 +80,7 @@ export function DifficultySelector({ value, onChange, className }: DifficultySel
           )}
           onClick={(e) => e.stopPropagation()}
         >
-          {value ? value.charAt(0).toUpperCase() + value.slice(1) : 'Medium'}
+          <SignalBars level={selectedDifficulty.level as 1 | 2 | 3} />
         </Button>
       </PopoverTrigger>
       <PopoverContent 
@@ -79,7 +104,9 @@ export function DifficultySelector({ value, onChange, className }: DifficultySel
               }}
             >
               <div className="flex items-center gap-2 w-full">
-                <span className="w-4">{difficulty.icon}</span>
+                <div className="w-4">
+                  <SignalBars level={difficulty.level as 1 | 2 | 3} />
+                </div>
                 <span>{difficulty.label}</span>
               </div>
               <span className="text-xs text-muted-foreground pl-6">
