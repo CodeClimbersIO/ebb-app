@@ -50,20 +50,38 @@ pub fn stop_blocking() {
 
 #[command]
 pub async fn snooze_blocking(duration: u64) -> Result<(), String> {
-    // Get current blocking state
-    let blocking_state = BLOCKING_STATE.lock().unwrap().clone();
+    // Get current blocking state and clone it atomically
+    let blocking_state = {
+        let state = BLOCKING_STATE.lock().map_err(|e| e.to_string())?;
+        state.clone()
+    };
     
     if let Some((apps, is_block_list)) = blocking_state {
         // Stop blocking temporarily
         os_stop_blocking();
         
-        // Wait for the specified duration
-        sleep(Duration::from_millis(duration)).await;
-        
-        // Check if blocking state still exists
-        if BLOCKING_STATE.lock().unwrap().is_some() {
-            // Resume blocking
-            os_start_blocking(&apps, "https://ebb.cool/vibes", is_block_list);
+        // Create a timeout future that won't panic
+        let sleep_result = tokio::time::timeout(
+            Duration::from_millis(duration + 100), // Add small buffer
+            sleep(Duration::from_millis(duration))
+        ).await;
+
+        // If sleep completed normally, try to resume blocking
+        if sleep_result.is_ok() {
+            // Check if blocking state still exists and matches what we had
+            if let Ok(current_state) = BLOCKING_STATE.lock() {
+                let should_resume = current_state.as_ref().map(|(current_apps, current_is_block_list)| {
+                    current_apps.len() == apps.len() &&
+                    current_apps.iter().zip(apps.iter()).all(|(a, b)| {
+                        a.app_external_id == b.app_external_id && a.is_browser == b.is_browser
+                    }) &&
+                    current_is_block_list == &is_block_list
+                }).unwrap_or(false);
+                
+                if should_resume {
+                    os_start_blocking(&apps, "https://ebb.cool/vibes", is_block_list);
+                }
+            }
         }
         
         Ok(())

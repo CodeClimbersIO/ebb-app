@@ -156,7 +156,7 @@
         cursor: pointer;
         transition: all 0.2s;
         text-decoration: none;
-        min-width: 100px;
+        min-width: 120px;
         text-align: center;
       }
 
@@ -221,10 +221,10 @@
             snoozeButton.style.opacity = '0.5'
           } else if (difficulty === 'medium' && !canExecute && lastInteraction) {
             snoozeButton.textContent = countdown.toString()
-            snoozeButton.style.width = '100px' // Maintain width during countdown
+            snoozeButton.style.width = '120px' // Maintain width during countdown
           } else {
             snoozeButton.textContent = 'Snooze 1 min'
-            snoozeButton.style.width = '100px' // Maintain width during normal state
+            snoozeButton.style.width = '120px' // Maintain width during normal state
           }
           
           if (!canExecute && difficulty === 'medium') {
