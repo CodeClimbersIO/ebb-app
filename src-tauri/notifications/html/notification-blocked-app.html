@@ -194,11 +194,11 @@
         const difficulty = params.get('difficulty') || 'medium'
         const notification = document.querySelector('.notification')
         const snoozeButton = document.querySelector('.button-ghost')
-        let canExecute = difficulty === 'easy'
-        let countdown = 3
-        let countdownInterval = null
+
         let lastInteraction = null
         let hasClicked = false
+        let countdown = 3
+        let canExecute = difficulty === 'easy'
 
         const notificationActions = {
           dismiss: () => {
@@ -243,11 +243,21 @@
             snoozeButton.innerHTML = '<span style="margin-right: 8px">🔒</span>Hard Mode'
             snoozeButton.classList.add('disabled')
             snoozeButton.style.opacity = '0.5'
+            snoozeButton.style.display = 'none'
           },
 
           medium: () => {
-            snoozeButton.textContent = !canExecute && lastInteraction ? countdown.toString() : 'Snooze 1 min'
-            !canExecute ? snoozeButton.classList.add('disabled') : snoozeButton.classList.remove('disabled')
+            if (!canExecute && lastInteraction) {
+              snoozeButton.textContent = countdown.toString()
+            } else {
+              snoozeButton.textContent = 'Snooze 1 min'
+            }
+            snoozeButton.style.width = '120px'
+            if (!canExecute) {
+              snoozeButton.classList.add('disabled')
+            } else {
+              snoozeButton.classList.remove('disabled')
+            }
           },
 
           easy: () => {
@@ -258,31 +268,29 @@
 
         const updateButtonText = () => {
           snoozeButton.style.width = '120px'
-          buttonStates[difficulty] ? buttonStates[difficulty]() : buttonStates.easy()
+          snoozeButton.style.display = 'inline-flex'
+          if (difficulty === 'medium') {
+            buttonStates.medium()
+          } else if (difficulty === 'hard') {
+            buttonStates.hard()
+          } else {
+            buttonStates.easy()
+          }
         }
 
-        const initNotification = () => {
-          document.documentElement.style.setProperty('--progress-duration', `${duration}ms`)
-          notificationActions.playSound(params.get('sound'))
-          setTimeout(notificationActions.dismiss, duration)
-        }
-
-        document.querySelector('.dismiss-button').addEventListener('click', notificationActions.dismiss)
-        snoozeButton.addEventListener('click', notificationActions.snooze)
-
-        if (difficulty === 'medium') {
-          snoozeButton.addEventListener('mouseenter', () => {
+        const countdownActions = {
+          start: () => {
             if (!canExecute) {
               lastInteraction = Date.now()
               countdown = 3
               updateButtonText()
               
-              countdownInterval = setInterval(() => {
+              let timer = setInterval(() => {
                 const elapsed = Date.now() - lastInteraction
                 const remaining = 3 - Math.floor(elapsed / 1000)
 
                 if (remaining <= 0) {
-                  clearInterval(countdownInterval)
+                  clearInterval(timer)
                   canExecute = true
                   updateButtonText()
                 } else {
@@ -290,12 +298,14 @@
                   updateButtonText()
                 }
               }, 100)
-            }
-          })
 
-          snoozeButton.addEventListener('mouseleave', () => {
-            if (countdownInterval) {
-              clearInterval(countdownInterval)
+              return timer
+            }
+          },
+
+          reset: (timer) => {
+            if (timer) {
+              clearInterval(timer)
             }
             
             if (canExecute) {
@@ -311,8 +321,41 @@
               canExecute = false
               updateButtonText()
             }
-          })
+          }
         }
+
+        if (difficulty === 'medium') {
+          let countdownTimer = null
+          
+          if (!snoozeButton) return
+
+          snoozeButton.style.pointerEvents = 'auto'
+          snoozeButton.style.cursor = 'pointer'
+          
+          const handleMouseEnter = () => {
+            countdownTimer = countdownActions.start()
+          }
+
+          const handleMouseLeave = () => {
+            countdownActions.reset(countdownTimer)
+          }
+
+          snoozeButton.removeEventListener('mouseenter', handleMouseEnter)
+          snoozeButton.removeEventListener('mouseleave', handleMouseLeave)
+
+          snoozeButton.addEventListener('mouseenter', handleMouseEnter)
+          snoozeButton.addEventListener('mouseleave', handleMouseLeave)
+        }
+
+        const initNotification = () => {
+          document.documentElement.style.setProperty('--progress-duration', `${duration}ms`)
+          notificationActions.playSound(params.get('sound'))
+          setTimeout(notificationActions.dismiss, duration)
+          updateButtonText()
+        }
+
+        document.querySelector('.dismiss-button').addEventListener('click', notificationActions.dismiss)
+        snoozeButton.addEventListener('click', notificationActions.snooze)
 
         initNotification()
       }
