@@ -100,10 +100,22 @@ const updateLastSelected = async (id: string): Promise<void> => {
   )
 }
 
+// Add this new function:
+const updateWorkflowName = async (id: string, name: string): Promise<void> => {
+  const ebbDb = await getEbbDb()
+  const now = new Date().toISOString()
+
+  await ebbDb.execute(
+    'UPDATE workflow SET name = ?, updated_at = ? WHERE id = ?',
+    [name, now, id]
+  )
+}
+
 export const WorkflowRepo = {
   getWorkflows,
   getWorkflowById,
   saveWorkflow,
   deleteWorkflow,
-  updateLastSelected
+  updateLastSelected,
+  updateWorkflowName // Export the new function
 }

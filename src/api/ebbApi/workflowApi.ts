@@ -135,10 +135,16 @@ const updateLastSelected = async (id: string): Promise<void> => {
   await WorkflowRepo.updateLastSelected(id)
 }
 
+// Add this new function
+const renameWorkflow = async (id: string, newName: string): Promise<void> => {
+  await WorkflowRepo.updateWorkflowName(id, newName)
+}
+
 export const WorkflowApi = {
   getWorkflows,
   getWorkflowById,
   saveWorkflow,
   deleteWorkflow,
-  updateLastSelected
+  updateLastSelected,
+  renameWorkflow // Export the new function
 } 

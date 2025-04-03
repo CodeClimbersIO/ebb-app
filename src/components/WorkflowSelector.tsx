@@ -390,17 +390,15 @@ export function WorkflowSelector({ selectedId, onSelect }: WorkflowSelectorProps
   }
 
   const handleRename = async (workflow: Workflow, newName: string) => {
-    if (!workflow.id || newName.trim().length === 0) return
-
-    const updatedWorkflow: Workflow = {
-      ...workflow,
-      name: newName
-    }
+    if (!workflow.id || newName.trim().length === 0 || newName === workflow.name) return
 
     try {
-      const savedWorkflow = await WorkflowApi.saveWorkflow(updatedWorkflow)
-      setWorkflows(workflows.map(w => w.id === savedWorkflow.id ? savedWorkflow : w))
-      // Force parent to refresh by re-selecting the workflow
+      await WorkflowApi.renameWorkflow(workflow.id, newName)
+      
+      setWorkflows(workflows.map(w => 
+        w.id === workflow.id ? { ...w, name: newName } : w
+      ))
+
       if (onSelect && workflow.id) {
         onSelect(workflow.id)
       }
