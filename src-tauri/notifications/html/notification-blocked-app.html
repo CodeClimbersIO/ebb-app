@@ -211,20 +211,20 @@
         let countdownInterval = null
         let lastInteraction = null
 
-        console.log('Notification loaded:', { difficulty, duration })
-
-        // Function to update button text and state
         const updateButtonText = () => {
+          snoozeButton.style.width = '120px'
+
           if (difficulty === 'hard') {
             snoozeButton.innerHTML = '<span style="margin-right: 8px">🔒</span>Hard Mode'
             snoozeButton.classList.add('disabled')
             snoozeButton.style.opacity = '0.5'
-          } else if (difficulty === 'medium' && !canExecute && lastInteraction) {
+            return
+          }
+
+          if (difficulty === 'medium' && !canExecute && lastInteraction) {
             snoozeButton.textContent = countdown.toString()
-            snoozeButton.style.width = '120px' // Maintain width during countdown
           } else {
             snoozeButton.textContent = 'Snooze 1 min'
-            snoozeButton.style.width = '120px' // Maintain width during normal state
           }
           
           if (!canExecute && difficulty === 'medium') {
@@ -281,7 +281,6 @@
           hasClicked = true
           
           if (!canExecute || snoozeButton.classList.contains('disabled')) {
-            console.log('Button click ignored - not executable or disabled')
             hasClicked = false
             return
           }
@@ -303,7 +302,6 @@
             const result = await invoke('snooze_blocking', {
               duration: 60000 // 1 minute in milliseconds
             })
-            console.log('Snooze result:', result)
           } catch (error) {
             console.error('Snooze error:', error)
             snoozeButton.textContent = 'Failed'

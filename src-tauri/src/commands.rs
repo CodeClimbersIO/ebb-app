@@ -35,7 +35,6 @@ pub fn start_blocking(blocking_apps: Vec<BlockingApp>, is_block_list: bool) {
         .collect();
     println!("Starting blocking {:?}", apps);
     
-    // Store the blocking state
     *BLOCKING_STATE.lock().unwrap() = Some((apps.clone(), is_block_list));
     
     os_start_blocking(&apps, "https://ebb.cool/vibes", is_block_list);
@@ -43,32 +42,26 @@ pub fn start_blocking(blocking_apps: Vec<BlockingApp>, is_block_list: bool) {
 
 #[command]
 pub fn stop_blocking() {
-    // Clear the blocking state
     *BLOCKING_STATE.lock().unwrap() = None;
     os_stop_blocking();
 }
 
 #[command]
 pub async fn snooze_blocking(duration: u64) -> Result<(), String> {
-    // Get current blocking state and clone it atomically
     let blocking_state = {
         let state = BLOCKING_STATE.lock().map_err(|e| e.to_string())?;
         state.clone()
     };
     
     if let Some((apps, is_block_list)) = blocking_state {
-        // Stop blocking temporarily
         os_stop_blocking();
         
-        // Create a timeout future that won't panic
         let sleep_result = tokio::time::timeout(
-            Duration::from_millis(duration + 100), // Add small buffer
+            Duration::from_millis(duration + 100),
             sleep(Duration::from_millis(duration))
         ).await;
 
-        // If sleep completed normally, try to resume blocking
         if sleep_result.is_ok() {
-            // Check if blocking state still exists and matches what we had
             if let Ok(current_state) = BLOCKING_STATE.lock() {
                 let should_resume = current_state.as_ref().map(|(current_apps, current_is_block_list)| {
                     current_apps.len() == apps.len() &&

@@ -37,7 +37,6 @@ export const StartFlowPage = () => {
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard' | null>(null)
   const navigate = useNavigate()
 
-  // Load initial workflows
   useEffect(() => {
     const loadWorkflows = async () => {
       try {
@@ -45,7 +44,6 @@ export const StartFlowPage = () => {
         setWorkflows(loadedWorkflows)
         
         if (loadedWorkflows.length > 0) {
-          // Find the most recently selected workflow
           const mostRecentWorkflow = loadedWorkflows.reduce((prev, current) => {
             return (prev.lastSelected || 0) > (current.lastSelected || 0) ? prev : current
           }, loadedWorkflows[0])
@@ -68,7 +66,6 @@ export const StartFlowPage = () => {
     loadWorkflows()
   }, [setDuration])
 
-  // Auto-save changes to workflow
   const saveChanges = useCallback(async () => {
     if (!selectedWorkflow?.id) return
 

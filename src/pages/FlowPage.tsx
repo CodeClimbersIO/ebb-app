@@ -49,7 +49,6 @@ const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
       setIsAddingTime(true)
       setCooldown(true)
 
-      // Calculate the new total duration
       const additionalSeconds = 15 * 60 // 15 minutes in seconds
       const newTotalDuration = flowSession.duration + additionalSeconds
 
@@ -60,13 +59,11 @@ const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
       // Reset warning flag when adding time
       setHasShownWarning(false)
 
-      // Update the flowSession object directly
       flowSession.duration = newTotalDuration
     } catch (error) {
       console.error('Failed to extend session duration:', error)
     } finally {
       setIsAddingTime(false)
-      // Set a 3 second cooldown
       setTimeout(() => {
         setCooldown(false)
       }, 1000)
@@ -209,7 +206,6 @@ export const FlowPage = () => {
         navigate('/start-flow')
       }
       setFlowSession(flowSession)
-      // Get difficulty from navigation state or default to medium
       const state = window.history.state?.usr
       setDifficulty(state?.difficulty || 'medium')
     }

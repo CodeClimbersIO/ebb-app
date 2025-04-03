@@ -40,7 +40,6 @@ class NotificationManager {
       let soundPath
 
       if (isDev) {
-        // Development paths remain the same
         htmlPath = `/src-tauri/notifications/html/notification-${type}.html`
         soundPath = `/src-tauri/notifications/sounds/${soundMap[type]}`
       } else {
@@ -80,7 +79,6 @@ class NotificationManager {
       url.searchParams.set('duration', duration.toString())
       url.searchParams.set('animationDuration', animationDuration.toString())
       
-      // Add difficulty parameter if provided
       if (difficulty) {
         url.searchParams.set('difficulty', difficulty)
       }
@@ -108,7 +106,7 @@ class NotificationManager {
       info(`Showing notification: ${JSON.stringify(options)}`)
       
       // Set different durations based on notification type
-      let duration = 5000 // default 6s
+      let duration = 5000
       switch (options.type) {
         case 'session-warning':
           duration = 12000
@@ -130,17 +128,14 @@ class NotificationManager {
       }
 
       const { type } = options
-      const ANIMATION_DURATION = 500 // Animation duration in ms
+      const ANIMATION_DURATION = 500
 
-      // Use the notification type as the label
       const label = type
       info(`Creating notification window: ${label}`)
 
-      // Get the notification URL first
       const notificationUrl = await this.getNotificationUrl(type, duration, ANIMATION_DURATION, options.difficulty)
       info(`Using notification URL: ${notificationUrl}`)
 
-      // Create the WebviewWindow
       const webviewWindow = new WebviewWindow(label, {
         url: notificationUrl,
         width: this.NOTIFICATION_WIDTH,
@@ -160,7 +155,6 @@ class NotificationManager {
         transparent: true
       })
 
-      // Add debug listeners
       webviewWindow.once('tauri://load-start', () => {
         info('Webview started loading')
       })
@@ -173,7 +167,6 @@ class NotificationManager {
         error(`Webview error: ${JSON.stringify(e)}`)
       })
 
-      // Wait for the webview to be created
       await new Promise<void>((resolve, reject) => {
         webviewWindow.once('tauri://created', () => {
           info('Notification webview created successfully')
@@ -187,7 +180,6 @@ class NotificationManager {
         })
       })
 
-      // Wait for the full duration plus exit animation
       await new Promise<void>((resolve) => {
         setTimeout(async () => {
           const index = this.notifications.indexOf(webviewWindow)
