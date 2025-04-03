@@ -34,9 +34,9 @@ export const StartFlowPage = () => {
   const [hasBreathing, setHasBreathing] = useState(true)
   const [hasTypewriter, setHasTypewriter] = useState(false)
   const [workflows, setWorkflows] = useState<Workflow[]>([])
+  const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard' | null>(null)
   const navigate = useNavigate()
 
-  // Load initial workflows
   useEffect(() => {
     const loadWorkflows = async () => {
       try {
@@ -44,15 +44,19 @@ export const StartFlowPage = () => {
         setWorkflows(loadedWorkflows)
         
         if (loadedWorkflows.length > 0) {
-          const initialWorkflow = loadedWorkflows[0]
-          setSelectedWorkflowId(initialWorkflow.id || null)
-          setSelectedWorkflow(initialWorkflow)
-          setDuration(getDurationFromDefault(initialWorkflow.settings.defaultDuration))
-          setSelectedPlaylist(initialWorkflow.selectedPlaylist || null)
-          setSelectedApps(initialWorkflow.selectedApps || [])
-          setIsAllowList(initialWorkflow.settings.isAllowList || false)
-          setHasBreathing(initialWorkflow.settings.hasBreathing ?? true)
-          setHasTypewriter(initialWorkflow.settings.hasTypewriter ?? false)
+          const mostRecentWorkflow = loadedWorkflows.reduce((prev, current) => {
+            return (prev.lastSelected || 0) > (current.lastSelected || 0) ? prev : current
+          }, loadedWorkflows[0])
+
+          setSelectedWorkflowId(mostRecentWorkflow.id || null)
+          setSelectedWorkflow(mostRecentWorkflow)
+          setDuration(getDurationFromDefault(mostRecentWorkflow.settings.defaultDuration))
+          setSelectedPlaylist(mostRecentWorkflow.selectedPlaylist || null)
+          setSelectedApps(mostRecentWorkflow.selectedApps || [])
+          setIsAllowList(mostRecentWorkflow.settings.isAllowList || false)
+          setHasBreathing(mostRecentWorkflow.settings.hasBreathing ?? true)
+          setHasTypewriter(mostRecentWorkflow.settings.hasTypewriter ?? false)
+          setDifficulty(mostRecentWorkflow.settings.difficulty || null)
         }
       } catch (error) {
         console.error('Failed to load workflows:', error)
@@ -62,7 +66,6 @@ export const StartFlowPage = () => {
     loadWorkflows()
   }, [setDuration])
 
-  // Auto-save changes to workflow
   const saveChanges = useCallback(async () => {
     if (!selectedWorkflow?.id) return
 
@@ -77,7 +80,8 @@ export const StartFlowPage = () => {
         isAllowList,
         hasBreathing,
         hasTypewriter,
-        hasMusic: true
+        hasMusic: true,
+        difficulty
       }
     }
 
@@ -86,7 +90,7 @@ export const StartFlowPage = () => {
     } catch (error) {
       console.error('Failed to save workflow changes:', error)
     }
-  }, [duration, selectedPlaylist, selectedApps, isAllowList, selectedWorkflow, hasBreathing, hasTypewriter])
+  }, [duration, selectedPlaylist, selectedApps, isAllowList, selectedWorkflow, hasBreathing, hasTypewriter, difficulty])
 
   useEffect(() => {
     if (selectedWorkflow?.id) {
@@ -110,13 +114,13 @@ export const StartFlowPage = () => {
         setIsAllowList(workflow.settings.isAllowList || false)
         setHasBreathing(workflow.settings.hasBreathing ?? true)
         setHasTypewriter(workflow.settings.hasTypewriter ?? false)
+        setDifficulty(workflow.settings.difficulty || null)
       }
     } catch (error) {
       console.error('Failed to select workflow:', error)
     }
   }
 
-  // Add this effect to keep selectedWorkflow in sync
   useEffect(() => {
     if (selectedWorkflowId) {
       const refreshWorkflow = async () => {
@@ -151,7 +155,8 @@ export const StartFlowPage = () => {
             isAllowList,
             hasBreathing,
             hasTypewriter,
-            hasMusic: true
+            hasMusic: true,
+            difficulty
           }
         }
 
@@ -165,7 +170,6 @@ export const StartFlowPage = () => {
         }
       }
 
-      // Get blocked apps
       const blockedApps = workflowId ? 
         await BlockingPreferenceApi.getWorkflowBlockedApps(workflowId) :
         []
@@ -201,10 +205,10 @@ export const StartFlowPage = () => {
         hasTypewriter,
         hasMusic: true,
         selectedPlaylist,
-        selectedPlaylistName: selectedWorkflow?.selectedPlaylistName
+        selectedPlaylistName: selectedWorkflow?.selectedPlaylistName,
+        difficulty
       }
 
-      // Start blocking
       await invoke('start_blocking', { blockingApps, isBlockList })
 
       if (!hasBreathing) {
@@ -217,7 +221,6 @@ export const StartFlowPage = () => {
     }
   }
 
-  // Add keyboard shortcut listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
@@ -263,6 +266,8 @@ export const StartFlowPage = () => {
                 ))}
                 isAllowList={isAllowList}
                 onIsAllowListChange={setIsAllowList}
+                difficulty={difficulty}
+                onDifficultyChange={setDifficulty}
               />
             </div>
 

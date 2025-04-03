@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Session Ended</title>
     <style>
-      /* Base notification styles */
       body {
         margin: 0;
         padding: 12px;
@@ -14,7 +13,6 @@
         box-sizing: border-box;
       }
 
-      /* Notification container */
       .notification {
         position: relative;
         display: flex;
@@ -29,32 +27,29 @@
         animation-fill-mode: forwards;
       }
 
-      /* Progress bar animation */
       .notification::after {
         content: '';
         position: absolute;
         bottom: 0;
-        left: 0;
+        left: 4px;
+        right: 4px;
         height: 2px;
-        width: 100%;
+        width: calc(100% - 8px);
         transform-origin: left;
         animation: progress linear forwards;
         animation-duration: var(--progress-duration, 10000ms);
       }
 
-      /* Icon styles */
       .icon {
         width: 24px;
         height: 24px;
         color: #34d399;
       }
 
-      /* Content container */
       .content {
         flex: 1;
       }
 
-      /* Title styles */
       .title {
         color: #f5f3ff;
         font-weight: 600;
@@ -62,7 +57,6 @@
         font-size: 16px;
       }
 
-      /* Ghost button styles */
       .button-ghost {
         display: inline-flex;
         align-items: center;
@@ -72,7 +66,7 @@
         font-size: 12px;
         font-weight: 500;
         color: #f5f3ff;
-        background: transparent;
+        background: rgba(245, 243, 255, 0.1);
         border: none;
         border-radius: 6px;
         cursor: pointer;
@@ -81,10 +75,9 @@
       }
 
       .button-ghost:hover {
-        background-color: rgba(245, 243, 255, 0.1);
+        background-color: rgba(245, 243, 255, 0.15);
       }
 
-      /* Info notification styles */
       .notification.info .icon {
         color: #34d399;
       }
@@ -103,7 +96,6 @@
         }
       }
 
-      /* Add slide and fade animations */
       @keyframes slideIn {
         from {
           opacity: 0;
@@ -126,7 +118,6 @@
         }
       }
 
-      /* Add dismiss button styles */
       .dismiss-button {
         position: absolute;
         top: -8px;
@@ -168,10 +159,8 @@
         const duration = parseInt(params.get('duration') || '10000')
         const notification = document.querySelector('.notification')
         
-        // Set the progress animation duration
         document.documentElement.style.setProperty('--progress-duration', `${duration}ms`)
         
-        // Try to play sound if available
         const soundUrl = params.get('sound')
         if (soundUrl) {
           const audio = new Audio(soundUrl)
@@ -180,22 +169,18 @@
           })
         }
         
-        // Function to trigger exit animation
         const triggerExit = () => {
           notification.style.animation = 'slideOut 0.5s ease-in forwards'
         }
 
-        // Handle dismiss button click
         document.querySelector('.dismiss-button').addEventListener('click', triggerExit)
         
-        // Add button click handler
         const button = document.querySelector('.button-ghost')
         if (button) {
           button.addEventListener('click', async (e) => {
             e.preventDefault()
             
             try {
-              // Show the main window if it's hidden
               const windows = await tauriWindow.getAllWindows()
               const mainWindow = windows.find(w => w.label === 'main')
               if (mainWindow) {
@@ -203,7 +188,6 @@
                 await mainWindow.setFocus()
               }
               
-              // Use shell plugin for the deep link
               await shell.open('ebb://flow-recap')
             } catch (error) {
               console.error('Error:', error)
@@ -211,7 +195,6 @@
           })
         }
         
-        // Handle automatic exit animation
         setTimeout(triggerExit, duration)
       }
     </script>

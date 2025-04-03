@@ -17,9 +17,9 @@ export interface WorkflowSettings {
   defaultDuration: number | null
   selectedPlaylist?: string | null
   selectedPlaylistName?: string | null
+  difficulty?: 'easy' | 'medium' | 'hard' | null
 }
 
-// Get all workflows
 const getWorkflows = async (): Promise<WorkflowDb[]> => {
   const ebbDb = await getEbbDb()
   const workflows = await ebbDb.select<WorkflowDb[]>(
@@ -30,7 +30,6 @@ const getWorkflows = async (): Promise<WorkflowDb[]> => {
   return workflows
 }
 
-// Get a single workflow by ID
 const getWorkflowById = async (id: string): Promise<WorkflowDb | null> => {
   const ebbDb = await getEbbDb()
   const workflows = await ebbDb.select<WorkflowDb[]>(
@@ -41,13 +40,11 @@ const getWorkflowById = async (id: string): Promise<WorkflowDb | null> => {
   return workflows.length > 0 ? workflows[0] : null
 }
 
-// Save a workflow
 const saveWorkflow = async (workflow: Partial<WorkflowDb>): Promise<string> => {
   const ebbDb = await getEbbDb()
   const now = new Date().toISOString()
   
   if (workflow.id) {
-    // Update existing workflow
     await ebbDb.execute(
       `UPDATE workflow 
        SET name = ?, settings = ?, last_selected = ?, updated_at = ? 
@@ -62,10 +59,8 @@ const saveWorkflow = async (workflow: Partial<WorkflowDb>): Promise<string> => {
     )
     return workflow.id
   } else {
-    // Generate new ID for new workflow
     const newId = crypto.randomUUID()
     
-    // Insert new workflow
     await ebbDb.execute(
       `INSERT INTO workflow (id, name, settings, last_selected, created_at, updated_at) 
        VALUES (?, ?, ?, ?, ?, ?)`,
@@ -82,13 +77,11 @@ const saveWorkflow = async (workflow: Partial<WorkflowDb>): Promise<string> => {
   }
 }
 
-// Delete a workflow
 const deleteWorkflow = async (id: string): Promise<void> => {
   const ebbDb = await getEbbDb()
   await ebbDb.execute('DELETE FROM workflow WHERE id = ?', [id])
 }
 
-// Update last selected timestamp
 const updateLastSelected = async (id: string): Promise<void> => {
   const ebbDb = await getEbbDb()
   const now = new Date().toISOString()
@@ -99,10 +92,21 @@ const updateLastSelected = async (id: string): Promise<void> => {
   )
 }
 
+const updateWorkflowName = async (id: string, name: string): Promise<void> => {
+  const ebbDb = await getEbbDb()
+  const now = new Date().toISOString()
+
+  await ebbDb.execute(
+    'UPDATE workflow SET name = ?, updated_at = ? WHERE id = ?',
+    [name, now, id]
+  )
+}
+
 export const WorkflowRepo = {
   getWorkflows,
   getWorkflowById,
   saveWorkflow,
   deleteWorkflow,
-  updateLastSelected
+  updateLastSelected,
+  updateWorkflowName
 }

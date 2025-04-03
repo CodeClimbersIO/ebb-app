@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { FlowSession } from '@/db/ebb/flowSessionRepo'
 import { DateTime, Duration } from 'luxon'
 import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
+import type { Difficulty } from '@/components/DifficultySelector'
 import {
   Card,
   CardContent,
@@ -25,6 +26,7 @@ import { listen } from '@tauri-apps/api/event'
 import { useRustEvents } from '@/hooks/useRustEvents'
 import { useFlowTimer } from '../lib/stores/flowTimer'
 import { stopFlowTimer } from '../lib/tray'
+import { DifficultyButton } from '@/components/DifficultyButton'
 
 const getDurationFormatFromSeconds = (seconds: number) => {
   const duration = Duration.fromMillis(seconds * 1000)
@@ -47,7 +49,6 @@ const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
       setIsAddingTime(true)
       setCooldown(true)
 
-      // Calculate the new total duration
       const additionalSeconds = 15 * 60 // 15 minutes in seconds
       const newTotalDuration = flowSession.duration + additionalSeconds
 
@@ -58,13 +59,11 @@ const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
       // Reset warning flag when adding time
       setHasShownWarning(false)
 
-      // Update the flowSession object directly
       flowSession.duration = newTotalDuration
     } catch (error) {
       console.error('Failed to extend session duration:', error)
     } finally {
       setIsAddingTime(false)
-      // Set a 3 second cooldown
       setTimeout(() => {
         setCooldown(false)
       }, 1000)
@@ -80,7 +79,6 @@ const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
       const startTime = DateTime.fromISO(flowSession.start).toSeconds()
       const diff = nowAsSeconds - startTime
 
-      // Check for max duration limit for unlimited sessions
       if (!flowSession.duration && diff >= MAX_SESSION_DURATION) {
         window.dispatchEvent(new CustomEvent('flowSessionComplete'))
         return
@@ -93,7 +91,6 @@ const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
           return
         }
 
-        // Show warning notification when 1 minute remains
         if (remaining <= 60 && !hasShownWarning) {
           NotificationManager.getInstance().show({ type: 'session-warning' })
           setHasShownWarning(true)
@@ -114,7 +111,6 @@ const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
   }, [flowSession, hasShownWarning])
 
   useEffect(() => {
-    // Listen for add-time events from notification
     const setupListener = async () => {
       const unlisten = await listen<{ action: string, minutes: number }>('add-time-event', (event) => {
         if (event.payload.action === 'add-time') {
@@ -167,9 +163,7 @@ export const FlowPage = () => {
   const navigate = useNavigate()
   const [flowSession, setFlowSession] = useState<FlowSession | null>(null)
   const [isEndingSession, setIsEndingSession] = useState(false)
-  const [countdown, setCountdown] = useState<number | null>(null)
-  const [canEndSession, setCanEndSession] = useState(false)
-  const [lastInteraction, setLastInteraction] = useState<number | null>(null)
+  const [difficulty, setDifficulty] = useState<Difficulty>()
   const [player, setPlayer] = useState<Spotify.Player | null>(null)
   const [deviceId, setDeviceId] = useState<string>('')
   const [isPlaying, setIsPlaying] = useState(false)
@@ -195,7 +189,6 @@ export const FlowPage = () => {
   const [isSpotifyInstalled, setIsSpotifyInstalled] = useState<boolean>(false)
   const [clickedButton, setClickedButton] = useState<'prev' | 'play' | 'next' | null>(null)
 
-  // Show session start notification when page loads
   useEffect(() => {
     NotificationManager.getInstance().show({
       type: 'session-start'
@@ -209,6 +202,8 @@ export const FlowPage = () => {
         navigate('/start-flow')
       }
       setFlowSession(flowSession)
+      const state = window.history.state?.usr
+      setDifficulty(state?.difficulty || 'medium')
     }
     init()
   }, [])
@@ -224,7 +219,7 @@ export const FlowPage = () => {
         setSelectedPlaylistId('')
       }
       await stopFlowTimer()
-      handleEndSession(true)
+      handleEndSession()
     }
     window.addEventListener('flowSessionComplete', handleSessionComplete)
 
@@ -246,7 +241,6 @@ export const FlowPage = () => {
 
         newPlayer.addListener('ready', ({ device_id }: { device_id: string }) => {
           setDeviceId(device_id)
-          // Check for playlist in both session state and localStorage
           const state = window.history.state?.usr
           const playlistToUse = state?.selectedPlaylist || localStorage.getItem('lastPlaylist')
           if (playlistToUse) {
@@ -304,7 +298,6 @@ export const FlowPage = () => {
         return
       }
 
-      // Load fresh data if no cache exists
       try {
         const playlists = await SpotifyApiService.getUserPlaylists()
         const images: Record<string, string> = {}
@@ -325,7 +318,7 @@ export const FlowPage = () => {
     }
 
     loadPlaylistData()
-  }, [isSpotifyAuthenticated]) // Only run when Spotify authentication status changes
+  }, [isSpotifyAuthenticated])
 
   useEffect(() => {
     if (!isSpotifyAuthenticated) return
@@ -343,7 +336,6 @@ export const FlowPage = () => {
   }, [isSpotifyAuthenticated])
 
   useEffect(() => {
-    // Check if Spotify is installed when component mounts
     const checkSpotifyInstallation = async () => {
       try {
         const installed = await invoke<boolean>('detect_spotify')
@@ -357,42 +349,11 @@ export const FlowPage = () => {
     checkSpotifyInstallation()
   }, [])
 
-  useEffect(() => {
-    let timer: NodeJS.Timeout | null = null
-
-    if (lastInteraction && !canEndSession) {
-      const tick = () => {
-        const elapsed = Date.now() - lastInteraction
-        const remaining = 3 - Math.floor(elapsed / 1000)
-
-        if (remaining <= 0) {
-          setCountdown(null)
-          setCanEndSession(true)
-          if (timer) clearInterval(timer)
-        } else {
-          setCountdown(remaining)
-        }
-      }
-
-      // Start immediately and then every second
-      tick()
-      timer = setInterval(tick, 1000)
-    }
-
-    return () => {
-      if (timer) clearInterval(timer)
-    }
-  }, [lastInteraction, canEndSession])
-
-  const handleEndSession = async (isAutomatic = false) => {
-    // Guard clause for null session
+  const handleEndSession = async () => {
     if (!flowSession) return
 
     // Prevent multiple end attempts with countdown button
     if (isEndingSession) return
-
-    // For manual ends (not automatic), require confirmation
-    if (!isAutomatic && !canEndSession) return
 
     setIsEndingSession(true)
 
@@ -406,12 +367,10 @@ export const FlowPage = () => {
       setSelectedPlaylistId('')
     }
 
-    // Stop blocking apps and timer
     await invoke('stop_blocking')
     await stopFlowTimer()
     await FlowSessionApi.endFlowSession(flowSession.id)
 
-    // Navigate to recap page with session data
     navigate('/flow-recap', {
       state: {
         sessionId: flowSession.id,
@@ -436,7 +395,6 @@ export const FlowPage = () => {
     } catch (error) {
       console.error('Playback control error:', error)
     } finally {
-      // Remove animation after 200ms
       setTimeout(() => setClickedButton(null), 200)
     }
   }
@@ -449,7 +407,6 @@ export const FlowPage = () => {
     } catch (error) {
       console.error('Next track error:', error)
     } finally {
-      // Remove animation after 200ms
       setTimeout(() => setClickedButton(null), 200)
     }
   }
@@ -462,7 +419,6 @@ export const FlowPage = () => {
     } catch (error) {
       console.error('Previous track error:', error)
     } finally {
-      // Remove animation after 200ms
       setTimeout(() => setClickedButton(null), 200)
     }
   }
@@ -527,45 +483,14 @@ export const FlowPage = () => {
   return (
     <div className="flex flex-col h-screen">
       <div className="flex justify-end p-4">
-        <Button
+        <DifficultyButton
           variant="destructive"
-          onClick={() => handleEndSession(false)}
-          disabled={isEndingSession}
-          onMouseEnter={() => {
-            if (!isEndingSession && !canEndSession) {
-              setLastInteraction(Date.now())
-            }
-          }}
-          onMouseLeave={() => {
-            if (canEndSession) {
-              // Give 1 second grace period only if they completed the countdown
-              setTimeout(() => {
-                setLastInteraction(null)
-                setCountdown(null)
-                setCanEndSession(false)
-              }, 1000)
-            } else {
-              // Reset immediately if they haven't completed the countdown
-              setLastInteraction(null)
-              setCountdown(null)
-              setCanEndSession(false)
-            }
-          }}
-          className="transition-all duration-300 min-w-[120px] text-center"
-        >
-          {isEndingSession ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Ending...
-            </>
-          ) : countdown ? (
-            <span className="inline-block w-full text-center opacity-80">{countdown}</span>
-          ) : canEndSession ? (
-            'End Early'
-          ) : (
-            'End Early'
-          )}
-        </Button>
+          onAction={handleEndSession}
+          isLoading={isEndingSession}
+          loadingText="Ending..."
+          actionText="End Early"
+          difficulty={difficulty}
+        />
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center">

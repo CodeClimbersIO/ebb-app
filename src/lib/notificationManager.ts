@@ -6,6 +6,7 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 interface NotificationOptions {
   duration?: number
   type: 'session-start' | 'session-end' | 'session-warning' | 'blocked-app'
+  difficulty?: 'easy' | 'medium' | 'hard'
 }
 
 class NotificationManager {
@@ -39,7 +40,6 @@ class NotificationManager {
       let soundPath
 
       if (isDev) {
-        // Development paths remain the same
         htmlPath = `/src-tauri/notifications/html/notification-${type}.html`
         soundPath = `/src-tauri/notifications/sounds/${soundMap[type]}`
       } else {
@@ -61,7 +61,12 @@ class NotificationManager {
     }
   }
 
-  private async getNotificationUrl(type: NotificationOptions['type'], duration: number, animationDuration: number): Promise<string> {
+  private async getNotificationUrl(
+    type: NotificationOptions['type'], 
+    duration: number, 
+    animationDuration: number,
+    difficulty?: NotificationOptions['difficulty']
+  ): Promise<string> {
     try {
       const resources = await this.getNotificationResources(type)
       const isDev = import.meta.env.DEV
@@ -69,10 +74,13 @@ class NotificationManager {
       // Construct the URL - resources.html is now already a proper URL in both dev and prod
       const fullUrl = isDev ? `http://localhost:1420${resources.html}` : resources.html
       
-      // Create URL object to add parameters
       const url = new URL(fullUrl)
       url.searchParams.set('duration', duration.toString())
       url.searchParams.set('animationDuration', animationDuration.toString())
+      
+      if (difficulty) {
+        url.searchParams.set('difficulty', difficulty)
+      }
       
       if (resources.sound) {
         const soundUrl = isDev ? `http://localhost:1420${resources.sound}` : resources.sound
@@ -96,8 +104,7 @@ class NotificationManager {
     try {
       info(`Showing notification: ${JSON.stringify(options)}`)
       
-      // Set different durations based on notification type
-      let duration = 5000 // default 6s
+      let duration = 5000
       switch (options.type) {
         case 'session-warning':
           duration = 12000
@@ -109,27 +116,23 @@ class NotificationManager {
           duration = 5000
           break
         case 'blocked-app':
-          duration = 5000
+          duration = 12000
           break
       }
 
-      // Only override the duration if explicitly provided in options
       if (options.duration !== undefined) {
         duration = options.duration
       }
 
       const { type } = options
-      const ANIMATION_DURATION = 500 // Animation duration in ms
+      const ANIMATION_DURATION = 500
 
-      // Use the notification type as the label
       const label = type
       info(`Creating notification window: ${label}`)
 
-      // Get the notification URL first
-      const notificationUrl = await this.getNotificationUrl(type, duration, ANIMATION_DURATION)
+      const notificationUrl = await this.getNotificationUrl(type, duration, ANIMATION_DURATION, options.difficulty)
       info(`Using notification URL: ${notificationUrl}`)
 
-      // Create the WebviewWindow
       const webviewWindow = new WebviewWindow(label, {
         url: notificationUrl,
         width: this.NOTIFICATION_WIDTH,
@@ -149,7 +152,6 @@ class NotificationManager {
         transparent: true
       })
 
-      // Add debug listeners
       webviewWindow.once('tauri://load-start', () => {
         info('Webview started loading')
       })
@@ -162,7 +164,6 @@ class NotificationManager {
         error(`Webview error: ${JSON.stringify(e)}`)
       })
 
-      // Wait for the webview to be created
       await new Promise<void>((resolve, reject) => {
         webviewWindow.once('tauri://created', () => {
           info('Notification webview created successfully')
@@ -176,7 +177,6 @@ class NotificationManager {
         })
       })
 
-      // Wait for the full duration plus exit animation
       await new Promise<void>((resolve) => {
         setTimeout(async () => {
           const index = this.notifications.indexOf(webviewWindow)
