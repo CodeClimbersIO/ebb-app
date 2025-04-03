@@ -74,7 +74,6 @@ class NotificationManager {
       // Construct the URL - resources.html is now already a proper URL in both dev and prod
       const fullUrl = isDev ? `http://localhost:1420${resources.html}` : resources.html
       
-      // Create URL object to add parameters
       const url = new URL(fullUrl)
       url.searchParams.set('duration', duration.toString())
       url.searchParams.set('animationDuration', animationDuration.toString())
@@ -105,7 +104,6 @@ class NotificationManager {
     try {
       info(`Showing notification: ${JSON.stringify(options)}`)
       
-      // Set different durations based on notification type
       let duration = 5000
       switch (options.type) {
         case 'session-warning':
@@ -122,7 +120,6 @@ class NotificationManager {
           break
       }
 
-      // Only override the duration if explicitly provided in options
       if (options.duration !== undefined) {
         duration = options.duration
       }

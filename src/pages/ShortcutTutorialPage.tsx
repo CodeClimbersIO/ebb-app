@@ -21,7 +21,6 @@ export const ShortcutTutorialPage = () => {
         await register('CommandOrControl+E', async () => {
           setCmdPressed(true)
           setEPressed(true)
-          // Get the current window and show/focus it
           const window = getCurrentWindow()
           await window.show()
           await window.setFocus()

@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Session Warning</title>
     <style>
-      /* Base notification styles */
       body {
         margin: 0;
         padding: 12px;
@@ -14,7 +13,6 @@
         box-sizing: border-box;
       }
 
-      /* Notification container */
       .notification {
         position: relative;
         display: flex;
@@ -29,7 +27,6 @@
         animation-fill-mode: forwards;
       }
 
-      /* Progress bar animation */
       .notification::after {
         content: '';
         position: absolute;
@@ -43,19 +40,16 @@
         animation-duration: var(--progress-duration);
       }
 
-      /* Icon styles */
       .icon {
         width: 24px;
         height: 24px;
         color: #f59e0b;
       }
 
-      /* Content container */
       .content {
         flex: 1;
       }
 
-      /* Title styles */
       .title {
         color: #f5f3ff;
         font-weight: 600;
@@ -63,7 +57,6 @@
         font-size: 16px;
       }
 
-      /* Ghost button styles */
       .button-ghost {
         display: inline-flex;
         align-items: center;
@@ -89,19 +82,16 @@
         background-color: rgba(245, 243, 255, 0.05);
       }
 
-      /* Success state */
       .button-ghost.success {
         color: #10b981;
         background-color: rgba(16, 185, 129, 0.1);
       }
 
-      /* Error state */
       .button-ghost.error {
         color: #ef4444;
         background-color: rgba(239, 68, 68, 0.1);
       }
 
-      /* Warning notification styles */
       .notification.warning .icon {
         color: #f59e0b;
       }
@@ -120,7 +110,6 @@
         }
       }
 
-      /* Add slide and fade animations */
       @keyframes slideIn {
         from {
           opacity: 0;
@@ -143,7 +132,6 @@
         }
       }
 
-      /* Add dismiss button styles */
       .dismiss-button {
         position: absolute;
         top: -8px;
@@ -185,10 +173,8 @@
         const duration = parseInt(params.get('duration') || '15000')
         const notification = document.querySelector('.notification')
         
-        // Set the progress animation duration
         document.documentElement.style.setProperty('--progress-duration', `${duration}ms`)
         
-        // Try to play sound if available
         const soundUrl = params.get('sound')
         if (soundUrl) {
           const audio = new Audio(soundUrl)
@@ -197,15 +183,12 @@
           })
         }
 
-        // Function to trigger exit animation
         const triggerExit = () => {
           notification.style.animation = 'slideOut 0.5s ease-in forwards'
         }
 
-        // Handle dismiss button click
         document.querySelector('.dismiss-button').addEventListener('click', triggerExit)
         
-        // Add button click handler
         const button = document.querySelector('.button-ghost')
         let hasClicked = false
 
@@ -223,11 +206,10 @@
               })
               button.textContent = '15 min added!'
               button.classList.add('success')
-              // Trigger exit animation after a brief delay
+
               setTimeout(() => {
                 triggerExit()
               }, 400)
-              // Close the notification after a short delay
               setTimeout(() => {
                 window.close()
               }, 1000)
@@ -240,7 +222,6 @@
           })
         }
         
-        // Handle automatic exit animation
         setTimeout(triggerExit, duration)
       }
     </script>

@@ -30,7 +30,6 @@ export function DifficultyButton({
   const [countdown, setCountdown] = React.useState<number | null>(null)
   const [canExecute, setCanExecute] = React.useState(difficulty === 'easy')
 
-  // Update canExecute when difficulty changes
   React.useEffect(() => {
     setCanExecute(difficulty === 'easy')
   }, [difficulty])
@@ -52,7 +51,6 @@ export function DifficultyButton({
         }
       }
 
-      // Start immediately and then every second
       tick()
       timer = setInterval(tick, 1000)
     }
@@ -67,7 +65,6 @@ export function DifficultyButton({
     onAction()
   }
 
-  // Show disabled button for hard difficulty
   if (difficulty === 'hard') {
     return (
       <Button
@@ -95,14 +92,12 @@ export function DifficultyButton({
       onMouseLeave={() => {
         if (difficulty === 'medium') {
           if (canExecute) {
-            // Give 1 second grace period only if they completed the countdown
             setTimeout(() => {
               setLastInteraction(null)
               setCountdown(null)
               setCanExecute(false)
             }, 1000)
           } else {
-            // Reset immediately if they haven't completed the countdown
             setLastInteraction(null)
             setCountdown(null)
             setCanExecute(false)

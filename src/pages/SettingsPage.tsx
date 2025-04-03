@@ -123,7 +123,6 @@ export const SettingsPage = () => {
     try {
       setIsDeleting(true)
 
-      // Get the current user's session
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) throw new Error('No session found')
 

@@ -121,7 +121,6 @@ export const StartFlowPage = () => {
     }
   }
 
-  // Add this effect to keep selectedWorkflow in sync
   useEffect(() => {
     if (selectedWorkflowId) {
       const refreshWorkflow = async () => {
@@ -171,7 +170,6 @@ export const StartFlowPage = () => {
         }
       }
 
-      // Get blocked apps
       const blockedApps = workflowId ? 
         await BlockingPreferenceApi.getWorkflowBlockedApps(workflowId) :
         []
@@ -211,7 +209,6 @@ export const StartFlowPage = () => {
         difficulty
       }
 
-      // Start blocking
       await invoke('start_blocking', { blockingApps, isBlockList })
 
       if (!hasBreathing) {
@@ -224,7 +221,6 @@ export const StartFlowPage = () => {
     }
   }
 
-  // Add keyboard shortcut listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {

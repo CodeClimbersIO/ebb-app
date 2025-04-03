@@ -40,7 +40,6 @@ export const HomePage = () => {
   const [tags, setTags] = useState<Tag[]>([])
   const refreshIntervalRef = useRef<number | null>(null)
 
-  // Get first name from user metadata
   const firstName = user?.user_metadata?.full_name?.split(' ')[0] ||
     user?.user_metadata?.name?.split(' ')[0] ||
     user?.email?.split('@')[0]
@@ -73,7 +72,6 @@ export const HomePage = () => {
 
     // Set up auto-refresh interval (every 30 seconds)
     refreshIntervalRef.current = window.setInterval(async () => {
-      // Only auto-refresh if the selected date is today
       if (date.toDateString() === new Date().toDateString()) {
         await refreshData()
       }

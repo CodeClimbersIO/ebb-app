@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Blocked</title>
     <style>
-      /* Base notification styles */
       body {
         margin: 0;
         padding: 12px;
@@ -14,7 +13,6 @@
         box-sizing: border-box;
       }
 
-      /* Notification container */
       .notification {
         position: relative;
         display: flex;
@@ -29,7 +27,6 @@
         animation-fill-mode: forwards;
       }
 
-      /* Progress bar animation */
       .notification::after {
         content: '';
         position: absolute;
@@ -43,19 +40,16 @@
         animation-duration: var(--progress-duration, 5000ms);
       }
 
-      /* Icon styles */
       .icon {
         width: 24px;
         height: 24px;
         color: #ef4444;
       }
 
-      /* Content container */
       .content {
         flex: 1;
       }
 
-      /* Title styles */
       .title {
         color: #f5f3ff;
         font-weight: 600;
@@ -63,7 +57,6 @@
         font-size: 16px;
       }
 
-      /* Error notification styles */
       .notification.error .icon {
         color: #ef4444;
       }
@@ -82,7 +75,6 @@
         }
       }
 
-      /* Add slide and fade animations */
       @keyframes slideIn {
         from {
           opacity: 0;
@@ -105,7 +97,6 @@
         }
       }
 
-      /* Add dismiss button styles */
       .dismiss-button {
         position: absolute;
         top: -8px;
@@ -140,7 +131,6 @@
         stroke-width: 2.5;
       }
 
-      /* Ghost button styles */
       .button-ghost {
         display: inline-flex;
         align-items: center;
@@ -175,7 +165,6 @@
         cursor: pointer;
       }
 
-      /* Success state */
       .button-ghost.success {
         color: #10b981;
         background-color: rgba(16, 185, 129, 0.1);
@@ -190,7 +179,6 @@
         display: none;
       }
 
-      /* Add transition styles */
       .transition-all {
         transition-property: all;
         transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
@@ -210,109 +198,79 @@
         let countdown = 3
         let countdownInterval = null
         let lastInteraction = null
+        let hasClicked = false
 
-        const updateButtonText = () => {
-          snoozeButton.style.width = '120px'
+        const notificationActions = {
+          dismiss: () => {
+            notification.style.animation = 'slideOut 0.5s ease-in forwards'
+            setTimeout(() => window.close(), 1000)
+          },
 
-          if (difficulty === 'hard') {
+          snooze: async () => {
+            if (hasClicked) return
+            hasClicked = true
+
+            try {
+              snoozeButton.textContent = 'Snoozed!'
+              snoozeButton.disabled = true
+              snoozeButton.classList.add('success')
+              
+              notificationActions.dismiss()
+              
+              await invoke('snooze_blocking', {
+                duration: 60000
+              })
+            } catch (error) {
+              console.error('Snooze error:', error)
+              snoozeButton.textContent = 'Failed'
+              snoozeButton.classList.add('error')
+              snoozeButton.disabled = true
+              hasClicked = false
+            }
+          },
+
+          playSound: (soundUrl) => {
+            if (!soundUrl) return
+            const audio = new Audio(soundUrl)
+            audio.addEventListener('canplaythrough', () => {
+              audio.play()
+            })
+          }
+        }
+
+        const buttonStates = {
+          hard: () => {
             snoozeButton.innerHTML = '<span style="margin-right: 8px">🔒</span>Hard Mode'
             snoozeButton.classList.add('disabled')
             snoozeButton.style.opacity = '0.5'
-            return
-          }
+          },
 
-          if (difficulty === 'medium' && !canExecute && lastInteraction) {
-            snoozeButton.textContent = countdown.toString()
-          } else {
+          medium: () => {
+            snoozeButton.textContent = !canExecute && lastInteraction ? countdown.toString() : 'Snooze 1 min'
+            !canExecute ? snoozeButton.classList.add('disabled') : snoozeButton.classList.remove('disabled')
+          },
+
+          easy: () => {
             snoozeButton.textContent = 'Snooze 1 min'
-          }
-          
-          if (!canExecute && difficulty === 'medium') {
-            snoozeButton.classList.add('disabled')
-          } else {
             snoozeButton.classList.remove('disabled')
           }
         }
-        
-        // Set initial button state
-        if (difficulty === 'hard') {
-          snoozeButton.innerHTML = '<span style="margin-right: 8px">🔒</span>Hard Mode'
-          snoozeButton.classList.add('disabled')
-          snoozeButton.style.opacity = '0.5'
-        } else {
-          snoozeButton.textContent = 'Snooze 1 min'
-          if (difficulty === 'medium') {
-            snoozeButton.classList.add('medium')
-            updateButtonText()
-          }
-        }
-        
-        // Set the progress animation duration
-        document.documentElement.style.setProperty('--progress-duration', `${duration}ms`)
-        
-        // Try to play sound if available
-        const soundUrl = params.get('sound')
-        if (soundUrl) {
-          const audio = new Audio(soundUrl)
-          audio.addEventListener('canplaythrough', () => {
-            audio.play()
-          })
-        }
-        
-        // Function to trigger exit animation
-        const triggerExit = () => {
-          notification.style.animation = 'slideOut 0.5s ease-in forwards'
-        }
-        
-        // Handle automatic exit animation
-        setTimeout(triggerExit, duration)
 
-        // Handle dismiss button click
-        document.querySelector('.dismiss-button').addEventListener('click', triggerExit)
+        const updateButtonText = () => {
+          snoozeButton.style.width = '120px'
+          buttonStates[difficulty] ? buttonStates[difficulty]() : buttonStates.easy()
+        }
 
-        // Handle snooze button click
-        let hasClicked = false
-        
-        snoozeButton.addEventListener('click', async (e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          
-          if (hasClicked) return
-          hasClicked = true
-          
-          if (!canExecute || snoozeButton.classList.contains('disabled')) {
-            hasClicked = false
-            return
-          }
-          
-          try {
-            snoozeButton.textContent = 'Snoozed!'
-            snoozeButton.disabled = true
-            snoozeButton.classList.add('success')
-            
-            // Trigger exit animation and window close BEFORE the invoke call
-            setTimeout(() => {
-              triggerExit()
-            }, 1000)
-            setTimeout(() => {
-              window.close()
-            }, 1000)
-            
-            // Call the snooze command last since it might block
-            const result = await invoke('snooze_blocking', {
-              duration: 60000 // 1 minute in milliseconds
-            })
-          } catch (error) {
-            console.error('Snooze error:', error)
-            snoozeButton.textContent = 'Failed'
-            snoozeButton.classList.add('error')
-            snoozeButton.disabled = true
-            hasClicked = false
-          }
-        })
+        const initNotification = () => {
+          document.documentElement.style.setProperty('--progress-duration', `${duration}ms`)
+          notificationActions.playSound(params.get('sound'))
+          setTimeout(notificationActions.dismiss, duration)
+        }
+
+        document.querySelector('.dismiss-button').addEventListener('click', notificationActions.dismiss)
+        snoozeButton.addEventListener('click', notificationActions.snooze)
 
         if (difficulty === 'medium') {
-          // Handle mouse enter for medium difficulty
           snoozeButton.addEventListener('mouseenter', () => {
             if (!canExecute) {
               lastInteraction = Date.now()
@@ -335,14 +293,12 @@
             }
           })
 
-          // Handle mouse leave for medium difficulty
           snoozeButton.addEventListener('mouseleave', () => {
             if (countdownInterval) {
               clearInterval(countdownInterval)
             }
             
             if (canExecute) {
-              // Give 1 second grace period if they completed the countdown
               setTimeout(() => {
                 lastInteraction = null
                 countdown = 3
@@ -350,7 +306,6 @@
                 updateButtonText()
               }, 1000)
             } else {
-              // Reset immediately if they haven't completed the countdown
               lastInteraction = null
               countdown = 3
               canExecute = false
@@ -358,6 +313,8 @@
             }
           })
         }
+
+        initNotification()
       }
     </script>
   </head>

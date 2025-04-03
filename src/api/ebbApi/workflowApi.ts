@@ -19,11 +19,9 @@ export interface Workflow {
   }
 }
 
-// Convert DB workflow to frontend Workflow format
 const fromDbWorkflow = async (dbWorkflow: WorkflowDb): Promise<Workflow> => {
   const settings: WorkflowSettings = JSON.parse(dbWorkflow.settings)
   
-  // Get blocking preferences from the blocking_preference table
   let selectedApps: SearchOption[] = []
   try {
     selectedApps = await BlockingPreferenceApi.getWorkflowBlockingPreferencesAsSearchOptions(dbWorkflow.id)
@@ -49,7 +47,6 @@ const fromDbWorkflow = async (dbWorkflow: WorkflowDb): Promise<Workflow> => {
   }
 }
 
-// Convert frontend Workflow to DB format
 const toDbWorkflow = (workflow: Workflow): Partial<WorkflowDb> => {
   const settings: WorkflowSettings = {
     hasTypewriter: workflow.settings.hasTypewriter,
@@ -68,7 +65,6 @@ const toDbWorkflow = (workflow: Workflow): Partial<WorkflowDb> => {
     last_selected: workflow.lastSelected ? new Date(workflow.lastSelected).toISOString() : null
   }
 
-  // Only include ID if it exists (for existing workflows)
   if (workflow.id) {
     dbWorkflow.id = workflow.id
   }

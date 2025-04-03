@@ -18,7 +18,6 @@ export const AccessibilityPage = () => {
       try {
         setPermissionStatus('checking')
 
-        // Add a small delay to ensure loading state is visible
         await new Promise(resolve => setTimeout(resolve, 1000))
 
         const hasPermissions = await invoke<boolean>('check_accessibility_permissions')
