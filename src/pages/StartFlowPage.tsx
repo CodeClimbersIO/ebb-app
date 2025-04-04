@@ -277,9 +277,6 @@ export const StartFlowPage = () => {
                 onPlaylistSelect={(playlist) => {
                   setSelectedPlaylist(playlist.id)
                 }}
-                onConnectClick={() => {
-                  navigate('/settings#music-integrations')
-                }}
               />
             </div>
 
