@@ -27,12 +27,6 @@ export function withSpotifySuccess(Component: React.ComponentType): ComponentTyp
         React.useEffect(() => {
             // Try to open automatically on page load
             openApp()
-
-            const timer = setTimeout(() => {
-                window.close()
-            }, 60000)
-
-            return () => clearTimeout(timer)
         }, [openApp])
 
         return (
@@ -106,7 +100,7 @@ export function withSpotifySuccess(Component: React.ComponentType): ComponentTyp
                         margin: '16px 0 0 0',
                         opacity: 0.5 
                     }}>
-                        This window will automatically close after 1 minute
+                        You can close this window after authentication
                     </p>
                 </div>
             </Component>
