@@ -2,32 +2,19 @@
 
 import type { ComponentType } from 'react'
 import * as React from 'react'
-import { createStore } from 'https://framer.com/m/framer/store.js@^1.0.0'
-
-const useStore = createStore({
-    isRedirecting: false,
-})
 
 export function withAuthSuccess(Component): ComponentType {
     return (props) => {
-        const [store, setStore] = useStore()
 
         const openApp = React.useCallback(() => {
-            const fullHash = window.location.hash
-            const deepLinkUrl = `ebb://auth/callback${fullHash}`
-            setStore({ isRedirecting: true })
+            const searchParams = window.location.search
+            const deepLinkUrl = `ebb://auth/callback${searchParams}`
             window.location.href = deepLinkUrl
         }, [])
 
         React.useEffect(() => {
             // Try to open automatically on page load
             openApp()
-
-            const timer = setTimeout(() => {
-                window.close()
-            }, 60000)
-
-            return () => clearTimeout(timer)
         }, [openApp])
 
         return (
@@ -82,7 +69,7 @@ export function withAuthSuccess(Component): ComponentType {
                             cursor: 'pointer',
                             marginTop: '8px',
                             transition: 'all 0.2s ease',
-                        } as any}
+                        } satisfies React.CSSProperties}
                         onMouseEnter={(e) => {
                             e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'
                             e.currentTarget.style.border = '1px solid rgba(255, 255, 255, 0.3)'
@@ -99,7 +86,7 @@ export function withAuthSuccess(Component): ComponentType {
                         margin: '16px 0 0 0',
                         opacity: 0.5 
                     }}>
-                        This window will automatically close after 1 minute
+                        You can close this window after authentication
                     </p>
                 </div>
             </Component>
