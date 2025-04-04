@@ -16,13 +16,15 @@ import { MusicSelector } from '@/components/MusicSelector'
 import { AppSelector, type SearchOption } from '@/components/AppSelector'
 import { BlockingPreferenceApi } from '../api/ebbApi/blockingPreferenceApi'
 import { App } from '../db/monitor/appRepo'
-import { TypeOutline } from 'lucide-react'
+import { TypeOutline, AlertCircle } from 'lucide-react'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { SpotifyApiService } from '@/lib/integrations/spotify/spotifyApi'
 
 export const StartFlowPage = () => {
   const { duration, setDuration } = useFlowTimer()
@@ -35,6 +37,11 @@ export const StartFlowPage = () => {
   const [hasTypewriter, setHasTypewriter] = useState(false)
   const [workflows, setWorkflows] = useState<Workflow[]>([])
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard' | null>(null)
+  const [spotifyProfile, setSpotifyProfile] = useState<{
+    email: string
+    display_name: string | null
+    product?: string
+  } | null>(null)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -65,6 +72,20 @@ export const StartFlowPage = () => {
 
     loadWorkflows()
   }, [setDuration])
+
+  useEffect(() => {
+    const checkSpotifyProfile = async () => {
+      try {
+        const profile = await SpotifyApiService.getUserProfile()
+        if (profile) {
+          setSpotifyProfile(profile)
+        }
+      } catch (error) {
+        console.error('Error checking Spotify profile:', error)
+      }
+    }
+    checkSpotifyProfile()
+  }, [])
 
   const saveChanges = useCallback(async () => {
     if (!selectedWorkflow?.id) return
@@ -239,6 +260,16 @@ export const StartFlowPage = () => {
       <div className="flex-1 flex items-center justify-center bg-background/80 backdrop-blur-sm">
         <Card className="w-[420px]">
           <CardContent className="pt-6 space-y-6">
+            {spotifyProfile && spotifyProfile.product !== 'premium' && (
+              <Alert variant="destructive" className="bg-red-950 border-red-900">
+                <AlertCircle className="h-4 w-4 text-red-400" />
+                <AlertTitle className="text-red-400">Error</AlertTitle>
+                <AlertDescription className="text-red-400">
+                  Spotify Premium is required to use this integration
+                </AlertDescription>
+              </Alert>
+            )}
+            
             {workflows.length > 0 && (
               <motion.div
                 layout
