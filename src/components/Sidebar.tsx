@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button'
 import { Home, Users, Settings, KeyRound } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { PaywallDialog } from '@/components/PaywallDialog'
 
 export function Sidebar() {
   const location = useLocation()
@@ -45,14 +46,11 @@ export function Sidebar() {
           </nav>
 
           <div className="p-2 border-t flex justify-center">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" iconSize={5} className="w-9 h-9 p-2">
-                  <KeyRound className="h-5 w-5 text-yellow-500" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right" sideOffset={10}> Ebb License - Coming Soon</TooltipContent>
-            </Tooltip>
+            <PaywallDialog>
+              <Button variant="ghost" iconSize={5} className="w-9 h-9 p-2">
+                <KeyRound className="h-5 w-5 text-yellow-500" />
+              </Button>
+            </PaywallDialog>
           </div>
 
           <div className="p-2 border-t flex justify-center">

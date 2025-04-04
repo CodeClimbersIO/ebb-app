@@ -11,7 +11,8 @@
     "npm:@supabase/storage-js@2.7.1": "2.7.1",
     "npm:@supabase/supabase-js@2": "2.49.1",
     "npm:@types/node@*": "22.12.0",
-    "npm:openai@^4.52.5": "4.85.4"
+    "npm:openai@^4.52.5": "4.85.4",
+    "npm:stripe@^14.0.0": "14.0.0"
   },
   "jsr": {
     "@supabase/functions-js@2.4.4": {
