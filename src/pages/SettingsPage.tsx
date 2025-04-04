@@ -6,6 +6,8 @@ import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/comp
 import { SpotifyIcon } from '@/components/icons/SpotifyIcon'
 import { AppleMusicIcon } from '@/components/icons/AppleMusicIcon'
 import { GoogleIcon } from '@/components/icons/GoogleIcon'
+import { DiscordIcon } from '@/components/icons/DiscordIcon'
+import { GithubIcon } from '@/components/icons/GithubIcon'
 import {
   Dialog,
   DialogContent,
@@ -24,6 +26,7 @@ import { ResetAppData } from '@/components/developer/ResetAppData'
 import { version } from '../../package.json'
 import { useAuth } from '@/hooks/useAuth'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { invoke } from '@tauri-apps/api/core'
 
 export const SettingsPage = () => {
   const [showUnlinkDialog, setShowUnlinkDialog] = useState(false)
@@ -243,7 +246,7 @@ export const SettingsPage = () => {
                     <div>
                       {activeService === 'spotify' ? (
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
                           onClick={() => handleUnlink('spotify')}
                         >
@@ -288,7 +291,11 @@ export const SettingsPage = () => {
                     </div>
                     <div>
                       {activeService === 'apple' ? (
-                        <Button variant="ghost" size="sm" onClick={() => handleUnlink('apple')}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleUnlink('apple')}
+                        >
                           Disconnect
                         </Button>
                       ) : (
@@ -306,6 +313,37 @@ export const SettingsPage = () => {
                           </TooltipTrigger>
                         </Tooltip>
                       )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border rounded-lg p-6">
+                <h2 className="text-lg font-semibold mb-4">Community</h2>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between gap-8">
+                    <div>
+                      <div className="text-sm text-muted-foreground">
+                        Ebb is maintained by an open source community called CodeClimbers. Join us on Discord or GitHub to get involved.
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Button
+                        variant="outline"
+                        onClick={() => invoke('plugin:shell|open', { path: 'https://discord.gg/qhST6C5XxV' })}
+                        className="gap-2"
+                      >
+                        <DiscordIcon />
+                        Discord
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => invoke('plugin:shell|open', { path: 'https://github.com/CodeClimbersIO/ebb-app' })}
+                        className="gap-2"
+                      >
+                        <GithubIcon />
+                        GitHub
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -344,7 +382,36 @@ export const SettingsPage = () => {
 
             <div className="mt-12 flex justify-between text-sm text-muted-foreground/50">
               <div>Ebb Version {version}</div>
-              <div>Slop by Paul Hovley and Nathan Covey</div>
+              <div className="flex items-center gap-2">
+                <span>Slop by </span>
+                <button 
+                  onClick={() => invoke('plugin:shell|open', { path: 'https://x.com/PaulHovley' })}
+                  className="hover:underline"
+                >
+                  Paul Hovley
+                </button>
+                <span>&</span>
+                <button 
+                  onClick={() => invoke('plugin:shell|open', { path: 'https://x.com/nathan_covey' })}
+                  className="hover:underline"
+                >
+                  Nathan Covey
+                </button>
+                <span>•</span>
+                <button 
+                  onClick={() => invoke('plugin:shell|open', { path: 'https://ebb.cool/terms' })}
+                  className="hover:underline"
+                >
+                  Terms
+                </button>
+                <span>•</span>
+                <button 
+                  onClick={() => invoke('plugin:shell|open', { path: 'https://ebb.cool/privacy' })}
+                  className="hover:underline"
+                >
+                  Privacy
+                </button>
+              </div>
             </div>
           </div>
         </div>
