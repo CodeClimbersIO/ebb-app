@@ -16,8 +16,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog'
-import { AlertCircle, LogOut } from 'lucide-react'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { LogOut } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { SpotifyApiService } from '@/lib/integrations/spotify/spotifyApi'
 import { SpotifyAuthService } from '@/lib/integrations/spotify/spotifyAuth'
@@ -217,15 +216,6 @@ export const SettingsPage = () => {
               <div id="music-integrations" className="border rounded-lg p-6">
                 <h2 className="text-lg font-semibold mb-4">Integrations</h2>
                 <div className="space-y-4">
-                  {spotifyProfile && spotifyProfile.product !== 'premium' && (
-                    <Alert variant="destructive" className="bg-red-950 border-red-900">
-                      <AlertCircle className="h-4 w-4 text-red-400" />
-                      <AlertTitle className="text-red-400">Error</AlertTitle>
-                      <AlertDescription className="text-red-400">
-                        Spotify Premium is required to use this integration
-                      </AlertDescription>
-                    </Alert>
-                  )}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <SpotifyIcon />
