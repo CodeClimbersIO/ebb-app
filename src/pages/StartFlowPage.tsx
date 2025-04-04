@@ -23,7 +23,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { SpotifyApiService } from '@/lib/integrations/spotify/spotifyApi'
 
 export const StartFlowPage = () => {
@@ -260,16 +260,6 @@ export const StartFlowPage = () => {
       <div className="flex-1 flex items-center justify-center bg-background/80 backdrop-blur-sm">
         <Card className="w-[420px]">
           <CardContent className="pt-6 space-y-6">
-            {spotifyProfile && spotifyProfile.product !== 'premium' && (
-              <Alert variant="destructive" className="bg-red-950 border-red-900">
-                <AlertCircle className="h-4 w-4 text-red-400" />
-                <AlertTitle className="text-red-400">Error</AlertTitle>
-                <AlertDescription className="text-red-400">
-                  Spotify Premium is required to use this integration
-                </AlertDescription>
-              </Alert>
-            )}
-            
             {workflows.length > 0 && (
               <motion.div
                 layout
@@ -301,6 +291,15 @@ export const StartFlowPage = () => {
                 onDifficultyChange={setDifficulty}
               />
             </div>
+
+            {spotifyProfile && spotifyProfile.product !== 'premium' && (
+              <Alert variant="destructive" className="bg-red-950 border-red-900">
+                <AlertCircle className="h-4 w-4 text-red-400" />
+                <AlertDescription className="text-red-400">
+                  Error: Spotify Premium is required to use this integration
+                </AlertDescription>
+              </Alert>
+            )}
 
             <div>
               <MusicSelector
