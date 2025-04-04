@@ -23,8 +23,8 @@ export const LoginPage = () => {
             : 'https://ebb.cool/auth-success',
           queryParams: {
             access_type: 'offline',
-            prompt: 'consent',
-          },
+            prompt: 'consent'
+          }
         }
       })
 

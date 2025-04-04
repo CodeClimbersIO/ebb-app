@@ -11,15 +11,10 @@ export const useDeepLinkAuth = () => {
   useEffect(() => {
     // Check URL parameters immediately
     const urlObj = new URL(window.location.href)
-    const hashParams = new URLSearchParams(urlObj.hash.substring(1))
     const searchParams = new URLSearchParams(urlObj.search)
-
-    const accessToken = hashParams.get('access_token') || searchParams.get('access_token')
-    const refreshToken = hashParams.get('refresh_token') || searchParams.get('refresh_token')
     const code = searchParams.get('code')
-    const state = searchParams.get('state')
 
-    if (accessToken || refreshToken || (code && state)) {
+    if (code) {
       setIsHandlingAuth(true)
     }
 
@@ -29,31 +24,26 @@ export const useDeepLinkAuth = () => {
         const url = urls[0]
         
         const urlObj = new URL(url)
-        const hashParams = new URLSearchParams(urlObj.hash.substring(1))
         const searchParams = new URLSearchParams(urlObj.search.substring(1))
 
-        // Handle Supabase auth
-        const accessToken = hashParams.get('access_token') || searchParams.get('access_token')
-        const refreshToken = hashParams.get('refresh_token') || searchParams.get('refresh_token')
-
-        if (accessToken && refreshToken) {
-          const { data, error } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken
-          })
-          
-          if (error) throw error
-          if (data.session) navigate('/')
-          return
+        // Check if this is a Spotify callback
+        if (url.includes('spotify/callback')) {
+          const spotifyCode = searchParams.get('code')
+          const state = searchParams.get('state')
+          if (spotifyCode && state) {
+            await SpotifyAuthService.handleCallback(spotifyCode, state)
+            navigate('/start-flow', { replace: true })
+            window.location.reload()
+            return
+          }
         }
 
-        // Handle Spotify auth
+        // Handle Supabase auth if not Spotify
         const code = searchParams.get('code')
-        const state = searchParams.get('state')
-        if (code && state) {
-          await SpotifyAuthService.handleCallback(code, state)
-          navigate('/start-flow', { replace: true })
-          window.location.reload()
+        if (code) {
+          const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+          if (error) throw error
+          if (data.session) navigate('/')
           return
         }
       } catch (err) {

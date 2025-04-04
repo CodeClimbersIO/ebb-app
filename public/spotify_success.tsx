@@ -2,25 +2,23 @@
 
 import type { ComponentType } from 'react'
 import * as React from 'react'
-import { createStore } from 'https://framer.com/m/framer/store.js@^1.0.0'
 
 interface ButtonStyle extends React.CSSProperties {
   backgroundColor: string
   border: string
 }
 
-const useStore = createStore({
-    isRedirecting: false,
-})
+type ComponentWithProps = React.ComponentType<{
+  children?: React.ReactNode
+  style?: React.CSSProperties
+}>
 
-export function withSpotifySuccess(Component: React.ComponentType): ComponentType {
+export function withSpotifySuccess(Component: ComponentWithProps): ComponentType {
     return (props) => {
-        const [store, setStore] = useStore()
 
         const openApp = React.useCallback(() => {
             const searchParams = window.location.search
             const deepLinkUrl = `ebb://spotify/callback${searchParams}`
-            setStore({ isRedirecting: true })
             window.location.href = deepLinkUrl
         }, [])
 
