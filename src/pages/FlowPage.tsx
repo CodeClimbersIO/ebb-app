@@ -27,6 +27,7 @@ import { useRustEvents } from '@/hooks/useRustEvents'
 import { useFlowTimer } from '../lib/stores/flowTimer'
 import { stopFlowTimer } from '../lib/tray'
 import { DifficultyButton } from '@/components/DifficultyButton'
+import { useSpotifyInstallation } from '@/hooks/useSpotifyInstallation'
 
 const getDurationFormatFromSeconds = (seconds: number) => {
   const duration = Duration.fromMillis(seconds * 1000)
@@ -186,7 +187,7 @@ export const FlowPage = () => {
     const saved = localStorage.getItem('playlistData')
     return saved ? JSON.parse(saved) : { playlists: [], images: {} }
   })
-  const [isSpotifyInstalled, setIsSpotifyInstalled] = useState<boolean>(false)
+  const { isSpotifyInstalled } = useSpotifyInstallation()
   const [clickedButton, setClickedButton] = useState<'prev' | 'play' | 'next' | null>(null)
 
   useEffect(() => {
@@ -334,20 +335,6 @@ export const FlowPage = () => {
 
     return () => clearInterval(tokenRefreshInterval)
   }, [isSpotifyAuthenticated])
-
-  useEffect(() => {
-    const checkSpotifyInstallation = async () => {
-      try {
-        const installed = await invoke<boolean>('detect_spotify')
-        setIsSpotifyInstalled(installed)
-      } catch (error) {
-        console.error('Error detecting Spotify:', error)
-        setIsSpotifyInstalled(false)
-      }
-    }
-
-    checkSpotifyInstallation()
-  }, [])
 
   const handleEndSession = async () => {
     if (!flowSession) return

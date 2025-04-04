@@ -4,6 +4,8 @@ import { SpotifyIcon } from './icons/SpotifyIcon'
 import { AppleMusicIcon } from './icons/AppleMusicIcon'
 import { SpotifyAuthService } from '@/lib/integrations/spotify/spotifyAuth'
 import { SpotifyApiService } from '@/lib/integrations/spotify/spotifyApi'
+import { invoke } from '@tauri-apps/api/core'
+import { useSpotifyInstallation } from '@/hooks/useSpotifyInstallation'
 import { Button } from './ui/button'
 import {
   Command,
@@ -35,13 +37,13 @@ import { Skeleton } from './ui/skeleton'
 interface MusicSelectorProps {
   selectedPlaylist: string | null
   onPlaylistSelect: (playlist: { id: string, service: 'spotify' | 'apple' | null }) => void
-  onConnectClick?: () => void
 }
 
-export function MusicSelector({ selectedPlaylist, onPlaylistSelect, onConnectClick }: MusicSelectorProps) {
+export function MusicSelector({ selectedPlaylist, onPlaylistSelect }: MusicSelectorProps) {
   const [showConnectDialog, setShowConnectDialog] = useState(false)
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const { isSpotifyInstalled } = useSpotifyInstallation()
   const [musicService, setMusicService] = useState<{
     type: 'spotify' | 'apple' | null
     connected: boolean
@@ -242,7 +244,30 @@ export function MusicSelector({ selectedPlaylist, onPlaylistSelect, onConnectCli
             <Skeleton className="h-9 w-9 rounded" />
           ) : (
             <div 
-              onClick={musicService.connected ? onConnectClick : () => setShowConnectDialog(true)}
+              onClick={async (e) => {
+                e.preventDefault()
+                if (musicService.connected) {
+                  if (isSpotifyInstalled) {
+                    try {
+                      const spotifyUri = selectedPlaylist
+                        ? `spotify:playlist:${selectedPlaylist}`
+                        : 'spotify:'
+                      await invoke('plugin:shell|open', { path: spotifyUri })
+                    } catch (error) {
+                      console.error('Failed to open Spotify:', error)
+                      // Fallback to web version if native app fails to open
+                      const webUrl = selectedPlaylist
+                        ? `https://open.spotify.com/playlist/${selectedPlaylist}`
+                        : 'https://open.spotify.com'
+                      await invoke('plugin:shell|open', { path: webUrl })
+                    }
+                  } else {
+                    await invoke('plugin:shell|open', { path: 'https://open.spotify.com/download' })
+                  }
+                } else {
+                  setShowConnectDialog(true)
+                }
+              }}
               className="h-9 w-9 rounded-md flex items-center justify-center hover:bg-accent cursor-pointer"
             >
               {musicService.connected ? (
