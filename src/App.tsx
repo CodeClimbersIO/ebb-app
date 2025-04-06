@@ -9,6 +9,7 @@ import { initSentry } from '@/components/Sentry'
 import { useUpdate } from './hooks/useUpdate'
 import { useAuth } from './hooks/useAuth'
 import { usePostHog } from 'posthog-js/react'
+import { LicenseProvider } from '@/contexts/LicenseContext'
 
 const App = () => {
   const posthog = usePostHog()
@@ -42,9 +43,9 @@ const App = () => {
 
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-      <main>
+      <LicenseProvider>
         <AppRouter />
-      </main>
+      </LicenseProvider>
     </ThemeProvider>
   )
 }

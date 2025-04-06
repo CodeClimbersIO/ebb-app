@@ -3,9 +3,11 @@ import { Home, Users, Settings, KeyRound } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { PaywallDialog } from '@/components/PaywallDialog'
+import { useLicense } from '@/contexts/LicenseContext'
 
 export function Sidebar() {
   const location = useLocation()
+  const { license, isLoading } = useLicense()
 
   return (
     <TooltipProvider>
@@ -45,13 +47,15 @@ export function Sidebar() {
             </Tooltip>
           </nav>
 
-          <div className="p-2 border-t flex justify-center">
-            <PaywallDialog>
-              <Button variant="ghost" iconSize={5} className="w-9 h-9 p-2">
-                <KeyRound className="h-5 w-5 text-yellow-500" />
-              </Button>
-            </PaywallDialog>
-          </div>
+          {!isLoading && !license && (
+            <div className="p-2 border-t flex justify-center">
+              <PaywallDialog>
+                <Button variant="ghost" iconSize={5} className="w-9 h-9 p-2">
+                  <KeyRound className="h-5 w-5 text-yellow-500" />
+                </Button>
+              </PaywallDialog>
+            </div>
+          )}
 
           <div className="p-2 border-t flex justify-center">
             <Tooltip>

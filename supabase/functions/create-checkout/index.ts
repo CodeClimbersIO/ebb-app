@@ -14,6 +14,7 @@ Deno.serve(async (req) => {
 
   try {
     const authHeader = req.headers.get('Authorization')
+    console.log('Received auth header:', authHeader)
     if (!authHeader) {
       throw new Error('No authorization header')
     }
@@ -29,12 +30,15 @@ Deno.serve(async (req) => {
     )
 
     // Get the user from the auth header
+    const token = authHeader.replace('Bearer ', '')
+    console.log('Extracted token:', token)
     const {
       data: { user },
       error: userError,
-    } = await supabase.auth.getUser()
+    } = await supabase.auth.getUser(token)
 
     if (userError || !user) {
+      console.error('Supabase user error:', userError)
       throw new Error('Error getting user')
     }
 
@@ -76,8 +80,8 @@ Deno.serve(async (req) => {
         }
       ],
       mode: licenseType === 'perpetual' ? 'payment' : 'subscription',
-      success_url: 'ebb://license/success?session_id={CHECKOUT_SESSION_ID}',
-      cancel_url: 'ebb://license/cancel',
+      success_url: 'https://ebb.cool/license/callback?session_id={CHECKOUT_SESSION_ID}',
+      cancel_url: 'https://ebb.cool/license/callback',
       client_reference_id: user.id,
       customer_creation: 'always',
       customer_email: user.email,

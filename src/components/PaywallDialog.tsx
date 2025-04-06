@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { useState } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -10,6 +11,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { KeyRound } from 'lucide-react'
 import { RainbowButton } from '@/components/ui/rainbow-button'
+import { StripeApi } from '@/lib/integrations/stripe/stripeApi'
 
 interface PaywallDialogProps {
   children: React.ReactNode
@@ -24,6 +26,23 @@ const users = [
 ]
 
 export function PaywallDialog({ children }: PaywallDialogProps) {
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleCheckout = async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      await StripeApi.startCheckout('perpetual')
+    } catch (err) {
+      console.error('Full checkout error:', err)
+      const message = err instanceof Error ? err.message : 'Failed to start checkout'
+      setError(message)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -56,9 +75,17 @@ export function PaywallDialog({ children }: PaywallDialogProps) {
         </div>
 
         {/* CTA Button */}
-        <RainbowButton className="w-full mt-3">
-          Get Pro License
+        <RainbowButton 
+          className="w-full mt-3"
+          onClick={handleCheckout}
+          disabled={isLoading}
+        >
+          {isLoading ? 'Processing...' : 'Get Pro License'}
         </RainbowButton>
+        
+        {error && (
+          <p className="text-center text-xs text-red-500 mt-2">{error}</p>
+        )}
 
         {/* Social Proof */}
         <div className="flex items-center justify-center gap-2 mt-3">

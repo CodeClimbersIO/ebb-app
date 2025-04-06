@@ -8,6 +8,8 @@ import { AppleMusicIcon } from '@/components/icons/AppleMusicIcon'
 import { GoogleIcon } from '@/components/icons/GoogleIcon'
 import { DiscordIcon } from '@/components/icons/DiscordIcon'
 import { GithubIcon } from '@/components/icons/GithubIcon'
+import { BadgeCheck, KeyRound, LogOut } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import {
   Dialog,
   DialogContent,
@@ -16,7 +18,6 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog'
-import { LogOut } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { SpotifyApiService } from '@/lib/integrations/spotify/spotifyApi'
 import { SpotifyAuthService } from '@/lib/integrations/spotify/spotifyAuth'
@@ -26,8 +27,11 @@ import { version } from '../../package.json'
 import { useAuth } from '@/hooks/useAuth'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { invoke } from '@tauri-apps/api/core'
+import { format } from 'date-fns'
+import { PaywallDialog } from '@/components/PaywallDialog'
+import { useLicense } from '@/contexts/LicenseContext'
 
-export const SettingsPage = () => {
+export function SettingsPage() {
   const [showUnlinkDialog, setShowUnlinkDialog] = useState(false)
   const [activeService, setActiveService] = useState<'spotify' | 'apple' | null>(null)
   const [serviceToUnlink, setServiceToUnlink] = useState<'spotify' | 'apple' | null>(null)
@@ -41,9 +45,11 @@ export const SettingsPage = () => {
   const [showDeleteAccountDialog, setShowDeleteAccountDialog] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const { user } = useAuth()
+  const { license, isLoading: isLicenseLoading } = useLicense()
 
   useEffect(() => {
-    const handleSpotifyCallback = async () => {
+    const initializeSettings = async () => {
+      setIsLoading(true)
       try {
         const hashParams = window.location.hash.replace('#', '')
         const searchParams = new URLSearchParams(window.location.search || hashParams.substring(hashParams.indexOf('?')))
@@ -51,52 +57,33 @@ export const SettingsPage = () => {
         const state = searchParams.get('state')
 
         if (code && state) {
-          setIsLoading(true)
           await SpotifyAuthService.handleCallback(code, state)
-          // Clear URL parameters
           window.history.replaceState({}, '', '/settings')
-          // Force a full page refresh to get updated Spotify state
-          window.location.reload()
-          return
         }
 
-        // Always check connection status after handling callback or on initial load
-        await checkSpotifyConnection()
+        const isConnected = await SpotifyAuthService.isConnected()
+        if (isConnected) {
+          const profile = await SpotifyApiService.getUserProfile()
+          if (profile) {
+            setSpotifyProfile(profile)
+            setActiveService('spotify')
+          }
+        }
       } catch (error) {
-        console.error('Error handling Spotify callback:', error)
+        console.error('Error initializing Spotify connection/callback:', error)
+      } finally {
         setIsLoading(false)
       }
-    }
 
-    handleSpotifyCallback()
-
-    // Scroll to music integrations section if hash is present
-    if (window.location.hash === '#music-integrations') {
-      const section = document.getElementById('music-integrations')
-      if (section) {
-        section.scrollIntoView({ behavior: 'smooth' })
-      }
-    }
-  }, [])
-
-  const checkSpotifyConnection = async () => {
-    try {
-      const isConnected = await SpotifyAuthService.isConnected()
-
-      if (isConnected) {
-        const profile = await SpotifyApiService.getUserProfile()
-        if (profile) {
-          setSpotifyProfile(profile)
-          setActiveService('spotify')
+      if (window.location.hash === '#music-integrations') {
+        const section = document.getElementById('music-integrations')
+        if (section) {
+          section.scrollIntoView({ behavior: 'smooth' })
         }
       }
-
-      setIsLoading(false)
-    } catch (error) {
-      console.error('Error checking Spotify connection:', error)
-      setIsLoading(false)
     }
-  }
+    initializeSettings()
+  }, [])
 
   const handleUnlink = (service: 'spotify' | 'apple') => {
     setServiceToUnlink(service)
@@ -128,7 +115,6 @@ export const SettingsPage = () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) throw new Error('No session found')
 
-      // Make API call to your backend endpoint to delete the user
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-account`,
         {
@@ -147,7 +133,6 @@ export const SettingsPage = () => {
         throw new Error(error.error || 'Failed to delete account')
       }
 
-      // Sign out the user after successful deletion
       await supabase.auth.signOut()
       navigate('/')
     } catch (error) {
@@ -162,6 +147,22 @@ export const SettingsPage = () => {
     const { error } = await supabase.auth.signOut()
     if (error) throw error
     navigate('/login')
+  }
+
+  const handleManageSubscription = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('create-portal-session', {
+        body: { return_url: window.location.href },
+      })
+
+      if (error) throw error
+
+      if (data?.url) {
+        window.location.href = data.url
+      }
+    } catch (err) {
+      console.error('Error creating portal session:', err)
+    }
   }
 
   return (
@@ -196,6 +197,56 @@ export const SettingsPage = () => {
                     Logout
                   </Button>
                 </div>
+              </div>
+
+              <div className="border rounded-lg p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <Badge className="bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 border-0 text-base px-3 py-1">
+                    <KeyRound className="h-4 w-4 mr-1.5" />
+                    Ebb Pro
+                  </Badge>
+                  {license && license.status === 'active' && license.license_type === 'subscription' && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={handleManageSubscription}
+                    >
+                      Manage Subscription
+                    </Button>
+                  )}
+                </div>
+
+                {isLicenseLoading ? (
+                  <div className="text-sm text-muted-foreground">Loading license status...</div>
+                ) : license && (license.status === 'active' || license.status === 'trialing') ? (
+                  <div className="flex items-start gap-3">
+                    <BadgeCheck className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                    <div className="flex-grow">
+                      <div className="text-sm mb-1">
+                        You have an active <span className="font-semibold">Ebb Pro {license.license_type === 'subscription' ? 'Subscription' : 'Perpetual License'}</span>.
+                      </div>
+                      {license.expiration_date && (
+                        <div className="text-xs text-muted-foreground">
+                           {license.license_type === 'subscription' ? 'Renews on:' : 'Updates included until:'}{' '}
+                           {format(new Date(license.expiration_date), 'PPP')}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-muted-foreground">
+                      Unlock premium features and support the development of Ebb.
+                    </p>
+                    <div className="flex-shrink-0 ml-8">
+                      <PaywallDialog>
+                        <Button>
+                          Get Ebb Pro
+                        </Button>
+                      </PaywallDialog>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="border rounded-lg p-6">
@@ -362,7 +413,6 @@ export const SettingsPage = () => {
               </div>
             </div>
 
-            {/* Developer section - only visible in development mode */}
             {import.meta.env.DEV && (
               <div className="mt-12 border-t pt-6">
                 <h2 className="text-xl font-semibold mb-4">Developer Options</h2>

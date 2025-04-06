@@ -16,7 +16,9 @@ export class StripeApi {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          'x-client-info': 'codeclimbers'
         },
         body: JSON.stringify({ licenseType })
       }
@@ -38,10 +40,12 @@ export class StripeApi {
   static async startCheckout(licenseType: LicenseType): Promise<void> {
     try {
       const checkoutUrl = await this.createCheckoutSession(licenseType)
-      await invoke('open_url', { url: checkoutUrl })
+      await invoke('plugin:shell|open', { path: checkoutUrl })
     } catch (error) {
-      console.error('Error starting checkout:', error)
-      throw error
+      const fullError = error instanceof Error ? error.message : String(error)
+      console.error('Error starting checkout: -', JSON.stringify(fullError))
+      console.error('Full checkout error: -', JSON.stringify(error))
+      throw new Error(`Failed to start checkout: ${fullError}`)
     }
   }
 } 
