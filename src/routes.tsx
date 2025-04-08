@@ -11,6 +11,7 @@ import { FlowRecapPage } from '@/pages/FlowRecapPage'
 import { LoadingScreen } from '@/components/LoadingScreen'
 import { AccessibilityPage } from './pages/AccessibilityPage'
 import { ShortcutTutorialPage } from './pages/ShortcutTutorialPage'
+import { DeviceLimitPage } from './pages/DeviceLimitPage'
 import { OnboardingUtils } from '@/lib/utils/onboarding'
 import { useDeepLinkAuth } from './hooks/useDeepLinkAuth'
 import { register, unregister } from '@tauri-apps/plugin-global-shortcut'
@@ -18,17 +19,31 @@ import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useEffect } from 'react'
 import { FlowSessionApi } from './api/ebbApi/flowSessionApi'
 import { error as logError } from '@tauri-apps/plugin-log'
+import { useDeviceRegistration } from './hooks/useDeviceRegistration'
+
 // Protected Route wrapper component
 const ProtectedRoute = () => {
-  const { user, loading } = useAuth()
+  const { user, loading: authLoading } = useAuth()
+  const { isBlockedByDeviceLimit, retryDeviceRegistrationCheck } = useDeviceRegistration()
   const location = useLocation()
 
-  if (loading) {
+  // Add check on route change
+  useEffect(() => {
+    if (user && !authLoading) {
+      retryDeviceRegistrationCheck()
+    }
+  }, [location.pathname])
+
+  if (authLoading) {
     return <LoadingScreen />
   }
 
   if (!user) {
     return <Navigate to="/login" replace />
+  }
+
+  if (isBlockedByDeviceLimit) {
+    return <DeviceLimitPage onDeviceRemoved={retryDeviceRegistrationCheck} />
   }
 
   // Skip onboarding check for onboarding routes themselves

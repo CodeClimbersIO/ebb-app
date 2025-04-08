@@ -5,10 +5,8 @@ import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip'
 import { SpotifyIcon } from '@/components/icons/SpotifyIcon'
 import { AppleMusicIcon } from '@/components/icons/AppleMusicIcon'
-import { GoogleIcon } from '@/components/icons/GoogleIcon'
 import { DiscordIcon } from '@/components/icons/DiscordIcon'
 import { GithubIcon } from '@/components/icons/GithubIcon'
-import { LogOut } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -24,9 +22,10 @@ import supabase from '@/lib/integrations/supabase'
 import { ResetAppData } from '@/components/developer/ResetAppData'
 import { version } from '../../package.json'
 import { useAuth } from '@/hooks/useAuth'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { useLicense } from '@/contexts/LicenseContext'
 import { invoke } from '@tauri-apps/api/core'
-import { EbbProSettings } from '@/components/EbbProSettings'
+import { ActiveDevicesSettings } from '@/components/ActiveDevicesSettings'
+import { UserProfileSettings } from '@/components/UserProfileSettings'
 
 export function SettingsPage() {
   const [showUnlinkDialog, setShowUnlinkDialog] = useState(false)
@@ -42,6 +41,10 @@ export function SettingsPage() {
   const [showDeleteAccountDialog, setShowDeleteAccountDialog] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const { user } = useAuth()
+  const { license, isLoading: isLicenseLoading } = useLicense()
+
+  const hasProLicense = !isLicenseLoading && license && (license.status === 'active' || license.status === 'trialing')
+  const maxDevicesToShow = hasProLicense ? 3 : 1
 
   useEffect(() => {
     const initializeSettings = async () => {
@@ -139,12 +142,6 @@ export function SettingsPage() {
     }
   }
 
-  const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut()
-    if (error) throw error
-    navigate('/login')
-  }
-
   return (
     <Layout>
       <TooltipProvider>
@@ -153,33 +150,18 @@ export function SettingsPage() {
             <h1 className="text-2xl font-semibold mb-8">Settings</h1>
 
             <div className="space-y-8">
-              <div className="border rounded-lg p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <Avatar className="h-12 w-12">
-                      <AvatarImage src={user?.user_metadata?.avatar_url} />
-                      <AvatarFallback>
-                        {(user?.user_metadata?.full_name || user?.email || 'U')[0].toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <h2 className="text-lg font-semibold">
-                        {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'}
-                      </h2>
-                      <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                        <GoogleIcon className="h-3.5 w-3.5" />
-                        <span>{user?.email}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <Button variant="outline" onClick={handleLogout}>
-                    <LogOut className="h-4 w-4 mr-2" />
-                    Logout
-                  </Button>
-                </div>
-              </div>
+              <UserProfileSettings 
+                 user={user} 
+                 license={license} 
+                 isLoadingLicense={isLicenseLoading} 
+              />
 
-              <EbbProSettings />
+              <div className="border rounded-lg p-6">
+                <ActiveDevicesSettings 
+                   user={user} 
+                   maxDevicesToShow={maxDevicesToShow} 
+                />
+              </div>
 
               <div className="border rounded-lg p-6">
                 <h2 className="text-lg font-semibold mb-4">Appearance</h2>

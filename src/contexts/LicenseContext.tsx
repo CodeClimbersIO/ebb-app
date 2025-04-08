@@ -30,6 +30,9 @@ export function LicenseProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
+      setIsLoading(true)
+
+      // Fetch active license
       const { data, error } = await supabase
         .from('licenses')
         .select('id, status, license_type, expiration_date')
@@ -43,6 +46,7 @@ export function LicenseProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (!data) {
+        // Try fetching trial license if no active license
         const { data: trialData, error: trialError } = await supabase
           .from('licenses')
           .select('id, status, license_type, expiration_date')
@@ -54,7 +58,7 @@ export function LicenseProvider({ children }: { children: React.ReactNode }) {
           console.error('Error fetching trial license:', trialError)
           throw trialError
         }
-
+        
         setLicense(trialData)
       } else {
         setLicense(data)
@@ -69,7 +73,7 @@ export function LicenseProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     fetchLicense()
-  }, [user])
+  }, [user?.id]) // Only refetch when user ID changes
 
   // Listen for realtime changes to the user's license
   useEffect(() => {
@@ -94,7 +98,7 @@ export function LicenseProvider({ children }: { children: React.ReactNode }) {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [user])
+  }, [user?.id]) // Only resubscribe when user ID changes
 
   return (
     <LicenseContext.Provider

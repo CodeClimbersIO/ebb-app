@@ -8,6 +8,7 @@ import { setupTray } from './lib/tray'
 import { initSentry } from '@/components/Sentry'
 import { useUpdate } from './hooks/useUpdate'
 import { useAuth } from './hooks/useAuth'
+import { useDeviceRegistration } from './hooks/useDeviceRegistration'
 import { usePostHog } from 'posthog-js/react'
 import { LicenseProvider } from '@/contexts/LicenseContext'
 
@@ -15,6 +16,7 @@ const App = () => {
   const posthog = usePostHog()
   const { beginCheckForUpdates } = useUpdate()
   const { user } = useAuth()
+  useDeviceRegistration()
 
   useEffect(() => {
     initSentry()
