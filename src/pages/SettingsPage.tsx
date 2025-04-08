@@ -8,8 +8,7 @@ import { AppleMusicIcon } from '@/components/icons/AppleMusicIcon'
 import { GoogleIcon } from '@/components/icons/GoogleIcon'
 import { DiscordIcon } from '@/components/icons/DiscordIcon'
 import { GithubIcon } from '@/components/icons/GithubIcon'
-import { BadgeCheck, KeyRound, LogOut } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
+import { LogOut } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -27,9 +26,7 @@ import { version } from '../../package.json'
 import { useAuth } from '@/hooks/useAuth'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { invoke } from '@tauri-apps/api/core'
-import { format } from 'date-fns'
-import { PaywallDialog } from '@/components/PaywallDialog'
-import { useLicense } from '@/contexts/LicenseContext'
+import { EbbProSettings } from '@/components/EbbProSettings'
 
 export function SettingsPage() {
   const [showUnlinkDialog, setShowUnlinkDialog] = useState(false)
@@ -45,7 +42,6 @@ export function SettingsPage() {
   const [showDeleteAccountDialog, setShowDeleteAccountDialog] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const { user } = useAuth()
-  const { license, isLoading: isLicenseLoading } = useLicense()
 
   useEffect(() => {
     const initializeSettings = async () => {
@@ -149,22 +145,6 @@ export function SettingsPage() {
     navigate('/login')
   }
 
-  const handleManageSubscription = async () => {
-    try {
-      const { data, error } = await supabase.functions.invoke('create-portal-session', {
-        body: { return_url: window.location.href },
-      })
-
-      if (error) throw error
-
-      if (data?.url) {
-        window.location.href = data.url
-      }
-    } catch (err) {
-      console.error('Error creating portal session:', err)
-    }
-  }
-
   return (
     <Layout>
       <TooltipProvider>
@@ -199,55 +179,7 @@ export function SettingsPage() {
                 </div>
               </div>
 
-              <div className="border rounded-lg p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <Badge className="bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 border-0 text-base px-3 py-1">
-                    <KeyRound className="h-4 w-4 mr-1.5" />
-                    Ebb Pro
-                  </Badge>
-                  {license && license.status === 'active' && license.license_type === 'subscription' && (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={handleManageSubscription}
-                    >
-                      Manage Subscription
-                    </Button>
-                  )}
-                </div>
-
-                {isLicenseLoading ? (
-                  <div className="text-sm text-muted-foreground">Loading license status...</div>
-                ) : license && (license.status === 'active' || license.status === 'trialing') ? (
-                  <div className="flex items-start gap-3">
-                    <BadgeCheck className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <div className="flex-grow">
-                      <div className="text-sm mb-1">
-                        You have an active <span className="font-semibold">Ebb Pro {license.license_type === 'subscription' ? 'Subscription' : 'Perpetual License'}</span>.
-                      </div>
-                      {license.expiration_date && (
-                        <div className="text-xs text-muted-foreground">
-                           {license.license_type === 'subscription' ? 'Renews on:' : 'Updates included until:'}{' '}
-                           {format(new Date(license.expiration_date), 'PPP')}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-muted-foreground">
-                      Unlock premium features and support the development of Ebb.
-                    </p>
-                    <div className="flex-shrink-0 ml-8">
-                      <PaywallDialog>
-                        <Button>
-                          Get Ebb Pro
-                        </Button>
-                      </PaywallDialog>
-                    </div>
-                  </div>
-                )}
-              </div>
+              <EbbProSettings />
 
               <div className="border rounded-lg p-6">
                 <h2 className="text-lg font-semibold mb-4">Appearance</h2>

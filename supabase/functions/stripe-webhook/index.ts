@@ -32,8 +32,6 @@ Deno.serve(async (req) => {
         return new Response(`Webhook Error: ${(err as Error).message}`, { status: 400 })
     }
 
-    console.log(`Received event: ${event.type}`)
-
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session
@@ -46,13 +44,10 @@ Deno.serve(async (req) => {
           throw new Error('No user ID found in session')
         }
 
-        console.log(`Processing checkout.session.completed for user: ${userId}`)
-
         // Handle based on mode
         if (session.mode === 'payment') {
           // One-time perpetual license
           const expirationDate = new Date(Date.now() + ONE_YEAR_IN_MS)
-          console.log(`Adding perpetual license for user ${userId} with expiration ${expirationDate.toISOString()}`)
 
           const { error: licenseError } = await supabase
             .from('licenses')
@@ -70,7 +65,6 @@ Deno.serve(async (req) => {
             console.error('Supabase upsert error (perpetual):', licenseError)
             throw licenseError
           }
-          console.log(`Perpetual license successfully added/updated for user ${userId}`)
         }
         // Note: Subscription creation handled by customer.subscription.created/updated
         break
@@ -80,8 +74,6 @@ Deno.serve(async (req) => {
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription
         const customerId = subscription.customer as string
-
-        console.log(`Processing subscription event ${event.type} for customer: ${customerId}`)
 
         // Get user_id from customer metadata 
         // (ensure user_id is added to customer metadata when subscription is first created)
@@ -111,8 +103,6 @@ Deno.serve(async (req) => {
         const expirationDate = new Date(subscription.current_period_end * 1000)
         const purchaseDate = new Date(subscription.start_date * 1000)
 
-        console.log(`Upserting subscription license for user ${userId} with status ${status}, expiration ${expirationDate.toISOString()}`)
-
         const { error: licenseError } = await supabase
           .from('licenses')
           .upsert({
@@ -129,13 +119,11 @@ Deno.serve(async (req) => {
           console.error('Supabase upsert error (subscription):', licenseError)
           throw licenseError
         }
-         console.log(`Subscription license successfully added/updated for user ${userId}`)
         break
       }
 
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription
-        console.log(`Processing subscription deleted for ID: ${subscription.id}`)
 
         // Update license status to expired
         const { error: updateError } = await supabase
@@ -147,8 +135,6 @@ Deno.serve(async (req) => {
           console.error('Supabase update error (sub deleted):', updateError)
           // Don't throw here, maybe the license was already deleted or never existed
           console.warn(`Failed to update license status for deleted subscription ${subscription.id}. Maybe it didn't exist?`)
-        } else {
-          console.log(`License status set to expired for subscription ${subscription.id}`)
         }
         break
       }
@@ -159,13 +145,9 @@ Deno.serve(async (req) => {
         const charge = event.data.object as Stripe.Charge
         const customerId = charge.customer as string
         // Implement logic to potentially revoke license based on charge/customer
-        console.log(`Processing charge refunded for customer: ${customerId}, charge: ${charge.id}`)
         break
       }
       */
-      default: {
-         console.log(`Unhandled event type: ${event.type}`)
-      }
     }
 
     // Return a 200 response to acknowledge receipt of the event

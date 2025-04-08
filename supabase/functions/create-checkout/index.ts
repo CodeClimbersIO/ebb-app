@@ -14,7 +14,6 @@ Deno.serve(async (req) => {
 
   try {
     const authHeader = req.headers.get('Authorization')
-    console.log('Received auth header:', authHeader)
     if (!authHeader) {
       throw new Error('No authorization header')
     }
@@ -31,7 +30,6 @@ Deno.serve(async (req) => {
 
     // Get the user from the auth header
     const token = authHeader.replace('Bearer ', '')
-    console.log('Extracted token:', token)
     const {
       data: { user },
       error: userError,
@@ -68,7 +66,7 @@ Deno.serve(async (req) => {
           price_data: {
             currency: 'usd',
             product_data: {
-              name: licenseType === 'perpetual' ? 'Ebb Perpetual License' : 'Ebb Pro Subscription',
+              name: licenseType === 'perpetual' ? 'Ebb Pro License' : 'Ebb Pro Subscription',
               description: licenseType === 'perpetual' 
                 ? 'One-time purchase with 1 year of updates'
                 : 'Monthly subscription with continuous updates'

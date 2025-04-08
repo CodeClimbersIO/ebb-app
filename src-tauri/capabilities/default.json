@@ -33,7 +33,9 @@
     "shell:allow-open",
     "shell:allow-execute",
     "core:event:default",
-    "core:event:allow-emit"
+    "core:event:allow-emit",
+    "os:allow-hostname",
+    "os:allow-os-type"
   ],
   "remote": {
     "urls": [
