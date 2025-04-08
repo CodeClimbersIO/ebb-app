@@ -229,7 +229,7 @@ export const StartFlowPage = () => {
         difficulty
       }
 
-      await invoke('start_blocking', { blockingApps, isBlockList, typewriterMode: false })
+      await invoke('start_blocking', { blockingApps, isBlockList, typewriterMode })
 
       if (!hasBreathing) {
         navigate('/session', { state: sessionState })
@@ -322,17 +322,17 @@ export const StartFlowPage = () => {
                     <TooltipTrigger asChild>
                       <div>
                         <Button
-                          variant="ghost"
+                          variant={typewriterMode ? 'secondary' : 'ghost'}
                           size="icon"
-                          className="text-muted-foreground opacity-50 cursor-not-allowed"
-                          disabled
+                          className={`text-muted-foreground ${!typewriterMode ? 'opacity-50' : ''}`}
+                          onClick={() => setTypewriterMode(!typewriterMode)}
                         >
                           <TypeOutline className="h-4 w-4" />
                         </Button>
                       </div>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Typewriter Mode coming soon</p>
+                      <p>Typewriter Mode</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>

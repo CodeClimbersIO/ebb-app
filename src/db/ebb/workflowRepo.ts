@@ -10,7 +10,7 @@ export interface WorkflowDb {
 }
 
 export interface WorkflowSettings {
-  hasTypewriter: boolean
+  typewriterMode: boolean
   hasBreathing: boolean
   hasMusic: boolean
   isAllowList?: boolean
