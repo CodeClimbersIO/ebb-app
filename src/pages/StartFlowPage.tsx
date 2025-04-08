@@ -34,7 +34,7 @@ export const StartFlowPage = () => {
   const [selectedApps, setSelectedApps] = useState<SearchOption[]>([])
   const [isAllowList, setIsAllowList] = useState(false)
   const [hasBreathing, setHasBreathing] = useState(true)
-  const [hasTypewriter, setHasTypewriter] = useState(false)
+  const [typewriterMode, setTypewriterMode] = useState(false)
   const [workflows, setWorkflows] = useState<Workflow[]>([])
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard' | null>(null)
   const [spotifyProfile, setSpotifyProfile] = useState<{
@@ -62,7 +62,7 @@ export const StartFlowPage = () => {
           setSelectedApps(mostRecentWorkflow.selectedApps || [])
           setIsAllowList(mostRecentWorkflow.settings.isAllowList || false)
           setHasBreathing(mostRecentWorkflow.settings.hasBreathing ?? true)
-          setHasTypewriter(mostRecentWorkflow.settings.hasTypewriter ?? false)
+          setTypewriterMode(mostRecentWorkflow.settings.typewriterMode ?? false)
           setDifficulty(mostRecentWorkflow.settings.difficulty || null)
         }
       } catch (error) {
@@ -100,7 +100,7 @@ export const StartFlowPage = () => {
         defaultDuration: duration?.as('minutes') ?? null,
         isAllowList,
         hasBreathing,
-        hasTypewriter,
+        typewriterMode,
         hasMusic: true,
         difficulty
       }
@@ -111,7 +111,7 @@ export const StartFlowPage = () => {
     } catch (error) {
       console.error('Failed to save workflow changes:', error)
     }
-  }, [duration, selectedPlaylist, selectedApps, isAllowList, selectedWorkflow, hasBreathing, hasTypewriter, difficulty])
+  }, [duration, selectedPlaylist, selectedApps, isAllowList, selectedWorkflow, hasBreathing, typewriterMode, difficulty])
 
   useEffect(() => {
     if (selectedWorkflow?.id) {
@@ -120,7 +120,7 @@ export const StartFlowPage = () => {
       }, 150)
       return () => clearTimeout(timeoutId)
     }
-  }, [selectedWorkflow, duration, selectedPlaylist, selectedApps, isAllowList, hasBreathing, hasTypewriter, saveChanges])
+  }, [selectedWorkflow, duration, selectedPlaylist, selectedApps, isAllowList, hasBreathing, typewriterMode, saveChanges])
 
   const handleWorkflowSelect = async (workflowId: string) => {
     try {
@@ -134,7 +134,7 @@ export const StartFlowPage = () => {
         setSelectedApps(workflow.selectedApps || [])
         setIsAllowList(workflow.settings.isAllowList || false)
         setHasBreathing(workflow.settings.hasBreathing ?? true)
-        setHasTypewriter(workflow.settings.hasTypewriter ?? false)
+        setTypewriterMode(workflow.settings.typewriterMode ?? false)
         setDifficulty(workflow.settings.difficulty || null)
       }
     } catch (error) {
@@ -175,9 +175,9 @@ export const StartFlowPage = () => {
             defaultDuration: duration?.as('minutes') ?? null,
             isAllowList,
             hasBreathing,
-            hasTypewriter,
+            typewriterMode,
             hasMusic: true,
-            difficulty
+            difficulty,
           }
         }
 
@@ -223,14 +223,13 @@ export const StartFlowPage = () => {
         duration: duration ? duration.as('minutes') : undefined,
         workflowId,
         hasBreathing,
-        hasTypewriter,
         hasMusic: true,
         selectedPlaylist,
         selectedPlaylistName: selectedWorkflow?.selectedPlaylistName,
         difficulty
       }
 
-      await invoke('start_blocking', { blockingApps, isBlockList })
+      await invoke('start_blocking', { blockingApps, isBlockList, typewriterMode: false })
 
       if (!hasBreathing) {
         navigate('/session', { state: sessionState })

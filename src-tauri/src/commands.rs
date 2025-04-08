@@ -12,7 +12,6 @@ use crate::system_monitor;
 
 // Store the current blocking state
 static BLOCKING_STATE: Mutex<Option<(Vec<BlockableItem>, bool)>> = Mutex::new(None);
-
 #[derive(Debug, serde::Deserialize)]
 pub struct BlockingApp {
     external_id: String,
@@ -25,7 +24,7 @@ pub async fn get_app_icon(bundle_id: String) -> Result<String, String> {
 }
 
 #[command]
-pub fn start_blocking(blocking_apps: Vec<BlockingApp>, is_block_list: bool) {
+pub fn start_blocking(blocking_apps: Vec<BlockingApp>, is_block_list: bool, typewriter_mode: bool) {
     let apps: Vec<BlockableItem> = blocking_apps
         .iter()
         .map(|app| BlockableItem {
@@ -33,17 +32,20 @@ pub fn start_blocking(blocking_apps: Vec<BlockingApp>, is_block_list: bool) {
             is_browser: app.is_browser,
         })
         .collect();
-    println!("Starting blocking {:?}", apps);
-    
+
     *BLOCKING_STATE.lock().unwrap() = Some((apps.clone(), is_block_list));
-    
+
     os_start_blocking(&apps, "https://ebb.cool/vibes", is_block_list);
+    if typewriter_mode {
+        system_monitor::start_typewriter_mode();
+    }
 }
 
 #[command]
 pub fn stop_blocking() {
     *BLOCKING_STATE.lock().unwrap() = None;
     os_stop_blocking();
+    system_monitor::stop_typewriter_mode();
 }
 
 #[command]
@@ -52,31 +54,36 @@ pub async fn snooze_blocking(duration: u64) -> Result<(), String> {
         let state = BLOCKING_STATE.lock().map_err(|e| e.to_string())?;
         state.clone()
     };
-    
+
     if let Some((apps, is_block_list)) = blocking_state {
         os_stop_blocking();
-        
+
         let sleep_result = tokio::time::timeout(
             Duration::from_millis(duration + 100),
-            sleep(Duration::from_millis(duration))
-        ).await;
+            sleep(Duration::from_millis(duration)),
+        )
+        .await;
 
         if sleep_result.is_ok() {
             if let Ok(current_state) = BLOCKING_STATE.lock() {
-                let should_resume = current_state.as_ref().map(|(current_apps, current_is_block_list)| {
-                    current_apps.len() == apps.len() &&
-                    current_apps.iter().zip(apps.iter()).all(|(a, b)| {
-                        a.app_external_id == b.app_external_id && a.is_browser == b.is_browser
-                    }) &&
-                    current_is_block_list == &is_block_list
-                }).unwrap_or(false);
-                
+                let should_resume = current_state
+                    .as_ref()
+                    .map(|(current_apps, current_is_block_list)| {
+                        current_apps.len() == apps.len()
+                            && current_apps.iter().zip(apps.iter()).all(|(a, b)| {
+                                a.app_external_id == b.app_external_id
+                                    && a.is_browser == b.is_browser
+                            })
+                            && current_is_block_list == &is_block_list
+                    })
+                    .unwrap_or(false);
+
                 if should_resume {
                     os_start_blocking(&apps, "https://ebb.cool/vibes", is_block_list);
                 }
             }
         }
-        
+
         Ok(())
     } else {
         Err("No active blocking to snooze".to_string())

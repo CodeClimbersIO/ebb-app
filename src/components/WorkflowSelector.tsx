@@ -365,12 +365,12 @@ export function WorkflowSelector({ selectedId, onSelect }: WorkflowSelectorProps
         selectedPlaylist: null,
         lastSelected: Date.now(),
         settings: {
-          hasTypewriter: false,
+          typewriterMode: false,
           hasBreathing: true,
           hasMusic: true,
           isAllowList: false,
           defaultDuration: null,
-          difficulty: 'medium'
+          difficulty: 'medium',
         }
       }
       
