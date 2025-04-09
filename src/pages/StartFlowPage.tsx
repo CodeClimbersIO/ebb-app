@@ -36,6 +36,7 @@ export const StartFlowPage = () => {
   const [hasBreathing, setHasBreathing] = useState(true)
   const [typewriterMode, setTypewriterMode] = useState(false)
   const [workflows, setWorkflows] = useState<Workflow[]>([])
+  const [hasMusic, setHasMusic] = useState(true)
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard' | null>(null)
   const [spotifyProfile, setSpotifyProfile] = useState<{
     email: string
@@ -63,6 +64,7 @@ export const StartFlowPage = () => {
           setIsAllowList(mostRecentWorkflow.settings.isAllowList || false)
           setHasBreathing(mostRecentWorkflow.settings.hasBreathing ?? true)
           setTypewriterMode(mostRecentWorkflow.settings.typewriterMode ?? false)
+          setHasMusic(mostRecentWorkflow.settings.hasMusic ?? true)
           setDifficulty(mostRecentWorkflow.settings.difficulty || null)
         }
       } catch (error) {
@@ -101,7 +103,7 @@ export const StartFlowPage = () => {
         isAllowList,
         hasBreathing,
         typewriterMode,
-        hasMusic: true,
+        hasMusic: hasMusic,
         difficulty
       }
     }
@@ -111,7 +113,7 @@ export const StartFlowPage = () => {
     } catch (error) {
       console.error('Failed to save workflow changes:', error)
     }
-  }, [duration, selectedPlaylist, selectedApps, isAllowList, selectedWorkflow, hasBreathing, typewriterMode, difficulty])
+  }, [duration, selectedPlaylist, selectedApps, isAllowList, selectedWorkflow, hasBreathing, typewriterMode, hasMusic, difficulty])
 
   useEffect(() => {
     if (selectedWorkflow?.id) {
@@ -120,7 +122,7 @@ export const StartFlowPage = () => {
       }, 150)
       return () => clearTimeout(timeoutId)
     }
-  }, [selectedWorkflow, duration, selectedPlaylist, selectedApps, isAllowList, hasBreathing, typewriterMode, saveChanges])
+  }, [selectedWorkflow, duration, selectedPlaylist, selectedApps, isAllowList, hasBreathing, typewriterMode, hasMusic, saveChanges])
 
   const handleWorkflowSelect = async (workflowId: string) => {
     try {
@@ -135,6 +137,7 @@ export const StartFlowPage = () => {
         setIsAllowList(workflow.settings.isAllowList || false)
         setHasBreathing(workflow.settings.hasBreathing ?? true)
         setTypewriterMode(workflow.settings.typewriterMode ?? false)
+        setHasMusic(workflow.settings.hasMusic ?? true)
         setDifficulty(workflow.settings.difficulty || null)
       }
     } catch (error) {
@@ -158,6 +161,14 @@ export const StartFlowPage = () => {
     }
   }, [selectedWorkflowId])
 
+  // Add callback to handle settings changes from WorkflowSelector
+  const handleSettingsChange = (workflowId: string, newSettings: Workflow['settings']) => {
+    if (workflowId === selectedWorkflowId) {
+      setHasMusic(newSettings.hasMusic ?? true)
+      setHasBreathing(newSettings.hasBreathing ?? true)
+    }
+  }
+
   const handleBegin = async () => {
     try {
       const workflowId = selectedWorkflowId
@@ -176,7 +187,7 @@ export const StartFlowPage = () => {
             isAllowList,
             hasBreathing,
             typewriterMode,
-            hasMusic: true,
+            hasMusic: hasMusic,
             difficulty,
           }
         }
@@ -223,7 +234,7 @@ export const StartFlowPage = () => {
         duration: duration ? duration.as('minutes') : undefined,
         workflowId,
         hasBreathing,
-        hasMusic: true,
+        hasMusic: hasMusic,
         selectedPlaylist,
         selectedPlaylistName: selectedWorkflow?.selectedPlaylistName,
         difficulty
@@ -271,6 +282,7 @@ export const StartFlowPage = () => {
                 <WorkflowSelector 
                   selectedId={selectedWorkflowId} 
                   onSelect={handleWorkflowSelect}
+                  onSettingsChange={handleSettingsChange}
                 />
               </motion.div>
             )}
@@ -300,14 +312,16 @@ export const StartFlowPage = () => {
               </Alert>
             )}
 
-            <div>
-              <MusicSelector
-                selectedPlaylist={selectedPlaylist}
-                onPlaylistSelect={(playlist) => {
-                  setSelectedPlaylist(playlist.id)
-                }}
-              />
-            </div>
+            {hasMusic && (
+              <div>
+                <MusicSelector
+                  selectedPlaylist={selectedPlaylist}
+                  onPlaylistSelect={(playlist) => {
+                    setSelectedPlaylist(playlist.id)
+                  }}
+                />
+              </div>
+            )}
 
             <div className="flex items-center gap-4">
               <div className="flex-1">
