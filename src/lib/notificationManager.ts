@@ -177,18 +177,35 @@ class NotificationManager {
         })
       })
 
-      await new Promise<void>((resolve) => {
+      const closePromise = new Promise<void>((resolve) => {
+        webviewWindow.listen('notification-close', async () => {
+          const index = this.notifications.indexOf(webviewWindow)
+          if (index > -1) {
+            this.notifications.splice(index, 1)
+          }
+          await webviewWindow.destroy()
+          info('Notification window destroyed early via event')
+          resolve()
+        }).then(unlisten => {
+          webviewWindow.once('tauri://destroyed', () => {
+            unlisten()
+          })
+        })
+      })
+
+      const timeoutPromise = new Promise<void>((resolve) => {
         setTimeout(async () => {
           const index = this.notifications.indexOf(webviewWindow)
           if (index > -1) {
             this.notifications.splice(index, 1)
           }
           await webviewWindow.destroy()
-          info('Notification window destroyed')
+          info('Notification window destroyed by timeout')
           resolve()
         }, duration + ANIMATION_DURATION)
       })
 
+      await Promise.race([closePromise, timeoutPromise])
       info('Notification complete')
     } catch (err) {
       error(`Error showing notification: ${err}`)

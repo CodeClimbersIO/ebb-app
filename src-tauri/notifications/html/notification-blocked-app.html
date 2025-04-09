@@ -203,7 +203,9 @@
         const notificationActions = {
           dismiss: () => {
             notification.style.animation = 'slideOut 0.5s ease-in forwards'
-            setTimeout(() => window.close(), 1000)
+            setTimeout(async () => {
+              await event.emit('notification-close')
+            }, 1000)
           },
 
           snooze: async () => {
