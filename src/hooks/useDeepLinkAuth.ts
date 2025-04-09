@@ -26,6 +26,12 @@ export const useDeepLinkAuth = () => {
         const urlObj = new URL(url)
         const searchParams = new URLSearchParams(urlObj.search.substring(1))
 
+        // Check if this is a Stripe success callback
+        if (urlObj.pathname.includes('/stripe/success')) {
+          window.location.reload()
+          return
+        }
+
         // Check if this is a Spotify callback
         if (url.includes('spotify/callback')) {
           const spotifyCode = searchParams.get('code')
