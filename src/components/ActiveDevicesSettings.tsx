@@ -6,6 +6,7 @@ import { hostname } from '@tauri-apps/plugin-os'
 import { User } from '@supabase/supabase-js'
 import { Laptop2 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
+import { invoke } from '@tauri-apps/api/core'
 
 interface Device {
   id: string
@@ -20,8 +21,6 @@ interface ActiveDevicesSettingsProps {
   onDeviceRemoved?: () => void
 }
 
-const DEVICE_ID_KEY = 'ebb_device_id'
-
 const cleanupHostname = (name: string): string => {
   return name
     .replace(/\.local$/, '')
@@ -31,6 +30,20 @@ const cleanupHostname = (name: string): string => {
 export function ActiveDevicesSettings({ user, maxDevicesToShow, onDeviceRemoved }: ActiveDevicesSettingsProps) {
   const [devices, setDevices] = useState<Device[]>([])
   const [isLoadingDevices, setIsLoadingDevices] = useState(true)
+  const [currentDeviceId, setCurrentDeviceId] = useState<string | null>(null)
+
+  useEffect(() => {
+    const getCurrentDeviceId = async () => {
+      try {
+        const macAddress = await invoke<string>('get_mac_address')
+        setCurrentDeviceId(macAddress)
+      } catch (error) {
+        console.error('Error getting MAC address:', error)
+        setCurrentDeviceId(null)
+      }
+    }
+    getCurrentDeviceId()
+  }, [])
 
   const fetchDevices = async () => {
     if (!user) {
@@ -40,7 +53,6 @@ export function ActiveDevicesSettings({ user, maxDevicesToShow, onDeviceRemoved 
     }
 
     let currentDeviceName: string | null = null
-    const currentDeviceId: string | null = localStorage.getItem(DEVICE_ID_KEY)
 
     try {
       setIsLoadingDevices(true)
@@ -97,11 +109,10 @@ export function ActiveDevicesSettings({ user, maxDevicesToShow, onDeviceRemoved 
 
   useEffect(() => {
     fetchDevices()
-  }, [user?.id])
+  }, [user?.id, currentDeviceId])
 
   const handleDeviceLogout = async (logoutDeviceId: string) => {
     try {
-      const currentDeviceId = localStorage.getItem(DEVICE_ID_KEY)
       if (logoutDeviceId === currentDeviceId) return
       if (!user) throw new Error('No user found')
 
