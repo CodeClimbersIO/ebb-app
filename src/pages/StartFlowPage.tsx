@@ -318,7 +318,7 @@ export const StartFlowPage = () => {
               </div>
               <div className="flex items-center gap-2">
                 <TooltipProvider>
-                  <Tooltip>
+                  <Tooltip delayDuration={0}>
                     <TooltipTrigger asChild>
                       <div>
                         <Button
@@ -332,7 +332,8 @@ export const StartFlowPage = () => {
                       </div>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Typewriter Mode</p>
+                      <p>{typewriterMode ? 'Typewriter Mode: On' : 'Typewriter Mode: Off'}</p>
+                      <p>(de-emphasize everything but the active window)</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>

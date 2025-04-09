@@ -49,7 +49,6 @@ interface AppSelectorProps {
   onDifficultyChange?: (value: 'easy' | 'medium' | 'hard') => void
 }
 
-// Add this constant at the top of the file, after the imports
 const CATEGORY_ORDER: Record<AppCategory, number> = {
   'social media': 1,
   'communication': 2,
@@ -70,7 +69,6 @@ const CATEGORY_ORDER: Record<AppCategory, number> = {
   'utilities': 17
 }
 
-// Simplified helper function to get display text and key
 const getOptionDetails = (option: SearchOption) => {
   if (option.type === 'app') {
     if (!option.app.is_browser) {
@@ -90,14 +88,52 @@ const getOptionDetails = (option: SearchOption) => {
   return { text: '', key: '' }
 }
 
-// Add this helper function near other helper functions
-const getCategoryTooltipContent = (category: AppCategory, apps: App[]): string => {
+const getCategoryTooltipContent = (category: AppCategory, apps: App[]): React.ReactNode => {
   const categoryApps = apps.filter(app => app.category_tag?.tag_name === category)
-  const appNames = categoryApps.map(app => {
-    if (app.is_browser) return app.app_external_id
-    return app.name
-  })
-  return appNames.join(', ')
+  const nativeApps = categoryApps.filter(app => !app.is_browser)
+  const websites = categoryApps.filter(app => app.is_browser)
+
+  return (
+    <div className="space-y-2 max-w-xs">
+      {/* Websites Section */}
+      <div>
+        <strong className="text-xs font-medium">Websites:</strong>
+        {websites.length > 0 ? (
+          <ul className="grid grid-cols-2 gap-x-4 list-none pl-0 space-y-0.5 mt-1">
+            {websites.map(app => (
+              <li key={`web-${app.id}`} className="flex items-center gap-1.5 text-xs min-w-0">
+                <AppIcon app={app} size="xs" />
+                <span className="truncate">{app.app_external_id}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-xs text-muted-foreground/60 italic mt-1">None</p>
+        )}
+      </div>
+
+      {websites.length > 0 && nativeApps.length > 0 && (
+        <hr className="border-border/50" />
+      )}
+
+      {/* Apps Section */}
+      <div>
+        <strong className="text-xs font-medium">Apps:</strong>
+        {nativeApps.length > 0 ? (
+          <ul className="grid grid-cols-2 gap-x-4 list-none pl-0 space-y-0.5 mt-1">
+            {nativeApps.map(app => (
+              <li key={`app-${app.id}`} className="flex items-center gap-1.5 text-xs min-w-0">
+                <AppIcon app={app} size="xs" />
+                <span className="truncate">{app.name}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-xs text-muted-foreground/60 italic mt-1">None</p>
+        )}
+      </div>
+    </div>
+  )
 }
 
 export function AppSelector({
@@ -130,7 +166,6 @@ export function AppSelector({
   const [selected, setSelected] = useState(0)
   const [apps, setApps] = useState<AppOption[]>([])
   const [categoryOptions, setCategoryOptions] = useState<CategoryOption[]>([])
-  // Combined close and reset functionality
   const handleClose = () => {
     setOpen(false)
     setSearch('')
@@ -251,7 +286,6 @@ export function AppSelector({
         const aStr = getOptionDetails(a).text.toLowerCase()
         const bStr = getOptionDetails(b).text.toLowerCase()
 
-        // Custom website option should be at the bottom
         if (a.type === 'custom') return 1
         if (b.type === 'custom') return -1
 
@@ -279,7 +313,6 @@ export function AppSelector({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!open) return
 
-    // Handle backspace/delete when search is empty to remove last selected app
     if ((e.key === 'Backspace' || e.key === 'Delete') && search === '' && selectedApps.length > 0) {
       e.preventDefault()
       onAppRemove(selectedApps[selectedApps.length - 1])
@@ -325,7 +358,6 @@ export function AppSelector({
       return
     }
 
-    // For non-category options, check if they belong to an already selected category
     if (option.type === 'app') {
       const category = option.app.category_tag?.tag_name
       const categoryAlreadySelected = selectedApps.some(selected =>
@@ -333,7 +365,6 @@ export function AppSelector({
       )
 
       if (categoryAlreadySelected) {
-        // Add the item even if its category is already selected
         const exactDuplicate = selectedApps.find(selected =>
           'type' in selected && 'type' in option &&
           getOptionDetails(selected).key === key
@@ -348,7 +379,6 @@ export function AppSelector({
       }
     }
 
-    // Rest of the existing selection logic
     if ('category' in option) {
       const categoryExists = selectedApps.some(selected =>
         'category' in selected && selected.category === option.category
@@ -372,11 +402,9 @@ export function AppSelector({
     setSelected(0)
   }
 
-  // Update isAlreadySelected function
   const isAlreadySelected = (searchTerm: string): { isSelected: boolean; message?: string } => {
     const searchLower = searchTerm.toLowerCase()
 
-    // First check direct matches
     const directMatch = selectedApps.some(selected =>
       getOptionDetails(selected).text.toLowerCase().includes(searchLower)
     )
@@ -384,7 +412,6 @@ export function AppSelector({
       return { isSelected: true, message: 'Already added' }
     }
 
-    // Then check if the search matches any app/website that belongs to a selected category
     const searchMatchingApp = apps.find(app => {
       const appText = app.type === 'app' ? app.app.name : app.app.app_external_id
       return appText.toLowerCase().includes(searchLower)
@@ -406,7 +433,6 @@ export function AppSelector({
     return { isSelected: false }
   }
 
-  // Add global keydown event listener
   React.useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       // Only handle Delete or Backspace when not in an input field
@@ -422,6 +448,11 @@ export function AppSelector({
     document.addEventListener('keydown', handleGlobalKeyDown)
     return () => document.removeEventListener('keydown', handleGlobalKeyDown)
   }, [selectedApps, onAppRemove])
+
+  const getCurrentCategoryCount = (category: AppCategory): number => {
+    const categoryData = categoryOptions.find(catOpt => catOpt.category === category)
+    return categoryData?.count ?? 0
+  }
 
   return (
     <div className="relative w-full" ref={inputRef}>
@@ -447,7 +478,12 @@ export function AppSelector({
                             categoryEmojis[option.category as AppCategory]
                           )}
                         </span>
-                        <span className="truncate">{getOptionDetails(option).text}</span>
+                        <span className="truncate">
+                          {isCategory
+                            ? `${option.category} (${getCurrentCategoryCount(option.category)})` 
+                            : getOptionDetails(option).text
+                          }
+                        </span>
                         <X
                           className="h-3 w-3 cursor-pointer shrink-0"
                           onClick={(e) => {
@@ -478,7 +514,7 @@ export function AppSelector({
               className="w-full outline-none border-0 bg-transparent focus:border-0 focus:outline-none focus:ring-0 p-0"
             />
             {open && (
-              <Command className="absolute left-0 top-full z-50 w-[300px] rounded-md border bg-popover shadow-md h-fit mt-2">
+              <Command className="absolute left-0 top-full z-50 w-[280px] rounded-md border bg-popover shadow-md h-fit mt-2">
                 <CommandList className="max-h-[300px] overflow-y-auto">
                   {filteredOptions.length === 0 ? (
                     <CommandEmpty>
