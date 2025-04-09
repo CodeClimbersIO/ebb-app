@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Music, Check, ChevronsUpDown } from 'lucide-react'
+import { Music, Check, ChevronsUpDown, AlertCircle } from 'lucide-react'
 import { SpotifyIcon } from './icons/SpotifyIcon'
 import { AppleMusicIcon } from './icons/AppleMusicIcon'
 import { SpotifyAuthService } from '@/lib/integrations/spotify/spotifyAuth'
@@ -33,6 +33,7 @@ import {
   DialogTitle,
 } from './ui/dialog'
 import { Skeleton } from './ui/skeleton'
+import { Alert, AlertDescription } from './ui/alert'
 
 interface MusicSelectorProps {
   selectedPlaylist: string | null
@@ -287,6 +288,12 @@ export function MusicSelector({ selectedPlaylist, onPlaylistSelect }: MusicSelec
           <DialogHeader>
             <DialogTitle className="text-lg font-normal mb-4">Connect your music</DialogTitle>
           </DialogHeader>
+          <Alert className="mb-4 border-yellow-500 text-yellow-600">
+            <AlertCircle className="h-4 w-4 !text-yellow-600" />
+            <AlertDescription>
+              The Spotify integration is still in beta and only works for permitted users. If you would like to try it, please email nathan@ebb.cool
+            </AlertDescription>
+          </Alert>
           <div className="grid grid-cols-2 gap-4">
             <div
               onClick={() => {

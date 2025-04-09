@@ -25,6 +25,7 @@ import { Switch } from '@/components/ui/switch'
 interface WorkflowSelectorProps {
   selectedId: string | null
   onSelect: (workflowId: string) => void
+  onSettingsChange?: (workflowId: string, newSettings: Workflow['settings']) => void
 }
 
 interface WorkflowBadgeProps { 
@@ -54,6 +55,7 @@ function WorkflowBadge({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showAdvancedDialog, setShowAdvancedDialog] = useState(false)
   const [hasBreathing, setHasBreathing] = useState(workflow.settings.hasBreathing ?? true)
+  const [hasMusic, setHasMusic] = useState(workflow.settings.hasMusic ?? true)
   const badgeRef = useRef<HTMLDivElement>(null)
   const editableRef = useRef<HTMLSpanElement>(null)
 
@@ -104,6 +106,16 @@ function WorkflowBadge({
       onUpdateSettings({
         ...workflow.settings,
         hasBreathing: checked
+      })
+    }
+  }
+
+  const handleMusicChange = (checked: boolean) => {
+    setHasMusic(checked)
+    if (onUpdateSettings) {
+      onUpdateSettings({
+        ...workflow.settings,
+        hasMusic: checked
       })
     }
   }
@@ -247,6 +259,20 @@ function WorkflowBadge({
                 />
               </div>
             </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <span>Enable Music</span>
+                  <p className="text-sm text-muted-foreground">
+                    Play Spotify or Apple Music during the session
+                  </p>
+                </div>
+                <Switch
+                  checked={hasMusic}
+                  onCheckedChange={handleMusicChange}
+                />
+              </div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -254,7 +280,7 @@ function WorkflowBadge({
   )
 }
 
-export function WorkflowSelector({ selectedId, onSelect }: WorkflowSelectorProps) {
+export function WorkflowSelector({ selectedId, onSelect, onSettingsChange }: WorkflowSelectorProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [workflows, setWorkflows] = useState<Workflow[]>([])
   const [showLeftMask, setShowLeftMask] = useState(false)
@@ -437,6 +463,9 @@ export function WorkflowSelector({ selectedId, onSelect }: WorkflowSelectorProps
     try {
       const savedWorkflow = await WorkflowApi.saveWorkflow(updatedWorkflow)
       setWorkflows(workflows.map(w => w.id === savedWorkflow.id ? savedWorkflow : w))
+      if (onSettingsChange && savedWorkflow.id) {
+        onSettingsChange(savedWorkflow.id, savedWorkflow.settings)
+      }
     } catch (error) {
       console.error('Failed to update workflow settings:', error)
     }

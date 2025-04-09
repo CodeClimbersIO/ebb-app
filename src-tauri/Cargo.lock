@@ -165,7 +165,7 @@ dependencies = [
  "chrono",
  "dirs 6.0.0",
  "log",
- "os-monitor 0.4.4",
+ "os-monitor",
  "os-monitor-service",
  "sentry",
  "serde",
@@ -3107,22 +3107,9 @@ dependencies = [
 
 [[package]]
 name = "os-monitor"
-version = "0.4.4"
-dependencies = [
- "cc",
- "ctrlc",
- "env_logger",
- "log",
- "once_cell",
- "serde",
- "thiserror 2.0.8",
-]
-
-[[package]]
-name = "os-monitor"
-version = "0.4.4"
+version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f2d090ace3c3f15ae983768b89de181414e18b38e1e405907246fde49d821d97"
+checksum = "d9977d0a1387ef356f8d728051127ac125ee6da92fdb81877eeb20b4fd2284c4"
 dependencies = [
  "cc",
  "ctrlc",
@@ -3135,14 +3122,16 @@ dependencies = [
 
 [[package]]
 name = "os-monitor-service"
-version = "0.4.4"
+version = "0.4.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "47364b85921feae6096b0f918e0ef96116a03d128a16dcb9870e030af5351801"
 dependencies = [
  "dirs 6.0.0",
  "dotenv",
  "env_logger",
  "log",
  "once_cell",
- "os-monitor 0.4.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "os-monitor",
  "parking_lot",
  "sqlx",
  "time",

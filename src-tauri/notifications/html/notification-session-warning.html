@@ -185,6 +185,9 @@
 
         const triggerExit = () => {
           notification.style.animation = 'slideOut 0.5s ease-in forwards'
+          setTimeout(async () => {
+            await event.emit('notification-close')
+          }, 1000)
         }
 
         document.querySelector('.dismiss-button').addEventListener('click', triggerExit)
@@ -210,9 +213,6 @@
               setTimeout(() => {
                 triggerExit()
               }, 400)
-              setTimeout(() => {
-                window.close()
-              }, 1000)
             } catch (error) {
               console.error('Failed to emit add-time event:', error)
               button.textContent = 'Failed to add time'

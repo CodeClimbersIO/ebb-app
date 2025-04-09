@@ -18,7 +18,6 @@ interface LocationState {
   endTime: string
 }
 
-// Initialize the notification manager
 const notificationManager = NotificationManager.getInstance()
 
 export const FlowRecapPage = () => {
@@ -35,7 +34,6 @@ export const FlowRecapPage = () => {
     if (effectRan.current) return
     effectRan.current = true
 
-    // Show session end notification
     notificationManager.show({
       type: 'session-end'
     })
@@ -51,16 +49,12 @@ export const FlowRecapPage = () => {
       
       setAppUsage(topApps)
       
-      // Calculate total creating time
       const creating = rawChartData.reduce((acc, curr) => acc + curr.creating, 0)
       setTotalCreating(creating)
       
-      // Calculate total session duration in minutes
       const totalDuration = end.diff(start).as('minutes')
       setTotalTime(totalDuration)
       
-      // Use the same approach as HomePage - just slice the data
-      // This is simpler and more compatible than using generateTimeBlocks
       const processedChartData = rawChartData.slice(6)
       setChartData(processedChartData)
     }
