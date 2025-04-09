@@ -1,12 +1,8 @@
-'use client'
-
 import * as React from 'react'
-import { Check, X, Plus } from 'lucide-react'
+import { Check, Plus } from 'lucide-react'
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from '@/components/ui/command'
-import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils/tailwind.util'
 import { AppCategory, categoryEmojis } from '@/lib/app-directory/apps-types'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useEffect, useRef, useState } from 'react'
 import { MonitorApi } from '../api/monitorApi/monitorApi'
 import { App } from '../db/monitor/appRepo'
@@ -14,6 +10,7 @@ import { AppIcon } from './AppIcon'
 import { Tag } from '../db/monitor/tagRepo'
 import { Button } from '@/components/ui/button'
 import { DifficultySelector } from './DifficultySelector'
+import { CategoryTooltip } from './CategoryTooltip'
 
 interface CategoryOption {
   type: 'category'
@@ -86,54 +83,6 @@ const getOptionDetails = (option: SearchOption) => {
     }
   }
   return { text: '', key: '' }
-}
-
-const getCategoryTooltipContent = (category: AppCategory, apps: App[]): React.ReactNode => {
-  const categoryApps = apps.filter(app => app.category_tag?.tag_name === category)
-  const nativeApps = categoryApps.filter(app => !app.is_browser)
-  const websites = categoryApps.filter(app => app.is_browser)
-
-  return (
-    <div className="space-y-2 max-w-xs">
-      {/* Websites Section */}
-      <div>
-        <strong className="text-xs font-medium">Websites:</strong>
-        {websites.length > 0 ? (
-          <ul className="grid grid-cols-2 gap-x-4 list-none pl-0 space-y-0.5 mt-1">
-            {websites.map(app => (
-              <li key={`web-${app.id}`} className="flex items-center gap-1.5 text-xs min-w-0">
-                <AppIcon app={app} size="xs" />
-                <span className="truncate">{app.app_external_id}</span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-xs text-muted-foreground/60 italic mt-1">None</p>
-        )}
-      </div>
-
-      {websites.length > 0 && nativeApps.length > 0 && (
-        <hr className="border-border/50" />
-      )}
-
-      {/* Apps Section */}
-      <div>
-        <strong className="text-xs font-medium">Apps:</strong>
-        {nativeApps.length > 0 ? (
-          <ul className="grid grid-cols-2 gap-x-4 list-none pl-0 space-y-0.5 mt-1">
-            {nativeApps.map(app => (
-              <li key={`app-${app.id}`} className="flex items-center gap-1.5 text-xs min-w-0">
-                <AppIcon app={app} size="xs" />
-                <span className="truncate">{app.name}</span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-xs text-muted-foreground/60 italic mt-1">None</p>
-        )}
-      </div>
-    </div>
-  )
 }
 
 export function AppSelector({
@@ -454,6 +403,52 @@ export function AppSelector({
     return categoryData?.count ?? 0
   }
 
+  const renderCommandContent = filteredOptions.length === 0 ? (
+    <CommandEmpty>
+      {search && isAlreadySelected(search).isSelected
+        ? isAlreadySelected(search).message
+        : emptyText}
+    </CommandEmpty>
+  ) : (
+    <CommandGroup>
+      {filteredOptions.map((option, index) => (
+        <CategoryTooltip
+          key={getOptionDetails(option).key}
+          option={option}
+          apps={apps.map(app => app.app)}
+          side="right"
+          align="start"
+        >
+          <div>
+            <CommandItem
+              onSelect={() => handleSelect(option)}
+              className={cn(index === selected && 'bg-accent text-accent-foreground')}
+            >
+              <Check className={cn(
+                'mr-1 h-4 w-4',
+                index === selected ? 'opacity-100' : 'opacity-0'
+              )} />
+              <span className="w-6 h-6 flex items-center justify-center mr-1">
+                {option.type === 'app' ? (
+                  <AppIcon app={option.app} />
+                ) : option.type === 'custom' ? (
+                  <Plus className="h-4 w-4" />
+                ) : (
+                  categoryEmojis[option.category as AppCategory]
+                )}
+              </span>
+              {option.type === 'custom' ? (
+                <span>Add custom website: <span className="font-semibold">{option.url}</span></span>
+              ) : (
+                getOptionDetails(option).text
+              )}
+            </CommandItem>
+          </div>
+        </CategoryTooltip>
+      ))}
+    </CommandGroup>
+  )
+
   return (
     <div className="relative w-full" ref={inputRef}>
       <div className="relative min-h-[120px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
@@ -463,44 +458,14 @@ export function AppSelector({
             const key = getOptionDetails(option).key
             const isCategory = 'category' in option && 'count' in option
             return (
-              <TooltipProvider key={key}>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <div className="flex items-center">
-                      <Badge
-                        variant="secondary"
-                        className="flex items-center gap-1 h-6"
-                      >
-                        <span className="w-4 h-4 flex items-center justify-center shrink-0">
-                          {option.type === 'app' ? <AppIcon app={option.app} /> : option.type === 'custom' ? (
-                            <Plus className="h-3 w-3" />
-                          ) : (
-                            categoryEmojis[option.category as AppCategory]
-                          )}
-                        </span>
-                        <span className="truncate">
-                          {isCategory
-                            ? `${option.category} (${getCurrentCategoryCount(option.category)})` 
-                            : getOptionDetails(option).text
-                          }
-                        </span>
-                        <X
-                          className="h-3 w-3 cursor-pointer shrink-0"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            onAppRemove(option)
-                          }}
-                        />
-                      </Badge>
-                    </div>
-                  </TooltipTrigger>
-                  {isCategory && (
-                    <TooltipContent className="max-w-[300px]">
-                      {getCategoryTooltipContent((option as CategoryOption).category, apps.map(app => app.app))}
-                    </TooltipContent>
-                  )}
-                </Tooltip>
-              </TooltipProvider>
+              <CategoryTooltip
+                key={key}
+                option={option}
+                onRemove={onAppRemove}
+                categoryCount={isCategory ? getCurrentCategoryCount(option.category) : undefined}
+                apps={apps.map(app => app.app)}
+                delayDuration={400}
+              />
             )
           })}
 
@@ -516,54 +481,7 @@ export function AppSelector({
             {open && (
               <Command className="absolute left-0 top-full z-50 w-[280px] rounded-md border bg-popover shadow-md h-fit mt-2">
                 <CommandList className="max-h-[300px] overflow-y-auto">
-                  {filteredOptions.length === 0 ? (
-                    <CommandEmpty>
-                      {search && isAlreadySelected(search).isSelected
-                        ? isAlreadySelected(search).message
-                        : emptyText}
-                    </CommandEmpty>
-                  ) : (
-                    <CommandGroup>
-                      {filteredOptions.map((option, index) => (
-                        <TooltipProvider key={getOptionDetails(option).key}>
-                          <Tooltip delayDuration={0}>
-                            <TooltipTrigger asChild>
-                              <div>
-                                <CommandItem
-                                  onSelect={() => handleSelect(option)}
-                                  className={cn(index === selected && 'bg-accent text-accent-foreground')}
-                                >
-                                  <Check className={cn(
-                                    'mr-1 h-4 w-4',
-                                    index === selected ? 'opacity-100' : 'opacity-0'
-                                  )} />
-                                  <span className="w-6 h-6 flex items-center justify-center mr-1">
-                                    {option.type === 'app' ? (
-                                      <AppIcon app={option.app} />
-                                    ) : option.type === 'custom' ? (
-                                      <Plus className="h-4 w-4" />
-                                    ) : (
-                                      categoryEmojis[option.category as AppCategory]
-                                    )}
-                                  </span>
-                                  {option.type === 'custom' ? (
-                                    <span>Add custom website: <span className="font-semibold">{option.url}</span></span>
-                                  ) : (
-                                    getOptionDetails(option).text
-                                  )}
-                                </CommandItem>
-                              </div>
-                            </TooltipTrigger>
-                            {'category' in option && 'count' in option && (
-                              <TooltipContent side="right" align="start" className="max-w-[300px]">
-                                {getCategoryTooltipContent((option as CategoryOption).category, apps.map(app => app.app))}
-                              </TooltipContent>
-                            )}
-                          </Tooltip>
-                        </TooltipProvider>
-                      ))}
-                    </CommandGroup>
-                  )}
+                  {renderCommandContent}
                 </CommandList>
               </Command>
             )}

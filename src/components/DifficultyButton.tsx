@@ -1,5 +1,3 @@
-'use client'
-
 import * as React from 'react'
 import { Button, ButtonProps } from './ui/button'
 import { Loader2 } from 'lucide-react'

@@ -16,15 +16,10 @@ import { MusicSelector } from '@/components/MusicSelector'
 import { AppSelector, type SearchOption } from '@/components/AppSelector'
 import { BlockingPreferenceApi } from '../api/ebbApi/blockingPreferenceApi'
 import { App } from '../db/monitor/appRepo'
-import { TypeOutline, AlertCircle } from 'lucide-react'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
+import { AlertCircle } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { SpotifyApiService } from '@/lib/integrations/spotify/spotifyApi'
+import { TypewriterModeToggle } from '@/components/TypewriterModeToggle'
 
 export const StartFlowPage = () => {
   const { duration, setDuration } = useFlowTimer()
@@ -103,7 +98,7 @@ export const StartFlowPage = () => {
         isAllowList,
         hasBreathing,
         typewriterMode,
-        hasMusic: hasMusic,
+        hasMusic,
         difficulty
       }
     }
@@ -161,7 +156,6 @@ export const StartFlowPage = () => {
     }
   }, [selectedWorkflowId])
 
-  // Add callback to handle settings changes from WorkflowSelector
   const handleSettingsChange = (workflowId: string, newSettings: Workflow['settings']) => {
     if (workflowId === selectedWorkflowId) {
       setHasMusic(newSettings.hasMusic ?? true)
@@ -187,7 +181,7 @@ export const StartFlowPage = () => {
             isAllowList,
             hasBreathing,
             typewriterMode,
-            hasMusic: hasMusic,
+            hasMusic,
             difficulty,
           }
         }
@@ -234,7 +228,7 @@ export const StartFlowPage = () => {
         duration: duration ? duration.as('minutes') : undefined,
         workflowId,
         hasBreathing,
-        hasMusic: hasMusic,
+        hasMusic,
         selectedPlaylist,
         selectedPlaylistName: selectedWorkflow?.selectedPlaylistName,
         difficulty
@@ -243,7 +237,7 @@ export const StartFlowPage = () => {
       await invoke('start_blocking', { blockingApps, isBlockList, typewriterMode })
 
       if (!hasBreathing) {
-        navigate('/session', { state: sessionState })
+        navigate('/flow', { state: sessionState })
       } else {
         navigate('/breathing-exercise', { state: sessionState })
       }
@@ -331,26 +325,10 @@ export const StartFlowPage = () => {
                 />
               </div>
               <div className="flex items-center gap-2">
-                <TooltipProvider>
-                  <Tooltip delayDuration={0}>
-                    <TooltipTrigger asChild>
-                      <div>
-                        <Button
-                          variant={typewriterMode ? 'secondary' : 'ghost'}
-                          size="icon"
-                          className={`text-muted-foreground ${!typewriterMode ? 'opacity-50' : ''}`}
-                          onClick={() => setTypewriterMode(!typewriterMode)}
-                        >
-                          <TypeOutline className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{typewriterMode ? 'Typewriter Mode: On' : 'Typewriter Mode: Off'}</p>
-                      <p>(de-emphasize everything but the active window)</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <TypewriterModeToggle
+                  typewriterMode={typewriterMode}
+                  onToggle={(value) => setTypewriterMode(value)}
+                />
               </div>
             </div>
 
