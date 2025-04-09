@@ -154,8 +154,7 @@
     </style>
     <script>
       window.onload = async function() {
-        const { shell } = window.__TAURI__
-        const { event } = window.__TAURI__
+        const { shell, event } = window.__TAURI__
         const params = new URLSearchParams(window.location.search)
         const duration = parseInt(params.get('duration') || '10000')
         const notification = document.querySelector('.notification')
