@@ -8,8 +8,8 @@ import { Laptop2 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
 interface Device {
-  id: string // device_id
-  name: string // device_name
+  id: string
+  name: string
   last_active: string
   is_current: boolean
 }
@@ -24,8 +24,8 @@ const DEVICE_ID_KEY = 'ebb_device_id'
 
 const cleanupHostname = (name: string): string => {
   return name
-    .replace(/\.local$/, '') // Remove .local suffix
-    .replace(/-/g, ' ') // Replace dashes with spaces
+    .replace(/\.local$/, '')
+    .replace(/-/g, ' ')
 }
 
 export function ActiveDevicesSettings({ user, maxDevicesToShow, onDeviceRemoved }: ActiveDevicesSettingsProps) {
@@ -123,7 +123,6 @@ export function ActiveDevicesSettings({ user, maxDevicesToShow, onDeviceRemoved 
 
     } catch (err) {
       console.error('Error logging out device:', err)
-      // TODO: Add user-facing error message
     }
   }
 
@@ -168,7 +167,7 @@ export function ActiveDevicesSettings({ user, maxDevicesToShow, onDeviceRemoved 
                     size="sm"
                     onClick={() => handleDeviceLogout(device.id)}
                   >
-                    Deactivate {/* Kept as Deactivate as requested */}
+                    Deactivate
                   </Button>
                 )}
               </div>
