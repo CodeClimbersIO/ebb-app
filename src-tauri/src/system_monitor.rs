@@ -69,6 +69,7 @@ pub fn stop_typewriter_mode() {
     if let Some(app_handle) = MONITOR_APP_HANDLE.lock().unwrap().as_ref() {
         let _ = app_handle.run_on_main_thread(|| {
             remove_typewriter_window();
+            run_loop_cycle();
         });
     }
 }
