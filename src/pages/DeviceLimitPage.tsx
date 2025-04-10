@@ -4,7 +4,7 @@ import { Layout } from '@/components/Layout'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { PaywallDialog } from '@/components/PaywallDialog'
-import { useLicense } from '@/contexts/LicenseContext'
+import { useLicenseStore } from '@/stores/licenseStore'
 import { AlertCircle } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 
@@ -13,10 +13,11 @@ interface DeviceLimitPageProps {
 }
 
 export function DeviceLimitPage({ onDeviceRemoved }: DeviceLimitPageProps) {
-  const { license, isLoading: isLicenseLoading } = useLicense()
+  const license = useLicenseStore((state) => state.license)
+  const isLoading = useLicenseStore((state) => state.isLoading)
   const { user } = useAuth()
 
-  const isPotentiallyPro = isLicenseLoading || (license && (license.status === 'active' || license.status === 'trialing'))
+  const isPotentiallyPro = isLoading || (license && (license.status === 'active' || license.status === 'trialing'))
   const maxDevicesToShow = isPotentiallyPro ? 3 : 1
 
   return (

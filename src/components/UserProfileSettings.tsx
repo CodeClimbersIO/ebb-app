@@ -1,12 +1,12 @@
 import { Button } from '@/components/ui/button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { PaywallDialog } from '@/components/PaywallDialog'
 import { GoogleIcon } from '@/components/icons/GoogleIcon'
 import { LogOut, KeyRound } from 'lucide-react'
 import { format } from 'date-fns'
 import { User } from '@supabase/supabase-js'
-import { LicenseState } from '@/contexts/LicenseContext' // Assuming LicenseState is exported
+import { useLicenseStore } from '@/stores/licenseStore' // Import Zustand store
 import supabase from '@/lib/integrations/supabase'
 import { useNavigate } from 'react-router-dom'
 
@@ -14,13 +14,14 @@ const DEVICE_ID_KEY = 'ebb_device_id'
 
 interface UserProfileSettingsProps {
   user: User | null
-  license: LicenseState | null
-  isLoadingLicense: boolean
+  // license and isLoadingLicense props are removed, fetched from store instead
 }
 
-export function UserProfileSettings({ user, license, isLoadingLicense }: UserProfileSettingsProps) {
+export function UserProfileSettings({ user }: UserProfileSettingsProps) {
   const navigate = useNavigate()
-  
+  const license = useLicenseStore((state) => state.license)
+  const isLoadingLicense = useLicenseStore((state) => state.isLoading)
+
   const hasProLicense = !isLoadingLicense && license && (license.status === 'active' || license.status === 'trialing')
 
   // Logout Handler (copied from SettingsPage)
@@ -53,7 +54,7 @@ export function UserProfileSettings({ user, license, isLoadingLicense }: UserPro
       console.error('[Logout] Error signing out:', signOutError)
     } else {
       console.log('[Logout] Sign out successful, navigating to /login')
-      navigate('/login') 
+      navigate('/login')
     }
   }
 
@@ -88,20 +89,22 @@ export function UserProfileSettings({ user, license, isLoadingLicense }: UserPro
               {isLoadingLicense ? (
                 <KeyRound className="h-5 w-5 text-muted-foreground animate-pulse" />
               ) : hasProLicense ? (
-                <Tooltip delayDuration={0}>
-                  <TooltipTrigger asChild>
-                    <KeyRound className="h-5 w-5 text-yellow-500 cursor-pointer" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                     <p>Status: {license?.status}</p>
-                     {license?.license_type && <p>Type: {license.license_type}</p>}
-                     {license?.expiration_date && <p>Updates until: {format(new Date(license.expiration_date), 'PP')}</p>}
-                     {/* Manage Subscription button inside tooltip */}
-                     {license?.license_type === 'subscription' && (
-                         <Button size="sm" variant="outline" onClick={handleManageSubscription} className="mt-2 w-full">Manage Subscription</Button>
-                     )}
-                  </TooltipContent>
-                </Tooltip>
+                <TooltipProvider>
+                  <Tooltip delayDuration={0}>
+                    <TooltipTrigger asChild>
+                      <KeyRound className="h-5 w-5 text-yellow-500 cursor-pointer" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Status: {license?.status}</p>
+                      {license?.license_type && <p>Type: {license.license_type}</p>}
+                      {license?.expiration_date && <p>Updates until: {format(new Date(license.expiration_date), 'PP')}</p>}
+                      {/* Manage Subscription button inside tooltip */}
+                      {license?.license_type === 'subscription' && (
+                          <Button size="sm" variant="outline" onClick={handleManageSubscription} className="mt-2 w-full">Manage Subscription</Button>
+                      )}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               ) : (
                 <PaywallDialog>
                   <KeyRound className="h-5 w-5 text-muted-foreground hover:text-yellow-500 cursor-pointer" />

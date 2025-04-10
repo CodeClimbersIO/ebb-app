@@ -22,10 +22,10 @@ import supabase from '@/lib/integrations/supabase'
 import { ResetAppData } from '@/components/developer/ResetAppData'
 import { version } from '../../package.json'
 import { useAuth } from '@/hooks/useAuth'
-import { useLicense } from '@/contexts/LicenseContext'
 import { invoke } from '@tauri-apps/api/core'
 import { ActiveDevicesSettings } from '@/components/ActiveDevicesSettings'
 import { UserProfileSettings } from '@/components/UserProfileSettings'
+import { useLicenseStore } from '@/stores/licenseStore'
 
 export function SettingsPage() {
   const [showUnlinkDialog, setShowUnlinkDialog] = useState(false)
@@ -41,9 +41,10 @@ export function SettingsPage() {
   const [showDeleteAccountDialog, setShowDeleteAccountDialog] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const { user } = useAuth()
-  const { license, isLoading: isLicenseLoading } = useLicense()
+  const storeLicense = useLicenseStore((state) => state.license)
+  const isLicenseLoading = useLicenseStore((state) => state.isLoading)
 
-  const hasProLicense = !isLicenseLoading && license && (license.status === 'active' || license.status === 'trialing')
+  const hasProLicense = !isLicenseLoading && storeLicense && (storeLicense.status === 'active' || storeLicense.status === 'trialing')
   const maxDevicesToShow = hasProLicense ? 3 : 1
 
   useEffect(() => {
@@ -150,11 +151,7 @@ export function SettingsPage() {
             <h1 className="text-2xl font-semibold mb-8">Settings</h1>
 
             <div className="space-y-8">
-              <UserProfileSettings 
-                 user={user} 
-                 license={license} 
-                 isLoadingLicense={isLicenseLoading} 
-              />
+              <UserProfileSettings user={user} />
 
               <div className="border rounded-lg p-6">
                 <ActiveDevicesSettings 

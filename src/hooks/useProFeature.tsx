@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useLicense } from '@/contexts/LicenseContext'
+import { useLicenseStore } from '@/stores/licenseStore'
 import { PaywallDialog } from '@/components/PaywallDialog'
 
 interface UseProFeatureOptions {
@@ -7,11 +7,12 @@ interface UseProFeatureOptions {
 }
 
 export function useProFeature(options: UseProFeatureOptions = {}) {
-  const { license, isLoading } = useLicense()
+  const license = useLicenseStore((state) => state.license)
+  const isLoading = useLicenseStore((state) => state.isLoading)
   const [showPaywall, setShowPaywall] = useState(false)
 
-  // Check if user has access to pro features
-  const hasAccess = !isLoading && license !== null
+  // Check if user has access to pro features (active or trialing license)
+  const hasAccess = !isLoading && (license?.status === 'active' || license?.status === 'trialing')
 
   // Function to be called when trying to use a pro feature
   const requirePro = <T extends (...args: unknown[]) => unknown>(callback: T) => {

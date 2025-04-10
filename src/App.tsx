@@ -10,12 +10,15 @@ import { useUpdate } from './hooks/useUpdate'
 import { useAuth } from './hooks/useAuth'
 import { useDeviceRegistration } from './hooks/useDeviceRegistration'
 import { usePostHog } from 'posthog-js/react'
-import { LicenseProvider } from '@/contexts/LicenseContext'
+import { useLicenseStore } from '@/stores/licenseStore'
 
 const App = () => {
   const posthog = usePostHog()
   const { beginCheckForUpdates } = useUpdate()
   const { user } = useAuth()
+  const fetchLicense = useLicenseStore((state) => state.fetchLicense)
+  const initSubscription = useLicenseStore((state) => state.initSubscription)
+  const clearSubscription = useLicenseStore((state) => state.clearSubscription)
   useDeviceRegistration()
 
   useEffect(() => {
@@ -40,14 +43,22 @@ const App = () => {
       posthog.identify(user.id, {
         email: user.email,
       })
+      fetchLicense(user.id)
+      initSubscription(user.id)
+    } else {
+      fetchLicense(null) // Clear license if user logs out
+      clearSubscription()
     }
-  }, [user])
+
+    // Cleanup subscription on component unmount or user change
+    return () => {
+      clearSubscription()
+    }
+  }, [user, fetchLicense, initSubscription, clearSubscription, posthog])
 
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-      <LicenseProvider>
-        <AppRouter />
-      </LicenseProvider>
+      <AppRouter />
     </ThemeProvider>
   )
 }

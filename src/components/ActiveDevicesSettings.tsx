@@ -7,6 +7,7 @@ import { User } from '@supabase/supabase-js'
 import { Laptop2 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { invoke } from '@tauri-apps/api/core'
+import { Skeleton } from '@/components/ui/skeleton'
 
 interface Device {
   id: string
@@ -146,7 +147,7 @@ export function ActiveDevicesSettings({ user, maxDevicesToShow, onDeviceRemoved 
         </div>
       </div>
       {isLoadingDevices ? (
-        <div className="text-sm text-muted-foreground">Loading devices...</div>
+        <Skeleton className="h-14 w-full rounded-lg" />
       ) : (
         <div className="space-y-3">
           {devices.map((device) => (

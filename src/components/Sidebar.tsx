@@ -3,11 +3,12 @@ import { Home, Users, Settings, KeyRound } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { PaywallDialog } from '@/components/PaywallDialog'
-import { useLicense } from '@/contexts/LicenseContext'
+import { useLicenseStore } from '@/stores/licenseStore'
 
 export function Sidebar() {
   const location = useLocation()
-  const { license, isLoading } = useLicense()
+  const license = useLicenseStore((state) => state.license)
+  const isLoading = useLicenseStore((state) => state.isLoading)
 
   return (
     <TooltipProvider>
