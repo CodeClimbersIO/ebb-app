@@ -26,6 +26,7 @@ import { version } from '../../package.json'
 import { useAuth } from '@/hooks/useAuth'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { invoke } from '@tauri-apps/api/core'
+import { ShortcutInput } from '@/components/ShortcutInput'
 
 export const SettingsPage = () => {
   const [showUnlinkDialog, setShowUnlinkDialog] = useState(false)
@@ -199,8 +200,8 @@ export const SettingsPage = () => {
               </div>
 
               <div className="border rounded-lg p-6">
-                <h2 className="text-lg font-semibold mb-4">Appearance</h2>
-                <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold mb-4">System</h2>
+                <div className="flex items-center justify-between mb-4">
                   <div>
                     <div className="font-medium">Theme</div>
                     <div className="text-sm text-muted-foreground">
@@ -210,6 +211,15 @@ export const SettingsPage = () => {
                   <div className="relative">
                     <ModeToggle />
                   </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium">Global Shortcut</div>
+                    <div className="text-sm text-muted-foreground">
+                      Use this shortcut anywhere to open Ebb
+                    </div>
+                  </div>
+                  <ShortcutInput popoverAlign="end" />
                 </div>
               </div>
 

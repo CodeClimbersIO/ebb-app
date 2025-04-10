@@ -9,11 +9,13 @@ import { initSentry } from '@/components/Sentry'
 import { useUpdate } from './hooks/useUpdate'
 import { useAuth } from './hooks/useAuth'
 import { usePostHog } from 'posthog-js/react'
+import { useShortcutStore } from '@/lib/stores/shortcutStore'
 
 const App = () => {
   const posthog = usePostHog()
   const { beginCheckForUpdates } = useUpdate()
   const { user } = useAuth()
+  const { loadShortcutFromStorage } = useShortcutStore()
 
   useEffect(() => {
     initSentry()
@@ -39,6 +41,10 @@ const App = () => {
       })
     }
   }, [user])
+
+  useEffect(() => {
+    loadShortcutFromStorage()
+  }, [loadShortcutFromStorage])
 
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
