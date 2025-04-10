@@ -8,6 +8,7 @@ import {
   loadShortcut as loadInitialShortcut,
 } from '../lib/globalShortcutManager'
 import { error as logError } from '@tauri-apps/plugin-log'
+import { useShortcutStore } from '@/lib/stores/shortcutStore'
 
 type ModifierKey = '⌘' | '⌥' | '⌃' | '⇧'
 
@@ -34,18 +35,20 @@ export function ShortcutInput({ popoverAlign = 'center' }: ShortcutInputProps) {
   const [activeModifiers, setActiveModifiers] = useState<ModifierKey[]>([])
   const [activeKey, setActiveKey] = useState<string | null>(null)
   const [currentShortcut, setCurrentShortcut] = useState('')
+  const loadShortcutFromStore = useShortcutStore((state) => state.loadShortcutFromStorage)
 
   useEffect(() => {
     const loadAndSetShortcut = async () => {
       try {
         const initialShortcut = await loadInitialShortcut()
         setCurrentShortcut(initialShortcut)
+        await loadShortcutFromStore()
       } catch (error) {
         logError(`Failed to load initial shortcut: ${error}`)
       }
     }
-    loadAndSetShortcut()
-  }, [])
+    void loadAndSetShortcut()
+  }, [loadShortcutFromStore])
 
   useEffect(() => {
     setActiveModifiers([])
@@ -95,6 +98,7 @@ export function ShortcutInput({ popoverAlign = 'center' }: ShortcutInputProps) {
           try {
             await updateGlobalShortcut(newShortcut)
             setCurrentShortcut(newShortcut)
+            await loadShortcutFromStore()
             setIsOpen(false)
             setActiveKey(null)
           } catch (error) {
@@ -130,13 +134,14 @@ export function ShortcutInput({ popoverAlign = 'center' }: ShortcutInputProps) {
       window.removeEventListener('keydown', handleKeyDown)
       window.removeEventListener('keyup', handleKeyUp)
     }
-  }, [isOpen])
+  }, [isOpen, loadShortcutFromStore])
 
   const handleClearShortcut = async (e: React.MouseEvent) => {
     e.stopPropagation()
     try {
       await updateGlobalShortcut('')
       setCurrentShortcut('')
+      await loadShortcutFromStore()
     } catch (error) {
       logError(`Failed to clear shortcut: ${error}`)
     }

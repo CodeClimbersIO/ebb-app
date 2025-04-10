@@ -44,11 +44,13 @@ export function TopNav({ variant = 'default' }: TopNavProps) {
                 onClick={handleStartFlowSession}
               >
                 Start Focus
-                <div className="ml-2 flex gap-1.5">
-                  {shortcutParts.map((part, i) => (
-                    <Hotkey key={i} size="sm">{part}</Hotkey>
-                  ))}
-                </div>
+                {shortcutParts.length > 0 && (
+                  <div className="ml-2 flex gap-1.5">
+                    {shortcutParts.map((part, i) => (
+                      <Hotkey key={i} size="sm">{part}</Hotkey>
+                    ))}
+                  </div>
+                )}
               </Button>
             ) : (
               <Button variant="ghost" size="icon" onClick={() => navigate('/')}>

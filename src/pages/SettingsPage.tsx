@@ -216,7 +216,7 @@ export const SettingsPage = () => {
                   <div>
                     <div className="font-medium">Global Shortcut</div>
                     <div className="text-sm text-muted-foreground">
-                      Use this shortcut anywhere to open Ebb
+                      Use this shortcut anywhere to start a focus session
                     </div>
                   </div>
                   <ShortcutInput popoverAlign="end" />
