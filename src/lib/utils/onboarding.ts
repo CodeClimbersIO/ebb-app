@@ -5,7 +5,7 @@ export const OnboardingUtils = {
     return localStorage.getItem(ONBOARDING_COMPLETED_KEY) === 'true'
   },
 
-  markOnboardingCompleted: async (): Promise<void> => {
+  markOnboardingCompleted: (): void => {
     localStorage.setItem(ONBOARDING_COMPLETED_KEY, 'true')
   },
 
