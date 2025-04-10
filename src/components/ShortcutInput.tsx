@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Hotkey } from '@/components/ui/hotkey'
-import { X } from 'lucide-react'
+import { X, Check } from 'lucide-react'
 import {
   updateGlobalShortcut,
   loadShortcut as loadInitialShortcut,
@@ -28,11 +28,19 @@ interface ShortcutInputProps {
   popoverAlign?: 'center' | 'start' | 'end'
 }
 
+type KeySnapshot = {
+  modifiers: ModifierKey[]
+  key: string | null
+  isClosing: boolean
+}
+
 export function ShortcutInput({ popoverAlign = 'center' }: ShortcutInputProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [activeModifiers, setActiveModifiers] = useState<ModifierKey[]>([])
   const [activeKey, setActiveKey] = useState<string | null>(null)
   const [currentShortcut, setCurrentShortcut] = useState('')
+  const [recordingOpacity, setRecordingOpacity] = useState(1)
+  const [snapshot, setSnapshot] = useState<KeySnapshot | null>(null)
   const loadShortcutFromStore = useShortcutStore((state) => state.loadShortcutFromStorage)
 
   useEffect(() => {
@@ -51,6 +59,13 @@ export function ShortcutInput({ popoverAlign = 'center' }: ShortcutInputProps) {
   const handleOpenChange = (open: boolean) => {
     setIsOpen(open)
     if (!open) {
+      if (!snapshot?.isClosing) {
+        setActiveModifiers([])
+        setActiveKey(null)
+      }
+    } else {
+      setRecordingOpacity(1)
+      setSnapshot(null)
       setActiveModifiers([])
       setActiveKey(null)
     }
@@ -97,17 +112,23 @@ export function ShortcutInput({ popoverAlign = 'center' }: ShortcutInputProps) {
         const updateShortcut = async () => {
           const newShortcut = [...currentModifiers.map(m => modifierMap[m]), unmodifiedKey].join('+')
           try {
+            setRecordingOpacity(0)
+            setSnapshot({ modifiers: currentModifiers, key: unmodifiedKey, isClosing: true })
             await updateGlobalShortcut(newShortcut)
             setCurrentShortcut(newShortcut)
             await loadShortcutFromStore()
             
             setTimeout(() => {
               setIsOpen(false)
-            }, 300)
+              setSnapshot(null)
+              setActiveModifiers([])
+              setActiveKey(null)
+            }, 500)
           } catch (error) {
             logError(`Failed to update shortcut in ShortcutInput: ${error}`)
             setActiveKey(null)
             setActiveModifiers([])
+            setSnapshot(null)
           }
         }
         void updateShortcut()
@@ -115,7 +136,7 @@ export function ShortcutInput({ popoverAlign = 'center' }: ShortcutInputProps) {
     }
 
     const handleKeyUp = (e: KeyboardEvent) => {
-      if (!isOpen) return
+      if (!isOpen || snapshot?.isClosing) return
 
       const currentModifiers: ModifierKey[] = []
       if (e.metaKey) currentModifiers.push('⌘')
@@ -137,7 +158,7 @@ export function ShortcutInput({ popoverAlign = 'center' }: ShortcutInputProps) {
       window.removeEventListener('keydown', handleKeyDown)
       window.removeEventListener('keyup', handleKeyUp)
     }
-  }, [isOpen, loadShortcutFromStore])
+  }, [isOpen, loadShortcutFromStore, snapshot])
 
   const handleClearShortcut = async (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -159,6 +180,9 @@ export function ShortcutInput({ popoverAlign = 'center' }: ShortcutInputProps) {
                    part === 'SPACE' ? '⎵' : part
     return <Hotkey size="lg">{content}</Hotkey>
   }
+
+  const displayModifiers = snapshot?.isClosing ? snapshot.modifiers : activeModifiers
+  const displayKey = snapshot?.isClosing ? snapshot.key : activeKey
 
   return (
     <Popover open={isOpen} onOpenChange={handleOpenChange}>
@@ -184,15 +208,22 @@ export function ShortcutInput({ popoverAlign = 'center' }: ShortcutInputProps) {
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className='w-64' align={popoverAlign}>
+      <PopoverContent className='w-64 relative' align={popoverAlign}>
+        {snapshot?.isClosing && (
+          <div className='absolute top-3 right-3 transition-all duration-300 animate-in fade-in-0 scale-in-0'>
+            <div className='rounded-full bg-green-500/10 p-1'>
+              <Check className='w-4 h-4 text-green-500' strokeWidth={3} />
+            </div>
+          </div>
+        )}
         <div className='flex flex-col gap-4'>
           <div className='min-h-[88px] flex flex-col justify-center'>
-            {activeModifiers.length === 0 && !activeKey && (
+            {displayModifiers.length === 0 && !displayKey && (
               <>
-                <div className='text-center font-medium'>
+                <div className='text-center font-medium transition-opacity duration-300' style={{ opacity: recordingOpacity }}>
                   Recording...
                 </div>
-                <div className='flex justify-center items-center gap-2 text-muted-foreground mt-4'>
+                <div className='flex justify-center items-center gap-2 text-muted-foreground mt-4 transition-opacity duration-300' style={{ opacity: recordingOpacity }}>
                   {(['⌘', '⌃', '⌥', '⇧'] as ModifierKey[]).map((key) => (
                     <Hotkey key={key} variant='unselected'>{key}</Hotkey>
                   ))}
@@ -201,23 +232,23 @@ export function ShortcutInput({ popoverAlign = 'center' }: ShortcutInputProps) {
             )}
             <div className='flex flex-col items-center gap-2'>
               <div className='flex justify-center items-center gap-2'>
-                {activeModifiers.map((modifier, i) => (
+                {displayModifiers.map((modifier, i) => (
                   <span key={i}>
                     {i > 0 && ' + '}
                     <Hotkey size='lg'>{modifier}</Hotkey>
                   </span>
                 ))}
-                {activeKey && activeModifiers.length > 0 && (
+                {displayKey && displayModifiers.length > 0 && (
                   <>
                     <span>+</span>
-                    <Hotkey size='lg'>{activeKey}</Hotkey>
+                    <Hotkey size='lg'>{displayKey}</Hotkey>
                   </>
                 )}
-                {activeKey && activeModifiers.length === 0 && (
-                  <Hotkey size='lg'>{activeKey}</Hotkey>
+                {displayKey && displayModifiers.length === 0 && (
+                  <Hotkey size='lg'>{displayKey}</Hotkey>
                 )}
               </div>
-              {activeKey && activeModifiers.length === 0 && (
+              {displayKey && displayModifiers.length === 0 && (
                 <div className='text-sm text-center text-red-400 mt-2'>
                   You must begin with a modifier: command, control, alt, or shift
                 </div>
