@@ -1,5 +1,5 @@
 import { error, info } from '@tauri-apps/plugin-log'
-import { convertFileSrc } from '@tauri-apps/api/core'
+import { convertFileSrc, invoke } from '@tauri-apps/api/core'
 import { resolveResource } from '@tauri-apps/api/path'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 
@@ -187,6 +187,18 @@ class NotificationManager {
       }
 
       webviewWindow.listen('notification-close', closeWindow)
+      .then(unlisten => {
+        webviewWindow.once('tauri://destroyed', () => {
+          unlisten()
+        })
+      })
+
+      webviewWindow.listen('snooze_blocking', async (event: { payload: { duration: number } }) => {
+        await invoke('snooze_blocking', {
+          duration: event.payload.duration
+        })
+      })
+      
       .then(unlisten => {
         webviewWindow.once('tauri://destroyed', () => {
           unlisten()
