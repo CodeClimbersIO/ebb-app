@@ -1,7 +1,7 @@
 {
   "name": "app-codeclimbers",
   "private": true,
-  "version": "0.1.34",
+  "version": "0.1.36",
   "type": "module",
   "author": "Paul Hovley <rphovley@gmail.com>",
   "scripts": {

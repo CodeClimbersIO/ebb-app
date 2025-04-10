@@ -154,7 +154,7 @@
     </style>
     <script>
       window.onload = async function() {
-        const { window: tauriWindow, shell } = window.__TAURI__
+        const { shell, event } = window.__TAURI__
         const params = new URLSearchParams(window.location.search)
         const duration = parseInt(params.get('duration') || '10000')
         const notification = document.querySelector('.notification')
@@ -171,6 +171,9 @@
         
         const triggerExit = () => {
           notification.style.animation = 'slideOut 0.5s ease-in forwards'
+          setTimeout(async () => {
+            await event.emit('notification-close')
+          }, 1000)
         }
 
         document.querySelector('.dismiss-button').addEventListener('click', triggerExit)
@@ -181,14 +184,8 @@
             e.preventDefault()
             
             try {
-              const windows = await tauriWindow.getAllWindows()
-              const mainWindow = windows.find(w => w.label === 'main')
-              if (mainWindow) {
-                await mainWindow.show()
-                await mainWindow.setFocus()
-              }
-              
               await shell.open('ebb://flow-recap')
+              triggerExit()
             } catch (error) {
               console.error('Error:', error)
             }

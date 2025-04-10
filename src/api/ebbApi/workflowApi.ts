@@ -9,14 +9,7 @@ export interface Workflow {
   selectedPlaylist?: string | null
   selectedPlaylistName?: string | null
   lastSelected?: number
-  settings: {
-    hasTypewriter: boolean
-    hasBreathing: boolean
-    hasMusic: boolean
-    isAllowList?: boolean
-    defaultDuration: number | null
-    difficulty?: 'easy' | 'medium' | 'hard' | null
-  }
+  settings: WorkflowSettings
 }
 
 const fromDbWorkflow = async (dbWorkflow: WorkflowDb): Promise<Workflow> => {
@@ -37,26 +30,26 @@ const fromDbWorkflow = async (dbWorkflow: WorkflowDb): Promise<Workflow> => {
     selectedPlaylistName: settings.selectedPlaylistName,
     lastSelected: dbWorkflow.last_selected ? new Date(dbWorkflow.last_selected).getTime() : undefined,
     settings: {
-      hasTypewriter: settings.hasTypewriter,
+      typewriterMode: settings.typewriterMode,
       hasBreathing: settings.hasBreathing,
       hasMusic: settings.hasMusic,
       isAllowList: settings.isAllowList || false,
       defaultDuration: settings.defaultDuration,
-      difficulty: settings.difficulty
+      difficulty: settings.difficulty,
     }
   }
 }
 
 const toDbWorkflow = (workflow: Workflow): Partial<WorkflowDb> => {
   const settings: WorkflowSettings = {
-    hasTypewriter: workflow.settings.hasTypewriter,
+    typewriterMode: workflow.settings.typewriterMode,
     hasBreathing: workflow.settings.hasBreathing,
     hasMusic: workflow.settings.hasMusic,
     isAllowList: workflow.settings.isAllowList,
     defaultDuration: workflow.settings.defaultDuration,
     selectedPlaylist: workflow.selectedPlaylist,
     selectedPlaylistName: workflow.selectedPlaylistName,
-    difficulty: workflow.settings.difficulty
+    difficulty: workflow.settings.difficulty,
   }
   
   const dbWorkflow: Partial<WorkflowDb> = {

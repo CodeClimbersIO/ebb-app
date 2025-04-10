@@ -177,17 +177,23 @@ class NotificationManager {
         })
       })
 
-      await new Promise<void>((resolve) => {
-        setTimeout(async () => {
-          const index = this.notifications.indexOf(webviewWindow)
-          if (index > -1) {
-            this.notifications.splice(index, 1)
-          }
-          await webviewWindow.destroy()
-          info('Notification window destroyed')
-          resolve()
-        }, duration + ANIMATION_DURATION)
+      const closeWindow = async () => {
+        const index = this.notifications.indexOf(webviewWindow)
+        if (index > -1) {
+          this.notifications.splice(index, 1)
+        }
+        await webviewWindow.destroy()
+        info('Notification window destroyed early via event')
+      }
+
+      webviewWindow.listen('notification-close', closeWindow)
+      .then(unlisten => {
+        webviewWindow.once('tauri://destroyed', () => {
+          unlisten()
+        })
       })
+
+      setTimeout(closeWindow, duration + ANIMATION_DURATION)
 
       info('Notification complete')
     } catch (err) {

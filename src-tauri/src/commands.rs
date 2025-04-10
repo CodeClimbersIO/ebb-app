@@ -12,7 +12,6 @@ use crate::system_monitor;
 
 // Store the current blocking state
 static BLOCKING_STATE: Mutex<Option<(Vec<BlockableItem>, bool)>> = Mutex::new(None);
-
 #[derive(Debug, serde::Deserialize)]
 pub struct BlockingApp {
     external_id: String,
@@ -25,7 +24,7 @@ pub async fn get_app_icon(bundle_id: String) -> Result<String, String> {
 }
 
 #[command]
-pub fn start_blocking(blocking_apps: Vec<BlockingApp>, is_block_list: bool) {
+pub fn start_blocking(blocking_apps: Vec<BlockingApp>, is_block_list: bool, typewriter_mode: bool) {
     let apps: Vec<BlockableItem> = blocking_apps
         .iter()
         .map(|app| BlockableItem {
@@ -33,17 +32,20 @@ pub fn start_blocking(blocking_apps: Vec<BlockingApp>, is_block_list: bool) {
             is_browser: app.is_browser,
         })
         .collect();
-    println!("Starting blocking {:?}", apps);
 
     *BLOCKING_STATE.lock().unwrap() = Some((apps.clone(), is_block_list));
 
     os_start_blocking(&apps, "https://ebb.cool/vibes", is_block_list);
+    if typewriter_mode {
+        system_monitor::start_typewriter_mode();
+    }
 }
 
 #[command]
 pub fn stop_blocking() {
     *BLOCKING_STATE.lock().unwrap() = None;
     os_stop_blocking();
+    system_monitor::stop_typewriter_mode();
 }
 
 #[command]

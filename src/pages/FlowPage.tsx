@@ -280,7 +280,11 @@ export const FlowPage = () => {
       }
     }
 
-    initSpotify()
+    const state = window.history.state?.usr
+    const hasMusic = state?.hasMusic ?? true
+    if (hasMusic) {
+      initSpotify()
+    }
 
     return () => {
       player?.disconnect()
@@ -482,7 +486,7 @@ export const FlowPage = () => {
 
       <div className="flex-1 flex flex-col items-center justify-center">
         <Timer flowSession={flowSession} />
-        {isSpotifyAuthenticated && (
+        {(window.history.state?.usr?.hasMusic ?? true) && isSpotifyAuthenticated && (
           <div className="w-full max-w-lg mx-auto px-4 mb-4 mt-12">
             <Card className="p-6">
               <CardContent className="space-y-12">

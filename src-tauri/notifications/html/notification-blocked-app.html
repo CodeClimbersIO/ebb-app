@@ -203,7 +203,9 @@
         const notificationActions = {
           dismiss: () => {
             notification.style.animation = 'slideOut 0.5s ease-in forwards'
-            setTimeout(() => window.close(), 1000)
+            setTimeout(async () => {
+              await event.emit('notification-close')
+            }, 1000)
           },
 
           snooze: async () => {
@@ -215,11 +217,13 @@
               snoozeButton.disabled = true
               snoozeButton.classList.add('success')
               
+              await invoke('snooze_blocking', {
+                duration: 1000 * 60 // 1 minute snoozer
+              })
+
               notificationActions.dismiss()
               
-              await invoke('snooze_blocking', {
-                duration: 60000
-              })
+
             } catch (error) {
               console.error('Snooze error:', error)
               snoozeButton.textContent = 'Failed'
