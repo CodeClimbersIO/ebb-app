@@ -18,6 +18,8 @@ export const useShortcutStore = create<ShortcutState>((set) => ({
       if (part === 'Control') return '⌃'
       if (part === 'Alt') return '⌥'
       if (part === 'Shift') return '⇧'
+      if (part === 'ENTER') return '↵'
+      if (part === 'SPACE') return '⎵'
       return part
     })
     set({ shortcutParts: displayParts })

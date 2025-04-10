@@ -21,9 +21,7 @@ const modifierMap: Record<ModifierKey, string> = {
 
 const keyCodeMap: Record<string, string> = {
   'Space': 'SPACE',
-  'Enter': 'ENTER',
-  'Tab': 'TAB',
-  'Escape': 'ESCAPE'
+  'Enter': 'ENTER'
 }
 
 interface ShortcutInputProps {
@@ -50,10 +48,13 @@ export function ShortcutInput({ popoverAlign = 'center' }: ShortcutInputProps) {
     void loadAndSetShortcut()
   }, [loadShortcutFromStore])
 
-  useEffect(() => {
-    setActiveModifiers([])
-    setActiveKey(null)
-  }, [isOpen])
+  const handleOpenChange = (open: boolean) => {
+    setIsOpen(open)
+    if (!open) {
+      setActiveModifiers([])
+      setActiveKey(null)
+    }
+  }
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -99,8 +100,10 @@ export function ShortcutInput({ popoverAlign = 'center' }: ShortcutInputProps) {
             await updateGlobalShortcut(newShortcut)
             setCurrentShortcut(newShortcut)
             await loadShortcutFromStore()
-            setIsOpen(false)
-            setActiveKey(null)
+            
+            setTimeout(() => {
+              setIsOpen(false)
+            }, 300)
           } catch (error) {
             logError(`Failed to update shortcut in ShortcutInput: ${error}`)
             setActiveKey(null)
@@ -151,12 +154,14 @@ export function ShortcutInput({ popoverAlign = 'center' }: ShortcutInputProps) {
     const content = part === 'CommandOrControl' ? '⌘' : 
                    part === 'Control' ? '⌃' :
                    part === 'Alt' ? '⌥' :
-                   part === 'Shift' ? '⇧' : part
+                   part === 'Shift' ? '⇧' :
+                   part === 'ENTER' ? '↵' :
+                   part === 'SPACE' ? '⎵' : part
     return <Hotkey size="lg">{content}</Hotkey>
   }
 
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
+    <Popover open={isOpen} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <Button 
           variant='outline' 
