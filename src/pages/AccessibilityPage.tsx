@@ -13,38 +13,50 @@ export const AccessibilityPage = () => {
 
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null
+    let mounted = true
 
     const checkPermissions = async (): Promise<boolean> => {
       try {
-        setPermissionStatus('checking')
-
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        if (!mounted) return false
 
         const hasPermissions = await invoke<boolean>('check_accessibility_permissions')
 
+        if (!mounted) return false
+
         setPermissionStatus(hasPermissions ? 'granted' : 'not_granted')
 
-        if (!hasPermissions) {
-          interval = setInterval(async () => {
-            const granted = await checkPermissions()
-            if (granted && interval) {
-              await invoke('start_system_monitoring')
-              clearInterval(interval)
-              interval = null
-            }
-          }, 3000)
+        if (hasPermissions) {
+          await invoke('start_system_monitoring')
+          if (interval) {
+            clearInterval(interval)
+            interval = null
+          }
         }
+
         return hasPermissions
       } catch (error) {
-        logError(`❌ Error during permission check: ${error}`)
-        setPermissionStatus('not_granted')
+        if (mounted) {
+          logError(`❌ Error during permission check: ${error}`)
+          setPermissionStatus('not_granted')
+        }
         return false
       }
     }
 
-    checkPermissions()
+    const initialCheck = async () => {
+      setPermissionStatus('checking')
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      const hasPermissions = await checkPermissions()
+      
+      if (!hasPermissions && mounted) {
+        interval = setInterval(checkPermissions, 3000)
+      }
+    }
+
+    initialCheck()
 
     return () => {
+      mounted = false
       if (interval) {
         clearInterval(interval)
       }
