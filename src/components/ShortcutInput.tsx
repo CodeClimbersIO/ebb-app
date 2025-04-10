@@ -183,6 +183,9 @@ export function ShortcutInput({ popoverAlign = 'center' }: ShortcutInputProps) {
 
   const displayModifiers = snapshot?.isClosing ? snapshot.modifiers : activeModifiers
   const displayKey = snapshot?.isClosing ? snapshot.key : activeKey
+  const formattedDisplayKey = displayKey === 'SPACE' ? '⎵' : 
+                             displayKey === 'ENTER' ? '↵' : 
+                             displayKey
 
   return (
     <Popover open={isOpen} onOpenChange={handleOpenChange}>
@@ -241,11 +244,11 @@ export function ShortcutInput({ popoverAlign = 'center' }: ShortcutInputProps) {
                 {displayKey && displayModifiers.length > 0 && (
                   <>
                     <span>+</span>
-                    <Hotkey size='lg'>{displayKey}</Hotkey>
+                    <Hotkey size='lg'>{formattedDisplayKey}</Hotkey>
                   </>
                 )}
                 {displayKey && displayModifiers.length === 0 && (
-                  <Hotkey size='lg'>{displayKey}</Hotkey>
+                  <Hotkey size='lg'>{formattedDisplayKey}</Hotkey>
                 )}
               </div>
               {displayKey && displayModifiers.length === 0 && (
