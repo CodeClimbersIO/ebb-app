@@ -20,7 +20,6 @@ const getStoreInstance = async (): Promise<Store> => {
   if (!storeInstance) {
     try {
       storeInstance = await loadStore(STORE_FILE)
-      console.log('Store instance loaded successfully.')
     } catch (err) {
       logError(`Failed to load store ${STORE_FILE}: ${err}`)
       throw new Error(`Failed to load store: ${err}`)
@@ -34,14 +33,12 @@ export const loadShortcut = async (): Promise<string> => {
     const store = await getStoreInstance()
     const savedShortcut = await store.get<string>(SHORTCUT_KEY)
     if (savedShortcut !== null && savedShortcut !== undefined) {
-      console.log('Loaded shortcut from store:', savedShortcut)
       currentShortcut = savedShortcut
       return savedShortcut
     }
   } catch (err) {
     logError(`Failed to load shortcut from store: ${err}`)
   }
-  console.log('No shortcut found in store')
   currentShortcut = ''
   return ''
 }
@@ -51,7 +48,6 @@ const saveShortcut = async (shortcut: string): Promise<void> => {
     const store = await getStoreInstance()
     await store.set(SHORTCUT_KEY, shortcut)
     await store.save()
-    console.log('Saved shortcut to store:', shortcut)
   } catch (err) {
     logError(`Failed to save shortcut ${shortcut} to store: ${err}`)
   }
@@ -59,32 +55,18 @@ const saveShortcut = async (shortcut: string): Promise<void> => {
 
 const registerShortcut = async (shortcut: string): Promise<void> => {
   try {
-    try {
-      await unregisterShortcutTauri(currentShortcut)
-      console.log('(Global) Unregistered current shortcut:', currentShortcut)
-    } catch {
-      console.log('(Global) Ignoring unregister error - shortcut may not exist')
-    }
+    await unregisterShortcutTauri(currentShortcut)
 
     if (shortcut !== currentShortcut) {
-      try {
-        await unregisterShortcutTauri(shortcut)
-        console.log('(Global) Unregistered new shortcut:', shortcut)
-      } catch {
-        console.log('(Global) Ignoring unregister error - shortcut may not exist')
-      }
+      await unregisterShortcutTauri(shortcut)
     }
 
     if (shortcut) {
       await registerShortcutTauri(shortcut, (event) => {
         if (event.state === 'Pressed') {
-          console.log('(Global) Shortcut pressed:', shortcut)
           emit(SHORTCUT_EVENT)
         }
       })
-      console.log('(Global) Registered:', shortcut)
-    } else {
-      console.log('(Global) No shortcut to register')
     }
     currentShortcut = shortcut
   } catch (err) {
@@ -98,13 +80,11 @@ export const updateGlobalShortcut = async (newShortcut: string): Promise<void> =
     return
   }
   if (newShortcut === currentShortcut) {
-    console.log('(Global) Shortcut unchanged, skipping update.')
     return
   }
 
   try {
     await unregisterShortcutTauri(currentShortcut)
-    console.log('(Global) Unregistered old:', currentShortcut)
   } catch (err) {
     logError(`(Global) Failed to unregister old shortcut ${currentShortcut}: ${err}`)
   }
@@ -115,10 +95,8 @@ export const updateGlobalShortcut = async (newShortcut: string): Promise<void> =
 
 export const initializeGlobalShortcut = async (): Promise<void> => {
   if (isInitialized) {
-    console.log('(Global) Already initialized.')
     return
   }
-  console.log('(Global) Initializing shortcut manager...')
   try {
     await getStoreInstance()
   } catch (err) {
@@ -131,12 +109,10 @@ export const initializeGlobalShortcut = async (): Promise<void> => {
   const shortcutToRegister = await loadShortcut()
   await registerShortcut(shortcutToRegister)
   isInitialized = true
-  console.log('(Global) Shortcut manager initialized.')
 }
 
 export const getCurrentShortcut = (): string => {
   if (!isInitialized) {
-      console.warn('(Global) getCurrentShortcut called before initialization. Returning empty string.')
       return ''
   }
   return currentShortcut
@@ -146,7 +122,6 @@ export const unregisterAllManagedShortcuts = async (): Promise<void> => {
     if (isInitialized && currentShortcut) {
         try {
             await unregisterShortcutTauri(currentShortcut)
-            console.log('(Global) Unregistered:', currentShortcut)
         } catch (err) {
             logError(`(Global) Failed to unregister ${currentShortcut} during cleanup: ${err}`)
         }

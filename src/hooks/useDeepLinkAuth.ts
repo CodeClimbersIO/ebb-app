@@ -9,7 +9,6 @@ export const useDeepLinkAuth = () => {
   const [isHandlingAuth, setIsHandlingAuth] = useState(false)
 
   useEffect(() => {
-    // Check URL parameters immediately
     const urlObj = new URL(window.location.href)
     const searchParams = new URLSearchParams(urlObj.search)
     const code = searchParams.get('code')
