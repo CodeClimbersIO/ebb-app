@@ -1,6 +1,5 @@
 use tauri::Manager;
 use tokio;
-use tauri_plugin_autostart::MacosLauncher;
 
 mod commands;
 mod db;

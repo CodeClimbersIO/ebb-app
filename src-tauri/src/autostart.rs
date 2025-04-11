@@ -4,6 +4,7 @@ use tauri_plugin_autostart::ManagerExt;
 
 pub fn enable_autostart(app: &mut tauri::App) {
     use tauri_plugin_autostart::MacosLauncher;
+    use tauri_plugin_autostart::ManagerExt;
 
     app.handle()
         .plugin(tauri_plugin_autostart::init(
@@ -23,7 +24,7 @@ pub fn enable_autostart(app: &mut tauri::App) {
             Err(err) => eprintln!("Failed to enable autostart: {}", err),
         },
         (Ok(true), Ok(false)) => match autostart_manager.disable() {
-            Ok(_) => println!("Autostart disabled successfully."),
+            Ok(_) => println!("Autostart disable successfully."),
             Err(err) => eprintln!("Failed to disable autostart: {}", err),
         },
         _ => (),
@@ -42,8 +43,8 @@ fn current_autostart<R: Runtime>(app: &tauri::AppHandle<R>) -> Result<bool, Stri
             let mut file = File::open(file_path).unwrap();
             let mut data = String::new();
             if let Ok(_) = file.read_to_string(&mut data) {
-                if !data.is_empty() {
-                    old_value = data.parse().unwrap_or(true);
+                if data.is_empty() == false {
+                    old_value = data.parse().unwrap_or(true)
                 }
             }
         }
@@ -53,31 +54,36 @@ fn current_autostart<R: Runtime>(app: &tauri::AppHandle<R>) -> Result<bool, Stri
 }
 
 #[tauri::command]
-pub fn change_autostart<R: Runtime>(app: tauri::AppHandle<R>, open: bool) -> Result<(), String> {
+pub async fn change_autostart<R: Runtime>(
+    app: tauri::AppHandle<R>,
+    open: bool,
+) -> Result<(), String> {
     use std::fs::File;
     use std::io::Write;
 
     let autostart_manager = app.autolaunch();
 
     let change = |open: bool| -> Result<(), String> {
+        #[allow(unused_assignments)]
         let mut open_str = String::from("");
         if open {
             autostart_manager
                 .enable()
-                .map_err(|_| "enable autostart failed".to_owned())?;
+                .map_err(|_| "enable autostar failed".to_owned())?;
+
             open_str = "true".to_owned();
         } else {
             autostart_manager
                 .disable()
-                .map_err(|_| "disable autostart failed".to_owned())?;
+                .map_err(|_| "disable autostar failed".to_owned())?;
+
             open_str = "false".to_owned();
         }
-
         let path = app
             .path()
             .app_config_dir()
             .map_err(|_| "not found app config directory".to_owned())?;
-        if !path.exists() {
+        if path.exists() == false {
             create_dir(&path).map_err(|_| "creating app config directory failed".to_owned())?;
         }
 
