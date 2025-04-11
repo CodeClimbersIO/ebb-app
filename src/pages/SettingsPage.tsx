@@ -28,7 +28,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { invoke } from '@tauri-apps/api/core'
 import { ShortcutInput } from '@/components/ShortcutInput'
 import { Switch } from '@/components/ui/switch'
-import { enable, isEnabled, disable } from '@tauri-apps/plugin-autostart'
+import { isEnabled } from '@tauri-apps/plugin-autostart'
 
 export const SettingsPage = () => {
   const [showUnlinkDialog, setShowUnlinkDialog] = useState(false)
@@ -178,11 +178,7 @@ export const SettingsPage = () => {
 
   const handleAutostartToggle = async () => {
     try {
-      if (autostartEnabled) {
-        await disable()
-      } else {
-        await enable()
-      }
+      await invoke('change_autostart', { open: !autostartEnabled })
       setAutostartEnabled(!autostartEnabled)
     } catch (error) {
       console.error('Error toggling autostart:', error)

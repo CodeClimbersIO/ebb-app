@@ -10,14 +10,12 @@ import { useUpdate } from './hooks/useUpdate'
 import { useAuth } from './hooks/useAuth'
 import { usePostHog } from 'posthog-js/react'
 import { useShortcutStore } from '@/lib/stores/shortcutStore'
-import { useAutostart } from '@/hooks/useAutostart'
 
 const App = () => {
   const posthog = usePostHog()
   const { beginCheckForUpdates } = useUpdate()
   const { user } = useAuth()
   const { loadShortcutFromStorage } = useShortcutStore()
-  useAutostart()
 
   useEffect(() => {
     initSentry()
