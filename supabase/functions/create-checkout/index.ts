@@ -60,7 +60,10 @@ Deno.serve(async (req) => {
 
     // Create Stripe checkout session based on license type
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
+      payment_method_types: [
+        'card',
+        'link'
+      ],
       line_items: [
         {
           price_data: {
@@ -68,8 +71,8 @@ Deno.serve(async (req) => {
             product_data: {
               name: licenseType === 'perpetual' ? 'Ebb Pro License' : 'Ebb Pro Subscription',
               description: licenseType === 'perpetual' 
-                ? 'One-time purchase with 1 year of updates'
-                : 'Monthly subscription with continuous updates'
+                ? 'Pay once, keep forever. One year of updates included. 30-day money-back guarantee.'
+                : 'Monthly subscription with continuous updates. Cancel anytime. 30-day money-back guarantee.',
             },
             unit_amount: licenseType === 'perpetual' ? 3700 : 500, // $37 one-time or $5/month
             ...(licenseType === 'subscription' ? { recurring: { interval: 'month' } } : {})
@@ -83,6 +86,7 @@ Deno.serve(async (req) => {
       client_reference_id: user.id,
       customer_creation: 'always',
       customer_email: user.email,
+      allow_promotion_codes: true,
       metadata: {
         user_id: user.id
       }
