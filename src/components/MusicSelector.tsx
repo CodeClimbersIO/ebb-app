@@ -202,7 +202,7 @@ export function MusicSelector({ selectedPlaylist, onPlaylistSelect }: MusicSelec
               >
                 <Command>
                   <CommandInput placeholder="Search playlists..." />
-                  <CommandList className="max-h-[240px]">
+                  <CommandList className="max-h-[210px]">
                     <CommandEmpty>No playlists found</CommandEmpty>
                     <CommandGroup>
                       {playlistData.playlists.map(playlist => (

@@ -37,11 +37,11 @@ export const checkAndUpdate = async () => {
 
 export const useUpdate = () => {
   const beginCheckForUpdates = () => {
-    if (import.meta.env.DEV) return
+    // if (import.meta.env.DEV) return
     
-    checkAndUpdate()
-    const interval = setInterval(checkAndUpdate, 60 * 1000)
-    return () => clearInterval(interval)
+    // checkAndUpdate()
+    // const interval = setInterval(checkAndUpdate, 60 * 1000)
+    // return () => clearInterval(interval)
   }
   return {
     beginCheckForUpdates,

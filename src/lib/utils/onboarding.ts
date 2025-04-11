@@ -12,5 +12,4 @@ export const OnboardingUtils = {
   resetOnboarding: (): void => {
     localStorage.removeItem(ONBOARDING_COMPLETED_KEY)
   }
-
 }

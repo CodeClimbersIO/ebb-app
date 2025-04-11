@@ -5,80 +5,80 @@ import * as React from 'react'
 
 const messages = [
     {
-        title: 'Don\'t stop',
-        description: '"I don’t stop when I’m tired, I stop when I’m done." - David Goggins'
+        description: '"I don\'t stop when I\'m tired, I stop when I\'m done."',
+        author: 'David Goggins'
     },
     {
-        title: 'Be a focused fool',
-        description: '"A focused fool can accomplish more than a distracted genius." - Alex Hormozi'
+        description: '"A focused fool can accomplish more than a distracted genius."',
+        author: 'Alex Hormozi'
     },
     {
-        title: 'A Message from Steve',
-        description: '"Your time is limited. Don\'t waste it living someone else\'s life." - Steve Jobs'
+        description: '"Your time is limited. Don\'t waste it living someone else\'s life."',
+        author: 'Steve Jobs'
     },
     {
-        title: 'Stay focused, my friend 🫡',
-        description: '"Your most valuable asset - your attention." - Alex Hormozi'
+        description: '"Your most valuable asset - your attention."',
+        author: 'Alex Hormozi'
     },
     {
-        title: 'Seize the day',
-        description: '"Carpe diem. Seize the day, boys. Make your lives extraordinary." - Dead Poets Society'
+        description: '"Carpe diem. Seize the day, boys. Make your lives extraordinary."',
+        author: 'Dead Poets Society'
     },
     {
-        title: 'Persevere',
-        description: '"It does not matter how slowly you go as long as you do not stop." - Confucius'
+        description: '"It does not matter how slowly you go as long as you do not stop."',
+        author: 'Confucius'
     },
     {
-        title: 'Don\'t give up',
-        description: '"Never give up, for that is just the place and time that the tide will turn." - Harriet Beecher Stowe'
+        description: '"Never give up, for that is just the place and time that the tide will turn."',
+        author: 'Harriet Beecher Stowe'
     },
     {
-        title: 'Keep going',
-        description: '"Don’t watch the clock; do what it does. Keep going." - Sam Levenson'
+        description: '"Don\'t watch the clock; do what it does. Keep going."',
+        author: 'Sam Levenson'
     },
     {
-        title: 'Fight, warrior',
-        description: '"The successful warrior is the average man, with laser-like focus." - Bruce Lee'
+        description: '"The successful warrior is the average man, with laser-like focus."',
+        author: 'Bruce Lee'
     },
     {
-        title: 'Make the right decision',
-        description: '“I am not a product of my circumstances. I am a product of my decisions.” - Stephen R. Covey'
+        description: '"I am not a product of my circumstances. I am a product of my decisions."',
+        author: 'Stephen R. Covey'
+    },
+    {
+        description: '"Concentrate all your thoughts upon the work at hand. The sun\'s rays do not burn until brought to a focus."',
+        author: 'Alexander Graham Bell'
+    },
+    {
+        description: '"The main thing is to keep the main thing the main thing."',
+        author: 'Stephen Covey'
+    },
+    {
+        description: '"Where focus goes, energy flows."',
+        author: 'Tony Robbins'
+    },
+    {
+        description: '"The difference between successful people and very successful people is that very successful people say no to almost everything."',
+        author: 'Warren Buffett'
+    },
+    {
+        description: '"It is during our darkest moments that we must focus to see the light."',
+        author: 'Aristotle'
+    },
+    {
+        description: '"Focus is a force multiplier on work."',
+        author: 'Sam Altman'
+    },
+    {
+        description: '"People spend too much time doing and not enough time thinking about what they should be doing."',
+        author: 'Naval Ravikant'
     }
 ]
 
 export function withBlockedPage(Component): ComponentType {
     return (props) => {
-        const [cmdPressed, setCmdPressed] = React.useState(false)
-        const [ePressed, setEPressed] = React.useState(false)
         const [randomMessage] = React.useState(() => 
             messages[Math.floor(Math.random() * messages.length)]
         )
-
-        React.useEffect(() => {
-            const handleKeyDown = (e: KeyboardEvent) => {
-                if (e.key === 'Meta' || e.key === 'Control') {
-                    setCmdPressed(true)
-                } else if (e.key.toLowerCase() === 'e') {
-                    setEPressed(true)
-                }
-            }
-
-            const handleKeyUp = (e: KeyboardEvent) => {
-                if (e.key === 'Meta' || e.key === 'Control') {
-                    setCmdPressed(false)
-                } else if (e.key.toLowerCase() === 'e') {
-                    setEPressed(false)
-                }
-            }
-
-            window.addEventListener('keydown', handleKeyDown)
-            window.addEventListener('keyup', handleKeyUp)
-
-            return () => {
-                window.removeEventListener('keydown', handleKeyDown)
-                window.removeEventListener('keyup', handleKeyUp)
-            }
-        }, [])
 
         return (
             <Component
@@ -110,96 +110,44 @@ export function withBlockedPage(Component): ComponentType {
                     <div
                         style={{
                             fontFamily: 'Pacifico, cursive',
-                            fontSize: '48px',
-                            color: 'rgb(237 233 254)', // text-violet-100
+                            fontSize: '40px',
+                            color: 'rgb(237 233 254)',
+                            marginBottom: '24px'
                         }}
                     >
                         ebb
                     </div>
-                    <h1
-                        key="title"
+                    <div
                         style={{
-                            fontSize: '32px',
-                            margin: 0,
-                            fontWeight: 700,
+                            width: '120px',
+                            height: '1px',
+                            backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                            marginBottom: '32px'
                         }}
-                    >
-                        {randomMessage.title}
-                    </h1>
+                    />
                     <p
                         key="description"
                         style={{
                             fontSize: '18px',
                             margin: 0,
-                            opacity: 0.8,
+                            opacity: 0.9,
                             lineHeight: 1.6,
-                            marginBottom: '32px',
+                            marginBottom: '8px',
+                            fontStyle: 'italic'
                         }}
                     >
                         {randomMessage.description}
                     </p>
-                    <div
+                    <p
                         style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            gap: '12px',
-                            background: 'rgba(255, 255, 255, 0.05)',
-                            backdropFilter: 'blur(8px)',
-                            padding: '24px',
-                            borderRadius: '12px',
-                            minWidth: '300px',
+                            fontSize: '16px',
+                            margin: 0,
+                            opacity: 0.7,
+                            fontWeight: 500
                         }}
                     >
-                        <div
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '12px',
-                            }}
-                        >
-                            <kbd
-                                style={{
-                                    padding: '12px 20px',
-                                    fontSize: '20px',
-                                    fontWeight: 'bold',
-                                    background: '#030712',
-                                    border: '2px solid rgba(255, 255, 255, 0.1)',
-                                    borderRadius: '8px',
-                                    transition: 'all 0.2s ease',
-                                    ...(cmdPressed && {
-                                        background: 'rgb(124 58 237)',
-                                        borderColor: 'rgb(124 58 237)',
-                                    }),
-                                }}
-                            >⌘</kbd>
-                            <span style={{ fontSize: '24px', opacity: 0.6 }}>+</span>
-                            <kbd
-                                style={{
-                                    padding: '12px 20px',
-                                    fontSize: '20px',
-                                    fontWeight: 'bold',
-                                    background: '#030712',
-                                    border: '2px solid rgba(255, 255, 255, 0.1)',
-                                    borderRadius: '8px',
-                                    transition: 'all 0.2s ease',
-                                    ...(ePressed && {
-                                        background: 'rgb(124 58 237)',
-                                        borderColor: 'rgb(124 58 237)',
-                                    }),
-                                }}
-                            >E</kbd>
-                        </div>
-                        <p
-                            style={{
-                                fontSize: '14px',
-                                opacity: 0.6,
-                                margin: 0,
-                            }}
-                        >
-                            to access your session
-                        </p>
-                    </div>
+                        — {randomMessage.author}
+                    </p>
                 </div>
             </Component>
         )

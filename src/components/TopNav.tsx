@@ -2,6 +2,9 @@ import { Button } from '@/components/ui/button'
 import { X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
+import { Hotkey } from '@/components/ui/hotkey'
+import { useEffect } from 'react'
+import { useShortcutStore } from '@/lib/stores/shortcutStore'
 
 interface TopNavProps {
   variant?: 'default' | 'modal'
@@ -9,6 +12,11 @@ interface TopNavProps {
 
 export function TopNav({ variant = 'default' }: TopNavProps) {
   const navigate = useNavigate()
+  const { shortcutParts, loadShortcutFromStorage } = useShortcutStore()
+
+  useEffect(() => {
+    loadShortcutFromStorage()
+  }, [loadShortcutFromStorage])
 
   const handleStartFlowSession = () => {
     navigate('/start-flow')
@@ -36,14 +44,13 @@ export function TopNav({ variant = 'default' }: TopNavProps) {
                 onClick={handleStartFlowSession}
               >
                 Start Focus
-                <div className="ml-2 flex gap-0.5">
-                  <kbd className="rounded bg-violet-900 px-1.5 font-mono font-bold flex">
-                    <span className="text-sm">⌘</span>
-                  </kbd>
-                  <kbd className="rounded bg-violet-900 px-1.5 font-mono font-bold flex">
-                    <span className="text-xs self-center">E</span>
-                  </kbd>
-                </div>
+                {shortcutParts.length > 0 && shortcutParts.some(part => part) && (
+                  <div className="ml-2 flex gap-1.5">
+                    {shortcutParts.map((part, i) => (
+                      <Hotkey key={i} size="sm">{part}</Hotkey>
+                    ))}
+                  </div>
+                )}
               </Button>
             ) : (
               <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
