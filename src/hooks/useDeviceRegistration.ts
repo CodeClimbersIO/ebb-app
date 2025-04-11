@@ -34,8 +34,7 @@ const upsertDevice = async (
   const upsertData = {
     user_id: userId,
     device_id: deviceId,
-    device_name: deviceName,
-    last_active: new Date().toISOString()
+    device_name: deviceName
   }
 
   const { error: upsertError } = await supabase
@@ -105,9 +104,9 @@ export const useDeviceRegistration = () => {
           log('[useDeviceReg] Checking existing devices...')
           const { data: existingDevices, error: deviceError } = await supabase
             .from('active_devices')
-            .select('device_id, last_active')
+            .select('device_id, created_at')
             .eq('user_id', userId)
-            .order('last_active', { ascending: true })
+            .order('created_at', { ascending: true })
 
           if (deviceError) {
             error('[useDeviceReg] Error fetching devices:', JSON.stringify(deviceError, null, 2))

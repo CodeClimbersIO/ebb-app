@@ -12,7 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 interface Device {
   id: string
   name: string
-  last_active: string
+  created_at: string
   is_current: boolean
 }
 
@@ -68,9 +68,9 @@ export function ActiveDevicesSettings({ user, maxDevicesToShow, onDeviceRemoved 
       
       const { data: devicesData, error: fetchError } = await supabase
         .from('active_devices') 
-        .select('device_id, device_name, last_active')
+        .select('device_id, device_name, created_at')
         .eq('user_id', user.id) 
-        .order('last_active', { ascending: false })
+        .order('created_at', { ascending: false })
 
       if (fetchError) {
         console.error('Supabase error fetching devices:', fetchError)
@@ -80,14 +80,14 @@ export function ActiveDevicesSettings({ user, maxDevicesToShow, onDeviceRemoved 
       const allDevices = devicesData.map(d => ({
         id: d.device_id,
         name: d.device_name,
-        last_active: d.last_active,
+        created_at: d.created_at,
         is_current: d.device_id === currentDeviceId
       }))
 
       const sortedDevices = allDevices.sort((a, b) => {
         if (a.is_current) return -1
         if (b.is_current) return 1
-        return new Date(b.last_active).getTime() - new Date(a.last_active).getTime()
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       })
 
       setDevices(sortedDevices)
@@ -97,7 +97,7 @@ export function ActiveDevicesSettings({ user, maxDevicesToShow, onDeviceRemoved 
          setDevices([{
             id: currentDeviceId,
             name: currentDeviceName || 'This Device',
-            last_active: new Date().toISOString(),
+            created_at: new Date().toISOString(),
             is_current: true
          }])
       } else {
@@ -164,7 +164,7 @@ export function ActiveDevicesSettings({ user, maxDevicesToShow, onDeviceRemoved 
                     {device.name}
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    Last active: {formatDistanceToNow(new Date(device.last_active), { addSuffix: true })}
+                    Added: {formatDistanceToNow(new Date(device.created_at), { addSuffix: true })}
                   </div>
                 </div>
               </div>

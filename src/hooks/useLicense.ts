@@ -21,7 +21,6 @@ export interface LicenseDevice {
   licenseId: string
   deviceId: string
   deviceName: string
-  lastActive: Date
   createdAt: Date
 }
 
