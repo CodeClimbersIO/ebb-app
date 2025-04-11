@@ -1,5 +1,6 @@
 use tauri::Manager;
 use tokio;
+use tauri_plugin_autostart::MacosLauncher;
 
 mod commands;
 mod db;
@@ -21,6 +22,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let migrations = db::get_migrations();
     tauri::Builder::default()
+        .plugin(tauri_plugin_autostart::init(
+            MacosLauncher::LaunchAgent,
+            Option::<Vec<&'static str>>::None
+        ))
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_shell::init())
         .on_window_event(|window, event| match event {
