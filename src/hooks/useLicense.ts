@@ -32,7 +32,7 @@ export interface LicenseInfo {
   canUseHardDifficulty: boolean
   canUseAllowList: boolean
   canUseTypewriter: boolean
-  canUseMultiplePresets: boolean
+  canUseMultipleProfiles: boolean
   isUpdateEligible: boolean
   isDeviceLimitReached: boolean
   currentDevice: LicenseDevice | null
@@ -82,7 +82,7 @@ export const useLicense = (): LicenseInfo => {
     canUseHardDifficulty: hasAccess,
     canUseAllowList: hasAccess,
     canUseTypewriter: hasAccess,
-    canUseMultiplePresets: hasAccess,
+    canUseMultipleProfiles: hasAccess,
     isUpdateEligible,
   }
 }

@@ -205,7 +205,7 @@ function WorkflowBadge({
               <ContextMenuSeparator />
               <ContextMenuItem onClick={onCreateClick}        className="cursor-pointer">
                 <Plus className="mr-2 h-4 w-4" />
-                <span>New Preset</span>
+                <span>New Profile</span>
               </ContextMenuItem>
               <ContextMenuItem 
                 onClick={() => setShowDeleteDialog(true)} 
@@ -222,7 +222,7 @@ function WorkflowBadge({
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Preset</DialogTitle>
+            <DialogTitle>Delete Profile</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete "{workflow.name}"? This action cannot be undone.
             </DialogDescription>
@@ -386,7 +386,7 @@ export function WorkflowSelector({ selectedId, onSelect, onSettingsChange }: Wor
   const handleSelect = async (workflowId: string) => {
     if (workflowId === 'new') {
       const newWorkflow: Workflow = {
-        name: 'New Preset',
+        name: 'New Profile',
         selectedApps: [],
         selectedPlaylist: null,
         lastSelected: Date.now(),
@@ -501,7 +501,7 @@ export function WorkflowSelector({ selectedId, onSelect, onSettingsChange }: Wor
               className='cursor-pointer border-dashed'
               onClick={() => handleSelect('new')}
             >
-              Create preset
+              Create profile
             </Badge>
           ) : (
             <>
