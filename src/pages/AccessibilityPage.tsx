@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { Github, Lock, Loader2, CheckCircle2 } from 'lucide-react'
 import { invoke } from '@tauri-apps/api/core'
-import { error as logError } from '@tauri-apps/plugin-log'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { open } from '@tauri-apps/plugin-shell'
 
@@ -36,7 +35,7 @@ export const AccessibilityPage = () => {
         return hasPermissions
       } catch (error) {
         if (mounted) {
-          logError(`❌ Error during permission check: ${error}`)
+          console.error(`❌ Error during permission check: ${error}`)
           setPermissionStatus('not_granted')
         }
         return false
@@ -67,7 +66,7 @@ export const AccessibilityPage = () => {
     try {
       await invoke('request_system_permissions')
     } catch (error) {
-      logError(`Failed to request permissions: ${error}`)
+      console.error(`Failed to request permissions: ${error}`)
     }
   }
 

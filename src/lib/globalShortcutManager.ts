@@ -4,7 +4,6 @@ import {
   unregister as unregisterShortcutTauri,
 } from '@tauri-apps/plugin-global-shortcut'
 import { emit } from '@tauri-apps/api/event'
-import { error as logError } from '@tauri-apps/plugin-log'
 
 const STORE_FILE = '.settings.dat'
 const SHORTCUT_KEY = 'global-focus-shortcut'
@@ -21,7 +20,7 @@ const getStoreInstance = async (): Promise<Store> => {
     try {
       storeInstance = await loadStore(STORE_FILE)
     } catch (err) {
-      logError(`Failed to load store ${STORE_FILE}: ${err}`)
+      console.error(`Failed to load store ${STORE_FILE}: ${err}`)
       throw new Error(`Failed to load store: ${err}`)
     }
   }
@@ -37,7 +36,7 @@ export const loadShortcut = async (): Promise<string> => {
       return savedShortcut
     }
   } catch (err) {
-    logError(`Failed to load shortcut from store: ${err}`)
+    console.error(`Failed to load shortcut from store: ${err}`)
   }
   currentShortcut = ''
   return ''
@@ -49,7 +48,7 @@ const saveShortcut = async (shortcut: string): Promise<void> => {
     await store.set(SHORTCUT_KEY, shortcut)
     await store.save()
   } catch (err) {
-    logError(`Failed to save shortcut ${shortcut} to store: ${err}`)
+    console.error(`Failed to save shortcut ${shortcut} to store: ${err}`)
   }
 }
 
@@ -70,13 +69,13 @@ const registerShortcut = async (shortcut: string): Promise<void> => {
     }
     currentShortcut = shortcut
   } catch (err) {
-    logError(`(Global) Failed to register shortcut ${shortcut}: ${err}`)
+    console.error(`(Global) Failed to register shortcut ${shortcut}: ${err}`)
   }
 }
 
 export const updateGlobalShortcut = async (newShortcut: string): Promise<void> => {
   if (!isInitialized) {
-    logError('(Global) Cannot update shortcut before initialization')
+    console.error('(Global) Cannot update shortcut before initialization')
     return
   }
   if (newShortcut === currentShortcut) {
@@ -86,7 +85,7 @@ export const updateGlobalShortcut = async (newShortcut: string): Promise<void> =
   try {
     await unregisterShortcutTauri(currentShortcut)
   } catch (err) {
-    logError(`(Global) Failed to unregister old shortcut ${currentShortcut}: ${err}`)
+    console.error(`(Global) Failed to unregister old shortcut ${currentShortcut}: ${err}`)
   }
 
   await saveShortcut(newShortcut)
@@ -100,7 +99,7 @@ export const initializeGlobalShortcut = async (): Promise<void> => {
   try {
     await getStoreInstance()
   } catch (err) {
-    logError(`(Global) Initialization failed: Could not load store (${err})`)
+    console.error(`(Global) Initialization failed: Could not load store (${err})`)
     currentShortcut = ''
     isInitialized = true
     return
@@ -123,7 +122,7 @@ export const unregisterAllManagedShortcuts = async (): Promise<void> => {
         try {
             await unregisterShortcutTauri(currentShortcut)
         } catch (err) {
-            logError(`(Global) Failed to unregister ${currentShortcut} during cleanup: ${err}`)
+            console.error(`(Global) Failed to unregister ${currentShortcut} during cleanup: ${err}`)
         }
     }
     isInitialized = false

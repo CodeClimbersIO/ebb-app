@@ -1,7 +1,6 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getCurrentWindow } from '@tauri-apps/api/window'
-import { error as logError } from '@tauri-apps/plugin-log'
 import { listen } from '@tauri-apps/api/event'
 import { FlowSessionApi } from '@/api/ebbApi/flowSessionApi'
 import {
@@ -23,8 +22,8 @@ export function useGlobalShortcut() {
       try {
         const window = getCurrentWindow()
         void Promise.all([
-          window.show().catch(err => logError(`(Shortcut) Error showing window: ${err}`)),
-          window.setFocus().catch(err => logError(`(Shortcut) Error focusing window: ${err}`))
+          window.show().catch(err => console.error(`(Shortcut) Error showing window: ${err}`)),
+          window.setFocus().catch(err => console.error(`(Shortcut) Error focusing window: ${err}`))
         ])
 
         const activeSession = await FlowSessionApi.getInProgressFlowSession()
@@ -34,7 +33,7 @@ export function useGlobalShortcut() {
           navigate(targetPath, { replace: true })
         }
       } catch (error) {
-        logError(`(Shortcut) Error getting session or navigating: ${error}`)
+        console.error(`(Shortcut) Error getting session or navigating: ${error}`)
         if (mounted) {
           navigate('/start-flow', { replace: true })
         }
@@ -51,7 +50,7 @@ export function useGlobalShortcut() {
           })
         }
       } catch (error) {
-        logError(`(Shortcut) Setup failed: ${error}`)
+        console.error(`(Shortcut) Setup failed: ${error}`)
       }
     }
 
@@ -67,7 +66,7 @@ export function useGlobalShortcut() {
           }
           await unregisterAllManagedShortcuts()
         } catch (error) {
-          logError(`(Shortcut) Cleanup error: ${error}`)
+          console.error(`(Shortcut) Cleanup error: ${error}`)
         }
       }
       void cleanup()

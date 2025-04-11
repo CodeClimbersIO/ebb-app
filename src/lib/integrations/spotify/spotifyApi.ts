@@ -29,7 +29,6 @@ interface SpotifyDevice {
 
 const SPOTIFY_API_BASE = 'https://api.spotify.com/v1'
 
-// Export the PlaybackState type from the Spotify namespace for use in other files
 export type PlaybackState = Spotify.PlaybackState;
 
 export class SpotifyApiService {
@@ -89,7 +88,6 @@ export class SpotifyApiService {
   }
 
   static async initializePlayer(): Promise<void> {
-    // Load Spotify Web Playback SDK
     const script = document.createElement('script')
     script.src = 'https://sdk.scdn.co/spotify-player.js'
     script.async = true
@@ -110,12 +108,10 @@ export class SpotifyApiService {
       name: 'Ebb Player',
       getOAuthToken: async (cb) => {
         try {
-          // Get a fresh token each time this callback is invoked
           const token = await SpotifyAuthService.getAccessToken()
           cb(token)
         } catch (error) {
           logError(`Error getting OAuth token for player: ${error}`)
-          // Attempt to reconnect if possible
           const isConnected = await SpotifyAuthService.isConnected()
           if (isConnected) {
             const token = await SpotifyAuthService.getAccessToken()
@@ -128,17 +124,14 @@ export class SpotifyApiService {
       volume: 0.5
     })
 
-    // Add event listeners for player errors
     player.addListener('initialization_error', ({ message }) => {
       logError(`Failed to initialize player: ${message}`)
     })
     
     player.addListener('authentication_error', async ({ message }) => {
       logError(`Authentication error: ${message}`)
-      // Try to refresh the token immediately
       try {
         await SpotifyAuthService.refreshAccessToken()
-        // Reconnect the player after token refresh
         player.connect()
       } catch (refreshError) {
         logError(`Failed to refresh token after authentication error: ${refreshError}`)
@@ -184,7 +177,6 @@ export class SpotifyApiService {
   static async getPlaylistCoverImage(playlistId: string): Promise<string | null> {
     try {
       const images = await this.spotifyApiRequest(`playlists/${playlistId}/images`)
-      // Return the URL of the first image (usually the highest quality one)
       return images[0]?.url || null
     } catch (error) {
       logError(`Error fetching playlist cover image: ${error}`)
@@ -208,7 +200,7 @@ export class SpotifyApiService {
         method: 'PUT',
         body: JSON.stringify({
           device_ids: [deviceId],
-          play: false // Don't auto-resume playback after transfer
+          play: false
         })
       })
     } catch (error) {

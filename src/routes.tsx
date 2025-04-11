@@ -15,10 +15,8 @@ import { OnboardingUtils } from '@/lib/utils/onboarding'
 import { useDeepLinkAuth } from './hooks/useDeepLinkAuth'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useEffect } from 'react'
-import { error as logError } from '@tauri-apps/plugin-log'
 import { useGlobalShortcut } from './hooks/useGlobalShortcut'
 
-// Protected Route wrapper component
 const ProtectedRoute = () => {
   const { user, loading } = useAuth()
   const location = useLocation()
@@ -31,13 +29,11 @@ const ProtectedRoute = () => {
     return <Navigate to="/login" replace />
   }
 
-  // Skip onboarding check for onboarding routes themselves
   if (location.pathname === '/onboarding/accessibility' ||
     location.pathname === '/onboarding/shortcut-tutorial') {
     return <Outlet />
   }
 
-  // Redirect to onboarding if not completed
   if (!OnboardingUtils.isOnboardingCompleted()) {
     return <Navigate to="/onboarding/accessibility" replace />
   }
@@ -55,14 +51,13 @@ const Router = () => {
 
     const setup = async () => {
       try {
-        // Listen for navigation events from the tray menu
         const window = getCurrentWindow()
         unlistenNavigate = await window.listen('navigate', (event) => {
           const path = event.payload as string
           navigate(path)
         })
       } catch (error) {
-        logError(`(Router) Failed to set up tray navigation: ${error}`)
+        console.error(`(Router) Failed to set up tray navigation: ${error}`)
       }
     }
 

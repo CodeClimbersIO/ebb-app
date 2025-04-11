@@ -7,7 +7,6 @@ import {
   updateGlobalShortcut,
   loadShortcut as loadInitialShortcut,
 } from '../lib/globalShortcutManager'
-import { error as logError } from '@tauri-apps/plugin-log'
 import { useShortcutStore } from '@/lib/stores/shortcutStore'
 
 type ModifierKey = '⌘' | '⌥' | '⌃' | '⇧'
@@ -50,7 +49,7 @@ export function ShortcutInput({ popoverAlign = 'center' }: ShortcutInputProps) {
         setCurrentShortcut(initialShortcut)
         await loadShortcutFromStore()
       } catch (error) {
-        logError(`Failed to load initial shortcut: ${error}`)
+        console.error(`Failed to load initial shortcut: ${error}`)
       }
     }
     void loadAndSetShortcut()
@@ -125,7 +124,7 @@ export function ShortcutInput({ popoverAlign = 'center' }: ShortcutInputProps) {
               setActiveKey(null)
             }, 500)
           } catch (error) {
-            logError(`Failed to update shortcut in ShortcutInput: ${error}`)
+            console.error(`Failed to update shortcut in ShortcutInput: ${error}`)
             setActiveKey(null)
             setActiveModifiers([])
             setSnapshot(null)
@@ -167,7 +166,7 @@ export function ShortcutInput({ popoverAlign = 'center' }: ShortcutInputProps) {
       setCurrentShortcut('')
       await loadShortcutFromStore()
     } catch (error) {
-      logError(`Failed to clear shortcut: ${error}`)
+      console.error(`Failed to clear shortcut: ${error}`)
     }
   }
 
