@@ -18,11 +18,11 @@ interface PaywallDialogProps {
 }
 
 const users = [
-  { name: 'Alex', image: '/avatars/01.png', initials: 'A' },
-  { name: 'Ben', image: '/avatars/02.png', initials: 'B' },
-  { name: 'Charlie', image: '/avatars/03.png', initials: 'C' },
-  { name: 'David', image: '/avatars/04.png', initials: 'D' },
-  { name: 'Emma', image: '/avatars/05.png', initials: 'E' },
+  { name: 'Samantha', image: '/images/avatars/samantha.jpg', initials: 'S' },
+  { name: 'Paul', image: '/images/avatars/paul.jpg', initials: 'P' },
+  { name: 'Think', image: '/images/avatars/think.jpg', initials: 'T' },
+  { name: 'Nathan', image: '/images/avatars/nathan.jpg', initials: 'N' },
+  { name: 'Dude', image: '/images/avatars/dude.jpg', initials: 'D' }
 ]
 
 export function PaywallDialog({ children }: PaywallDialogProps) {
@@ -80,7 +80,7 @@ export function PaywallDialog({ children }: PaywallDialogProps) {
           onClick={handleCheckout}
           disabled={isLoading}
         >
-          {isLoading ? 'Processing...' : 'Get Pro License'}
+          {isLoading ? 'Opening Browser...' : 'Get Pro License'}
         </RainbowButton>
         
         {error && (
@@ -89,7 +89,7 @@ export function PaywallDialog({ children }: PaywallDialogProps) {
 
         {/* Social Proof */}
         <div className="flex items-center justify-center gap-2 mt-3">
-          <div className="flex -space-x-3">
+          <div className="flex -space-x-2">
             {users.map((user, index) => (
               <Avatar key={index} className="h-6 w-6 border-2 border-background">
                 <AvatarImage src={user.image} alt={user.name} />
