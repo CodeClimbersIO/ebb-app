@@ -1,22 +1,59 @@
 import { useLicenseStore, License as StoreLicense } from '@/stores/licenseStore'
-import { License, LicenseInfo } from '@/lib/types/license'
 
-// Mapping from store license type to the more detailed application License type
+export type LicenseStatus = 'active' | 'expired'
+export type LicenseType = 'perpetual' | 'subscription'
+
+export interface License {
+  id: string
+  userId: string
+  status: LicenseStatus
+  licenseType: LicenseType
+  purchaseDate: Date
+  expirationDate: Date
+  stripeCustomerId?: string
+  stripePaymentId?: string
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface LicenseDevice {
+  id: string
+  licenseId: string
+  deviceId: string
+  deviceName: string
+  lastActive: Date
+  createdAt: Date
+}
+
+export interface LicenseInfo {
+  license: License | null
+  devices: LicenseDevice[]
+  isLoading: boolean
+  error: Error | null
+  canUseHardDifficulty: boolean
+  canUseAllowList: boolean
+  canUseTypewriter: boolean
+  canUseMultiplePresets: boolean
+  isUpdateEligible: boolean
+  isDeviceLimitReached: boolean
+  currentDevice: LicenseDevice | null
+}
+
 const transformLicense = (storeLicense: StoreLicense | null): License | null => {
   if (!storeLicense) {
     return null
   }
   return {
     id: storeLicense.id,
-    userId: '', // Placeholder - userId is managed in auth context
-    status: storeLicense.status as 'active' | 'expired', // Assuming store status maps directly for now
+    userId: '',
+    status: storeLicense.status as 'active' | 'expired',
     licenseType: storeLicense.license_type,
-    purchaseDate: new Date(), // Placeholder - not in store
-    expirationDate: storeLicense.expiration_date ? new Date(storeLicense.expiration_date) : new Date(), // Handled
-    createdAt: new Date(), // Placeholder - not in store
-    updatedAt: new Date(), // Placeholder - not in store
-    stripeCustomerId: undefined, // Placeholder - not in store
-    stripePaymentId: undefined, // Placeholder - not in store
+    purchaseDate: new Date(),
+    expirationDate: storeLicense.expiration_date ? new Date(storeLicense.expiration_date) : new Date(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    stripeCustomerId: undefined,
+    stripePaymentId: undefined,
   }
 }
 
@@ -27,29 +64,26 @@ export const useLicense = (): LicenseInfo => {
 
   const license = transformLicense(storeLicense)
 
-  // Compute premium feature access flags based on the store license data
-  // NOTE: We now check for 'active' or 'trialing' for access, as per the store logic
   const hasAccess = !isLoading && (storeLicense?.status === 'active' || storeLicense?.status === 'trialing')
   const isUpdateEligible = hasAccess && storeLicense && (
-    storeLicense.license_type === 'subscription' || // Subscription always gets updates while active
+    storeLicense.license_type === 'subscription' ||
     (storeLicense.license_type === 'perpetual' &&
-      !!storeLicense.expiration_date && // Explicit boolean check for existence
-      new Date(storeLicense.expiration_date) > new Date() // Perpetual gets updates for 1 year from purchase (represented by expiration_date)
+      !!storeLicense.expiration_date &&
+      new Date(storeLicense.expiration_date) > new Date()
     )
   )
 
   return {
-    license, // The transformed license object
-    devices: [], // Placeholder - Device info is not in the license store yet
+    license,
+    devices: [],
     isLoading,
     error,
-    currentDevice: null, // Placeholder
-    isDeviceLimitReached: false, // Placeholder
-    // Premium feature flags derived from store license status
+    currentDevice: null,
+    isDeviceLimitReached: false,
     canUseHardDifficulty: hasAccess,
     canUseAllowList: hasAccess,
     canUseTypewriter: hasAccess,
     canUseMultiplePresets: hasAccess,
     isUpdateEligible,
   }
-} 
+}
