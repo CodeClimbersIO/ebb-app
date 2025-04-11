@@ -1,16 +1,12 @@
 # Ebb
 
-Ebb is a desktop focus app for builders and creatives who seek more undistracted deep work. Quickly start focus sessions, block distracting apps, track your time, incorporate music into your workflow, and stay accountable with friends.
+Ebb is a desktop app for builders and creatives who seek more undistracted deep work. Quickly get into focus, block distracting apps, track your time, incorporate music into your workflow, and stay accountable with friends.
+
+To start using Ebb, simply download the application from the [releases page](https://github.com/ebb-app/ebb/releases)
 
 ## How it works
 
 Ebb uses your window, mouse and keyboard activity to track your workflow habits. These activities are then rolled up into activity states, which are then used to generate working sessions to help you understand your workflow habits and improve your productivity.
-
-## How to use
-
-Ebb is a desktop application that runs on your computer. It is designed to be used in a distraction-free environment, so it is recommended that you use it in a dedicated workspace.
-
-<!-- To start using Ebb, simply download the application from the [releases page](https://github.com/ebb-app/ebb/releases) and run it. -->
 
 ## What do we do with your data?
 
