@@ -16,7 +16,7 @@ export const useShortcutStore = create<ShortcutState>((set) => ({
     const displayParts = parts.map(part => {
       if (part === 'CommandOrControl') return '⌘'
       if (part === 'Control') return '⌃'
-      if (part === 'Alt') return '⌥'
+      if (part === 'Option') return '⌥'
       if (part === 'Shift') return '⇧'
       if (part === 'ENTER') return '↵'
       if (part === 'SPACE') return '⎵'

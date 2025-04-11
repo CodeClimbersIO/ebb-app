@@ -14,7 +14,7 @@ type ModifierKey = '⌘' | '⌥' | '⌃' | '⇧'
 const modifierMap: Record<ModifierKey, string> = {
   '⌘': 'CommandOrControl',
   '⌃': 'Control',
-  '⌥': 'Alt',
+  '⌥': 'Option',
   '⇧': 'Shift'
 }
 
@@ -173,7 +173,7 @@ export function ShortcutInput({ popoverAlign = 'center' }: ShortcutInputProps) {
   const renderHotkeyPart = (part: string) => {
     const content = part === 'CommandOrControl' ? '⌘' : 
                    part === 'Control' ? '⌃' :
-                   part === 'Alt' ? '⌥' :
+                   part === 'Option' ? '⌥' :
                    part === 'Shift' ? '⇧' :
                    part === 'ENTER' ? '↵' :
                    part === 'SPACE' ? '⎵' : part
@@ -252,7 +252,7 @@ export function ShortcutInput({ popoverAlign = 'center' }: ShortcutInputProps) {
               </div>
               {displayKey && displayModifiers.length === 0 && (
                 <div className='text-sm text-center text-red-400 mt-2'>
-                  You must begin with a modifier: command, control, alt, or shift
+                  Begin with modifier: command, control, option, or shift
                 </div>
               )}
             </div>

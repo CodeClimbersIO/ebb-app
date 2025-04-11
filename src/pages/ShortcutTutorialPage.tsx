@@ -17,13 +17,18 @@ export const ShortcutTutorialPage = () => {
 
   return (
     <div className='min-h-screen flex flex-col items-center justify-center bg-background p-4'>
-      <h1 className='text-3xl font-bold mb-10'>Your New Focus Shortcut</h1>
+      <h1 className='text-3xl font-bold mb-4'>Your New Focus Shortcut</h1>
+      <p className='text-muted-foreground text-center mb-10 max-w-sm'>
+        Use this shortcut from anywhere on your computer to instantly start a focus session
+      </p>
       
-      <div className='flex flex-col items-center gap-6 mb-10'>
+      <div className='max-w-xs mx-auto w-full border-b mb-10' />
+      
+      <div className='flex flex-col items-center gap-4 mb-10'>
         <ShortcutInput />
 
-        <p className='text-muted-foreground text-center text-sm'>
-          Keep the default or click to change
+        <p className='text-muted-foreground text-center text-xs'>
+          Click to change
         </p>
       </div>
 
