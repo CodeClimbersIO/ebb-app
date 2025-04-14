@@ -34,7 +34,7 @@ const saveShortcut = async (shortcut: string): Promise<void> => {
   }
 }
 
-const registerShortcut = async (shortcut: string): Promise<void> => {
+const setShortcut = async (shortcut: string): Promise<void> => {
   try {
     if (!shortcut) return
     
@@ -91,7 +91,7 @@ export const initializeGlobalShortcut = async (): Promise<void> => {
   }
 
   const shortcutToRegister = await getCurrentShortcutFromDb()
-  await registerShortcut(shortcutToRegister)
+  await setShortcut(shortcutToRegister)
   isInitialized = true
 }
 
