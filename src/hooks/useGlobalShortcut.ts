@@ -8,6 +8,7 @@ import {
   initializeGlobalShortcut,
   SHORTCUT_EVENT,
 } from '@/lib/globalShortcutManager'
+import { error as logError } from '@tauri-apps/plugin-log'
 
 export function useGlobalShortcut() {
   const navigate = useNavigate()
@@ -23,8 +24,8 @@ export function useGlobalShortcut() {
       try {
         const window = getCurrentWindow()
         void Promise.all([
-          window.show().catch(err => console.error(`(Shortcut) Error showing window: ${err}`)),
-          window.setFocus().catch(err => console.error(`(Shortcut) Error focusing window: ${err}`))
+          window.show().catch(err => logError(`(Shortcut) Error showing window: ${err}`)),
+          window.setFocus().catch(err => logError(`(Shortcut) Error focusing window: ${err}`))
         ])
 
         if (location.pathname === '/onboarding/shortcut-tutorial') {
@@ -46,7 +47,7 @@ export function useGlobalShortcut() {
           navigate(targetPath, { replace: true })
         }
       } catch (error) {
-        console.error(`(Shortcut) Error getting session or navigating: ${error}`)
+        logError(`(Shortcut) Error getting session or navigating: ${error}`)
         if (mounted) {
           navigate('/start-flow', { replace: true })
         }
@@ -63,7 +64,7 @@ export function useGlobalShortcut() {
           })
         }
       } catch (error) {
-        console.error(`(Shortcut) Setup failed: ${error}`)
+        logError(`(Shortcut) Setup failed: ${error}`)
       }
     }
 

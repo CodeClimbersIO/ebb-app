@@ -16,6 +16,7 @@ import { useDeepLinkAuth } from './hooks/useDeepLinkAuth'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useEffect } from 'react'
 import { useGlobalShortcut } from './hooks/useGlobalShortcut'
+import { error as logError } from '@tauri-apps/plugin-log'
 
 const ProtectedRoute = () => {
   const { user, loading } = useAuth()
@@ -57,7 +58,7 @@ const Router = () => {
           navigate(path)
         })
       } catch (error) {
-        console.error(`(Router) Failed to set up tray navigation: ${error}`)
+        logError(`(Router) Failed to set up tray navigation: ${error}`)
       }
     }
 

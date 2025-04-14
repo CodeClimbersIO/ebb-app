@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button'
 import { useNavigate } from 'react-router-dom'
 import { OnboardingUtils } from '@/lib/utils/onboarding'
 import { ShortcutInput } from '@/components/ShortcutInput'
+import { error as logError } from '@tauri-apps/plugin-log'
 
 export const ShortcutTutorialPage = () => {
   const navigate = useNavigate()
@@ -11,7 +12,7 @@ export const ShortcutTutorialPage = () => {
       await OnboardingUtils.markOnboardingCompleted()
       navigate('/start-flow')
     } catch (error) {
-      console.error(`Failed to complete shortcut tutorial step: ${error}`)
+      logError(`Failed to complete shortcut tutorial step: ${error}`)
     }
   }
 

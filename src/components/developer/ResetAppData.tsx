@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { invoke } from '@tauri-apps/api/core'
 import { StorageUtils } from '@/lib/utils/storage'
+import { error as logError } from '@tauri-apps/plugin-log'
 
 export const ResetAppData = () => {
   const [isResetting, setIsResetting] = useState(false)
@@ -22,7 +23,7 @@ export const ResetAppData = () => {
         window.location.reload()
       }, 2000)
     } catch (error) {
-      console.error('Error resetting app data:', error)
+      logError(`Error resetting app data: ${error}`)
     } finally {
       setIsResetting(false)
     }
@@ -42,7 +43,7 @@ export const ResetAppData = () => {
         window.location.reload()
       }, 2000)
     } catch (error) {
-      console.error('Error restoring app data:', error)
+      logError(`Error restoring app data: ${error}`)
 
     } finally {
       setIsRestoring(false)

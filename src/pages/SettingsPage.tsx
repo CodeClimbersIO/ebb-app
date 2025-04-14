@@ -29,6 +29,7 @@ import { invoke } from '@tauri-apps/api/core'
 import { ShortcutInput } from '@/components/ShortcutInput'
 import { Switch } from '@/components/ui/switch'
 import { isEnabled } from '@tauri-apps/plugin-autostart'
+import { error as logError } from '@tauri-apps/plugin-log'
 
 export const SettingsPage = () => {
   const [showUnlinkDialog, setShowUnlinkDialog] = useState(false)
@@ -67,7 +68,7 @@ export const SettingsPage = () => {
         // Always check connection status after handling callback or on initial load
         await checkSpotifyConnection()
       } catch (error) {
-        console.error('Error handling Spotify callback:', error)
+        logError(`Error handling Spotify callback: ${error}`)
         setIsLoading(false)
       }
     }
@@ -105,7 +106,7 @@ export const SettingsPage = () => {
 
       setIsLoading(false)
     } catch (error) {
-      console.error('Error checking Spotify connection:', error)
+      logError(`Error checking Spotify connection: ${error}`)
       setIsLoading(false)
     }
   }
@@ -129,7 +130,7 @@ export const SettingsPage = () => {
     try {
       await SpotifyAuthService.connect()
     } catch (error) {
-      console.error('Error connecting to Spotify:', error)
+      logError(`Error connecting to Spotify: ${error}`)
     }
   }
 
@@ -163,7 +164,7 @@ export const SettingsPage = () => {
       await supabase.auth.signOut()
       navigate('/')
     } catch (error) {
-      console.error('Error deleting account:', error)
+      logError(`Error deleting account: ${error}`)
     } finally {
       setIsDeleting(false)
       setShowDeleteAccountDialog(false)
@@ -181,7 +182,7 @@ export const SettingsPage = () => {
       await invoke('change_autostart', { open: !autostartEnabled })
       setAutostartEnabled(!autostartEnabled)
     } catch (error) {
-      console.error('Error toggling autostart:', error)
+      logError(`Error toggling autostart: ${error}`)
     }
   }
 
