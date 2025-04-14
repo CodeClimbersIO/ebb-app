@@ -10,21 +10,20 @@ export const DEFAULT_SHORTCUT = 'CommandOrControl+E'
 export const SHORTCUT_EVENT = 'global-shortcut-triggered'
 const SHORTCUT_KEY = 'global-focus-shortcut'
 
-let currentShortcut = ''
 let isInitialized = false
 
-export const loadShortcut = async (): Promise<string> => {
+const getCurrentShortcutFromDb = async (): Promise<string> => {
   try {
     const savedShortcut = await UserPreferenceRepo.getPreference(SHORTCUT_KEY)
-    if (savedShortcut !== null) {
-      currentShortcut = savedShortcut
-      return savedShortcut
-    }
+    return savedShortcut ?? ''
   } catch (err) {
     logError(`Failed to load shortcut from database: ${err}`)
+    return ''
   }
-  currentShortcut = ''
-  return ''
+}
+
+export const loadShortcut = async (): Promise<string> => {
+  return getCurrentShortcutFromDb()
 }
 
 const saveShortcut = async (shortcut: string): Promise<void> => {
@@ -35,9 +34,11 @@ const saveShortcut = async (shortcut: string): Promise<void> => {
   }
 }
 
-const registerShortcut = async (shortcut: string): Promise<void> => {
+const setShortcut = async (shortcut: string): Promise<void> => {
   try {
     if (!shortcut) return
+    
+    const currentShortcut = await getCurrentShortcutFromDb()
     if (currentShortcut === shortcut) return
 
     if (currentShortcut) {
@@ -49,7 +50,6 @@ const registerShortcut = async (shortcut: string): Promise<void> => {
         emit(SHORTCUT_EVENT)
       }
     })
-    currentShortcut = shortcut
   } catch (err) {
     logError(`(Global) Failed to register shortcut ${shortcut}: ${err}`)
   }
@@ -60,18 +60,29 @@ export const updateGlobalShortcut = async (newShortcut: string): Promise<void> =
     logError('(Global) Cannot update shortcut before initialization')
     return
   }
+
+  const currentShortcut = await getCurrentShortcutFromDb()
   if (newShortcut === currentShortcut) {
     return
   }
 
   try {
-    await unregisterShortcutTauri(currentShortcut)
+    if (currentShortcut) {
+      await unregisterShortcutTauri(currentShortcut)
+    }
+    
+    if (newShortcut) {
+      await registerShortcutTauri(newShortcut, (event) => {
+        if (event.state === 'Pressed') {
+          emit(SHORTCUT_EVENT)
+        }
+      })
+    }
+    
+    await saveShortcut(newShortcut)
   } catch (err) {
-    logError(`(Global) Failed to unregister old shortcut ${currentShortcut}: ${err}`)
+    logError(`(Global) Failed to update shortcut: ${err}`)
   }
-
-  await saveShortcut(newShortcut)
-  await registerShortcut(newShortcut)
 }
 
 export const initializeGlobalShortcut = async (): Promise<void> => {
@@ -79,24 +90,27 @@ export const initializeGlobalShortcut = async (): Promise<void> => {
     return
   }
 
-  const shortcutToRegister = await loadShortcut()
-  await registerShortcut(shortcutToRegister)
+  const shortcutToRegister = await getCurrentShortcutFromDb()
+  await setShortcut(shortcutToRegister)
   isInitialized = true
 }
 
-export const getCurrentShortcut = (): string => {
+export const getCurrentShortcut = async (): Promise<string> => {
   if (!isInitialized) {
     return ''
   }
-  return currentShortcut
+  return getCurrentShortcutFromDb()
 }
 
 export const unregisterAllManagedShortcuts = async (): Promise<void> => {
-  if (isInitialized && currentShortcut) {
-    try {
-      await unregisterShortcutTauri(currentShortcut)
-    } catch (err) {
-      logError(`(Global) Failed to unregister ${currentShortcut} during cleanup: ${err}`)
+  if (isInitialized) {
+    const currentShortcut = await getCurrentShortcutFromDb()
+    if (currentShortcut) {
+      try {
+        await unregisterShortcutTauri(currentShortcut)
+      } catch (err) {
+        logError(`(Global) Failed to unregister ${currentShortcut} during cleanup: ${err}`)
+      }
     }
   }
   isInitialized = false
