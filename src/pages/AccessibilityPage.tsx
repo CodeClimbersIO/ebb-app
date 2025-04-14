@@ -20,9 +20,6 @@ export const AccessibilityPage = () => {
         if (!mounted) return false
 
         const hasPermissions = await invoke<boolean>('check_accessibility_permissions')
-
-        if (!mounted) return false
-
         setPermissionStatus(hasPermissions ? 'granted' : 'not_granted')
 
         if (hasPermissions) {
@@ -45,7 +42,6 @@ export const AccessibilityPage = () => {
 
     const initialCheck = async () => {
       setPermissionStatus('checking')
-      await new Promise(resolve => setTimeout(resolve, 1000))
       const hasPermissions = await checkPermissions()
       
       if (!hasPermissions && mounted) {
