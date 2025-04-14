@@ -86,7 +86,7 @@ export const FlowRecapPage = () => {
       </div>
       <div className="flex-1 flex items-center justify-center bg-background/80 backdrop-blur-sm pt-8">
         <Card className="w-full max-w-3xl transition-all duration-300">
-          <CardContent className="p-6 space-y-8">
+          <CardContent className="p-6">
             <div className="mb-4 flex justify-between items-center">
               <div className="text-sm">
                 <span className="font-medium">'{state?.objective}'</span>
