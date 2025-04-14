@@ -37,17 +37,18 @@ const saveShortcut = async (shortcut: string): Promise<void> => {
 
 const registerShortcut = async (shortcut: string): Promise<void> => {
   try {
-    if (currentShortcut && currentShortcut !== shortcut) {
+    if (!shortcut) return
+    if (currentShortcut === shortcut) return
+
+    if (currentShortcut) {
       await unregisterShortcutTauri(currentShortcut)
     }
 
-    if (shortcut) {
-      await registerShortcutTauri(shortcut, (event) => {
-        if (event.state === 'Pressed') {
-          emit(SHORTCUT_EVENT)
-        }
-      })
-    }
+    await registerShortcutTauri(shortcut, (event) => {
+      if (event.state === 'Pressed') {
+        emit(SHORTCUT_EVENT)
+      }
+    })
     currentShortcut = shortcut
   } catch (err) {
     logError(`(Global) Failed to register shortcut ${shortcut}: ${err}`)
