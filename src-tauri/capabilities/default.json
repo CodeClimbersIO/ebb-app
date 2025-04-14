@@ -34,7 +34,6 @@
     "shell:allow-execute",
     "core:event:default",
     "core:event:allow-emit",
-    "store:default",
     "autostart:default"
   ],
   "remote": {

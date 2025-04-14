@@ -1,43 +1,27 @@
-import { Store, load as loadStore } from '@tauri-apps/plugin-store'
 import {
   register as registerShortcutTauri,
-  unregister as unregisterShortcutTauri,
+  unregister as unregisterShortcutTauri
 } from '@tauri-apps/plugin-global-shortcut'
 import { emit } from '@tauri-apps/api/event'
 import { error as logError } from '@tauri-apps/plugin-log'
+import { UserPreferenceRepo } from './userPreferenceRepo'
 
-const STORE_FILE = '.settings.dat'
-const SHORTCUT_KEY = 'global-focus-shortcut'
 export const DEFAULT_SHORTCUT = 'CommandOrControl+E'
 export const SHORTCUT_EVENT = 'global-shortcut-triggered'
-
-let storeInstance: Store | null = null
+const SHORTCUT_KEY = 'global-focus-shortcut'
 
 let currentShortcut = ''
 let isInitialized = false
 
-const getStoreInstance = async (): Promise<Store> => {
-  if (!storeInstance) {
-    try {
-      storeInstance = await loadStore(STORE_FILE)
-    } catch (err) {
-      logError(`Failed to load store ${STORE_FILE}: ${err}`)
-      throw new Error(`Failed to load store: ${err}`)
-    }
-  }
-  return storeInstance
-}
-
 export const loadShortcut = async (): Promise<string> => {
   try {
-    const store = await getStoreInstance()
-    const savedShortcut = await store.get<string>(SHORTCUT_KEY)
-    if (savedShortcut !== null && savedShortcut !== undefined) {
+    const savedShortcut = await UserPreferenceRepo.getPreference(SHORTCUT_KEY)
+    if (savedShortcut !== null) {
       currentShortcut = savedShortcut
       return savedShortcut
     }
   } catch (err) {
-    logError(`Failed to load shortcut from store: ${err}`)
+    logError(`Failed to load shortcut from database: ${err}`)
   }
   currentShortcut = ''
   return ''
@@ -45,11 +29,9 @@ export const loadShortcut = async (): Promise<string> => {
 
 const saveShortcut = async (shortcut: string): Promise<void> => {
   try {
-    const store = await getStoreInstance()
-    await store.set(SHORTCUT_KEY, shortcut)
-    await store.save()
+    await UserPreferenceRepo.setPreference(SHORTCUT_KEY, shortcut)
   } catch (err) {
-    logError(`Failed to save shortcut ${shortcut} to store: ${err}`)
+    logError(`Failed to save shortcut ${shortcut} to database: ${err}`)
   }
 }
 
@@ -97,14 +79,6 @@ export const initializeGlobalShortcut = async (): Promise<void> => {
   if (isInitialized) {
     return
   }
-  try {
-    await getStoreInstance()
-  } catch (err) {
-    logError(`(Global) Initialization failed: Could not load store (${err})`)
-    currentShortcut = ''
-    isInitialized = true
-    return
-  }
 
   const shortcutToRegister = await loadShortcut()
   await registerShortcut(shortcutToRegister)
@@ -113,18 +87,18 @@ export const initializeGlobalShortcut = async (): Promise<void> => {
 
 export const getCurrentShortcut = (): string => {
   if (!isInitialized) {
-      return ''
+    return ''
   }
   return currentShortcut
 }
 
 export const unregisterAllManagedShortcuts = async (): Promise<void> => {
-    if (isInitialized && currentShortcut) {
-        try {
-            await unregisterShortcutTauri(currentShortcut)
-        } catch (err) {
-            logError(`(Global) Failed to unregister ${currentShortcut} during cleanup: ${err}`)
-        }
+  if (isInitialized && currentShortcut) {
+    try {
+      await unregisterShortcutTauri(currentShortcut)
+    } catch (err) {
+      logError(`(Global) Failed to unregister ${currentShortcut} during cleanup: ${err}`)
     }
-    isInitialized = false
+  }
+  isInitialized = false
 }
