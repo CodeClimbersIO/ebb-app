@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { App } from '../db/monitor/appRepo'
 import { categoryEmojis, AppCategory } from '../lib/app-directory/apps-types'
 import { invoke } from '@tauri-apps/api/core'
+import { error as logError } from '@tauri-apps/plugin-log'
 
 // Add this helper function at the top level
 const getAppIcon = (app: App) => {
@@ -92,7 +93,7 @@ const DesktopIcon = ({ app, size = 'md' }: { app: App; size?: IconSize }) => {
           setIconDataUrl(iconData as string)
         }
       } catch (err) {
-        console.error('Failed to load icon:', err)
+        logError(`Failed to load icon: ${err}`)
         setIconError(true)
       }
     }

@@ -1,90 +1,46 @@
 import { Button } from '@/components/ui/button'
 import { useNavigate } from 'react-router-dom'
 import { OnboardingUtils } from '@/lib/utils/onboarding'
-import { useEffect, useState } from 'react'
-import { register, unregister } from '@tauri-apps/plugin-global-shortcut'
-import { getCurrentWindow } from '@tauri-apps/api/window'
+import { ShortcutInput } from '@/components/ShortcutInput'
 import { error as logError } from '@tauri-apps/plugin-log'
+
 export const ShortcutTutorialPage = () => {
   const navigate = useNavigate()
-  const [cmdPressed, setCmdPressed] = useState(false)
-  const [ePressed, setEPressed] = useState(false)
 
-  const handleComplete = () => {
-    OnboardingUtils.markOnboardingCompleted()
-    navigate('/start-flow')
+  const handleComplete = async () => {
+    try {
+      await OnboardingUtils.markOnboardingCompleted()
+      navigate('/start-flow')
+    } catch (error) {
+      logError(`Failed to complete shortcut tutorial step: ${error}`)
+    }
   }
 
-  useEffect(() => {
-    const registerShortcut = async () => {
-      try {
-        await register('CommandOrControl+E', async () => {
-          setCmdPressed(true)
-          setEPressed(true)
-          const window = getCurrentWindow()
-          await window.show()
-          await window.setFocus()
-
-          setTimeout(() => {
-            handleComplete()
-          }, 300)
-        })
-      } catch (error) {
-        logError(`Failed to register shortcut: ${error}`)
-      }
-    }
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Meta' || e.key === 'Control') {
-        setCmdPressed(true)
-      } else if (e.key.toLowerCase() === 'e' && (e.metaKey || e.ctrlKey)) {
-        setEPressed(true)
-      }
-    }
-
-    const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.key === 'Meta' || e.key === 'Control') {
-        setCmdPressed(false)
-      } else if (e.key.toLowerCase() === 'e') {
-        setEPressed(false)
-      }
-    }
-
-    registerShortcut()
-    window.addEventListener('keydown', handleKeyDown)
-    window.addEventListener('keyup', handleKeyUp)
-
-    return () => {
-      unregister('CommandOrControl+E').catch(console.error)
-      window.removeEventListener('keydown', handleKeyDown)
-      window.removeEventListener('keyup', handleKeyUp)
-    }
-  }, [])
-
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
-      <h1 className="text-3xl font-bold mb-10">Your New Shortcut to Focus</h1>
-      <div className="bg-muted/50 backdrop-blur-sm p-8 rounded-xl mb-10 shadow-lg min-w-[300px]">
-        <div className="flex flex-col items-center gap-6">
-          <div className="flex items-center gap-3">
-            <kbd className={`px-5 py-3 text-xl font-bold bg-background border-2 border-border rounded-lg transition-all duration-200 ${cmdPressed ? 'bg-primary border-primary text-primary-foreground scale-110 shadow-lg' : ''}`}>⌘</kbd>
-            <span className="text-2xl text-muted-foreground">+</span>
-            <kbd className={`px-5 py-3 text-xl font-bold bg-background border-2 border-border rounded-lg transition-all duration-200 ${ePressed ? 'bg-primary border-primary text-primary-foreground scale-110 shadow-lg' : ''}`}>E</kbd>
-          </div>
-          <p className="text-muted-foreground text-center text-sm">to start a focus session anytime</p>
-        </div>
-      </div>
-      <p className="text-lg text-muted-foreground mb-8 text-center max-w-md">
-        Try it now! E for Ebb 😎
+    <div className='min-h-screen flex flex-col items-center justify-center bg-background p-4'>
+      <h1 className='text-3xl font-bold mb-4'>Your New Focus Shortcut</h1>
+      <p className='text-muted-foreground text-center mb-10 max-w-sm'>
+        Use this shortcut from anywhere on your computer to instantly start a focus session
       </p>
+      
+      <div className='max-w-xs mx-auto w-full border-b mb-10' />
+      
+      <div className='flex flex-col items-center gap-4 mb-10'>
+        <ShortcutInput />
+
+        <p className='text-muted-foreground text-center text-xs'>
+          Click to change
+        </p>
+      </div>
+
       <Button
-        size="sm"
-        variant="secondary"
+        size='lg'
         onClick={handleComplete}
-        className="opacity-50 hover:opacity-100 transition-opacity"
+        className='min-w-[200px]'
       >
-        Or click here instead
+        Continue
       </Button>
     </div>
   )
 }
+

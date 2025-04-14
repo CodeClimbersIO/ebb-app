@@ -4,6 +4,7 @@ import { Logo } from '@/components/ui/logo'
 import supabase from '@/lib/integrations/supabase'
 import { invoke } from '@tauri-apps/api/core'
 import { OnboardingUtils } from '@/lib/utils/onboarding'
+import { error as logError } from '@tauri-apps/plugin-log'
 
 export const LoginPage = () => {
   const [error, setError] = useState('')
@@ -37,7 +38,7 @@ export const LoginPage = () => {
       }
     } catch (err) {
       setError('Failed to login with Google.')
-      console.error(err)
+      logError(`${err}`)
     }
   }
 
@@ -45,7 +46,7 @@ export const LoginPage = () => {
     try {
       await invoke('plugin:shell|open', { path: url })
     } catch (err) {
-      console.error('Failed to open link:', err)
+      logError(`Failed to open link: ${err}`)
     }
   }
 

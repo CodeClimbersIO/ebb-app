@@ -33,7 +33,8 @@
     "shell:allow-open",
     "shell:allow-execute",
     "core:event:default",
-    "core:event:allow-emit"
+    "core:event:allow-emit",
+    "autostart:default"
   ],
   "remote": {
     "urls": [

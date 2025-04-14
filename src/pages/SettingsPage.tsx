@@ -26,12 +26,17 @@ import { version } from '../../package.json'
 import { useAuth } from '@/hooks/useAuth'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { invoke } from '@tauri-apps/api/core'
+import { ShortcutInput } from '@/components/ShortcutInput'
+import { Switch } from '@/components/ui/switch'
+import { isEnabled } from '@tauri-apps/plugin-autostart'
+import { error as logError } from '@tauri-apps/plugin-log'
 
 export const SettingsPage = () => {
   const [showUnlinkDialog, setShowUnlinkDialog] = useState(false)
   const [activeService, setActiveService] = useState<'spotify' | 'apple' | null>(null)
   const [serviceToUnlink, setServiceToUnlink] = useState<'spotify' | 'apple' | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [autostartEnabled, setAutostartEnabled] = useState(false)
   const [spotifyProfile, setSpotifyProfile] = useState<{
     email: string;
     display_name: string | null;
@@ -63,7 +68,7 @@ export const SettingsPage = () => {
         // Always check connection status after handling callback or on initial load
         await checkSpotifyConnection()
       } catch (error) {
-        console.error('Error handling Spotify callback:', error)
+        logError(`Error handling Spotify callback: ${error}`)
         setIsLoading(false)
       }
     }
@@ -77,6 +82,14 @@ export const SettingsPage = () => {
         section.scrollIntoView({ behavior: 'smooth' })
       }
     }
+  }, [])
+
+  useEffect(() => {
+    const checkAutostart = async () => {
+      const enabled = await isEnabled()
+      setAutostartEnabled(enabled)
+    }
+    checkAutostart()
   }, [])
 
   const checkSpotifyConnection = async () => {
@@ -93,7 +106,7 @@ export const SettingsPage = () => {
 
       setIsLoading(false)
     } catch (error) {
-      console.error('Error checking Spotify connection:', error)
+      logError(`Error checking Spotify connection: ${error}`)
       setIsLoading(false)
     }
   }
@@ -117,7 +130,7 @@ export const SettingsPage = () => {
     try {
       await SpotifyAuthService.connect()
     } catch (error) {
-      console.error('Error connecting to Spotify:', error)
+      logError(`Error connecting to Spotify: ${error}`)
     }
   }
 
@@ -151,7 +164,7 @@ export const SettingsPage = () => {
       await supabase.auth.signOut()
       navigate('/')
     } catch (error) {
-      console.error('Error deleting account:', error)
+      logError(`Error deleting account: ${error}`)
     } finally {
       setIsDeleting(false)
       setShowDeleteAccountDialog(false)
@@ -162,6 +175,15 @@ export const SettingsPage = () => {
     const { error } = await supabase.auth.signOut()
     if (error) throw error
     navigate('/login')
+  }
+
+  const handleAutostartToggle = async () => {
+    try {
+      await invoke('change_autostart', { open: !autostartEnabled })
+      setAutostartEnabled(!autostartEnabled)
+    } catch (error) {
+      logError(`Error toggling autostart: ${error}`)
+    }
   }
 
   return (
@@ -199,8 +221,8 @@ export const SettingsPage = () => {
               </div>
 
               <div className="border rounded-lg p-6">
-                <h2 className="text-lg font-semibold mb-4">Appearance</h2>
-                <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold mb-4">System</h2>
+                <div className="flex items-center justify-between mb-6">
                   <div>
                     <div className="font-medium">Theme</div>
                     <div className="text-sm text-muted-foreground">
@@ -210,6 +232,27 @@ export const SettingsPage = () => {
                   <div className="relative">
                     <ModeToggle />
                   </div>
+                </div>
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <div className="font-medium">Global Shortcut</div>
+                    <div className="text-sm text-muted-foreground">
+                      Use this shortcut anywhere to start a focus session
+                    </div>
+                  </div>
+                  <ShortcutInput popoverAlign="end" />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium">Launch on Startup</div>
+                    <div className="text-sm text-muted-foreground">
+                      Automatically start Ebb when you log in to your computer
+                    </div>
+                  </div>
+                  <Switch
+                    checked={autostartEnabled}
+                    onCheckedChange={handleAutostartToggle}
+                  />
                 </div>
               </div>
 

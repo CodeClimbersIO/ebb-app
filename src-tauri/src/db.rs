@@ -104,5 +104,16 @@ pub fn get_migrations() -> Vec<Migration> {
             "#,
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 9,
+            description: "create_user_preference",
+            sql: r#"
+            CREATE TABLE IF NOT EXISTS user_preference (
+                key TEXT PRIMARY KEY NOT NULL,
+                value TEXT NOT NULL,
+                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+            );"#,
+            kind: MigrationKind::Up,
+        },
     ]
 }

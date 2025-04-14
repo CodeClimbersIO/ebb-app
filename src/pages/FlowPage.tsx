@@ -28,6 +28,7 @@ import { useFlowTimer } from '../lib/stores/flowTimer'
 import { stopFlowTimer } from '../lib/tray'
 import { DifficultyButton } from '@/components/DifficultyButton'
 import { useSpotifyInstallation } from '@/hooks/useSpotifyInstallation'
+import { error as logError } from '@tauri-apps/plugin-log'
 
 const getDurationFormatFromSeconds = (seconds: number) => {
   const duration = Duration.fromMillis(seconds * 1000)
@@ -62,7 +63,7 @@ const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
 
       flowSession.duration = newTotalDuration
     } catch (error) {
-      console.error('Failed to extend session duration:', error)
+      logError(`Failed to extend session duration: ${error}`)
     } finally {
       setIsAddingTime(false)
       setTimeout(() => {
@@ -269,14 +270,14 @@ export const FlowPage = () => {
                 newPlayer.connect()
               }
             } catch (error) {
-              console.error('Error reconnecting player:', error)
+              logError(`Error reconnecting player: ${error}`)
             }
           }, 2000)
         })
 
         setPlayer(newPlayer)
       } catch (error) {
-        console.error('Failed to initialize Spotify player:', error)
+        logError(`Failed to initialize Spotify player: ${error}`)
       }
     }
 
@@ -318,7 +319,7 @@ export const FlowPage = () => {
         setPlaylistData(newPlaylistData)
         localStorage.setItem('playlistData', JSON.stringify(newPlaylistData))
       } catch (error) {
-        console.error('Error loading playlist data:', error)
+        logError(`Error loading playlist data: ${error}`)
       }
     }
 
@@ -333,7 +334,7 @@ export const FlowPage = () => {
       try {
         await SpotifyAuthService.refreshAccessToken()
       } catch (error) {
-        console.error('Failed to refresh token in interval:', error)
+        logError(`Failed to refresh token in interval: ${error}`)
       }
     }, 30 * 60 * 1000) // 30 minutes
 
@@ -384,7 +385,7 @@ export const FlowPage = () => {
         await player.resume()
       }
     } catch (error) {
-      console.error('Playback control error:', error)
+      logError(`Playback control error: ${error}`)
     } finally {
       setTimeout(() => setClickedButton(null), 200)
     }
@@ -396,7 +397,7 @@ export const FlowPage = () => {
       setClickedButton('next')
       await player.nextTrack()
     } catch (error) {
-      console.error('Next track error:', error)
+      logError(`Next track error: ${error}`)
     } finally {
       setTimeout(() => setClickedButton(null), 200)
     }
@@ -408,7 +409,7 @@ export const FlowPage = () => {
       setClickedButton('prev')
       await player.previousTrack()
     } catch (error) {
-      console.error('Previous track error:', error)
+      logError(`Previous track error: ${error}`)
     } finally {
       setTimeout(() => setClickedButton(null), 200)
     }
@@ -504,7 +505,7 @@ export const FlowPage = () => {
                               : 'spotify:'
                             await invoke('plugin:shell|open', { path: spotifyUri })
                           } catch (error) {
-                            console.error('Failed to open Spotify:', error)
+                            logError(`Failed to open Spotify: ${error}`)
                             // Fallback to web version if native app fails to open
                             const webUrl = selectedPlaylistId
                               ? `https://open.spotify.com/playlist/${selectedPlaylistId}`

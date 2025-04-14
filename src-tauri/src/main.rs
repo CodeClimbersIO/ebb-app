@@ -4,6 +4,9 @@ use tokio;
 mod commands;
 mod db;
 mod system_monitor;
+mod autostart;
+
+use autostart::{change_autostart, enable_autostart};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -21,6 +24,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let migrations = db::get_migrations();
     tauri::Builder::default()
+        .plugin(tauri_plugin_autostart::init(
+            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+            None,
+        ))
         .plugin(tauri_plugin_shell::init())
         .on_window_event(|window, event| match event {
             tauri::WindowEvent::CloseRequested { api, .. } => {
@@ -47,6 +54,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             #[cfg(desktop)]
             app.handle()
                 .plugin(tauri_plugin_updater::Builder::new().build())?;
+            enable_autostart(app);
             Ok(())
         })
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
@@ -69,6 +77,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             commands::reset_app_data_for_testing,
             commands::restore_app_data_from_backup,
             commands::detect_spotify,
+            change_autostart,
         ])
         .build(tauri::generate_context!())?
         .run(
