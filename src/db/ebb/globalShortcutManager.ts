@@ -37,12 +37,8 @@ const saveShortcut = async (shortcut: string): Promise<void> => {
 
 const registerShortcut = async (shortcut: string): Promise<void> => {
   try {
-    if (currentShortcut) {
+    if (currentShortcut && currentShortcut !== shortcut) {
       await unregisterShortcutTauri(currentShortcut)
-    }
-
-    if (shortcut && shortcut !== currentShortcut) {
-      await unregisterShortcutTauri(shortcut)
     }
 
     if (shortcut) {
