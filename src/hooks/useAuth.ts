@@ -26,7 +26,6 @@ export const useAuth = () => {
       }
     })
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, changedSession) => {
        console.log(`[useAuth Simple] onAuthStateChange triggered. Event: ${_event}, Session: ${changedSession ? changedSession.user.id : 'null'}`)
        if (isMounted) {

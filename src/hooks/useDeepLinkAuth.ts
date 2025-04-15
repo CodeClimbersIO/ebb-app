@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import supabase from '@/lib/integrations/supabase'
 import { SpotifyAuthService } from '@/lib/integrations/spotify/spotifyAuth'
+import { error as logError } from '@tauri-apps/plugin-log'
 import { useLicenseStore } from '@/stores/licenseStore'
 import { useAuth } from './useAuth'
 
@@ -13,7 +14,6 @@ export const useDeepLinkAuth = () => {
   const fetchLicense = useLicenseStore((state) => state.fetchLicense)
 
   useEffect(() => {
-    // Check URL parameters immediately
     const urlObj = new URL(window.location.href)
     const searchParams = new URLSearchParams(urlObj.search)
     const code = searchParams.get('code')
@@ -60,7 +60,7 @@ export const useDeepLinkAuth = () => {
           return
         }
       } catch (err) {
-        console.error('Error handling deep link:', err)
+        logError(`Error handling deep link: ${err}`)
       } finally {
         setIsHandlingAuth(false)
       }

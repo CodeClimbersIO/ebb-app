@@ -217,7 +217,7 @@
               snoozeButton.disabled = true
               snoozeButton.classList.add('success')
               
-              await invoke('snooze_blocking', {
+              await event.emit('snooze_blocking', { // using emit to send event as invoke is unreliable/causes crashes when used in a webview
                 duration: 1000 * 60 // 1 minute snoozer
               })
 

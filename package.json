@@ -1,7 +1,7 @@
 {
-  "name": "app-codeclimbers",
+  "name": "ebb",
   "private": true,
-  "version": "0.1.36",
+  "version": "0.1.41",
   "type": "module",
   "author": "Paul Hovley <rphovley@gmail.com>",
   "scripts": {
@@ -36,6 +36,7 @@
     "@supabase/auth-ui-shared": "^0.1.8",
     "@supabase/supabase-js": "^2.48.1",
     "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-autostart": "^2.3.0",
     "@tauri-apps/plugin-deep-link": "^2.2.0",
     "@tauri-apps/plugin-global-shortcut": "^2.2.0",
     "@tauri-apps/plugin-log": "^2.2.1",

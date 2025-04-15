@@ -20,6 +20,7 @@ import { AlertCircle } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { SpotifyApiService } from '@/lib/integrations/spotify/spotifyApi'
 import { TypewriterModeToggle } from '@/components/TypewriterModeToggle'
+import { error as logError } from '@tauri-apps/plugin-log'
 
 export const StartFlowPage = () => {
   const { duration, setDuration } = useFlowTimer()
@@ -63,7 +64,7 @@ export const StartFlowPage = () => {
           setDifficulty(mostRecentWorkflow.settings.difficulty || null)
         }
       } catch (error) {
-        console.error('Failed to load workflows:', error)
+        logError(`Failed to load workflows: ${error}`)
       }
     }
 
@@ -78,7 +79,7 @@ export const StartFlowPage = () => {
           setSpotifyProfile(profile)
         }
       } catch (error) {
-        console.error('Error checking Spotify profile:', error)
+        logError(`Error checking Spotify profile: ${error}`)
       }
     }
     checkSpotifyProfile()
@@ -106,7 +107,7 @@ export const StartFlowPage = () => {
     try {
       await WorkflowApi.saveWorkflow(updatedWorkflow)
     } catch (error) {
-      console.error('Failed to save workflow changes:', error)
+      logError(`Failed to save workflow changes: ${error}`)
     }
   }, [duration, selectedPlaylist, selectedApps, isAllowList, selectedWorkflow, hasBreathing, typewriterMode, hasMusic, difficulty])
 
@@ -136,7 +137,7 @@ export const StartFlowPage = () => {
         setDifficulty(workflow.settings.difficulty || null)
       }
     } catch (error) {
-      console.error('Failed to select workflow:', error)
+      logError(`Failed to select workflow: ${error}`)
     }
   }
 
@@ -149,7 +150,7 @@ export const StartFlowPage = () => {
             setSelectedWorkflow(workflow)
           }
         } catch (error) {
-          console.error('Failed to refresh workflow:', error)
+          logError(`Failed to refresh workflow: ${error}`)
         }
       }
       refreshWorkflow()
@@ -192,7 +193,7 @@ export const StartFlowPage = () => {
           setSelectedWorkflowId(savedWorkflow.id || null)
           setSelectedWorkflow(savedWorkflow)
         } catch (error) {
-          console.error('Failed to save first workflow:', error)
+          logError(`Failed to save first workflow: ${error}`)
         }
       }
 
@@ -242,7 +243,7 @@ export const StartFlowPage = () => {
         navigate('/breathing-exercise', { state: sessionState })
       }
     } catch (error) {
-      console.error('Failed to start flow session:', error)
+      logError(`Failed to start flow session: ${error}`)
     }
   }
 

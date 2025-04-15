@@ -10,12 +10,14 @@ import { useUpdate } from './hooks/useUpdate'
 import { useAuth } from './hooks/useAuth'
 import { useDeviceRegistration } from './hooks/useDeviceRegistration'
 import { usePostHog } from 'posthog-js/react'
+import { useShortcutStore } from '@/lib/stores/shortcutStore'
 import { useLicenseStore } from '@/stores/licenseStore'
 
 const App = () => {
   const posthog = usePostHog()
   const { beginCheckForUpdates } = useUpdate()
   const { user } = useAuth()
+  const { loadShortcutFromStorage } = useShortcutStore()
   const fetchLicense = useLicenseStore((state) => state.fetchLicense)
   const initSubscription = useLicenseStore((state) => state.initSubscription)
   const clearSubscription = useLicenseStore((state) => state.clearSubscription)
@@ -55,6 +57,10 @@ const App = () => {
       clearSubscription()
     }
   }, [user, fetchLicense, initSubscription, clearSubscription, posthog])
+
+  useEffect(() => {
+    loadShortcutFromStorage()
+  }, [loadShortcutFromStorage])
 
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
