@@ -1,7 +1,10 @@
 import { Button } from '@/components/ui/button'
-import { Home, Users, Settings, KeyRound } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { SettingsGearIcon } from '@/components/icons/GearIcon'
+import { HomeIcon } from '@/components/icons/HomeIcon'
+import { UsersIcon } from '@/components/icons/UsersIcon'
+import { KeyCircleIcon } from '@/components/icons/KeyIcon'
 
 export function Sidebar() {
   const location = useLocation()
@@ -20,7 +23,7 @@ export function Sidebar() {
                   asChild
                 >
                   <Link to="/">
-                    <Home className="h-5 w-5" />
+                    <HomeIcon size={20} />
                   </Link>
                 </Button>
               </TooltipTrigger>
@@ -36,7 +39,7 @@ export function Sidebar() {
                   asChild
                 >
                   <Link to="/friends">
-                    <Users className="h-5 w-5" />
+                    <UsersIcon size={20} />
                   </Link>
                 </Button>
               </TooltipTrigger>
@@ -48,7 +51,7 @@ export function Sidebar() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="ghost" iconSize={5} className="w-9 h-9 p-2">
-                  <KeyRound className="h-5 w-5 text-yellow-500" />
+                  <KeyCircleIcon size={20} className="text-yellow-500" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="right" sideOffset={10}> Ebb License - Coming Soon</TooltipContent>
@@ -65,7 +68,7 @@ export function Sidebar() {
                   asChild
                 >
                   <Link to="/settings">
-                    <Settings className="h-5 w-5" />
+                    <SettingsGearIcon size={20} />
                   </Link>
                 </Button>
               </TooltipTrigger>
