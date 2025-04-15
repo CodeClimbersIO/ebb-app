@@ -1,4 +1,4 @@
-import { Plus, Pencil, Trash2, Settings } from 'lucide-react'
+import { Pencil, Trash2, Settings } from 'lucide-react'
 import { motion } from 'motion/react'
 import {
   Dialog,
@@ -22,6 +22,8 @@ import { cn } from '@/lib/utils/tailwind.util'
 import { Button } from './ui/button'
 import { Switch } from '@/components/ui/switch'
 import { error as logError } from '@tauri-apps/plugin-log'
+import { useLicenseStore } from '@/stores/licenseStore'
+import { PaywallDialog } from './PaywallDialog'
 
 interface WorkflowSelectorProps {
   selectedId: string | null
@@ -33,7 +35,6 @@ interface WorkflowBadgeProps {
   workflow: Workflow
   isSelected: boolean
   onClick: () => void
-  onCreateClick?: () => void
   onRename?: (newName: string) => void
   onDelete?: () => void
   onUpdateSettings?: (settings: Workflow['settings']) => void
@@ -45,7 +46,6 @@ function WorkflowBadge({
   workflow, 
   isSelected,
   onClick,
-  onCreateClick,
   onRename,
   onDelete,
   onUpdateSettings,
@@ -204,10 +204,6 @@ function WorkflowBadge({
                 <span>Advanced</span>
               </ContextMenuItem>
               <ContextMenuSeparator />
-              <ContextMenuItem onClick={onCreateClick}        className="cursor-pointer">
-                <Plus className="mr-2 h-4 w-4" />
-                <span>New Profile</span>
-              </ContextMenuItem>
               <ContextMenuItem 
                 onClick={() => setShowDeleteDialog(true)} 
                 className="cursor-pointer text-destructive focus:text-destructive"
@@ -285,6 +281,10 @@ export function WorkflowSelector({ selectedId, onSelect, onSettingsChange }: Wor
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [workflows, setWorkflows] = useState<Workflow[]>([])
   const [showLeftMask, setShowLeftMask] = useState(false)
+  const license = useLicenseStore(state => state.license)
+  const hasLicense = Boolean(license?.status === 'active' || license?.status === 'trialing')
+  
+  console.log('License state:', { hasLicense, workflowCount: workflows.length })
 
   // Handle scroll position to determine if left mask should be shown
   const handleScroll = () => {
@@ -385,7 +385,14 @@ export function WorkflowSelector({ selectedId, onSelect, onSettingsChange }: Wor
   }, [selectedId, onSelect])
 
   const handleSelect = async (workflowId: string) => {
+    console.log('handleSelect called with:', { workflowId, hasLicense, workflowCount: workflows.length })
+    
     if (workflowId === 'new') {
+      if (workflows.length >= 1 && !hasLicense) {
+        console.log('Blocking new workflow creation - no license')
+        return
+      }
+
       const newWorkflow: Workflow = {
         name: 'New Profile',
         selectedApps: [],
@@ -512,7 +519,6 @@ export function WorkflowSelector({ selectedId, onSelect, onSettingsChange }: Wor
                   workflow={workflow}
                   isSelected={workflow.id === selectedId}
                   onClick={() => workflow.id && handleSelect(workflow.id)}
-                  onCreateClick={() => handleSelect('new')}
                   onRename={(newName) => handleRename(workflow, newName)}
                   onDelete={() => handleDelete(workflow)}
                   onUpdateSettings={(settings) => handleUpdateSettings(workflow, settings)}
@@ -522,13 +528,24 @@ export function WorkflowSelector({ selectedId, onSelect, onSettingsChange }: Wor
               
               {workflows.length < 6 && (
                 <motion.div layout>
-                  <Badge 
-                    variant='secondary' 
-                    className='cursor-pointer border-dashed opacity-50 px-4'
-                    onClick={() => handleSelect('new')}
-                  >
-                    +
-                  </Badge>
+                  {workflows.length >= 1 && !hasLicense ? (
+                    <PaywallDialog>
+                      <Badge 
+                        variant='secondary' 
+                        className='cursor-pointer border-dashed opacity-50 px-4'
+                      >
+                        +
+                      </Badge>
+                    </PaywallDialog>
+                  ) : (
+                    <Badge 
+                      variant='secondary' 
+                      className='cursor-pointer border-dashed opacity-50 px-4'
+                      onClick={() => handleSelect('new')}
+                    >
+                      +
+                    </Badge>
+                  )}
                 </motion.div>
               )}
             </>
