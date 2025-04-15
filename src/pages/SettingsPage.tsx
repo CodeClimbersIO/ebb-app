@@ -97,25 +97,6 @@ export function SettingsPage() {
     checkAutostart()
   }, [])
 
-  const checkSpotifyConnection = async () => {
-    try {
-      const isConnected = await SpotifyAuthService.isConnected()
-
-      if (isConnected) {
-        const profile = await SpotifyApiService.getUserProfile()
-        if (profile) {
-          setSpotifyProfile(profile)
-          setActiveService('spotify')
-        }
-      }
-
-      setIsLoading(false)
-    } catch (error) {
-      logError(`Error checking Spotify connection: ${error}`)
-      setIsLoading(false)
-    }
-  }
-
   const handleUnlink = (service: 'spotify' | 'apple') => {
     setServiceToUnlink(service)
     setShowUnlinkDialog(true)
