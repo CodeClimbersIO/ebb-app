@@ -71,6 +71,15 @@ export const initializeGlobalShortcut = async (): Promise<void> => {
 
   try {
     const shortcutToRegister = await getCurrentShortcutFromDb()
+    
+    try {
+      if (shortcutToRegister) {
+        await unregisterShortcutTauri(shortcutToRegister)
+      }
+    } catch (err) {
+      logError(`(Global) Failed to unregister existing shortcut during initialization: ${err}`)
+    }
+
     if (shortcutToRegister) {
       await registerShortcutTauri(shortcutToRegister, (event) => {
         if (event.state === 'Pressed') {
