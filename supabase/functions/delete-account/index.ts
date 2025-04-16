@@ -1,8 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 import { corsHeaders } from '../_shared/cors.ts'
 
-console.log('Hello from delete-account!')
-
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -22,21 +20,18 @@ Deno.serve(async (req) => {
     if (idError) throw new Error(`Could not get user ID after auth: ${idError.message}`)
     if (!user) throw new Error('Could not get user ID after auth (user null)')
     const userId = user.id
-    console.log(`[delete-account] Verified user ID: ${userId}`)
 
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    console.log(`[delete-account] Attempting to delete user ${userId}...`)
     const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId)
 
     if (deleteError) {
       console.error(`[delete-account] Error deleting user ${userId}:`, deleteError)
       throw new Error(`Failed to delete user: ${deleteError.message}`)
     }
-    console.log(`[delete-account] Successfully deleted user ${userId}.`)
 
     return new Response(
       JSON.stringify({ message: 'Account deleted successfully' }),

@@ -28,7 +28,6 @@ Deno.serve(async (req) => {
       }
     )
 
-    // Get the user from the auth header
     const token = authHeader.replace('Bearer ', '')
     const {
       data: { user },
@@ -40,7 +39,6 @@ Deno.serve(async (req) => {
       throw new Error('Error getting user')
     }
 
-    // Check if user already has an active license
     const { data: existingLicense } = await supabase
       .from('licenses')
       .select('*')
@@ -52,13 +50,11 @@ Deno.serve(async (req) => {
       throw new Error('User already has an active license')
     }
 
-    // Get license type from request body
     const { licenseType } = await req.json()
     if (!licenseType || !['perpetual', 'subscription'].includes(licenseType)) {
       throw new Error('Invalid license type')
     }
 
-    // Create Stripe checkout session based on license type
     const session = await stripe.checkout.sessions.create({
       payment_method_types: [
         'card',

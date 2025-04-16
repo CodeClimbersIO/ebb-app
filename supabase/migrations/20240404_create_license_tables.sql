@@ -77,6 +77,11 @@ CREATE POLICY "Users can delete their own devices"
     ON public.active_devices FOR DELETE TO authenticated
     USING (auth.uid() = user_id);
 
+CREATE POLICY "Users can update their own device details"
+    ON public.active_devices FOR UPDATE TO authenticated
+    USING (auth.uid() = user_id)
+    WITH CHECK (auth.uid() = user_id);
+
 -- Create indexes
 CREATE INDEX idx_licenses_user_id ON public.licenses(user_id);
 CREATE INDEX idx_active_devices_user_id ON public.active_devices(user_id);
@@ -85,5 +90,5 @@ CREATE INDEX idx_active_devices_device_id ON public.active_devices(device_id);
 
 -- Grant permissions
 GRANT SELECT ON public.licenses TO authenticated;
-GRANT SELECT, INSERT, DELETE ON public.active_devices TO authenticated;
+GRANT SELECT, INSERT, DELETE, UPDATE ON public.active_devices TO authenticated;
 -- Removed UPDATE grant 

@@ -1,3 +1,5 @@
+// In Supabase make sure enfore JWT verification is disabled. It will auto-enable it each time you deploy an update from the CLI.
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 import Stripe from 'https://esm.sh/stripe@14.5.0'
 
@@ -15,7 +17,6 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey)
 const ONE_YEAR_IN_MS = 365 * 24 * 60 * 60 * 1000
 
 Deno.serve(async (req) => {
-  // Restore original logic
   try {
     const signature = req.headers.get('stripe-signature')
     if (!signature) {
@@ -36,7 +37,6 @@ Deno.serve(async (req) => {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session
         const customerId = session.customer as string
-        // Use client_reference_id passed during checkout creation
         const userId = session.client_reference_id 
 
         if (!userId) {
@@ -44,7 +44,6 @@ Deno.serve(async (req) => {
           throw new Error('No user ID found in session')
         }
 
-        // Handle based on mode
         if (session.mode === 'payment') {
           // One-time perpetual license
           const expirationDate = new Date(Date.now() + ONE_YEAR_IN_MS)
@@ -75,15 +74,12 @@ Deno.serve(async (req) => {
         const subscription = event.data.object as Stripe.Subscription
         const customerId = subscription.customer as string
 
-        // Get user_id from customer metadata 
-        // (ensure user_id is added to customer metadata when subscription is first created)
         let userId: string | null | undefined = subscription.metadata?.user_id
 
         // Fallback: Retrieve customer if metadata isn't directly on subscription event
         if (!userId) {
             try {
                 const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer
-                // Check if the customer object is deleted
                 if (customer.deleted) {
                     console.warn(`Customer ${customerId} is deleted. Cannot retrieve user_id.`)
                 } else {
@@ -125,7 +121,6 @@ Deno.serve(async (req) => {
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription
 
-        // Update license status to expired
         const { error: updateError } = await supabase
           .from('licenses')
           .update({ status: 'expired' })
@@ -133,24 +128,12 @@ Deno.serve(async (req) => {
 
         if (updateError) {
           console.error('Supabase update error (sub deleted):', updateError)
-          // Don't throw here, maybe the license was already deleted or never existed
           console.warn(`Failed to update license status for deleted subscription ${subscription.id}. Maybe it didn't exist?`)
         }
         break
       }
-
-      // Optional: Handle refunds if necessary
-      /*
-      case 'charge.refunded': {
-        const charge = event.data.object as Stripe.Charge
-        const customerId = charge.customer as string
-        // Implement logic to potentially revoke license based on charge/customer
-        break
-      }
-      */
     }
 
-    // Return a 200 response to acknowledge receipt of the event
     return new Response(JSON.stringify({ received: true }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
@@ -158,7 +141,6 @@ Deno.serve(async (req) => {
   } catch (err) {
     console.error('Webhook processing error:', err)
     const errorMessage = (err instanceof Error) ? err.message : 'Unknown error'
-    // Return 400 for processing errors to prevent infinite retries for non-transient issues
     return new Response(
       JSON.stringify({ error: { message: errorMessage } }),
       { 

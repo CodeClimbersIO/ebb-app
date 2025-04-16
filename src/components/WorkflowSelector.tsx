@@ -64,7 +64,6 @@ function WorkflowBadge({
     e.preventDefault()
     e.stopPropagation()
     setIsEditing(true)
-    // Force focus after a short delay to ensure cursor shows
     setTimeout(() => {
       if (editableRef.current) {
         editableRef.current.focus()
@@ -124,7 +123,6 @@ function WorkflowBadge({
   useEffect(() => {
     if (isEditing && editableRef.current) {
       editableRef.current.focus()
-      // Select all text
       const range = document.createRange()
       range.selectNodeContents(editableRef.current)
       const selection = window.getSelection()
@@ -283,17 +281,13 @@ export function WorkflowSelector({ selectedId, onSelect, onSettingsChange }: Wor
   const [showLeftMask, setShowLeftMask] = useState(false)
   const license = useLicenseStore(state => state.license)
   const hasLicense = Boolean(license?.status === 'active' || license?.status === 'trialing')
-  
-  console.log('License state:', { hasLicense, workflowCount: workflows.length })
 
-  // Handle scroll position to determine if left mask should be shown
   const handleScroll = () => {
     if (scrollContainerRef.current) {
       setShowLeftMask(scrollContainerRef.current.scrollLeft > 0)
     }
   }
 
-  // Setup scroll event listener
   useEffect(() => {
     const container = scrollContainerRef.current
     if (container) {
@@ -302,7 +296,6 @@ export function WorkflowSelector({ selectedId, onSelect, onSettingsChange }: Wor
     }
   }, [])
 
-  // Handle keyboard navigation
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
@@ -327,7 +320,6 @@ export function WorkflowSelector({ selectedId, onSelect, onSettingsChange }: Wor
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [workflows, selectedId, onSelect])
 
-  // Auto-scroll selected workflow into view
   useEffect(() => {
     if (!selectedId || !scrollContainerRef.current) return
     
@@ -336,41 +328,34 @@ export function WorkflowSelector({ selectedId, onSelect, onSettingsChange }: Wor
     
     if (!selectedElement) return
     
-    // Get the visible area of the container
     const containerRect = container.getBoundingClientRect()
     const elementRect = selectedElement.getBoundingClientRect()
     
-    // Check if the element is not fully visible
     const isFullyVisible = 
       elementRect.left >= containerRect.left && 
       elementRect.right <= containerRect.right
     
     if (isFullyVisible) return
     
-    // Calculate distance from element center to container center
     const containerCenter = containerRect.left + containerRect.width / 2
     const elementCenter = elementRect.left + elementRect.width / 2
     const scrollDistance = elementCenter - containerCenter
     
-    // Scroll the container
     container.scrollBy({
       left: scrollDistance,
       behavior: 'smooth'
     })
   }, [selectedId])
 
-  // Load workflows from database and sort by last selected
   useEffect(() => {
     const loadWorkflows = async () => {
       try {
         const loadedWorkflows = await WorkflowApi.getWorkflows()
-        // Sort by lastSelected (newest first)
         const sortedWorkflows = [...loadedWorkflows].sort((a, b) => 
           (b.lastSelected || 0) - (a.lastSelected || 0)
         )
         setWorkflows(sortedWorkflows)
         
-        // If no workflow is selected and we have workflows, select the most recent one
         if (!selectedId && sortedWorkflows.length > 0) {
           if (sortedWorkflows[0].id) {
             onSelect(sortedWorkflows[0].id)
@@ -385,11 +370,8 @@ export function WorkflowSelector({ selectedId, onSelect, onSettingsChange }: Wor
   }, [selectedId, onSelect])
 
   const handleSelect = async (workflowId: string) => {
-    console.log('handleSelect called with:', { workflowId, hasLicense, workflowCount: workflows.length })
-    
     if (workflowId === 'new') {
       if (workflows.length >= 1 && !hasLicense) {
-        console.log('Blocking new workflow creation - no license')
         return
       }
 
@@ -447,11 +429,9 @@ export function WorkflowSelector({ selectedId, onSelect, onSettingsChange }: Wor
     try {
       await WorkflowApi.deleteWorkflow(workflow.id)
       
-      // Refresh workflows from database
       const updatedWorkflows = await WorkflowApi.getWorkflows()
       setWorkflows(updatedWorkflows)
       
-      // If the deleted workflow was selected, select the first available one
       if (selectedId === workflow.id && updatedWorkflows.length > 0 && updatedWorkflows[0].id) {
         onSelect(updatedWorkflows[0].id)
       }

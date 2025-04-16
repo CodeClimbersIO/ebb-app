@@ -1,10 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 
-console.log('Hello from invalidate-device-session!')
-
 Deno.serve(async (req) => {
-  // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -21,7 +18,6 @@ Deno.serve(async (req) => {
       throw new Error('Missing required parameters')
     }
 
-    console.log(`Verifying device ${device_id} for user ${user_id}`)
     const { data: deviceData, error: deviceError } = await supabaseAdmin
       .from('active_devices')
       .select('id')
@@ -38,16 +34,13 @@ Deno.serve(async (req) => {
       console.warn(`Active device ${device_id} not found for user ${user_id}`)
       throw new Error('Device not found or is already deactivated')
     }
-    console.log(`Device ${device_id} verified successfully.`)    
 
-    // Deactivate the device
-    console.log(`Deactivating device ${device_id}`)
     const { error: updateError } = await supabaseAdmin
       .from('active_devices')
       .update({ 
         is_active: false,
         deactivated_at: new Date().toISOString(),
-        session_id: null // Clear the session ID
+        session_id: null
       })
       .eq('device_id', device_id)
       .eq('user_id', user_id)
@@ -57,13 +50,11 @@ Deno.serve(async (req) => {
       throw new Error('Failed to deactivate device')
     }
 
-    console.log(`Revoking session ${session_id}`)
     const { error: revokeError } = await supabaseAdmin.auth.admin.signOut(session_id)
     if (revokeError) { 
         console.error('Error revoking session:', revokeError)
         throw revokeError 
     }
-    console.log(`Session ${session_id} revoked successfully.`)
 
     return new Response(
       JSON.stringify({ message: 'Device session invalidated and device deactivated successfully' }),

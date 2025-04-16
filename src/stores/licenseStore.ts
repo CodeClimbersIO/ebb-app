@@ -2,10 +2,11 @@ import { create } from 'zustand'
 import supabase from '@/lib/integrations/supabase'
 import { devtools, subscribeWithSelector } from 'zustand/middleware'
 import { RealtimeChannel } from '@supabase/supabase-js'
+import { error as logError } from '@tauri-apps/plugin-log'
 
 export interface License {
   id: string
-  status: string // 'active', 'trialing', 'expired', etc.
+  status: string
   license_type: 'perpetual' | 'subscription'
   expiration_date: string | null
 }
@@ -48,7 +49,7 @@ export const useLicenseStore = create<LicenseStoreState>()(
             let data = activeData
 
             if (activeError && activeError.code !== 'PGRST116') {
-              console.error('Error fetching active license:', activeError)
+              logError(`Error fetching active license: ${activeError}`)
               throw activeError
             }
 
@@ -61,7 +62,7 @@ export const useLicenseStore = create<LicenseStoreState>()(
                 .maybeSingle()
 
               if (trialError && trialError.code !== 'PGRST116') {
-                console.error('Error fetching trial license:', trialError)
+                logError(`Error fetching trial license: ${trialError}`)
                 throw trialError
               }
               data = trialData
@@ -69,17 +70,15 @@ export const useLicenseStore = create<LicenseStoreState>()(
 
             set({ license: data as License | null, isLoading: false, error: null })
           } catch (err) {
-            console.error('Failed to fetch license status:', err)
+            logError(`Failed to fetch license status: ${err instanceof Error ? err.message : String(err)}`)
             set({ license: null, isLoading: false, error: err instanceof Error ? err : new Error('Failed to fetch license') })
           }
         },
 
         initSubscription: (userId: string) => {
           if (get().channel) {
-            console.log('License subscription channel already exists.')
             return
           }
-          console.log(`Initializing license subscription for user: ${userId}`)
 
           const channel = supabase
             .channel(`license-updates-${userId}`)
@@ -91,20 +90,17 @@ export const useLicenseStore = create<LicenseStoreState>()(
                 table: 'licenses',
                 filter: `user_id=eq.${userId}`,
               },
-              (payload) => {
-                console.log('License change received:', payload)
+              () => {
                 get().fetchLicense(userId)
               }
             )
             .subscribe((status, err) => {
-               if (status === 'SUBSCRIBED') {
-                 console.log(`Subscribed to license updates for user: ${userId}`)
-               } else if (status === 'CHANNEL_ERROR') {
-                 console.error(`Subscription error for user ${userId}:`, err)
-                 get().clearSubscription() // Attempt to clear on error
+               if (status === 'CHANNEL_ERROR') {
+                 logError(`Subscription error for user ${userId}: ${err}`)
+                 get().clearSubscription()
                } else if (status === 'TIMED_OUT') {
-                  console.warn(`Subscription timed out for user ${userId}.`)
-                  get().clearSubscription() // Attempt to clear on timeout
+                 logError(`Subscription timed out for user ${userId}.`)
+                 get().clearSubscription()
                }
              })
 
@@ -114,16 +110,13 @@ export const useLicenseStore = create<LicenseStoreState>()(
         clearSubscription: async () => {
            const channel = get().channel
            if (channel) {
-             console.log('Clearing license subscription.')
              try {
                 await supabase.removeChannel(channel)
              } catch (error) {
-                console.error('Error removing Supabase channel:', error)
+                logError(`Error removing Supabase channel: ${error}`)
              } finally {
                 set({ channel: null })
              }
-           } else {
-             console.log('No active license subscription channel to clear.')
            }
          },
       })

@@ -6,15 +6,15 @@ import { GoogleIcon } from '@/components/icons/GoogleIcon'
 import { LogOut, KeyRound } from 'lucide-react'
 import { format } from 'date-fns'
 import { User } from '@supabase/supabase-js'
-import { useLicenseStore } from '@/stores/licenseStore' // Import Zustand store
+import { useLicenseStore } from '@/stores/licenseStore'
 import supabase from '@/lib/integrations/supabase'
 import { useNavigate } from 'react-router-dom'
+import { info as logInfo, warn as logWarn, error as logError } from '@tauri-apps/plugin-log'
 
 const DEVICE_ID_KEY = 'ebb_device_id'
 
 interface UserProfileSettingsProps {
   user: User | null
-  // license and isLoadingLicense props are removed, fetched from store instead
 }
 
 export function UserProfileSettings({ user }: UserProfileSettingsProps) {
@@ -24,10 +24,9 @@ export function UserProfileSettings({ user }: UserProfileSettingsProps) {
 
   const hasProLicense = !isLoadingLicense && license && (license.status === 'active' || license.status === 'trialing')
 
-  // Logout Handler (copied from SettingsPage)
   const handleLogout = async () => {
     const deviceId = localStorage.getItem(DEVICE_ID_KEY)
-    const { data: { user: currentUser } } = await supabase.auth.getUser() // Renamed user to avoid conflict
+    const { data: { user: currentUser } } = await supabase.auth.getUser()
 
     if (deviceId && currentUser) {
       try {
@@ -37,28 +36,28 @@ export function UserProfileSettings({ user }: UserProfileSettingsProps) {
           .match({ user_id: currentUser.id, device_id: deviceId })
 
         if (deleteError) {
-          console.error('[Logout] Failed to delete device registration:', deleteError)
+          await logError(`[Logout] Failed to delete device registration for ${currentUser.id}: ${deleteError.message}`)
         } else {
-           console.log(`[Logout] Device registration ${deviceId} deleted.`)
+           await logInfo(`[Logout] Deleted device registration ${deviceId} for ${currentUser.id}.`)
         }
       } catch (err) {
-         console.error('[Logout] Error during device deletion:', err)
+         const message = err instanceof Error ? err.message : String(err)
+         await logError(`[Logout] Error during device deletion for ${currentUser.id}: ${message}`)
       }
     } else {
-       console.warn('[Logout] Could not find deviceId or user to delete device registration.')
+       await logWarn(`[Logout] Could not delete device registration: deviceId=${deviceId}, user=${currentUser?.id}`)
     }
 
-    console.log('[Logout] Signing out...')
+    await logInfo('[Logout] Signing out...')
     const { error: signOutError } = await supabase.auth.signOut()
     if (signOutError) {
-      console.error('[Logout] Error signing out:', signOutError)
+      await logError(`[Logout] Error signing out: ${signOutError.message}`)
     } else {
-      console.log('[Logout] Sign out successful, navigating to /login')
+      await logInfo('[Logout] Sign out successful, navigating to /login')
       navigate('/login')
     }
   }
 
-  // Manage Subscription Handler (copied from SettingsPage)
   const handleManageSubscription = async () => {
     try {
       const { data, error } = await supabase.functions.invoke('create-portal-session', {
@@ -69,14 +68,14 @@ export function UserProfileSettings({ user }: UserProfileSettingsProps) {
         window.location.href = data.url
       }
     } catch (err) {
-      console.error('Error creating portal session:', err)
+      const message = err instanceof Error ? err.message : String(err)
+      await logError(`Error creating portal session: ${message}`)
     }
   }
 
   return (
     <div className="border rounded-lg p-6">
       <div className="flex items-center justify-between">
-        {/* Left Side: Avatar and Info Column */}
         <div className="flex items-center gap-4">
           <div className="relative">
             <Avatar className="h-12 w-12">
@@ -98,7 +97,6 @@ export function UserProfileSettings({ user }: UserProfileSettingsProps) {
                       <p>Status: {license?.status}</p>
                       {license?.license_type && <p>Type: {license.license_type}</p>}
                       {license?.expiration_date && <p>Updates until: {format(new Date(license.expiration_date), 'PP')}</p>}
-                      {/* Manage Subscription button inside tooltip */}
                       {license?.license_type === 'subscription' && (
                           <Button size="sm" variant="outline" onClick={handleManageSubscription} className="mt-2 w-full">Manage Subscription</Button>
                       )}
@@ -123,7 +121,6 @@ export function UserProfileSettings({ user }: UserProfileSettingsProps) {
           </div>
         </div>
 
-        {/* Right Side: Just Logout */}
         <div className="flex items-center gap-3">
            <Button variant="outline" size="sm" onClick={handleLogout}>
              <LogOut className="h-4 w-4 mr-2" />

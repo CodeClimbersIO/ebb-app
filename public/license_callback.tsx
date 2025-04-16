@@ -1,4 +1,4 @@
-// *This is a reference file. You'll need to host this component on your website*
+// *Actual file hosted on Framer site*
 
 import type { ComponentType } from 'react'
 import * as React from 'react'
@@ -20,18 +20,14 @@ export function withLicenseCallback(Component: ComponentWithProps): ComponentTyp
         const [message, setMessage] = React.useState<string>('Processing...')
 
         React.useEffect(() => {
-            // Check for session_id in query params
             const searchParams = new URLSearchParams(window.location.search)
             const sessionId = searchParams.get('session_id')
 
             if (sessionId) {
-                // Success case
                 setIsSuccess(true)
                 setDeepLinkUrl(`ebb://license/success?session_id=${sessionId}`)
                 setMessage('Payment successful! Click "Open App" to activate your license.')
-                // Optional: Verify session server-side here for added security
             } else {
-                // Cancel case
                 setIsSuccess(false)
                 setDeepLinkUrl('ebb://license/cancel')
                 setMessage('Payment cancelled. You can close this window or return to the app.')
@@ -45,13 +41,11 @@ export function withLicenseCallback(Component: ComponentWithProps): ComponentTyp
         }, [deepLinkUrl])
 
         React.useEffect(() => {
-            // Try to open automatically once the deep link is set
             if (deepLinkUrl) {
                 openApp()
             }
         }, [deepLinkUrl, openApp])
 
-        // Basic component structure, replace with your actual Framer component if needed
         const BaseComponent = Component || 'div' 
 
         return (

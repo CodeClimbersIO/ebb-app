@@ -48,11 +48,10 @@ const App = () => {
       fetchLicense(user.id)
       initSubscription(user.id)
     } else {
-      fetchLicense(null) // Clear license if user logs out
+      fetchLicense(null)
       clearSubscription()
     }
 
-    // Cleanup subscription on component unmount or user change
     return () => {
       clearSubscription()
     }
