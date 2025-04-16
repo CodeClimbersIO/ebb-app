@@ -1,7 +1,10 @@
 import { Button } from '@/components/ui/button'
-import { Home, Users, Settings, KeyRound } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { SettingsGearIcon } from '@/components/icons/GearIcon'
+import { HomeIcon } from '@/components/icons/HomeIcon'
+import { UsersIcon } from '@/components/icons/UsersIcon'
+import { KeyIcon } from '@/components/icons/KeyIcon'
 import { PaywallDialog } from '@/components/PaywallDialog'
 import { useLicenseStore } from '@/stores/licenseStore'
 
@@ -24,7 +27,7 @@ export function Sidebar() {
                   asChild
                 >
                   <Link to="/">
-                    <Home className="h-5 w-5" />
+                    <HomeIcon size={20} />
                   </Link>
                 </Button>
               </TooltipTrigger>
@@ -40,7 +43,7 @@ export function Sidebar() {
                   asChild
                 >
                   <Link to="/friends">
-                    <Users className="h-5 w-5" />
+                    <UsersIcon size={20} />
                   </Link>
                 </Button>
               </TooltipTrigger>
@@ -52,7 +55,7 @@ export function Sidebar() {
             <div className="p-2 border-t flex justify-center">
               <PaywallDialog>
                 <Button variant="ghost" iconSize={5} className="w-9 h-9 p-2">
-                  <KeyRound className="h-5 w-5 text-yellow-500" />
+                  <KeyIcon size={20} className="text-yellow-500" />
                 </Button>
               </PaywallDialog>
             </div>
@@ -68,7 +71,7 @@ export function Sidebar() {
                   asChild
                 >
                   <Link to="/settings">
-                    <Settings className="h-5 w-5" />
+                    <SettingsGearIcon size={20} />
                   </Link>
                 </Button>
               </TooltipTrigger>
