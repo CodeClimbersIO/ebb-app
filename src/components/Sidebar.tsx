@@ -4,7 +4,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { SettingsGearIcon } from '@/components/icons/GearIcon'
 import { HomeIcon } from '@/components/icons/HomeIcon'
 import { UsersIcon } from '@/components/icons/UsersIcon'
-import { KeyCircleIcon } from '@/components/icons/KeyIcon'
+import { KeyIcon } from '@/components/icons/KeyIcon'
 
 export function Sidebar() {
   const location = useLocation()
@@ -51,7 +51,7 @@ export function Sidebar() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="ghost" iconSize={5} className="w-9 h-9 p-2">
-                  <KeyCircleIcon size={20} className="text-yellow-500" />
+                  <KeyIcon size={20} className="text-yellow-500" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="right" sideOffset={10}> Ebb License - Coming Soon</TooltipContent>

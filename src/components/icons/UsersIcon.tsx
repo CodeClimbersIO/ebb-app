@@ -1,13 +1,12 @@
 import type { Variants } from 'motion/react'
-import { motion, useAnimation } from 'motion/react'
+import { motion } from 'motion/react'
 import type { HTMLAttributes } from 'react'
-import { forwardRef, useCallback, useImperativeHandle, useRef, useEffect } from 'react'
+import { forwardRef } from 'react'
 import { cn } from '@/lib/utils/tailwind.util'
+import type { AnimationHandle } from '@/hooks/useMouseOverAnimation'
+import { useMouseOverAnimation } from '@/hooks/useMouseOverAnimation'
 
-export interface UsersIconHandle {
-  startAnimation: () => void
-  stopAnimation: () => void
-}
+export type UsersIconHandle = AnimationHandle
 
 interface UsersIconProps extends HTMLAttributes<HTMLDivElement> {
   size?: number
@@ -19,8 +18,8 @@ const pathVariants: Variants = {
     transition: {
       type: 'spring',
       stiffness: 200,
-      damping: 13,
-    },
+      damping: 13
+    }
   },
   animate: {
     translateX: [-6, 0],
@@ -28,50 +27,18 @@ const pathVariants: Variants = {
       delay: 0.1,
       type: 'spring',
       stiffness: 200,
-      damping: 13,
-    },
-  },
+      damping: 13
+    }
+  }
 }
 
 const UsersIcon = forwardRef<UsersIconHandle, UsersIconProps>(
   ({ onMouseEnter, onMouseLeave, className, size = 28, ...props }, ref) => {
-    const controls = useAnimation()
-    const isControlledRef = useRef(false)
-
-    useEffect(() => {
-      controls.start('normal')
-    }, [controls])
-
-    useImperativeHandle(ref, () => {
-      isControlledRef.current = true
-
-      return {
-        startAnimation: () => controls.start('animate'),
-        stopAnimation: () => controls.start('normal'),
-      }
+    const { controls, handleMouseEnter, handleMouseLeave } = useMouseOverAnimation({
+      ref,
+      onMouseEnter,
+      onMouseLeave
     })
-
-    const handleMouseEnter = useCallback(
-      (e: React.MouseEvent<HTMLDivElement>) => {
-        if (!isControlledRef.current) {
-          controls.start('animate')
-        } else {
-          onMouseEnter?.(e)
-        }
-      },
-      [controls, onMouseEnter]
-    )
-
-    const handleMouseLeave = useCallback(
-      (e: React.MouseEvent<HTMLDivElement>) => {
-        if (!isControlledRef.current) {
-          controls.start('normal')
-        } else {
-          onMouseLeave?.(e)
-        }
-      },
-      [controls, onMouseLeave]
-    )
 
     return (
       <div

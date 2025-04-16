@@ -1,54 +1,25 @@
-import { motion, useAnimation } from 'motion/react'
+import { motion } from 'motion/react'
 import type { HTMLAttributes } from 'react'
-import { forwardRef, useCallback, useImperativeHandle, useRef } from 'react'
+import { forwardRef } from 'react'
 import { cn } from '@/lib/utils/tailwind.util'
+import type { AnimationHandle } from '@/hooks/useMouseOverAnimation'
+import { useMouseOverAnimation } from '@/hooks/useMouseOverAnimation'
 
-export interface SettingsGearIconHandle {
-  startAnimation: () => void;
-  stopAnimation: () => void;
-}
+export type SettingsGearIconHandle = AnimationHandle
 
 interface SettingsGearIconProps extends HTMLAttributes<HTMLDivElement> {
-  size?: number;
+  size?: number
 }
 
 const SettingsGearIcon = forwardRef<
   SettingsGearIconHandle,
   SettingsGearIconProps
 >(({ onMouseEnter, onMouseLeave, className, size = 28, ...props }, ref) => {
-  const controls = useAnimation()
-  const isControlledRef = useRef(false)
-
-  useImperativeHandle(ref, () => {
-    isControlledRef.current = true
-
-    return {
-      startAnimation: () => controls.start('animate'),
-      stopAnimation: () => controls.start('normal'),
-    }
+  const { controls, handleMouseEnter, handleMouseLeave } = useMouseOverAnimation({
+    ref,
+    onMouseEnter,
+    onMouseLeave
   })
-
-  const handleMouseEnter = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
-      if (!isControlledRef.current) {
-        controls.start('animate')
-      } else {
-        onMouseEnter?.(e)
-      }
-    },
-    [controls, onMouseEnter]
-  )
-
-  const handleMouseLeave = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
-      if (!isControlledRef.current) {
-        controls.start('normal')
-      } else {
-        onMouseLeave?.(e)
-      }
-    },
-    [controls, onMouseLeave]
-  )
 
   return (
     <div
@@ -73,11 +44,11 @@ const SettingsGearIcon = forwardRef<
         transition={{ type: 'spring', stiffness: 50, damping: 10 }}
         variants={{
           normal: {
-            rotate: 0,
+            rotate: 0
           },
           animate: {
-            rotate: 180,
-          },
+            rotate: 180
+          }
         }}
         animate={controls}
       >
