@@ -1,7 +1,5 @@
 import { QueryResult } from '@tauri-apps/plugin-sql'
 import { FlowSession, FlowSessionRepo, FlowSessionSchema } from '../../db/ebb/flowSessionRepo'
-import { useFlowTimer } from '../../lib/stores/flowTimer'
-import { Duration } from 'luxon'
 
 const startFlowSession = async (
   objective: string, 
@@ -18,10 +16,6 @@ const startFlowSession = async (
   if (await FlowSessionRepo.getInProgressFlowSession()) {
     throw new Error('Flow session already in progress')
   }
-  
-  const totalDurationForStore = duration ? Duration.fromObject({ minutes: duration }) : null
-  useFlowTimer.getState().setTotalDuration(totalDurationForStore)
-  useFlowTimer.getState().setDuration(null)
   
   await FlowSessionRepo.createFlowSession(flowSession)
   
