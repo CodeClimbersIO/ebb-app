@@ -18,9 +18,8 @@ const App = () => {
   const { beginCheckForUpdates } = useUpdate()
   const { user } = useAuth()
   const { loadShortcutFromStorage } = useShortcutStore()
-  const fetchLicense = useLicenseStore((state) => state.fetchLicense)
-  const initSubscription = useLicenseStore((state) => state.initSubscription)
-  const clearSubscription = useLicenseStore((state) => state.clearSubscription)
+  const { fetchLicense, initSubscription, clearSubscription } = useLicenseStore()
+  
   useDeviceRegistration()
 
   useEffect(() => {

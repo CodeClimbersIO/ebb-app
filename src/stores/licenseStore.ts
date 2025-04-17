@@ -3,6 +3,7 @@ import supabase from '@/lib/integrations/supabase'
 import { devtools, subscribeWithSelector } from 'zustand/middleware'
 import { RealtimeChannel } from '@supabase/supabase-js'
 import { error as logError } from '@tauri-apps/plugin-log'
+import { licenseApi } from '../api/ebbApi/licenseApi'
 
 export interface License {
   id: string
@@ -35,37 +36,14 @@ export const useLicenseStore = create<LicenseStoreState>()(
             set({ license: null, isLoading: false, error: null })
             return
           }
-
-          set({ isLoading: true, error: null })
-
+          
+          
           try {
-            const { data: activeData, error: activeError } = await supabase
-              .from('licenses')
-              .select('id, status, license_type, expiration_date')
-              .eq('user_id', userId)
-              .eq('status', 'active')
-              .maybeSingle()
+            set({ isLoading: true})
+            const { data, error } = await licenseApi.getLicense(userId)
 
-            let data = activeData
-
-            if (activeError && activeError.code !== 'PGRST116') {
-              logError(`Error fetching active license: ${activeError}`)
-              throw activeError
-            }
-
-            if (!data) {
-              const { data: trialData, error: trialError } = await supabase
-                .from('licenses')
-                .select('id, status, license_type, expiration_date')
-                .eq('user_id', userId)
-                .eq('status', 'trialing')
-                .maybeSingle()
-
-              if (trialError && trialError.code !== 'PGRST116') {
-                logError(`Error fetching trial license: ${trialError}`)
-                throw trialError
-              }
-              data = trialData
+            if (error) {
+              throw error
             }
 
             set({ license: data as License | null, isLoading: false, error: null })
@@ -95,30 +73,30 @@ export const useLicenseStore = create<LicenseStoreState>()(
               }
             )
             .subscribe((status, err) => {
-               if (status === 'CHANNEL_ERROR') {
-                 logError(`Subscription error for user ${userId}: ${err}`)
-                 get().clearSubscription()
-               } else if (status === 'TIMED_OUT') {
-                 logError(`Subscription timed out for user ${userId}.`)
-                 get().clearSubscription()
-               }
-             })
+              if (status === 'CHANNEL_ERROR') {
+                logError(`Subscription error for user ${userId}: ${err}`)
+                get().clearSubscription()
+              } else if (status === 'TIMED_OUT') {
+                logError(`Subscription timed out for user ${userId}.`)
+                get().clearSubscription()
+              }
+            })
 
           set({ channel })
         },
 
         clearSubscription: async () => {
-           const channel = get().channel
-           if (channel) {
-             try {
-                await supabase.removeChannel(channel)
-             } catch (error) {
-                logError(`Error removing Supabase channel: ${error}`)
-             } finally {
-                set({ channel: null })
-             }
-           }
-         },
+          const channel = get().channel
+          if (channel) {
+            try {
+              await supabase.removeChannel(channel)
+            } catch (error) {
+              logError(`Error removing Supabase channel: ${error}`)
+            } finally {
+              set({ channel: null })
+            }
+          }
+        },
       })
     )
   )
