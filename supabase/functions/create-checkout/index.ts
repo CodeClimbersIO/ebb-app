@@ -1,6 +1,6 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
-import Stripe from 'https://esm.sh/stripe@14.5.0'
-import { corsHeaders } from '../_shared/cors.ts'
+import { createClient } from '@supabase/supabase-js'
+import Stripe from 'stripe'
+import { corsHeaders } from '@shared/cors.ts'
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
   apiVersion: '2025-02-24.acacia',

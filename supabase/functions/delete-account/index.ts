@@ -1,5 +1,5 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
-import { corsHeaders } from '../_shared/cors.ts'
+import { createClient } from '@supabase/supabase-js'
+import { corsHeaders } from '@shared/cors.ts'
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {

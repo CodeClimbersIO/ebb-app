@@ -13,7 +13,7 @@ module.exports = {
     'plugin:import/recommended',
     'plugin:import/typescript',
   ],
-  ignorePatterns: ['.eslintrc.cjs'],
+  ignorePatterns: ['.eslintrc.cjs', 'supabase/functions/**/*.ts'],
   settings: {
     "import/resolver": {
       typescript: {
