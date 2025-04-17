@@ -24,6 +24,16 @@ const getIconPath = async () => {
   return isDev ? 'icons/tray.png' : resolvedIconPath
 }
 
+function getRemainingDuration(startTime: DateTime, totalDuration: Duration): Duration {
+  const elapsedDuration = startTime.diffNow().negate()
+  let remainingDuration = totalDuration.minus(elapsedDuration)
+
+  if (remainingDuration.as('milliseconds') < 0) {
+    remainingDuration = Duration.fromMillis(0)
+  }
+  return remainingDuration
+}
+
 export const startFlowTimer = async (startTime: DateTime) => {
   const tray = await TrayIcon.getById('main-tray')
   if (timerInterval) {
@@ -39,22 +49,22 @@ export const startFlowTimer = async (startTime: DateTime) => {
     let formattedTime: string
     let elapsedMs: number
     let totalMs: number
-    let shouldStop = false
 
     if (currentTotalDuration) {
       const elapsedDuration = startTime.diffNow().negate()
-      let remainingDuration = currentTotalDuration.minus(elapsedDuration)
-
-      if (remainingDuration.as('milliseconds') < 0) {
-        remainingDuration = Duration.fromMillis(0)
-      }
+      const remainingDuration = getRemainingDuration(startTime, currentTotalDuration)
 
       formattedTime = remainingDuration.toFormat('hh:mm:ss')
       elapsedMs = elapsedDuration.as('milliseconds')
       totalMs = currentTotalDuration.as('milliseconds')
-
+      
       if (remainingDuration.as('milliseconds') <= 0) {
-        shouldStop = true
+        if (timerInterval) {
+          clearInterval(timerInterval)
+          timerInterval = null
+        }
+        await stopFlowTimer()
+        return
       }
     } else {
       const elapsedDuration = startTime.diffNow().negate()
@@ -73,12 +83,6 @@ export const startFlowTimer = async (startTime: DateTime) => {
       await tray.setIcon(iconImage)
     } catch (error) {
       logError(`Error generating/setting timer icon: ${error}`)
-    }
-
-    if (shouldStop) {
-      clearInterval(timerInterval!)
-      timerInterval = null
-      await stopFlowTimer()
     }
   }, 1000)
 
