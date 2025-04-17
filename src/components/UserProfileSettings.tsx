@@ -10,6 +10,7 @@ import supabase from '@/lib/integrations/supabase'
 import { error as logError } from '@tauri-apps/plugin-log'
 import { useLicense } from '../hooks/useLicense'
 import { useAuth } from '../hooks/useAuth'
+import { useNavigate } from 'react-router-dom'
 
 
 interface UserProfileSettingsProps {
@@ -18,7 +19,16 @@ interface UserProfileSettingsProps {
 
 export function UserProfileSettings({ user }: UserProfileSettingsProps) {
   const { isLoading, hasProAccess, license } = useLicense()
-  const { handleLogout, } = useAuth()
+  const { logout, } = useAuth()
+  const navigate = useNavigate()
+  
+  const handleLogout = async () => {
+    const { error } = await logout()
+    if (error) {
+      logError(`Error logging out: ${error.message}`)
+    }
+    navigate('/login')
+  }
 
   const handleManageSubscription = async () => {
     try {
@@ -31,7 +41,7 @@ export function UserProfileSettings({ user }: UserProfileSettingsProps) {
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
-      await logError(`Error creating portal session: ${message}`)
+      logError(`Error creating portal session: ${message}`)
     }
   }
 

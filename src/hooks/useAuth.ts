@@ -1,42 +1,36 @@
 import { useState, useEffect } from 'react'
 import { User, Session } from '@supabase/supabase-js'
 import supabase from '@/lib/integrations/supabase'
-import { error as logError, info as logInfo, warn as logWarn } from '@tauri-apps/plugin-log'
-import { useNavigate } from 'react-router-dom'
+import { error as logError } from '@tauri-apps/plugin-log'
 import { userApi } from '@/api/ebbApi/userApi'
 
 const DEVICE_ID_KEY = 'ebb_device_id'
 
 export const useAuth = () => {
-  const navigate = useNavigate()
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
 
-  const handleLogout = async () => {
+  const logout = async () => {
     const deviceId = localStorage.getItem(DEVICE_ID_KEY)
 
     if (!deviceId || !user) {
-      logWarn('[Logout] Could not delete device registration: deviceId or user is not set')
-      return
+      return { error: new Error('Device ID or user is not set') }
     }
 
     const { error: deleteError } = await userApi.deleteDevice(user.id, deviceId)
 
     if (deleteError) {
-      logError(`[Logout] Failed to delete device registration for ${user.id}: ${deleteError.message}`)
-    } else {
-      logInfo(`[Logout] Deleted device registration ${deviceId} for ${user.id}.`)
+      return { error: deleteError }
     }
 
-    logInfo('[Logout] Signing out...')
     const { error: signOutError } = await supabase.auth.signOut()
 
     if (signOutError) {
-      logError(`[Logout] Error signing out: ${signOutError.message}`)
-    } else {
-      navigate('/login')
+      return { error: signOutError }
     }
+
+    return { error: null }
   }
 
   useEffect(() => {
@@ -69,5 +63,5 @@ export const useAuth = () => {
     }
   }, [])
 
-  return { user, session, loading, handleLogout }
+  return { user, session, loading, logout }
 }
