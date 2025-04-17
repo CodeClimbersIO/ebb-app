@@ -3,7 +3,7 @@ import {
   unregister as unregisterShortcutTauri
 } from '@tauri-apps/plugin-global-shortcut'
 import { emit } from '@tauri-apps/api/event'
-import { error as logError } from '@tauri-apps/plugin-log'
+import { error as logError, info as logInfo } from '@tauri-apps/plugin-log'
 import { UserPreferenceRepo } from './userPreferenceRepo'
 
 export const DEFAULT_SHORTCUT = 'CommandOrControl+E'
@@ -17,7 +17,7 @@ const getCurrentShortcutFromDb = async (): Promise<string> => {
     const savedShortcut = await UserPreferenceRepo.getPreference(SHORTCUT_KEY)
     return savedShortcut ?? ''
   } catch (err) {
-    logError(`Failed to load shortcut from database: ${err}`)
+    logError(`(Global) Failed to load shortcut from database: ${err}`)
     return ''
   }
 }
@@ -30,28 +30,7 @@ const saveShortcut = async (shortcut: string): Promise<void> => {
   try {
     await UserPreferenceRepo.setPreference(SHORTCUT_KEY, shortcut)
   } catch (err) {
-    logError(`Failed to save shortcut ${shortcut} to database: ${err}`)
-  }
-}
-
-const setShortcut = async (shortcut: string): Promise<void> => {
-  try {
-    if (!shortcut) return
-    
-    const currentShortcut = await getCurrentShortcutFromDb()
-    if (currentShortcut === shortcut) return
-
-    if (currentShortcut) {
-      await unregisterShortcutTauri(currentShortcut)
-    }
-
-    await registerShortcutTauri(shortcut, (event) => {
-      if (event.state === 'Pressed') {
-        emit(SHORTCUT_EVENT)
-      }
-    })
-  } catch (err) {
-    logError(`(Global) Failed to register shortcut ${shortcut}: ${err}`)
+    logError(`(Global) Failed to save shortcut ${shortcut} to database: ${err}`)
   }
 }
 
@@ -90,9 +69,32 @@ export const initializeGlobalShortcut = async (): Promise<void> => {
     return
   }
 
-  const shortcutToRegister = await getCurrentShortcutFromDb()
-  await setShortcut(shortcutToRegister)
-  isInitialized = true
+  try {
+    const shortcutToRegister = await getCurrentShortcutFromDb()
+    
+    try {
+      if (shortcutToRegister) {
+        await unregisterShortcutTauri(shortcutToRegister)
+      }
+    } catch (err) {
+      logError(`(Global) Failed to unregister existing shortcut during initialization: ${err}`)
+    }
+
+    if (shortcutToRegister) {
+      await registerShortcutTauri(shortcutToRegister, (event) => {
+        if (event.state === 'Pressed') {
+          emit(SHORTCUT_EVENT)
+        }
+      })
+      logInfo(`(Global) Initialized shortcut: ${shortcutToRegister}`)
+    } else {
+      logInfo('(Global) No shortcut found in DB during initialization.')
+    }
+    isInitialized = true
+  } catch (err) {
+     logError(`(Global) Failed to initialize shortcut: ${err}`)
+     isInitialized = true
+  }
 }
 
 export const getCurrentShortcut = async (): Promise<string> => {
