@@ -34,7 +34,6 @@ const getUserDevices = async (userId: string, filter: { active?: boolean } = {})
   }
 
   return query
-
 }
 
 const deleteDevice = async (userId: string, deviceId: string) => {
@@ -47,5 +46,5 @@ const deleteDevice = async (userId: string, deviceId: string) => {
 export const deviceRepo = {
   upsertDevice,
   getUserDevices,
-  deleteDevice
+  deleteDevice,
 }

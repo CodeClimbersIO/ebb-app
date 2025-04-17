@@ -41,7 +41,7 @@ const ProtectedRoute = () => {
   }
 
   if (isBlockedByDeviceLimit) {
-    return <DeviceLimitPage onDeviceRemoved={retryDeviceRegistrationCheck} />
+    return <DeviceLimitPage />
   }
 
   if (location.pathname === '/onboarding/accessibility' ||

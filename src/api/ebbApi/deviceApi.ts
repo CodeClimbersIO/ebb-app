@@ -36,13 +36,13 @@ const logoutDevice = async (userId: string, deviceId: string) => {
   if (deviceId === currentDeviceId) throw new Error('Cannot logout current device')
 
   return deviceRepo.deleteDevice(userId, deviceId)
-
 }
+
 
 export const deviceApi = {
   getMacAddress,
   cleanupHostname,
   upsertDevice,
   getUserDevices,
-  logoutDevice
+  logoutDevice,
 }

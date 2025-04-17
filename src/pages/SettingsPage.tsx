@@ -173,8 +173,8 @@ export function SettingsPage() {
 
               <div className="border rounded-lg p-6">
                 <ActiveDevicesSettings 
-                   user={user} 
-                   maxDevicesToShow={maxDevicesToShow} 
+                  user={user} 
+                  maxDevicesToShow={maxDevicesToShow} 
                 />
               </div>
 

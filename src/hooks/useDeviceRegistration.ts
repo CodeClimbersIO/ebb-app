@@ -1,14 +1,13 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import supabase from '@/lib/integrations/supabase'
 import { hostname } from '@tauri-apps/plugin-os'
 import { useAuth } from './useAuth'
 import { error as logError } from '@tauri-apps/plugin-log'
 import { deviceApi } from '../api/ebbApi/deviceApi'
-
-
+import { useLicense } from './useLicense'
 
 export const useDeviceRegistration = () => {
   const { user, session, loading: authLoading } = useAuth()
+  const { maxDevicesToShow } = useLicense()
   const isRegistering = useRef(false)
   const hasAttemptedRegistration = useRef(false)
   const [isBlockedByDeviceLimit, setIsBlockedByDeviceLimit] = useState(false)
@@ -38,18 +37,6 @@ export const useDeviceRegistration = () => {
           const userId = user.id
           const deviceId = await deviceApi.getMacAddress()
 
-          const { data: licenses, error: licenseError } = await supabase
-            .from('licenses')
-            .select('id')
-            .eq('user_id', userId)
-            .in('status', ['active', 'trialing'])
-
-          if (licenseError) {
-            logError(`[DeviceReg] Error fetching license: ${JSON.stringify(licenseError, null, 2)}`)
-          }
-          const hasPaidLicense = !!licenses?.length
-          const maxDevices = hasPaidLicense ? 3 : 1
-
           const { data: existingDevices, error: deviceError } = await deviceApi.getUserDevices(userId)
 
           if (deviceError) {
@@ -58,9 +45,7 @@ export const useDeviceRegistration = () => {
           }
           const deviceCount = existingDevices?.length || 0
 
-          const isCurrentDeviceRegistered = existingDevices?.some(d => d.device_id === deviceId)
-
-          if (deviceCount >= maxDevices && !isCurrentDeviceRegistered) {
+          if (deviceCount > maxDevicesToShow) {
             setIsBlockedByDeviceLimit(true)
           } else {
             setIsBlockedByDeviceLimit(false)

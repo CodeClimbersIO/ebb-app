@@ -1,4 +1,3 @@
-// import { EbbProSettings } from '@/components/EbbProSettings'
 import { ActiveDevicesSettings } from '@/components/ActiveDevicesSettings'
 import { Layout } from '@/components/Layout'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -8,11 +7,8 @@ import { AlertCircle } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useLicense } from '../hooks/useLicense'
 
-interface DeviceLimitPageProps {
-  onDeviceRemoved: () => void 
-}
 
-export function DeviceLimitPage({ onDeviceRemoved }: DeviceLimitPageProps) {
+export function DeviceLimitPage() {
   const { user } = useAuth()
   const { canUseMultipleDevices, maxDevicesToShow } = useLicense()
 
@@ -26,12 +22,12 @@ export function DeviceLimitPage({ onDeviceRemoved }: DeviceLimitPageProps) {
             <AlertDescription>
               {!canUseMultipleDevices ? (
                 <>
-                       You have reached the max of 1 active device for free accounts.
+                       You have reached the max of 1 active devices for free accounts.
                        Please deactivate an existing one or{' '}
                   <PaywallDialog>
                     <Button variant="link" className="p-0 h-auto text-yellow-700 underline font-semibold">upgrade to Ebb Pro</Button>
                   </PaywallDialog>{' '}
-                       for up to 3 macOS devices.
+                       for up to 3 macOS devices. The first registered device is always active and free.
                 </>
               ) : (
                 <> 
@@ -46,7 +42,6 @@ export function DeviceLimitPage({ onDeviceRemoved }: DeviceLimitPageProps) {
             <ActiveDevicesSettings 
               user={user} 
               maxDevicesToShow={maxDevicesToShow} 
-              onDeviceRemoved={onDeviceRemoved} 
             />
           </div>
              

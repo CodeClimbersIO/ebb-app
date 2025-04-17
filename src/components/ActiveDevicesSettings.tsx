@@ -20,7 +20,6 @@ interface Device {
 interface ActiveDevicesSettingsProps {
   user: User | null
   maxDevicesToShow: number
-  onDeviceRemoved?: () => void
 }
 
 const cleanupHostname = (name: string): string => {
@@ -29,7 +28,7 @@ const cleanupHostname = (name: string): string => {
     .replace(/-/g, ' ')
 }
 
-export function ActiveDevicesSettings({ user, maxDevicesToShow, onDeviceRemoved }: ActiveDevicesSettingsProps) {
+export function ActiveDevicesSettings({ user, maxDevicesToShow }: ActiveDevicesSettingsProps) {
   const [devices, setDevices] = useState<Device[]>([])
   const [isLoadingDevices, setIsLoadingDevices] = useState(true)
   const [currentDeviceId, setCurrentDeviceId] = useState<string | null>(null)
@@ -121,11 +120,7 @@ export function ActiveDevicesSettings({ user, maxDevicesToShow, onDeviceRemoved 
         throw deleteError
       }
 
-      if (onDeviceRemoved) { 
-        window.location.reload()
-      } else {
-        fetchDevices()
-      }
+      window.location.reload()
 
     } catch (err) {
       error(`[Settings] Error logging out device: ${err}`)
