@@ -52,8 +52,8 @@ Deno.serve(async (req) => {
 
     const { error: revokeError } = await supabaseAdmin.auth.admin.signOut(session_id)
     if (revokeError) { 
-        console.error('Error revoking session:', revokeError)
-        throw revokeError 
+      console.error('Error revoking session:', revokeError)
+      throw revokeError 
     }
 
     return new Response(
