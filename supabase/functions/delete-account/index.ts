@@ -7,18 +7,29 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      throw new Error('No authorization header')
+    }
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
         global: {
-          headers: { Authorization: req.headers.get('Authorization') ?? '' },
-        },
+          headers: { Authorization: authHeader }
+        }
       }
     )
-    const { data: { user }, error: idError } = await supabaseClient.auth.getUser()
-    if (idError) throw new Error(`Could not get user ID after auth: ${idError.message}`)
-    if (!user) throw new Error('Could not get user ID after auth (user null)')
+
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token)
+
+    if (userError || !user) {
+      console.error('Supabase user error:', userError)
+      throw new Error('Error getting user')
+    }
+
     const userId = user.id
 
     const supabaseAdmin = createClient(
@@ -37,7 +48,7 @@ Deno.serve(async (req) => {
       JSON.stringify({ message: 'Account deleted successfully' }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
+        status: 200
       }
     )
   } catch (error) {
@@ -46,7 +57,7 @@ Deno.serve(async (req) => {
       JSON.stringify({ error: (error as Error).message }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
+        status: 400
       }
     )
   }

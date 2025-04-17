@@ -347,7 +347,7 @@ export function SettingsPage() {
                     <div>
                       <div className="font-medium">Delete Account</div>
                       <div className="text-sm text-muted-foreground">
-                        Permanently delete your account and cloud data. Local usage data will not be deleted.
+                        Permanently delete your account, Ebb license, and cloud data. Local usage data will not be deleted.
                       </div>
                     </div>
                     <div className="flex-shrink-0">
@@ -424,11 +424,9 @@ export function SettingsPage() {
         <Dialog open={showDeleteAccountDialog} onOpenChange={setShowDeleteAccountDialog}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Delete Account?</DialogTitle>
+              <DialogTitle>Warning: Will Also Delete Your Ebb License</DialogTitle>
               <DialogDescription>
-                This action cannot be undone. This will permanently delete your account
-                and remove all of your scoring and friends data from our servers. Your local usage data
-                will remain.
+                This will permanently delete your account, your Ebb License, and remove all of your scoring and friends data from our servers. This action cannot be undone.  Your local usage data will remain.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
