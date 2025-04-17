@@ -11,7 +11,7 @@ export const useAuth = () => {
   const [loading, setLoading] = useState(true)
 
   const logout = async () => {
-    const deviceId = await deviceApi.getDeviceId()
+    const deviceId = await deviceApi.getMacAddress()
     if (!deviceId || !user) {
       return { error: new Error('Device ID or user is not set') }
     }

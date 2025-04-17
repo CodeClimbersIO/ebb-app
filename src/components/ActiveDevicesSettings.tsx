@@ -1,6 +1,5 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import supabase from '@/lib/integrations/supabase'
 import { useEffect, useState } from 'react'
 import { hostname } from '@tauri-apps/plugin-os'
 import { User } from '@supabase/supabase-js'
@@ -9,6 +8,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { invoke } from '@tauri-apps/api/core'
 import { Skeleton } from '@/components/ui/skeleton'
 import { error } from '@tauri-apps/plugin-log'
+import { deviceApi } from '../api/ebbApi/deviceApi'
 
 interface Device {
   id: string
@@ -67,11 +67,7 @@ export function ActiveDevicesSettings({ user, maxDevicesToShow, onDeviceRemoved 
         currentDeviceName = 'This Device'
       }
       
-      const { data: devicesData, error: fetchError } = await supabase
-        .from('active_devices') 
-        .select('device_id, device_name, created_at')
-        .eq('user_id', user.id) 
-        .order('created_at', { ascending: false })
+      const { data: devicesData, error: fetchError } = await deviceApi.getUserDevices(user.id)
 
       if (fetchError) {
         error(`Supabase error fetching devices: ${fetchError}`)
@@ -118,17 +114,14 @@ export function ActiveDevicesSettings({ user, maxDevicesToShow, onDeviceRemoved 
       if (logoutDeviceId === currentDeviceId) return
       if (!user) throw new Error('No user found')
 
-      const { error: deleteError } = await supabase
-        .from('active_devices')
-        .delete()
-        .match({ user_id: user.id, device_id: logoutDeviceId })
+      const { error: deleteError } = await deviceApi.logoutDevice(user.id, logoutDeviceId)
 
       if (deleteError) {
         error(`[Settings] Failed to delete device: ${deleteError}`)
         throw deleteError
       }
 
-      if (onDeviceRemoved) {
+      if (onDeviceRemoved) { 
         window.location.reload()
       } else {
         fetchDevices()

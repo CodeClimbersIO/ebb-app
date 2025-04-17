@@ -36,7 +36,7 @@ export const useDeviceRegistration = () => {
 
         try {
           const userId = user.id
-          const deviceId = await deviceApi.getDeviceId()
+          const deviceId = await deviceApi.getMacAddress()
 
           const { data: licenses, error: licenseError } = await supabase
             .from('licenses')
@@ -50,11 +50,7 @@ export const useDeviceRegistration = () => {
           const hasPaidLicense = !!licenses?.length
           const maxDevices = hasPaidLicense ? 3 : 1
 
-          const { data: existingDevices, error: deviceError } = await supabase
-            .from('active_devices')
-            .select('device_id, created_at')
-            .eq('user_id', userId)
-            .order('created_at', { ascending: true })
+          const { data: existingDevices, error: deviceError } = await deviceApi.getUserDevices(userId)
 
           if (deviceError) {
             logError(`[DeviceReg] Error fetching devices: ${JSON.stringify(deviceError, null, 2)}`)

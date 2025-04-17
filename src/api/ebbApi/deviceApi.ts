@@ -1,8 +1,8 @@
 import { invoke } from '@tauri-apps/api/core'
-import supabase from '@/lib/integrations/supabase'
 import { error as logError } from '@tauri-apps/plugin-log'
+import { deviceRepo } from '@/db/supabase/deviceRepo'
 
-const getDeviceId = async (): Promise<string> => {
+const getMacAddress = async (): Promise<string> => {
   try {
     const macAddress = await invoke<string>('get_mac_address')
     return macAddress
@@ -24,23 +24,25 @@ const upsertDevice = async (
   deviceId: string,
   deviceName: string
 ) => {
-  const upsertData = {
-    user_id: userId,
-    device_id: deviceId,
-    device_name: deviceName
-  }
+  return deviceRepo.upsertDevice(userId, deviceId, deviceName)
+}
 
-  const { error: upsertError } = await supabase
-    .from('active_devices')
-    .upsert(upsertData, { onConflict: 'user_id,device_id' })
+const getUserDevices = async (userId: string, filter: { active?: boolean } = {}) => {
+  return deviceRepo.getUserDevices(userId, filter)
+}
 
-  if (upsertError) {
-    logError(`[DeviceReg] Error upserting device: ${JSON.stringify(upsertError, null, 2)}`)
-  }
+const logoutDevice = async (userId: string, deviceId: string) => {
+  const currentDeviceId = await getMacAddress()
+  if (deviceId === currentDeviceId) throw new Error('Cannot logout current device')
+
+  return deviceRepo.deleteDevice(userId, deviceId)
+
 }
 
 export const deviceApi = {
-  getDeviceId,
+  getMacAddress,
   cleanupHostname,
-  upsertDevice
+  upsertDevice,
+  getUserDevices,
+  logoutDevice
 }
