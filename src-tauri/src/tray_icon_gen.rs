@@ -9,6 +9,12 @@ static FONT: Lazy<Font> = Lazy::new(|| {
     Font::from_bytes(font_data, 16.0).expect("Failed to load embedded font")
 });
 
+fn get_progress_bar_width(current_ms: f64, total_ms: f64, width: u32) -> u32 {
+    let percentage = if total_ms > 0.0 { (current_ms / total_ms).min(1.0).max(0.0) } else { 0.0 };
+    let remaining_percentage = 1.0 - percentage;
+    (remaining_percentage * width as f64).round() as u32
+}
+
 #[tauri::command]
 pub fn generate_timer_icon(
     app_handle: AppHandle,
@@ -40,9 +46,7 @@ pub fn generate_timer_icon(
 
     let mut img = Image::new(width, height, Rgba::new(0, 0, 0, 0));
 
-    let percentage = if total_ms > 0.0 { (current_ms / total_ms).min(1.0).max(0.0) } else { 0.0 };
-    let remaining_percentage = 1.0 - percentage;
-    let green_bar_width = (remaining_percentage * width as f64).round() as u32;
+    let progress_bar_width = get_progress_bar_width(current_ms, total_ms, width);
 
     let layout = TextLayout::new()
         .with_vertical_anchor(VerticalAnchor::Center)
@@ -57,9 +61,9 @@ pub fn generate_timer_icon(
                         .with_fill(box_color);
     img.draw(&text_bg_rect);
 
-    if green_bar_width > 0 {
+    if progress_bar_width > 0 {
         let progress_rect = Rectangle::<Rgba>::at(0, 0)
-                    .with_size(green_bar_width, height)
+                    .with_size(progress_bar_width, height)
                     .with_fill(progress_bar_color);
         img.draw(&progress_rect);
     }
