@@ -32,8 +32,7 @@ export const startFlowTimer = async (startTime: DateTime) => {
 
   if (!tray) return
   await tray.setTitle('')
-  await tray.setIconAsTemplate(false)
-
+  
   timerInterval = setInterval(async () => {
     const currentTotalDuration = useFlowTimer.getState().totalDuration
 

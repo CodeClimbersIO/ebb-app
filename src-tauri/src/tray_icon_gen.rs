@@ -32,22 +32,17 @@ pub fn generate_timer_icon(
     let height = (base_height * scale_factor as f64).round() as u32;
     let font_size = (base_font_size * scale_factor as f64) as f32;
     let padding = (base_padding * scale_factor as f64).round() as u32;
-    let background_green = Rgba::new(0u8, 200u8, 0u8, 100u8);
+    let progress_bar_color = Rgba::new(87u8, 32u8, 174u8, 220u8);
 
     let text_color = Rgba::new(255u8, 255u8, 255u8, 255u8);
+
+    let box_color = Rgba::new(3u8, 7u8, 21u8, 180u8);
 
     let mut img = Image::new(width, height, Rgba::new(0, 0, 0, 0));
 
     let percentage = if total_ms > 0.0 { (current_ms / total_ms).min(1.0).max(0.0) } else { 0.0 };
     let remaining_percentage = 1.0 - percentage;
     let green_bar_width = (remaining_percentage * width as f64).round() as u32;
-
-    if green_bar_width > 0 {
-        let rect = Rectangle::<Rgba>::at(0, 0)
-                    .with_size(green_bar_width, height)
-                    .with_fill(background_green);
-        img.draw(&rect);
-    }
 
     let layout = TextLayout::new()
         .with_vertical_anchor(VerticalAnchor::Center)
@@ -56,6 +51,18 @@ pub fn generate_timer_icon(
             &TextSegment::new(font, &time_string, text_color)
                 .with_size(font_size)
         );
+
+    let text_bg_rect = Rectangle::<Rgba>::at(0, 0) 
+                        .with_size(width, height)
+                        .with_fill(box_color);
+    img.draw(&text_bg_rect);
+
+    if green_bar_width > 0 {
+        let progress_rect = Rectangle::<Rgba>::at(0, 0)
+                    .with_size(green_bar_width, height)
+                    .with_fill(progress_bar_color);
+        img.draw(&progress_rect);
+    }
 
     img.draw(&layout);
 
