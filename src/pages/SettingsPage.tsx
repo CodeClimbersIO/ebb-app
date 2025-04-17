@@ -46,7 +46,7 @@ export function SettingsPage() {
   const [showDeleteAccountDialog, setShowDeleteAccountDialog] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const { user } = useAuth()
-  const { maxDevicesToShow } = useLicense()
+  const { maxDevices } = useLicense()
 
 
   useEffect(() => {
@@ -174,7 +174,7 @@ export function SettingsPage() {
               <div className="border rounded-lg p-6">
                 <ActiveDevicesSettings 
                   user={user} 
-                  maxDevicesToShow={maxDevicesToShow} 
+                  maxDevices={maxDevices} 
                 />
               </div>
 

@@ -23,12 +23,12 @@ import { useDeviceRegistration } from './hooks/useDeviceRegistration'
 
 const ProtectedRoute = () => {
   const { user, loading: authLoading } = useAuth()
-  const { isBlockedByDeviceLimit, retryDeviceRegistrationCheck } = useDeviceRegistration()
+  const { isBlockedByDeviceLimit, checkRegistration } = useDeviceRegistration()
   const location = useLocation()
 
   useEffect(() => {
     if (user && !authLoading) {
-      retryDeviceRegistrationCheck()
+      checkRegistration()
     }
   }, [location.pathname])
 

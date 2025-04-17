@@ -31,7 +31,7 @@ export interface LicensePermissions {
   canUseMultipleProfiles: boolean
   canUseMultipleDevices: boolean
   hasProAccess: boolean
-  maxDevicesToShow: number
+  maxDevices: number
 }
 
 export type LicenseInfo = {
@@ -83,7 +83,7 @@ export const useLicense = (): LicenseInfo => {
     canUseMultipleProfiles: hasProAccess,
     canUseMultipleDevices: hasProAccess,
     hasProAccess,
-    maxDevicesToShow: hasProAccess ? 3 : 1,
+    maxDevices: hasProAccess ? 3 : 1,
   }
 
   return {

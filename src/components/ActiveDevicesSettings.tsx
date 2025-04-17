@@ -19,7 +19,7 @@ interface Device {
 
 interface ActiveDevicesSettingsProps {
   user: User | null
-  maxDevicesToShow: number
+  maxDevices: number
 }
 
 const cleanupHostname = (name: string): string => {
@@ -28,7 +28,7 @@ const cleanupHostname = (name: string): string => {
     .replace(/-/g, ' ')
 }
 
-export function ActiveDevicesSettings({ user, maxDevicesToShow }: ActiveDevicesSettingsProps) {
+export function ActiveDevicesSettings({ user, maxDevices }: ActiveDevicesSettingsProps) {
   const [devices, setDevices] = useState<Device[]>([])
   const [isLoadingDevices, setIsLoadingDevices] = useState(true)
   const [currentDeviceId, setCurrentDeviceId] = useState<string | null>(null)
@@ -132,7 +132,7 @@ export function ActiveDevicesSettings({ user, maxDevicesToShow }: ActiveDevicesS
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold">Active Devices</h2>
         <div className="text-sm text-muted-foreground">
-          {devices.length} of {maxDevicesToShow} device{maxDevicesToShow !== 1 ? 's' : ''}
+          {devices.length} of {maxDevices} device{maxDevices !== 1 ? 's' : ''}
         </div>
       </div>
       {isLoadingDevices ? (

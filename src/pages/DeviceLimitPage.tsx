@@ -10,7 +10,7 @@ import { useLicense } from '../hooks/useLicense'
 
 export function DeviceLimitPage() {
   const { user } = useAuth()
-  const { canUseMultipleDevices, maxDevicesToShow } = useLicense()
+  const { canUseMultipleDevices, maxDevices } = useLicense()
 
 
   return (
@@ -41,7 +41,7 @@ export function DeviceLimitPage() {
           <div className="border rounded-lg p-6">
             <ActiveDevicesSettings 
               user={user} 
-              maxDevicesToShow={maxDevicesToShow} 
+              maxDevices={maxDevices} 
             />
           </div>
              
