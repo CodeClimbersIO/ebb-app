@@ -6,6 +6,7 @@ import { DateTime, Duration } from 'luxon'
 import { useFlowTimer } from './stores/flowTimer'
 import { invoke } from '@tauri-apps/api/core'
 import { Image } from '@tauri-apps/api/image'
+import { error as logError } from '@tauri-apps/plugin-log'
 
 async function showAndFocusWindow() {
   const mainWindow = Window.getCurrent()
@@ -35,30 +36,33 @@ export const startFlowTimer = async (startTime: DateTime) => {
 
   timerInterval = setInterval(async () => {
     const currentTotalDuration = useFlowTimer.getState().totalDuration
-    console.log(`[Tray Timer Tick] totalDuration from store: ${currentTotalDuration?.as('minutes')} mins`)
 
-    if (!currentTotalDuration) {
-      console.warn('[Tray Timer] No totalDuration set, stopping timer.')
-      clearInterval(timerInterval!)
-      timerInterval = null
-      await stopFlowTimer()
-      return
+    let formattedTime: string
+    let elapsedMs: number
+    let totalMs: number
+    let shouldStop = false
+
+    if (currentTotalDuration) {
+      const elapsedDuration = startTime.diffNow().negate()
+      let remainingDuration = currentTotalDuration.minus(elapsedDuration)
+
+      if (remainingDuration.as('milliseconds') < 0) {
+        remainingDuration = Duration.fromMillis(0)
+      }
+
+      formattedTime = remainingDuration.toFormat('hh:mm:ss')
+      elapsedMs = elapsedDuration.as('milliseconds')
+      totalMs = currentTotalDuration.as('milliseconds')
+
+      if (remainingDuration.as('milliseconds') <= 0) {
+        shouldStop = true
+      }
+    } else {
+      const elapsedDuration = startTime.diffNow().negate()
+      formattedTime = elapsedDuration.toFormat('hh:mm:ss')
+      elapsedMs = elapsedDuration.as('milliseconds')
+      totalMs = 0
     }
-
-    const localTotalDuration = currentTotalDuration
-
-    const elapsedDuration = startTime.diffNow().negate()
-    let remainingDuration = localTotalDuration.minus(elapsedDuration)
-
-    if (remainingDuration.as('milliseconds') < 0) {
-      remainingDuration = Duration.fromMillis(0)
-    }
-
-    const formattedTime = remainingDuration.toFormat('hh:mm:ss')
-    const elapsedMs = elapsedDuration.as('milliseconds')
-    const totalMs = localTotalDuration.as('milliseconds')
-
-    console.log(`[Tray Timer Calc] elapsedMs: ${elapsedMs}, totalMs: ${totalMs}, remaining: ${formattedTime}`)
 
     try {
       const iconBytes = await invoke<Uint8Array>('generate_timer_icon', {
@@ -69,10 +73,10 @@ export const startFlowTimer = async (startTime: DateTime) => {
       const iconImage = await Image.fromBytes(iconBytes)
       await tray.setIcon(iconImage)
     } catch (error) {
-      console.error('Error generating/setting timer icon:', error)
+      logError(`Error generating/setting timer icon: ${error}`)
     }
 
-    if (remainingDuration.as('milliseconds') <= 0) {
+    if (shouldStop) {
       clearInterval(timerInterval!)
       timerInterval = null
       await stopFlowTimer()

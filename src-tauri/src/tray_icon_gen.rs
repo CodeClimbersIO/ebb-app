@@ -39,10 +39,12 @@ pub fn generate_timer_icon(
     let mut img = Image::new(width, height, Rgba::new(0, 0, 0, 0));
 
     let percentage = if total_ms > 0.0 { (current_ms / total_ms).min(1.0).max(0.0) } else { 0.0 };
-    let fill_width = (percentage * width as f64).round() as u32;
-    if fill_width > 0 {
+    let remaining_percentage = 1.0 - percentage;
+    let green_bar_width = (remaining_percentage * width as f64).round() as u32;
+
+    if green_bar_width > 0 {
         let rect = Rectangle::<Rgba>::at(0, 0)
-                    .with_size(fill_width, height)
+                    .with_size(green_bar_width, height)
                     .with_fill(background_green);
         img.draw(&rect);
     }

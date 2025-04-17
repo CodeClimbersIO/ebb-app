@@ -19,8 +19,6 @@ const startFlowSession = async (
     throw new Error('Flow session already in progress')
   }
   
-  console.log(`[startFlowSession] Received duration: ${duration} mins. Setting totalDuration in store.`)
-  
   const totalDurationForStore = duration ? Duration.fromObject({ minutes: duration }) : null
   useFlowTimer.getState().setTotalDuration(totalDurationForStore)
   useFlowTimer.getState().setDuration(null)
