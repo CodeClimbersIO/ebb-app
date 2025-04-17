@@ -29,6 +29,7 @@ export interface LicensePermissions {
   canUseAllowList: boolean
   canUseTypewriter: boolean
   canUseMultipleProfiles: boolean
+  canUseMultipleDevices: boolean
   hasProAccess: boolean
   maxDevicesToShow: number
 }
@@ -80,6 +81,7 @@ export const useLicense = (): LicenseInfo => {
     canUseAllowList: hasProAccess,
     canUseTypewriter: hasProAccess,
     canUseMultipleProfiles: hasProAccess,
+    canUseMultipleDevices: hasProAccess,
     hasProAccess,
     maxDevicesToShow: hasProAccess ? 3 : 1,
   }

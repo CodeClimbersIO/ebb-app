@@ -11,8 +11,8 @@ import { Tag } from '../db/monitor/tagRepo'
 import { Button } from '@/components/ui/button'
 import { DifficultySelector } from '@/components/difficulty-selector'
 import { CategoryTooltip } from './CategoryTooltip'
-import { useLicenseStore } from '@/stores/licenseStore'
 import { PaywallDialog } from './PaywallDialog'
+import { useLicense } from '../hooks/useLicense'
 
 interface CategoryOption {
   type: 'category'
@@ -111,9 +111,7 @@ export function AppSelector({
   difficulty,
   onDifficultyChange
 }: AppSelectorProps) {
-  const license = useLicenseStore(state => state.license)
-  const hasLicense = Boolean(license?.status === 'active' || license?.status === 'trialing')
-
+  const { canUseAllowList, canUseHardDifficulty } = useLicense()
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
   const inputRef = useRef<HTMLDivElement>(null)
@@ -409,14 +407,14 @@ export function AppSelector({
   }
 
   const handleDifficultyChange = (value: 'easy' | 'medium' | 'hard') => {
-    if (value === 'hard' && !hasLicense) {
+    if (value === 'hard' && !canUseHardDifficulty) {
       return
     }
     onDifficultyChange?.(value)
   }
 
   const handleAllowListChange = (value: boolean) => {
-    if (value && !hasLicense) {
+    if (value && !canUseAllowList) {
       return
     }
     onIsAllowListChange?.(value)
@@ -512,7 +510,7 @@ export function AppSelector({
             <DifficultySelector
               value={difficulty || null}
               onChange={handleDifficultyChange}
-              disabledOptions={!hasLicense ? ['hard'] : []}
+              disabledOptions={!canUseHardDifficulty ? ['hard'] : []}
             />
           )}
           
@@ -533,7 +531,7 @@ export function AppSelector({
                 Block
               </Button>
 
-              {!hasLicense ? (
+              {!canUseAllowList ? (
                 <PaywallDialog>
                   <Button
                     variant="ghost"

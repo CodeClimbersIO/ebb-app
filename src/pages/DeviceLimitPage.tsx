@@ -14,7 +14,7 @@ interface DeviceLimitPageProps {
 
 export function DeviceLimitPage({ onDeviceRemoved }: DeviceLimitPageProps) {
   const { user } = useAuth()
-  const { hasProAccess, maxDevicesToShow } = useLicense()
+  const { canUseMultipleDevices, maxDevicesToShow } = useLicense()
 
 
   return (
@@ -24,7 +24,7 @@ export function DeviceLimitPage({ onDeviceRemoved }: DeviceLimitPageProps) {
              <Alert className="mb-8 border-yellow-500 text-yellow-600">
                 <AlertCircle className="h-4 w-4 !text-yellow-600" />
                 <AlertDescription>
-                  {!hasProAccess ? (
+                  {!canUseMultipleDevices ? (
                      <>
                        You have reached the max of 1 active device for free accounts.
                        Please deactivate an existing one or{' '}

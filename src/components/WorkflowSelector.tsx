@@ -279,7 +279,7 @@ export function WorkflowSelector({ selectedId, onSelect, onSettingsChange }: Wor
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [workflows, setWorkflows] = useState<Workflow[]>([])
   const [showLeftMask, setShowLeftMask] = useState(false)
-  const { hasProAccess } = useLicense()
+  const { canUseMultipleProfiles } = useLicense()
 
   const handleScroll = () => {
     if (scrollContainerRef.current) {
@@ -370,7 +370,7 @@ export function WorkflowSelector({ selectedId, onSelect, onSettingsChange }: Wor
 
   const handleSelect = async (workflowId: string) => {
     if (workflowId === 'new') {
-      if (workflows.length >= 1 && !hasProAccess) {
+      if (workflows.length >= 1 && !canUseMultipleProfiles) {
         return
       }
 
@@ -507,7 +507,7 @@ export function WorkflowSelector({ selectedId, onSelect, onSettingsChange }: Wor
               
               {workflows.length < 6 && (
                 <motion.div layout>
-                  {workflows.length >= 1 && !hasProAccess ? (
+                  {workflows.length >= 1 && !canUseMultipleProfiles ? (
                     <PaywallDialog>
                       <Badge 
                         variant='secondary' 
