@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { FlowSession } from '@/db/ebb/flowSessionRepo'
 import { DateTime, Duration } from 'luxon'
 import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
-import type { Difficulty } from '@/components/DifficultySelector'
+import type { Difficulty } from '@/components/difficulty-selector/types'
 import {
   Card,
   CardContent,

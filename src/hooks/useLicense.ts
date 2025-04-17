@@ -24,19 +24,24 @@ export interface LicenseDevice {
   createdAt: Date
 }
 
-export interface LicenseInfo {
-  license: License | null
-  devices: LicenseDevice[]
-  isLoading: boolean
-  error: Error | null
+export interface LicensePermissions {
   canUseHardDifficulty: boolean
   canUseAllowList: boolean
   canUseTypewriter: boolean
   canUseMultipleProfiles: boolean
+  hasProAccess: boolean
+  maxDevicesToShow: number
+}
+
+export type LicenseInfo = {
+  license: License | null
+  devices: LicenseDevice[]
+  isLoading: boolean
+  error: Error | null
   isUpdateEligible: boolean
   isDeviceLimitReached: boolean
   currentDevice: LicenseDevice | null
-}
+} & LicensePermissions
 
 const transformLicense = (storeLicense: StoreLicense | null): License | null => {
   if (!storeLicense) {
@@ -57,20 +62,27 @@ const transformLicense = (storeLicense: StoreLicense | null): License | null => 
 }
 
 export const useLicense = (): LicenseInfo => {
-  const storeLicense = useLicenseStore((state) => state.license)
-  const isLoading = useLicenseStore((state) => state.isLoading)
-  const error = useLicenseStore((state) => state.error)
+  const { license: storeLicense, isLoading, error } = useLicenseStore()
 
   const license = transformLicense(storeLicense)
 
-  const hasAccess = !isLoading && (storeLicense?.status === 'active' || storeLicense?.status === 'trialing')
-  const isUpdateEligible = hasAccess && storeLicense && (
+  const hasProAccess = !isLoading && (storeLicense?.status === 'active' || storeLicense?.status === 'trialing')
+  const isUpdateEligible = hasProAccess && storeLicense && (
     storeLicense.license_type === 'subscription' ||
     (storeLicense.license_type === 'perpetual' &&
       !!storeLicense.expiration_date &&
       new Date(storeLicense.expiration_date) > new Date()
     )
   )
+
+  const permissions = {
+    canUseHardDifficulty: hasProAccess,
+    canUseAllowList: hasProAccess,
+    canUseTypewriter: hasProAccess,
+    canUseMultipleProfiles: hasProAccess,
+    hasProAccess,
+    maxDevicesToShow: hasProAccess ? 3 : 1,
+  }
 
   return {
     license,
@@ -79,10 +91,7 @@ export const useLicense = (): LicenseInfo => {
     error,
     currentDevice: null,
     isDeviceLimitReached: false,
-    canUseHardDifficulty: hasAccess,
-    canUseAllowList: hasAccess,
-    canUseTypewriter: hasAccess,
-    canUseMultipleProfiles: hasAccess,
+    ...permissions,
     isUpdateEligible,
   }
 }

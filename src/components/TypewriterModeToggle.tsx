@@ -7,8 +7,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
-import { useLicenseStore } from '@/stores/licenseStore'
 import { PaywallDialog } from './PaywallDialog'
+import { useLicense } from '../hooks/useLicense'
 
 interface TypewriterModeToggleProps {
   typewriterMode: boolean
@@ -17,8 +17,7 @@ interface TypewriterModeToggleProps {
 
 export function TypewriterModeToggle({ typewriterMode, onToggle }: TypewriterModeToggleProps) {
   const [isPopoverOpen, setIsPopoverOpen] = useState(false)
-  const license = useLicenseStore(state => state.license)
-  const hasLicense = Boolean(license?.status === 'active' || license?.status === 'trialing')
+  const { canUseTypewriter } = useLicense()
 
   return (
     <div>
@@ -28,7 +27,7 @@ export function TypewriterModeToggle({ typewriterMode, onToggle }: TypewriterMod
             onMouseEnter={() => setIsPopoverOpen(true)}
             onMouseLeave={() => setIsPopoverOpen(false)}
           >
-            {hasLicense ? (
+            {canUseTypewriter ? (
               <Button
                 variant="ghost"
                 size="icon"
@@ -62,7 +61,7 @@ export function TypewriterModeToggle({ typewriterMode, onToggle }: TypewriterMod
         <PopoverContent side="top" align="center" className="w-56">
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium">Typewriter Mode</p>
-            {hasLicense ? (
+            {canUseTypewriter ? (
               <Badge variant={typewriterMode ? 'default' : 'secondary'} className={`text-xs px-1.5 py-0 ${typewriterMode ? 'bg-green-600' : ''}`}>
                 {typewriterMode ? 'On' : 'Off'}
               </Badge>

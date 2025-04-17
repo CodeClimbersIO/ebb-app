@@ -22,8 +22,8 @@ import { cn } from '@/lib/utils/tailwind.util'
 import { Button } from './ui/button'
 import { Switch } from '@/components/ui/switch'
 import { error as logError } from '@tauri-apps/plugin-log'
-import { useLicenseStore } from '@/stores/licenseStore'
 import { PaywallDialog } from './PaywallDialog'
+import { useLicense } from '../hooks/useLicense'
 
 interface WorkflowSelectorProps {
   selectedId: string | null
@@ -279,8 +279,7 @@ export function WorkflowSelector({ selectedId, onSelect, onSettingsChange }: Wor
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [workflows, setWorkflows] = useState<Workflow[]>([])
   const [showLeftMask, setShowLeftMask] = useState(false)
-  const license = useLicenseStore(state => state.license)
-  const hasLicense = Boolean(license?.status === 'active' || license?.status === 'trialing')
+  const { hasProAccess } = useLicense()
 
   const handleScroll = () => {
     if (scrollContainerRef.current) {
@@ -371,7 +370,7 @@ export function WorkflowSelector({ selectedId, onSelect, onSettingsChange }: Wor
 
   const handleSelect = async (workflowId: string) => {
     if (workflowId === 'new') {
-      if (workflows.length >= 1 && !hasLicense) {
+      if (workflows.length >= 1 && !hasProAccess) {
         return
       }
 
@@ -508,7 +507,7 @@ export function WorkflowSelector({ selectedId, onSelect, onSettingsChange }: Wor
               
               {workflows.length < 6 && (
                 <motion.div layout>
-                  {workflows.length >= 1 && !hasLicense ? (
+                  {workflows.length >= 1 && !hasProAccess ? (
                     <PaywallDialog>
                       <Badge 
                         variant='secondary' 

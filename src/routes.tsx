@@ -26,7 +26,6 @@ const ProtectedRoute = () => {
   const { isBlockedByDeviceLimit, retryDeviceRegistrationCheck } = useDeviceRegistration()
   const location = useLocation()
 
-  // Add check on route change
   useEffect(() => {
     if (user && !authLoading) {
       retryDeviceRegistrationCheck()
@@ -45,7 +44,6 @@ const ProtectedRoute = () => {
     return <DeviceLimitPage onDeviceRemoved={retryDeviceRegistrationCheck} />
   }
 
-  // Skip onboarding check for onboarding routes themselves
   if (location.pathname === '/onboarding/accessibility' ||
     location.pathname === '/onboarding/shortcut-tutorial') {
     return <Outlet />

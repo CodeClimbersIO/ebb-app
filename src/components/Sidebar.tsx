@@ -6,12 +6,11 @@ import { HomeIcon } from '@/components/icons/HomeIcon'
 import { UsersIcon } from '@/components/icons/UsersIcon'
 import { KeyIcon } from '@/components/icons/KeyIcon'
 import { PaywallDialog } from '@/components/PaywallDialog'
-import { useLicenseStore } from '@/stores/licenseStore'
+import { useLicense } from '@/hooks/useLicense'
 
 export function Sidebar() {
   const location = useLocation()
-  const license = useLicenseStore((state) => state.license)
-  const isLoading = useLicenseStore((state) => state.isLoading)
+  const { hasProAccess } = useLicense()
 
   return (
     <TooltipProvider>
@@ -51,7 +50,7 @@ export function Sidebar() {
             </Tooltip>
           </nav>
 
-          {!isLoading && !license && (
+          {!hasProAccess && (
             <div className="p-2 border-t flex justify-center">
               <PaywallDialog>
                 <Button variant="ghost" iconSize={5} className="w-9 h-9 p-2">

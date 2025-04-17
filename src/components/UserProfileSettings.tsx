@@ -6,10 +6,10 @@ import { GoogleIcon } from '@/components/icons/GoogleIcon'
 import { LogOut, KeyRound } from 'lucide-react'
 import { format } from 'date-fns'
 import { User } from '@supabase/supabase-js'
-import { useLicenseStore } from '@/stores/licenseStore'
 import supabase from '@/lib/integrations/supabase'
 import { useNavigate } from 'react-router-dom'
 import { info as logInfo, warn as logWarn, error as logError } from '@tauri-apps/plugin-log'
+import { useLicense } from '../hooks/useLicense'
 
 const DEVICE_ID_KEY = 'ebb_device_id'
 
@@ -19,10 +19,8 @@ interface UserProfileSettingsProps {
 
 export function UserProfileSettings({ user }: UserProfileSettingsProps) {
   const navigate = useNavigate()
-  const license = useLicenseStore((state) => state.license)
-  const isLoadingLicense = useLicenseStore((state) => state.isLoading)
-
-  const hasProLicense = !isLoadingLicense && license && (license.status === 'active' || license.status === 'trialing')
+  const { isLoading, hasProAccess, license } = useLicense()
+  
 
   const handleLogout = async () => {
     const deviceId = localStorage.getItem(DEVICE_ID_KEY)
@@ -85,9 +83,9 @@ export function UserProfileSettings({ user }: UserProfileSettingsProps) {
               </AvatarFallback>
             </Avatar>
             <div className="absolute -bottom-1 -left-1 bg-background p-0.5 rounded-full">
-              {isLoadingLicense ? (
+              {isLoading ? (
                 <KeyRound className="h-5 w-5 text-muted-foreground animate-pulse" />
-              ) : hasProLicense ? (
+              ) : hasProAccess ? (
                 <TooltipProvider>
                   <Tooltip delayDuration={0}>
                     <TooltipTrigger asChild>
@@ -95,9 +93,9 @@ export function UserProfileSettings({ user }: UserProfileSettingsProps) {
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>Status: {license?.status}</p>
-                      {license?.license_type && <p>Type: {license.license_type}</p>}
-                      {license?.expiration_date && <p>Updates until: {format(new Date(license.expiration_date), 'PP')}</p>}
-                      {license?.license_type === 'subscription' && (
+                      {license?.licenseType && <p>Type: {license.licenseType}</p>}
+                      {license?.expirationDate && <p>Updates until: {format(new Date(license.expirationDate), 'PP')}</p>}
+                      {license?.licenseType === 'subscription' && (
                           <Button size="sm" variant="outline" onClick={handleManageSubscription} className="mt-2 w-full">Manage Subscription</Button>
                       )}
                     </TooltipContent>

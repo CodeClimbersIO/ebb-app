@@ -8,6 +8,7 @@ import { Laptop2 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { invoke } from '@tauri-apps/api/core'
 import { Skeleton } from '@/components/ui/skeleton'
+import { error } from '@tauri-apps/plugin-log'
 
 interface Device {
   id: string
@@ -38,8 +39,8 @@ export function ActiveDevicesSettings({ user, maxDevicesToShow, onDeviceRemoved 
       try {
         const macAddress = await invoke<string>('get_mac_address')
         setCurrentDeviceId(macAddress)
-      } catch (error) {
-        console.error('Error getting MAC address:', error)
+      } catch (err) {
+        error(`Error getting MAC address: ${err}`)
         setCurrentDeviceId(null)
       }
     }
@@ -62,7 +63,7 @@ export function ActiveDevicesSettings({ user, maxDevicesToShow, onDeviceRemoved 
         const rawHostname = await hostname()
         currentDeviceName = rawHostname ? cleanupHostname(rawHostname) : 'This Device'
       } catch (hostnameErr) {
-        console.error('Error getting hostname:', hostnameErr)
+        error(`Error getting hostname: ${hostnameErr}`)
         currentDeviceName = 'This Device'
       }
       
@@ -73,7 +74,7 @@ export function ActiveDevicesSettings({ user, maxDevicesToShow, onDeviceRemoved 
         .order('created_at', { ascending: false })
 
       if (fetchError) {
-        console.error('Supabase error fetching devices:', fetchError)
+        error(`Supabase error fetching devices: ${fetchError}`)
         throw fetchError
       }
 
@@ -92,7 +93,7 @@ export function ActiveDevicesSettings({ user, maxDevicesToShow, onDeviceRemoved 
 
       setDevices(sortedDevices)
     } catch (err) {
-      console.error('Error in fetchDevices:', err)
+      error(`Error in fetchDevices: ${err}`)
       if (currentDeviceId) {
          setDevices([{
             id: currentDeviceId,
@@ -123,7 +124,7 @@ export function ActiveDevicesSettings({ user, maxDevicesToShow, onDeviceRemoved 
         .match({ user_id: user.id, device_id: logoutDeviceId })
 
       if (deleteError) {
-        console.error('[Settings] Failed to delete device:', deleteError)
+        error(`[Settings] Failed to delete device: ${deleteError}`)
         throw deleteError
       }
 
@@ -134,7 +135,7 @@ export function ActiveDevicesSettings({ user, maxDevicesToShow, onDeviceRemoved 
       }
 
     } catch (err) {
-      console.error('Error logging out device:', err)
+      error(`[Settings] Error logging out device: ${err}`)
     }
   }
 

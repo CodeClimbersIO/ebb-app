@@ -29,7 +29,7 @@ import { isEnabled } from '@tauri-apps/plugin-autostart'
 import { error as logError } from '@tauri-apps/plugin-log'
 import { ActiveDevicesSettings } from '@/components/ActiveDevicesSettings'
 import { UserProfileSettings } from '@/components/UserProfileSettings'
-import { useLicenseStore } from '@/stores/licenseStore'
+import { useLicense } from '../hooks/useLicense'
 
 export function SettingsPage() {
   const [showUnlinkDialog, setShowUnlinkDialog] = useState(false)
@@ -46,11 +46,8 @@ export function SettingsPage() {
   const [showDeleteAccountDialog, setShowDeleteAccountDialog] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const { user } = useAuth()
-  const storeLicense = useLicenseStore((state) => state.license)
-  const isLicenseLoading = useLicenseStore((state) => state.isLoading)
+  const { maxDevicesToShow } = useLicense()
 
-  const hasProLicense = !isLicenseLoading && storeLicense && (storeLicense.status === 'active' || storeLicense.status === 'trialing')
-  const maxDevicesToShow = hasProLicense ? 3 : 1
 
   useEffect(() => {
     const initializeSettings = async () => {
