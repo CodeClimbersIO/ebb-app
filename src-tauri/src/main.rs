@@ -1,10 +1,11 @@
 use tauri::Manager;
 use tokio;
 
+mod autostart;
 mod commands;
 mod db;
 mod system_monitor;
-mod autostart;
+mod tray_icon_gen;
 
 use autostart::{change_autostart, enable_autostart};
 
@@ -80,6 +81,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             commands::detect_spotify,
             change_autostart,
             commands::get_mac_address,
+            tray_icon_gen::generate_timer_icon,
         ])
         .build(tauri::generate_context!())?
         .run(

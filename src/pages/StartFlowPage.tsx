@@ -215,6 +215,10 @@ export const StartFlowPage = () => {
         workflowName,
         duration ? duration.as('minutes') : undefined
       )
+      
+      const totalDurationForStore = duration ? Duration.fromObject({ minutes: duration.as('minutes') }) : null
+      useFlowTimer.getState().setTotalDuration(totalDurationForStore)
+      useFlowTimer.getState().setDuration(null)
 
       if (!sessionId) {
         throw new Error('No session ID returned from API')

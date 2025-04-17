@@ -36,7 +36,7 @@ const getDurationFormatFromSeconds = (seconds: number) => {
   return duration.toFormat(format)
 }
 
-const MAX_SESSION_DURATION = 8 * 60 * 60 // 8 hours in seconds
+const MAX_SESSION_DURATION = 8 * 60 * 60
 
 const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
   const [time, setTime] = useState<string>('00:00')
@@ -51,17 +51,17 @@ const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
       setIsAddingTime(true)
       setCooldown(true)
 
-      const additionalSeconds = 15 * 60 // 15 minutes in seconds
-      const newTotalDuration = flowSession.duration + additionalSeconds
+      const additionalSeconds = 15 * 60
+      const newTotalDurationInSeconds = flowSession.duration + additionalSeconds
 
-      // Update the session duration on the server
-      await FlowSessionApi.updateFlowSessionDuration(flowSession.id, newTotalDuration)
-      useFlowTimer.setState({ duration: Duration.fromObject({ seconds: newTotalDuration }) })
+      await FlowSessionApi.updateFlowSessionDuration(flowSession.id, newTotalDurationInSeconds)
 
-      // Reset warning flag when adding time
+      const newTotalDurationForStore = Duration.fromObject({ seconds: newTotalDurationInSeconds })
+      useFlowTimer.getState().setTotalDuration(newTotalDurationForStore)
+
       setHasShownWarning(false)
 
-      flowSession.duration = newTotalDuration
+      flowSession.duration = newTotalDurationInSeconds
     } catch (error) {
       logError(`Failed to extend session duration: ${error}`)
     } finally {
