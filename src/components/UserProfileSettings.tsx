@@ -7,54 +7,18 @@ import { LogOut, KeyRound } from 'lucide-react'
 import { format } from 'date-fns'
 import { User } from '@supabase/supabase-js'
 import supabase from '@/lib/integrations/supabase'
-import { useNavigate } from 'react-router-dom'
-import { info as logInfo, warn as logWarn, error as logError } from '@tauri-apps/plugin-log'
+import { error as logError } from '@tauri-apps/plugin-log'
 import { useLicense } from '../hooks/useLicense'
+import { useAuth } from '../hooks/useAuth'
 
-const DEVICE_ID_KEY = 'ebb_device_id'
 
 interface UserProfileSettingsProps {
   user: User | null
 }
 
 export function UserProfileSettings({ user }: UserProfileSettingsProps) {
-  const navigate = useNavigate()
   const { isLoading, hasProAccess, license } = useLicense()
-  
-
-  const handleLogout = async () => {
-    const deviceId = localStorage.getItem(DEVICE_ID_KEY)
-    const { data: { user: currentUser } } = await supabase.auth.getUser()
-
-    if (deviceId && currentUser) {
-      try {
-        const { error: deleteError } = await supabase
-          .from('active_devices')
-          .delete()
-          .match({ user_id: currentUser.id, device_id: deviceId })
-
-        if (deleteError) {
-          await logError(`[Logout] Failed to delete device registration for ${currentUser.id}: ${deleteError.message}`)
-        } else {
-           await logInfo(`[Logout] Deleted device registration ${deviceId} for ${currentUser.id}.`)
-        }
-      } catch (err) {
-         const message = err instanceof Error ? err.message : String(err)
-         await logError(`[Logout] Error during device deletion for ${currentUser.id}: ${message}`)
-      }
-    } else {
-       await logWarn(`[Logout] Could not delete device registration: deviceId=${deviceId}, user=${currentUser?.id}`)
-    }
-
-    await logInfo('[Logout] Signing out...')
-    const { error: signOutError } = await supabase.auth.signOut()
-    if (signOutError) {
-      await logError(`[Logout] Error signing out: ${signOutError.message}`)
-    } else {
-      await logInfo('[Logout] Sign out successful, navigating to /login')
-      navigate('/login')
-    }
-  }
+  const { handleLogout, } = useAuth()
 
   const handleManageSubscription = async () => {
     try {
@@ -96,7 +60,7 @@ export function UserProfileSettings({ user }: UserProfileSettingsProps) {
                       {license?.licenseType && <p>Type: {license.licenseType}</p>}
                       {license?.expirationDate && <p>Updates until: {format(new Date(license.expirationDate), 'PP')}</p>}
                       {license?.licenseType === 'subscription' && (
-                          <Button size="sm" variant="outline" onClick={handleManageSubscription} className="mt-2 w-full">Manage Subscription</Button>
+                        <Button size="sm" variant="outline" onClick={handleManageSubscription} className="mt-2 w-full">Manage Subscription</Button>
                       )}
                     </TooltipContent>
                   </Tooltip>
@@ -120,10 +84,10 @@ export function UserProfileSettings({ user }: UserProfileSettingsProps) {
         </div>
 
         <div className="flex items-center gap-3">
-           <Button variant="outline" size="sm" onClick={handleLogout}>
-             <LogOut className="h-4 w-4 mr-2" />
+          <Button variant="outline" size="sm" onClick={handleLogout}>
+            <LogOut className="h-4 w-4 mr-2" />
              Logout
-           </Button>
+          </Button>
         </div>
       </div>
     </div>
