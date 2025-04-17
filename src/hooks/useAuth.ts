@@ -3,8 +3,7 @@ import { User, Session } from '@supabase/supabase-js'
 import supabase from '@/lib/integrations/supabase'
 import { error as logError } from '@tauri-apps/plugin-log'
 import { userApi } from '@/api/ebbApi/userApi'
-
-const DEVICE_ID_KEY = 'ebb_device_id'
+import { deviceApi } from '@/api/ebbApi/deviceApi'
 
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null)
@@ -12,8 +11,7 @@ export const useAuth = () => {
   const [loading, setLoading] = useState(true)
 
   const logout = async () => {
-    const deviceId = localStorage.getItem(DEVICE_ID_KEY)
-
+    const deviceId = await deviceApi.getDeviceId()
     if (!deviceId || !user) {
       return { error: new Error('Device ID or user is not set') }
     }

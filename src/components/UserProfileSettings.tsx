@@ -21,12 +21,14 @@ export function UserProfileSettings({ user }: UserProfileSettingsProps) {
   const { isLoading, hasProAccess, license } = useLicense()
   const { logout, } = useAuth()
   const navigate = useNavigate()
-  
+
   const handleLogout = async () => {
     const { error } = await logout()
     if (error) {
       logError(`Error logging out: ${error.message}`)
+      return
     }
+
     navigate('/login')
   }
 

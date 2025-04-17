@@ -95,14 +95,14 @@ export function ActiveDevicesSettings({ user, maxDevicesToShow, onDeviceRemoved 
     } catch (err) {
       error(`Error in fetchDevices: ${err}`)
       if (currentDeviceId) {
-         setDevices([{
-            id: currentDeviceId,
-            name: currentDeviceName || 'This Device',
-            created_at: new Date().toISOString(),
-            is_current: true
-         }])
+        setDevices([{
+          id: currentDeviceId,
+          name: currentDeviceName || 'This Device',
+          created_at: new Date().toISOString(),
+          is_current: true
+        }])
       } else {
-         setDevices([])
+        setDevices([])
       }
     } finally {
       setIsLoadingDevices(false)

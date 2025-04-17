@@ -2,45 +2,10 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import supabase from '@/lib/integrations/supabase'
 import { hostname } from '@tauri-apps/plugin-os'
 import { useAuth } from './useAuth'
-import { invoke } from '@tauri-apps/api/core'
 import { error as logError } from '@tauri-apps/plugin-log'
+import { deviceApi } from '../api/ebbApi/deviceApi'
 
-const getDeviceId = async (): Promise<string> => {
-  try {
-    const macAddress = await invoke<string>('get_mac_address')
-    return macAddress
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error)
-    logError(`MAC Address Error: ${errorMessage}`)
-    throw new Error(`Device registration requires MAC address access: ${errorMessage}`)
-  }
-}
 
-const cleanupHostname = (name: string): string => {
-  return name
-    .replace(/\.local$/, '')
-    .replace(/-/g, ' ')
-}
-
-const upsertDevice = async (
-  userId: string,
-  deviceId: string,
-  deviceName: string
-) => {
-  const upsertData = {
-    user_id: userId,
-    device_id: deviceId,
-    device_name: deviceName
-  }
-
-  const { error: upsertError } = await supabase
-    .from('active_devices')
-    .upsert(upsertData, { onConflict: 'user_id,device_id' })
-
-  if (upsertError) {
-    logError(`[DeviceReg] Error upserting device: ${JSON.stringify(upsertError, null, 2)}`)
-  }
-}
 
 export const useDeviceRegistration = () => {
   const { user, session, loading: authLoading } = useAuth()
@@ -58,7 +23,7 @@ export const useDeviceRegistration = () => {
     if (!authLoading && user && session) {
       
       if (isBlockedByDeviceLimit || hasAttemptedRegistration.current) {
-         return
+        return
       }
 
       const registerOrBlock = async () => {
@@ -71,7 +36,7 @@ export const useDeviceRegistration = () => {
 
         try {
           const userId = user.id
-          const deviceId = await getDeviceId()
+          const deviceId = await deviceApi.getDeviceId()
 
           const { data: licenses, error: licenseError } = await supabase
             .from('licenses')
@@ -100,12 +65,12 @@ export const useDeviceRegistration = () => {
           const isCurrentDeviceRegistered = existingDevices?.some(d => d.device_id === deviceId)
 
           if (deviceCount >= maxDevices && !isCurrentDeviceRegistered) {
-             setIsBlockedByDeviceLimit(true)
+            setIsBlockedByDeviceLimit(true)
           } else {
-             setIsBlockedByDeviceLimit(false)
-             const rawHostname = await hostname()
-             const deviceName = rawHostname ? cleanupHostname(rawHostname) : 'Unknown Device'
-             await upsertDevice(userId, deviceId, deviceName)
+            setIsBlockedByDeviceLimit(false)
+            const rawHostname = await hostname()
+            const deviceName = rawHostname ? deviceApi.cleanupHostname(rawHostname) : 'Unknown Device'
+            await deviceApi.upsertDevice(userId, deviceId, deviceName)
           }
 
         } catch (err) {
