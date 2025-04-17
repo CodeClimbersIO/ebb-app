@@ -41,6 +41,3 @@ once_cell = "1.19"
 tauri-plugin-autostart = "2"
 tauri-plugin-global-shortcut = "2"
 
-[features]
-custom-protocol = ["tauri/custom-protocol"]
-
