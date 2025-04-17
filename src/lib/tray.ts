@@ -4,6 +4,8 @@ import { Menu } from '@tauri-apps/api/menu'
 import { resolveResource } from '@tauri-apps/api/path'
 import { DateTime, Duration } from 'luxon'
 import { useFlowTimer } from './stores/flowTimer'
+import { invoke } from '@tauri-apps/api/core'
+import { Image } from '@tauri-apps/api/image'
 
 async function showAndFocusWindow() {
   const mainWindow = Window.getCurrent()
@@ -28,48 +30,70 @@ export const startFlowTimer = async (startTime: DateTime) => {
   }
 
   if (!tray) return
-  await tray.setIcon(null)
-  
-  let currentDuration = useFlowTimer.getState().duration
-  
-  const unsubscribe = useFlowTimer.subscribe(
-    (state) => {
-      currentDuration = state.duration
-    }
-  )
-  
+  await tray.setTitle('')
+  await tray.setIconAsTemplate(false)
+
   timerInterval = setInterval(async () => {
-    let timerDuration: Duration
-    if(!currentDuration) {
-      timerDuration = startTime.diffNow().negate()
-    } else {
-      const timeSinceStart = startTime.diffNow()
-      timerDuration = currentDuration.plus(timeSinceStart)
+    const currentTotalDuration = useFlowTimer.getState().totalDuration
+    console.log(`[Tray Timer Tick] totalDuration from store: ${currentTotalDuration?.as('minutes')} mins`)
+
+    if (!currentTotalDuration) {
+      console.warn('[Tray Timer] No totalDuration set, stopping timer.')
+      clearInterval(timerInterval!)
+      timerInterval = null
+      await stopFlowTimer()
+      return
     }
-    const formattedTime = timerDuration.as('hours') >= 1 
-      ? timerDuration.toFormat('hh:mm:ss')
-      : timerDuration.toFormat('mm:ss')
-    await tray.setTitle(formattedTime)
+
+    const localTotalDuration = currentTotalDuration
+
+    const elapsedDuration = startTime.diffNow().negate()
+    let remainingDuration = localTotalDuration.minus(elapsedDuration)
+
+    if (remainingDuration.as('milliseconds') < 0) {
+      remainingDuration = Duration.fromMillis(0)
+    }
+
+    const formattedTime = remainingDuration.toFormat('hh:mm:ss')
+    const elapsedMs = elapsedDuration.as('milliseconds')
+    const totalMs = localTotalDuration.as('milliseconds')
+
+    console.log(`[Tray Timer Calc] elapsedMs: ${elapsedMs}, totalMs: ${totalMs}, remaining: ${formattedTime}`)
+
+    try {
+      const iconBytes = await invoke<Uint8Array>('generate_timer_icon', {
+        timeString: formattedTime,
+        currentMs: elapsedMs,
+        totalMs: totalMs
+      })
+      const iconImage = await Image.fromBytes(iconBytes)
+      await tray.setIcon(iconImage)
+    } catch (error) {
+      console.error('Error generating/setting timer icon:', error)
+    }
+
+    if (remainingDuration.as('milliseconds') <= 0) {
+      clearInterval(timerInterval!)
+      timerInterval = null
+      await stopFlowTimer()
+    }
   }, 1000)
 
   const originalClearInterval = window.clearInterval
   window.clearInterval = (id: string | number | NodeJS.Timeout | undefined) => {
-    if (id === timerInterval) {
-      unsubscribe()
-    }
     return originalClearInterval(id)
   }
 }
-  
+
 export const stopFlowTimer = async () => {
   const tray = await TrayIcon.getById('main-tray')
   if (!tray) return
-  
+
   if (timerInterval) {
     clearInterval(timerInterval)
     timerInterval = null
   }
-  
+
   const iconPath = await getIconPath()
   await tray.setIcon(iconPath)
   await tray.setIconAsTemplate(true)
@@ -81,25 +105,17 @@ export async function setupTray() {
     if (existingTray) {
       return existingTray
     }
-    
+
     const iconPath = await getIconPath()
     const tray = await TrayIcon.new({
       id: 'main-tray',
       tooltip: 'Ebb',
       icon: iconPath,
-      iconAsTemplate: true // For better macOS dark mode support
+      iconAsTemplate: true
     })
 
     const menu = await Menu.new({
       items: [
-        {
-          text: 'Start Focus',
-          accelerator: 'CommandOrControl+E',
-          action: async () => {
-            const window = await showAndFocusWindow()
-            await window.emit('navigate', '/start-flow')
-          }
-        },
         {
           text: 'Show Dashboard',
           action: async () => {
