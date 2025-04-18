@@ -1,11 +1,7 @@
 // In Supabase make sure enfore JWT verification is disabled. It will auto-enable it each time you deploy an update from the CLI.
 import Stripe from 'stripe'
 import { licenseRepo, License } from '@shared/licenseSupabase.ts'
-const stripe = new Stripe(Deno.env.get('__STRIPE_SECRET_KEY__') || '', {
-  apiVersion: '2025-02-24.basil',
-  httpClient: Stripe.createFetchHttpClient()
-})
-const endpointSecret = Deno.env.get('__STRIPE_WEBHOOK_SECRET__') || ''
+import { StripeApi } from '@shared/stripe.ts'
 
 Deno.serve(async (req) => {
   try {
@@ -18,7 +14,7 @@ Deno.serve(async (req) => {
     const body = await req.text()
     let event: Stripe.Event
     try {
-      event = await stripe.webhooks.constructEventAsync(body, signature, endpointSecret)
+      event = await StripeApi.getStripeClient().webhooks.constructEventAsync(body, signature, StripeApi.endpointSecret)
     } catch (err) {
       console.error(`⚠️  Webhook signature verification failed: ${(err as Error).message}`)
       return new Response(`Webhook Error: ${(err as Error).message}`, { status: 400 })
@@ -69,7 +65,7 @@ Deno.serve(async (req) => {
         // Fallback: Retrieve customer if metadata isn't directly on subscription event
         if (!userId) {
           try {
-            const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer
+            const customer = await StripeApi.getStripeClient().customers.retrieve(customerId) as Stripe.Customer
             if (customer.deleted) {
               console.warn(`Customer ${customerId} is deleted. Cannot retrieve user_id.`)
             } else {

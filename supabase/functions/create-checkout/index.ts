@@ -1,12 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
-import Stripe from 'stripe'
 import { corsHeaders } from '@shared/cors.ts'
-
-const stripe = new Stripe(Deno.env.get('__STRIPE_SECRET_KEY__') || '', {
-  apiVersion: '2025-02-24.basil',
-  httpClient: Stripe.createFetchHttpClient()
-})
-
+import { StripeApi } from '@shared/stripe.ts'
 const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
 const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') || ''
 
@@ -58,7 +52,7 @@ Deno.serve(async (req) => {
       throw new Error('Invalid license type')
     }
 
-    const session = await stripe.checkout.sessions.create({
+    const session = await StripeApi.getStripeClient().checkout.sessions.create({
       payment_method_types: [
         'card',
         'link'
