@@ -29,7 +29,8 @@ import { isEnabled } from '@tauri-apps/plugin-autostart'
 import { error as logError } from '@tauri-apps/plugin-log'
 import { ActiveDevicesSettings } from '@/components/ActiveDevicesSettings'
 import { UserProfileSettings } from '@/components/UserProfileSettings'
-import { useLicense } from '../hooks/useLicense'
+import { useLicense } from '@/hooks/useLicense'
+import { userApi } from '@/api/ebbApi/userApi'
 
 export function SettingsPage() {
   const [showUnlinkDialog, setShowUnlinkDialog] = useState(false)
@@ -120,27 +121,7 @@ export function SettingsPage() {
   const handleDeleteAccount = async () => {
     try {
       setIsDeleting(true)
-
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) throw new Error('No session found')
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-account`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-            'x-client-info': 'codeclimbers'
-          }
-        }
-      )
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to delete account')
-      }
+      await userApi.deleteAccount()
 
       await supabase.auth.signOut()
       navigate('/')

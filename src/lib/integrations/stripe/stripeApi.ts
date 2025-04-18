@@ -2,6 +2,7 @@ import supabase from '../supabase'
 import { invoke } from '@tauri-apps/api/core'
     
 export type LicenseType = 'perpetual' | 'subscription'
+const env = import.meta.env.DEV ? 'dev' : 'prod'
 
 export class StripeApi {
   static async createCheckoutSession(licenseType: LicenseType): Promise<string> {
@@ -11,7 +12,7 @@ export class StripeApi {
     }
 
     const response = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout`,
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${env}-create-checkout`,
       {
         method: 'POST',
         headers: {
@@ -48,4 +49,5 @@ export class StripeApi {
       throw new Error(`Failed to start checkout: ${fullError}`)
     }
   }
+
 } 

@@ -9,6 +9,8 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "monitor:update": "node scripts/os-monitor-update.js",
+    "deploy:functions": "bash ./scripts/deploy-functions.sh dev",
+    "deploy:functions:prod": "bash ./scripts/deploy-functions.sh prod",
     "tauri": "tauri",
     "tauri:build": "tauri build",
     "tauri:build:x86_64": "tauri build --target x86_64-apple-darwin",

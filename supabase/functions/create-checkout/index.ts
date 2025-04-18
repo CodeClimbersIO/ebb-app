@@ -2,10 +2,13 @@ import { createClient } from '@supabase/supabase-js'
 import Stripe from 'stripe'
 import { corsHeaders } from '@shared/cors.ts'
 
-const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
+const stripe = new Stripe(Deno.env.get('__STRIPE_SECRET_KEY__') || '', {
   apiVersion: '2025-02-24.acacia',
   httpClient: Stripe.createFetchHttpClient()
 })
+
+const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
+const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') || ''
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -19,8 +22,8 @@ Deno.serve(async (req) => {
     }
 
     const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      supabaseUrl,
+      supabaseAnonKey,
       {
         global: {
           headers: { Authorization: authHeader }

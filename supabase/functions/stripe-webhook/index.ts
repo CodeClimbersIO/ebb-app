@@ -3,14 +3,14 @@
 import { createClient } from '@supabase/supabase-js'
 import Stripe from 'stripe'
 
-const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
+const stripe = new Stripe(Deno.env.get('__STRIPE_SECRET_KEY__') || '', {
   apiVersion: '2025-02-24.acacia',
   httpClient: Stripe.createFetchHttpClient()
 })
+const endpointSecret = Deno.env.get('__STRIPE_WEBHOOK_SECRET__') || ''
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
-const endpointSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET') || ''
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
