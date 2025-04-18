@@ -90,7 +90,7 @@ export function FeedbackForm({ open, onOpenChange }: FeedbackFormProps) {
         timestamp: new Date().toISOString()
       }
       
-      await fetch('https://script.google.com/macros/s/AKfycbzKqTi5gaCcFH1Dchg9ElvHbKckYTXK1IOeopmzvVQzz9FezBXV26HktaSMY2tHS48w-A/exec', {
+      await fetch('https://script.google.com/macros/s/AKfycbxEbN-ZWp9I1LzQFkFizrF0cSABPacBREfqjCHEWkWwHyJa4oZM78_Hj0092TlFG4mEew/exec', {
         method: 'POST',
         mode: 'no-cors',
         headers: {
