@@ -30,6 +30,7 @@ import { ShortcutInput } from '@/components/ShortcutInput'
 import { Switch } from '@/components/ui/switch'
 import { isEnabled } from '@tauri-apps/plugin-autostart'
 import { error as logError } from '@tauri-apps/plugin-log'
+import { useErrorStore } from '@/lib/stores/errorStore'
 
 export const SettingsPage = () => {
   const [showUnlinkDialog, setShowUnlinkDialog] = useState(false)
@@ -46,6 +47,7 @@ export const SettingsPage = () => {
   const [showDeleteAccountDialog, setShowDeleteAccountDialog] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const { user } = useAuth()
+  const { setError } = useErrorStore()
 
   useEffect(() => {
     const handleSpotifyCallback = async () => {
@@ -184,6 +186,10 @@ export const SettingsPage = () => {
     } catch (error) {
       logError(`Error toggling autostart: ${error}`)
     }
+  }
+
+  const handleTriggerError = () => {
+    setError(`This is a test error triggered at ${new Date().toLocaleTimeString()}\n\nStack Trace:\n  at handleTriggerError (SettingsPage.tsx:...)`)
   }
 
   return (
@@ -410,6 +416,9 @@ export const SettingsPage = () => {
               <div className="mt-12 border-t pt-6">
                 <h2 className="text-xl font-semibold mb-4">Developer Options</h2>
                 <ResetAppData />
+                <Button variant="outline" onClick={handleTriggerError} className="mt-4">
+                  Trigger Test Error
+                </Button>
               </div>
             )}
 

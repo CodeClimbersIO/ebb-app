@@ -5,6 +5,8 @@ import { Logo } from '@/components/ui/logo'
 import { Hotkey } from '@/components/ui/hotkey'
 import { useEffect } from 'react'
 import { useShortcutStore } from '@/lib/stores/shortcutStore'
+import { useErrorStore } from '@/lib/stores/errorStore'
+import { ErrorPopover } from './ErrorPopover'
 
 interface TopNavProps {
   variant?: 'default' | 'modal'
@@ -13,6 +15,7 @@ interface TopNavProps {
 export function TopNav({ variant = 'default' }: TopNavProps) {
   const navigate = useNavigate()
   const { shortcutParts, loadShortcutFromStorage } = useShortcutStore()
+  const { error } = useErrorStore()
 
   useEffect(() => {
     loadShortcutFromStorage()
@@ -39,19 +42,22 @@ export function TopNav({ variant = 'default' }: TopNavProps) {
           <div className="flex-1" />
           <div className="flex items-center gap-2">
             {variant === 'default' ? (
-              <Button  
-                size="sm" 
-                onClick={handleStartFlowSession}
-              >
-                Start Focus
-                {shortcutParts.length > 0 && shortcutParts.some(part => part) && (
-                  <div className="ml-2 flex gap-1.5">
-                    {shortcutParts.map((part, i) => (
-                      <Hotkey key={i} size="sm">{part}</Hotkey>
-                    ))}
-                  </div>
-                )}
-              </Button>
+              <>
+                {error && <ErrorPopover />}
+                <Button  
+                  size="sm" 
+                  onClick={handleStartFlowSession}
+                >
+                  Start Focus
+                  {shortcutParts.length > 0 && shortcutParts.some(part => part) && (
+                    <div className="ml-2 flex gap-1.5">
+                      {shortcutParts.map((part, i) => (
+                        <Hotkey key={i} size="sm">{part}</Hotkey>
+                      ))}
+                    </div>
+                  )}
+                </Button>
+              </>
             ) : (
               <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
                 <X className="h-6 w-6" />
