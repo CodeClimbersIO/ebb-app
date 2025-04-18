@@ -1,5 +1,5 @@
 import supabase from '@/lib/integrations/supabase'
-
+const env = import.meta.env.DEV ? 'dev' : 'prod'
 
 const deleteDevice = async (userId: string, deviceId: string) => {
   const { error } = await supabase.from('devices').delete().match({
@@ -14,7 +14,7 @@ const deleteAccount = async () => {
   if (!session) throw new Error('No session found')
 
   const response = await fetch(
-    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-account`,
+    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${env}-delete-account`,
     {
       method: 'POST',
       headers: {
