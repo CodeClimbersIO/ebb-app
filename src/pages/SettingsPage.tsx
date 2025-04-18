@@ -31,6 +31,7 @@ import { ActiveDevicesSettings } from '@/components/ActiveDevicesSettings'
 import { UserProfileSettings } from '@/components/UserProfileSettings'
 import { useLicense } from '@/hooks/useLicense'
 import { userApi } from '@/api/ebbApi/userApi'
+import { isDev } from '../lib/utils/environment'
 
 export function SettingsPage() {
   const [showUnlinkDialog, setShowUnlinkDialog] = useState(false)
@@ -344,7 +345,7 @@ export function SettingsPage() {
               </div>
             </div>
 
-            {import.meta.env.DEV && (
+            {isDev() && (
               <div className="mt-12 border-t pt-6">
                 <h2 className="text-xl font-semibold mb-4">Developer Options</h2>
                 <ResetAppData />

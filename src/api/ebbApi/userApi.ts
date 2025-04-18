@@ -1,5 +1,7 @@
 import supabase from '@/lib/integrations/supabase'
-const env = import.meta.env.DEV ? 'dev' : 'prod'
+import { getEnv } from '@/lib/utils/environment'
+
+const env = getEnv()
 
 const deleteDevice = async (userId: string, deviceId: string) => {
   const { error } = await supabase.from('devices').delete().match({

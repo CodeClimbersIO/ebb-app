@@ -1,8 +1,8 @@
 import supabase from '../supabase'
 import { invoke } from '@tauri-apps/api/core'
-    
+import { isDev } from '../../utils/environment'
 export type LicenseType = 'perpetual' | 'subscription'
-const env = import.meta.env.DEV ? 'dev' : 'prod'
+const env = isDev() ? 'dev' : 'prod'
 
 export class StripeApi {
   static async createCheckoutSession(licenseType: LicenseType): Promise<string> {
