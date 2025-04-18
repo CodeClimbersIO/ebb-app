@@ -3,7 +3,7 @@ import Stripe from 'stripe'
 import { corsHeaders } from '@shared/cors.ts'
 
 const stripe = new Stripe(Deno.env.get('__STRIPE_SECRET_KEY__') || '', {
-  apiVersion: '2025-02-24.acacia',
+  apiVersion: '2025-02-24.basil',
   httpClient: Stripe.createFetchHttpClient()
 })
 
@@ -39,11 +39,11 @@ Deno.serve(async (req) => {
 
     if (userError || !user) {
       console.error('Supabase user error:', userError)
-      throw new Error('Error getting user')
+      throw new Error('Unauthorized')
     }
 
     const { data: existingLicense } = await supabase
-      .from('licenses')
+      .from('license')
       .select('*')
       .eq('user_id', user.id)
       .eq('status', 'active')

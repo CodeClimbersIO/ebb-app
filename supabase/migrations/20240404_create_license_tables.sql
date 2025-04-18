@@ -1,11 +1,7 @@
--- Create enum for license status
-CREATE TYPE public.license_status AS ENUM ('active', 'trialing', 'expired');
-
--- Create enum for license type
+CREATE TYPE public.license_status AS ENUM ('active', 'expired');
 CREATE TYPE public.license_type AS ENUM ('perpetual', 'subscription');
 
--- Create licenses table
-CREATE TABLE public.licenses (
+CREATE TABLE public.license (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
     status license_status NOT NULL DEFAULT 'active',
@@ -19,18 +15,17 @@ CREATE TABLE public.licenses (
     UNIQUE(user_id)
 );
 
--- Create active devices table
-CREATE TABLE public.active_devices (
+CREATE TABLE public.device (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
     device_id TEXT NOT NULL,
     device_name TEXT NOT NULL,
     last_active TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     UNIQUE(user_id, device_id)
 );
 
--- Create updated_at trigger function
 CREATE OR REPLACE FUNCTION public.handle_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -39,56 +34,54 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Add updated_at triggers
 CREATE TRIGGER set_updated_at
-    BEFORE UPDATE ON public.licenses
+    BEFORE UPDATE ON public.license
+    FOR EACH ROW
+    EXECUTE FUNCTION public.handle_updated_at();
+
+CREATE TRIGGER set_updated_at
+    BEFORE UPDATE ON public.device
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_updated_at();
 
 -- Enable RLS
-ALTER TABLE public.licenses ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.active_devices ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.license ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.device ENABLE ROW LEVEL SECURITY;
 
 -- Licenses policies
 CREATE POLICY "Users can view their own license"
-    ON public.licenses FOR SELECT TO authenticated
+    ON public.license FOR SELECT TO authenticated
     USING (auth.uid() = user_id);
 
-CREATE POLICY "Only service role can insert licenses"
-    ON public.licenses FOR INSERT
-    WITH CHECK (false);  -- Only allow through service role
+CREATE POLICY "Only service role can insert license"
+    ON public.license FOR INSERT
+    WITH CHECK (false);
 
-CREATE POLICY "Only service role can update licenses"
-    ON public.licenses FOR UPDATE
-    USING (false);  -- Only allow through service role
+CREATE POLICY "Only service role can update license"
+    ON public.license FOR UPDATE
+    USING (false);
 
 -- Active devices policies
 CREATE POLICY "Users can view their own devices"
-    ON public.active_devices FOR SELECT TO authenticated
+    ON public.device FOR SELECT TO authenticated
     USING (auth.uid() = user_id);
 
 CREATE POLICY "Users can register their own devices"
-    ON public.active_devices FOR INSERT TO authenticated
+    ON public.device FOR INSERT TO authenticated
     WITH CHECK (auth.uid() = user_id);
 
--- No UPDATE policy needed if we just insert/delete
-
 CREATE POLICY "Users can delete their own devices"
-    ON public.active_devices FOR DELETE TO authenticated
+    ON public.device FOR DELETE TO authenticated
     USING (auth.uid() = user_id);
 
 CREATE POLICY "Users can update their own device details"
-    ON public.active_devices FOR UPDATE TO authenticated
+    ON public.device FOR UPDATE TO authenticated
     USING (auth.uid() = user_id)
     WITH CHECK (auth.uid() = user_id);
 
--- Create indexes
-CREATE INDEX idx_licenses_user_id ON public.licenses(user_id);
-CREATE INDEX idx_active_devices_user_id ON public.active_devices(user_id);
-CREATE INDEX idx_active_devices_device_id ON public.active_devices(device_id);
--- Removed index on is_active
+CREATE INDEX idx_license_user_id ON public.license(user_id);
+CREATE INDEX idx_device_user_id ON public.device(user_id);
+CREATE INDEX idx_device_device_id ON public.device(device_id);
 
--- Grant permissions
-GRANT SELECT ON public.licenses TO authenticated;
-GRANT SELECT, INSERT, DELETE, UPDATE ON public.active_devices TO authenticated;
--- Removed UPDATE grant 
+GRANT SELECT ON public.license TO authenticated;
+GRANT SELECT, INSERT, DELETE, UPDATE ON public.device TO authenticated;

@@ -67,7 +67,8 @@ export const useLicense = (): LicenseInfo => {
 
   const license = transformLicense(storeLicense)
 
-  const hasProAccess = !isLoading && (storeLicense?.status === 'active' || storeLicense?.status === 'trialing')
+  const hasProAccess = !isLoading && storeLicense?.status === 'active'
+
   const isUpdateEligible = hasProAccess && storeLicense && (
     storeLicense.license_type === 'subscription' ||
     (storeLicense.license_type === 'perpetual' &&

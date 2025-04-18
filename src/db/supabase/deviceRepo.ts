@@ -13,7 +13,7 @@ const upsertDevice = async (
   }
 
   const response = await supabase
-    .from('active_devices')
+    .from('device')
     .upsert(upsertData, { onConflict: 'user_id,device_id' })
 
   if (response.error) {
@@ -24,7 +24,7 @@ const upsertDevice = async (
 
 const getUserDevices = async (userId: string, filter: { active?: boolean } = {}) => {
   let query = supabase
-    .from('active_devices')
+    .from('device')
     .select('device_id, device_name, created_at')
     .eq('user_id', userId)
     .order('created_at', { ascending: true })
@@ -38,7 +38,7 @@ const getUserDevices = async (userId: string, filter: { active?: boolean } = {})
 
 const deleteDevice = async (userId: string, deviceId: string) => {
   return supabase
-    .from('active_devices')
+    .from('device')
     .delete()
     .match({ user_id: userId, device_id: deviceId })
 }

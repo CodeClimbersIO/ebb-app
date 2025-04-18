@@ -1,6 +1,6 @@
 import supabase from '../../lib/integrations/supabase'
 
-const LicenseTable = 'licenses'
+const LicenseTable = 'license'
 
 const getLicense = async (userId: string) => {
   return supabase
