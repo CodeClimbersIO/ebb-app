@@ -16,7 +16,8 @@ const App = () => {
   const { beginCheckForUpdates } = useUpdate()
   const { user } = useAuth()
   const { loadShortcutFromStorage } = useShortcutStore()
-
+  
+  
   useEffect(() => {
     initSentry()
 
@@ -39,8 +40,9 @@ const App = () => {
       posthog.identify(user.id, {
         email: user.email,
       })
-    }
-  }, [user])
+    } 
+
+  }, [user, posthog])
 
   useEffect(() => {
     loadShortcutFromStorage()
@@ -48,9 +50,7 @@ const App = () => {
 
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-      <main>
-        <AppRouter />
-      </main>
+      <AppRouter />
     </ThemeProvider>
   )
 }
