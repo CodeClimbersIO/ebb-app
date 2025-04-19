@@ -10,14 +10,13 @@ import { useUpdate } from './hooks/useUpdate'
 import { useAuth } from './hooks/useAuth'
 import { usePostHog } from 'posthog-js/react'
 import { useShortcutStore } from '@/lib/stores/shortcutStore'
-import { useLicenseStore } from '@/stores/licenseStore'
 
 const App = () => {
   const posthog = usePostHog()
   const { beginCheckForUpdates } = useUpdate()
   const { user } = useAuth()
   const { loadShortcutFromStorage } = useShortcutStore()
-  const { fetchLicense, initSubscription, clearSubscription } = useLicenseStore()
+  
   
   useEffect(() => {
     initSentry()
@@ -41,17 +40,9 @@ const App = () => {
       posthog.identify(user.id, {
         email: user.email,
       })
-      fetchLicense(user.id)
-      initSubscription(user.id)
-    } else {
-      fetchLicense(null)
-      clearSubscription()
-    }
+    } 
 
-    return () => {
-      clearSubscription()
-    }
-  }, [user, fetchLicense, initSubscription, clearSubscription, posthog])
+  }, [user, posthog])
 
   useEffect(() => {
     loadShortcutFromStorage()
