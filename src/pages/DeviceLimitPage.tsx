@@ -5,12 +5,12 @@ import { Button } from '@/components/ui/button'
 import { PaywallDialog } from '@/components/PaywallDialog'
 import { AlertCircle } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
-import { useLicense } from '../hooks/useLicense'
+import { usePermissions } from '@/hooks/usePermissions'
 
 
 export function DeviceLimitPage() {
   const { user } = useAuth()
-  const { canUseMultipleDevices, maxDevices } = useLicense()
+  const { canUseMultipleDevices, maxDevices } = usePermissions()
 
 
   return (

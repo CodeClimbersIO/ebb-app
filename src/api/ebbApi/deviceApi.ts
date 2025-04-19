@@ -3,6 +3,24 @@ import { error as logError } from '@tauri-apps/plugin-log'
 import { deviceRepo } from '@/db/supabase/deviceRepo'
 import { hostname } from '@tauri-apps/plugin-os'
 
+
+export interface Device {
+  device_id: string
+  device_name: string
+  created_at: Date
+}
+export interface DeviceInfo {
+  devices: Device[]
+  maxDevices: number
+  isDeviceLimitReached: boolean
+}
+
+export const defaultDeviceInfo: DeviceInfo = {
+  devices: [],
+  maxDevices: 1,
+  isDeviceLimitReached: false,
+}
+
 const getMacAddress = async (): Promise<string> => {
   try {
     const macAddress = await invoke<string>('get_mac_address')
@@ -39,7 +57,7 @@ const logoutDevice = async (userId: string, deviceId: string) => {
   return deviceRepo.deleteDevice(userId, deviceId)
 }
 
-const registerDevice = async (userId: string, maxDevices: number) => {
+const registerDevice = async (userId: string, maxDevices: number): Promise<DeviceInfo> => {
 
   const { data: existingDevices, error: deviceError } = await getUserDevices(userId)
   
@@ -51,7 +69,11 @@ const registerDevice = async (userId: string, maxDevices: number) => {
   const deviceCount = existingDevices?.length || 0
 
   if (deviceCount > maxDevices) {
-    return true
+    return {
+      devices: existingDevices,
+      maxDevices,
+      isDeviceLimitReached: true,
+    }
   }
 
   if(deviceCount === 0) {
@@ -61,7 +83,11 @@ const registerDevice = async (userId: string, maxDevices: number) => {
     await upsertDevice(userId, deviceId, deviceName)
   }
 
-  return false
+  return {
+    devices: existingDevices,
+    maxDevices,
+    isDeviceLimitReached: false,
+  }
 }
 
 export const deviceApi = {

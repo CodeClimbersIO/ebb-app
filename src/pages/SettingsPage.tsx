@@ -29,9 +29,9 @@ import { isEnabled } from '@tauri-apps/plugin-autostart'
 import { error as logError } from '@tauri-apps/plugin-log'
 import { ActiveDevicesSettings } from '@/components/ActiveDevicesSettings'
 import { UserProfileSettings } from '@/components/UserProfileSettings'
-import { useLicense } from '@/hooks/useLicense'
 import { userApi } from '@/api/ebbApi/userApi'
-import { isDev } from '../lib/utils/environment'
+import { isDev } from '@/lib/utils/environment'
+import { usePermissions } from '@/hooks/usePermissions'
 
 export function SettingsPage() {
   const [showUnlinkDialog, setShowUnlinkDialog] = useState(false)
@@ -48,7 +48,7 @@ export function SettingsPage() {
   const [showDeleteAccountDialog, setShowDeleteAccountDialog] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const { user } = useAuth()
-  const { maxDevices } = useLicense()
+  const { maxDevices } = usePermissions()
 
 
   useEffect(() => {

@@ -8,7 +8,6 @@ import { setupTray } from './lib/tray'
 import { initSentry } from '@/components/Sentry'
 import { useUpdate } from './hooks/useUpdate'
 import { useAuth } from './hooks/useAuth'
-import { useDeviceRegistration } from './hooks/useDeviceRegistration'
 import { usePostHog } from 'posthog-js/react'
 import { useShortcutStore } from '@/lib/stores/shortcutStore'
 import { useLicenseStore } from '@/stores/licenseStore'
@@ -20,8 +19,6 @@ const App = () => {
   const { loadShortcutFromStorage } = useShortcutStore()
   const { fetchLicense, initSubscription, clearSubscription } = useLicenseStore()
   
-  useDeviceRegistration()
-
   useEffect(() => {
     initSentry()
 

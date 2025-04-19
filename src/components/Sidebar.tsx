@@ -6,11 +6,11 @@ import { HomeIcon } from '@/components/icons/HomeIcon'
 import { UsersIcon } from '@/components/icons/UsersIcon'
 import { KeyIcon } from '@/components/icons/KeyIcon'
 import { PaywallDialog } from '@/components/PaywallDialog'
-import { useLicense } from '@/hooks/useLicense'
+import { usePermissions } from '@/hooks/usePermissions'
 
 export function Sidebar() {
   const location = useLocation()
-  const { hasProAccess } = useLicense()
+  const { hasProAccess } = usePermissions()
 
   return (
     <TooltipProvider>

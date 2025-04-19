@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button'
 import { DifficultySelector } from '@/components/difficulty-selector'
 import { CategoryTooltip } from './CategoryTooltip'
 import { PaywallDialog } from './PaywallDialog'
-import { useLicense } from '../hooks/useLicense'
+import { usePermissions } from '@/hooks/usePermissions'
 
 interface CategoryOption {
   type: 'category'
@@ -111,7 +111,7 @@ export function AppSelector({
   difficulty,
   onDifficultyChange
 }: AppSelectorProps) {
-  const { canUseAllowList, canUseHardDifficulty } = useLicense()
+  const { canUseAllowList, canUseHardDifficulty } = usePermissions()
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
   const inputRef = useRef<HTMLDivElement>(null)

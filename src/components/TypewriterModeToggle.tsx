@@ -7,8 +7,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
-import { PaywallDialog } from './PaywallDialog'
-import { useLicense } from '../hooks/useLicense'
+import { PaywallDialog } from '@/components/PaywallDialog'
+import { usePermissions } from '@/hooks/usePermissions'
 
 interface TypewriterModeToggleProps {
   typewriterMode: boolean
@@ -17,7 +17,7 @@ interface TypewriterModeToggleProps {
 
 export function TypewriterModeToggle({ typewriterMode, onToggle }: TypewriterModeToggleProps) {
   const [isPopoverOpen, setIsPopoverOpen] = useState(false)
-  const { canUseTypewriter } = useLicense()
+  const { canUseTypewriter } = usePermissions()
 
   return (
     <div>

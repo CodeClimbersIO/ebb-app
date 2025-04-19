@@ -8,9 +8,10 @@ import { format } from 'date-fns'
 import { User } from '@supabase/supabase-js'
 import supabase from '@/lib/integrations/supabase'
 import { error as logError } from '@tauri-apps/plugin-log'
-import { useLicense } from '../hooks/useLicense'
-import { useAuth } from '../hooks/useAuth'
+import { useAuth } from '@/hooks/useAuth'
 import { useNavigate } from 'react-router-dom'
+import { usePermissions } from '@/hooks/usePermissions'
+import { useLicenseStore } from '@/stores/licenseStore'
 
 
 interface UserProfileSettingsProps {
@@ -18,8 +19,10 @@ interface UserProfileSettingsProps {
 }
 
 export function UserProfileSettings({ user }: UserProfileSettingsProps) {
-  const { isLoading, hasProAccess, license } = useLicense()
-  const { logout, } = useAuth()
+  const { hasProAccess } = usePermissions()
+  const { isLoading, license } = useLicenseStore()
+
+  const { logout } = useAuth()
   const navigate = useNavigate()
 
   const handleLogout = async () => {

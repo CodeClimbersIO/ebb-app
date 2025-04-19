@@ -22,8 +22,8 @@ import { cn } from '@/lib/utils/tailwind.util'
 import { Button } from './ui/button'
 import { Switch } from '@/components/ui/switch'
 import { error as logError } from '@tauri-apps/plugin-log'
-import { PaywallDialog } from './PaywallDialog'
-import { useLicense } from '../hooks/useLicense'
+import { PaywallDialog } from '@/components/PaywallDialog'
+import { usePermissions } from '@/hooks/usePermissions'
 
 interface WorkflowSelectorProps {
   selectedId: string | null
@@ -279,7 +279,7 @@ export function WorkflowSelector({ selectedId, onSelect, onSettingsChange }: Wor
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [workflows, setWorkflows] = useState<Workflow[]>([])
   const [showLeftMask, setShowLeftMask] = useState(false)
-  const { canUseMultipleProfiles } = useLicense()
+  const { canUseMultipleProfiles } = usePermissions()
 
   const handleScroll = () => {
     if (scrollContainerRef.current) {

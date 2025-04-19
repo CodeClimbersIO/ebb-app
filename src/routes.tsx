@@ -18,19 +18,14 @@ import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useEffect } from 'react'
 import { useGlobalShortcut } from './hooks/useGlobalShortcut'
 import { error as logError } from '@tauri-apps/plugin-log'
-import { useDeviceRegistration } from './hooks/useDeviceRegistration'
+import { useLicenseStore } from './stores/licenseStore'
 
 
 const ProtectedRoute = () => {
   const { user, loading: authLoading } = useAuth()
-  const { isBlockedByDeviceLimit, checkRegistration } = useDeviceRegistration()
+  const { deviceInfo } = useLicenseStore()
   const location = useLocation()
 
-  useEffect(() => {
-    if (user && !authLoading) {
-      checkRegistration()
-    }
-  }, [location.pathname])
 
   if (authLoading) {
     return <LoadingScreen />
@@ -40,7 +35,7 @@ const ProtectedRoute = () => {
     return <Navigate to="/login" replace />
   }
 
-  if (isBlockedByDeviceLimit) {
+  if (deviceInfo.isDeviceLimitReached) {
     return <DeviceLimitPage />
   }
 
