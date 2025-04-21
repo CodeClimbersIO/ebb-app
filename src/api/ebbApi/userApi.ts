@@ -4,9 +4,9 @@ import { getEnv } from '@/lib/utils/environment'
 const env = getEnv()
 
 const deleteDevice = async (userId: string, deviceId: string) => {
-  const { error } = await supabase.from('devices').delete().match({
+  const { error } = await supabase.from('device').delete().match({
     user_id: userId,
-    id: deviceId,
+    device_id: deviceId,
   })
   return { error }
 }

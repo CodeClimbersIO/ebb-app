@@ -57,6 +57,10 @@ const logoutDevice = async (userId: string, deviceId: string) => {
   return deviceRepo.deleteDevice(userId, deviceId)
 }
 
+const deviceExists = (devices: Device[], currentDeviceId: string): boolean => {
+  return devices.some((device) => device.device_id === currentDeviceId)
+}
+
 const registerDevice = async (userId: string, maxDevices: number): Promise<DeviceInfo> => {
 
   const { data: existingDevices, error: deviceError } = await getUserDevices(userId)
@@ -76,8 +80,9 @@ const registerDevice = async (userId: string, maxDevices: number): Promise<Devic
     }
   }
 
-  if(deviceCount === 0) {
-    const deviceId = await getMacAddress()
+  const deviceId = await getMacAddress()
+  const exists =  deviceExists(existingDevices, deviceId)
+  if(!exists) {
     const rawHostname = await hostname()
     const deviceName = rawHostname ? cleanupHostname(rawHostname) : 'Unknown Device'
     await upsertDevice(userId, deviceId, deviceName)
