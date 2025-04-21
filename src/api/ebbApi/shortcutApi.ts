@@ -51,11 +51,17 @@ export const updateGlobalShortcut = async (newShortcut: string): Promise<void> =
     }
     
     if (newShortcut) {
-      await registerShortcutTauri(newShortcut, (event) => {
-        if (event.state === 'Pressed') {
-          emit(SHORTCUT_EVENT)
-        }
-      })
+      logInfo(`(Global) Attempting to update shortcut to: ${newShortcut}`)
+      try {
+        await registerShortcutTauri(newShortcut, (event) => {
+          if (event.state === 'Pressed') {
+            emit(SHORTCUT_EVENT)
+          }
+        })
+        logInfo(`(Global) Successfully updated shortcut to: ${newShortcut}`)
+      } catch (registrationError) {
+        logError(`(Global) Explicit error during shortcut update registration: ${registrationError}`)
+      }
     }
     
     await saveShortcut(newShortcut)
@@ -80,16 +86,24 @@ export const initializeGlobalShortcut = async (): Promise<void> => {
       logError(`(Global) Failed to unregister existing shortcut during initialization: ${err}`)
     }
 
-    if (shortcutToRegister) {
-      await registerShortcutTauri(shortcutToRegister, (event) => {
-        if (event.state === 'Pressed') {
-          emit(SHORTCUT_EVENT)
-        }
-      })
-      logInfo(`(Global) Initialized shortcut: ${shortcutToRegister}`)
-    } else {
-      logInfo('(Global) No shortcut found in DB during initialization.')
+    logInfo(`(Global) Shortcut loaded from DB for initialization: '${shortcutToRegister}'`)
+
+    try {
+      if (shortcutToRegister) {
+        logInfo(`(Global) Attempting to register initial shortcut: ${shortcutToRegister}`)
+        await registerShortcutTauri(shortcutToRegister, (event) => {
+          if (event.state === 'Pressed') {
+            emit(SHORTCUT_EVENT)
+          }
+        })
+        logInfo(`(Global) Successfully registered initial shortcut: ${shortcutToRegister}`)
+      } else {
+        logInfo('(Global) No shortcut found in DB during initialization.')
+      }
+    } catch (registrationError) {
+      logError(`(Global) Explicit error during initial shortcut registration: ${registrationError}`)
     }
+
     isInitialized = true
   } catch (err) {
     logError(`(Global) Failed to initialize shortcut: ${err}`)
