@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import supabase from '@/lib/integrations/supabase'
 import { subscribeWithSelector } from 'zustand/middleware'
 import { RealtimeChannel } from '@supabase/supabase-js'
+import { error } from '@tauri-apps/plugin-log'
 import { logAndToastError } from '@/lib/utils/logAndToastError'
 import { defaultPermissions, License, licenseApi, LicensePermissions } from '@/api/ebbApi/licenseApi'
 import { DeviceInfo, defaultDeviceInfo } from '@/api/ebbApi/deviceApi'
@@ -75,7 +76,7 @@ export const useLicenseStore = create<LicenseStoreState>()(
           )
           .subscribe((status, err) => {
             if (status === 'CHANNEL_ERROR') {
-              logAndToastError(`Subscription error for user ${userId}: ${err}`)
+              error(`Subscription error for user ${userId}: ${err}`)
             } else if (status === 'TIMED_OUT') {
               logAndToastError(`Subscription timed out for user ${userId}.`)
               get().clearSubscription()

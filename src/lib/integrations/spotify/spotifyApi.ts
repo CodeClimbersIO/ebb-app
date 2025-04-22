@@ -60,6 +60,11 @@ export class SpotifyApiService {
 
 
   static async getUserProfile(): Promise<SpotifyUserProfile | null> {
+    const isConnected = await SpotifyAuthService.isConnected()
+    if (!isConnected) {
+      return null
+    }
+
     try {
       const data = await this.spotifyApiRequest('me')
       return {
