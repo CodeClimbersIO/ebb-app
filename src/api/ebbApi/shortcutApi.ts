@@ -5,6 +5,7 @@ import {
 import { emit } from '@tauri-apps/api/event'
 import { logAndToastError } from '@/lib/utils/logAndToastError'
 import { UserPreferenceRepo } from '@/db/ebb/userPreferenceRepo'
+import { info as logInfo } from '@tauri-apps/plugin-log'
 
 export const DEFAULT_SHORTCUT = 'CommandOrControl+E'
 export const SHORTCUT_EVENT = 'global-shortcut-triggered'
