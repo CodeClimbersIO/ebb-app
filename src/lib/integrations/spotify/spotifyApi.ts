@@ -69,7 +69,10 @@ export class SpotifyApiService {
         product: data.product
       }
     } catch (error) {
-      logAndToastError(`Error fetching user profile: ${error}`)
+      const isConnected = await SpotifyAuthService.isConnected()
+      if (isConnected) {
+        logAndToastError(`Error fetching user profile: ${error}`)
+      }
       return null
     }
   }
