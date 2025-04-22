@@ -36,6 +36,7 @@ export function useGlobalShortcut() {
           return
         }
 
+
         if (!OnboardingUtils.isOnboardingCompleted()) {
           return
         }

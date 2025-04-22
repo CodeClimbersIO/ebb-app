@@ -82,6 +82,7 @@ export const initializeGlobalShortcut = async (): Promise<void> => {
 
     if (shortcutToRegister) {
       await registerShortcutTauri(shortcutToRegister, (event) => {
+        logInfo(`(Global) Shortcut event: ${event.state}`)
         if (event.state === 'Pressed') {
           emit(SHORTCUT_EVENT)
         }
