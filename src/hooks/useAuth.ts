@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { User, Session } from '@supabase/supabase-js'
 import supabase from '@/lib/integrations/supabase'
-import { error as logError } from '@tauri-apps/plugin-log'
+import { logAndToastError } from '@/lib/utils/logAndToastError'
 import { userApi } from '@/api/ebbApi/userApi'
 import { deviceApi } from '@/api/ebbApi/deviceApi'
 
@@ -41,7 +41,7 @@ export const useAuth = () => {
         setLoading(false)
       }
     }).catch((error) => {
-      logError(`[useAuth Simple] Error getting initial session: ${error}`)
+      logAndToastError(`[useAuth Simple] Error getting initial session: ${error}`)
       if (isMounted) {
         setLoading(false)
       }

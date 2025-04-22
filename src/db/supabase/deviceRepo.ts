@@ -1,5 +1,5 @@
 import supabase from '@/lib/integrations/supabase'
-import { error as logError } from '@tauri-apps/plugin-log'
+import { logAndToastError } from '@/lib/utils/logAndToastError'
 
 const upsertDevice = async (
   userId: string,
@@ -17,7 +17,7 @@ const upsertDevice = async (
     .upsert(upsertData, { onConflict: 'user_id,device_id' })
 
   if (response.error) {
-    logError(`[DeviceReg] Error upserting device: ${JSON.stringify(response.error, null, 2)}`)
+    logAndToastError(`[DeviceReg] Error upserting device: ${JSON.stringify(response.error, null, 2)}`)
   }
   return response
 }

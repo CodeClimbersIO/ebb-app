@@ -2,48 +2,40 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { invoke } from '@tauri-apps/api/core'
 import { StorageUtils } from '@/lib/utils/storage'
-import { error as logError } from '@tauri-apps/plugin-log'
+import { logAndToastError } from '@/lib/utils/logAndToastError'
 
 export const ResetAppData = () => {
   const [isResetting, setIsResetting] = useState(false)
   const [isRestoring, setIsRestoring] = useState(false)
 
-  // Handle resetting app data
   const handleResetAppData = async () => {
     try {
       setIsResetting(true)
 
-      // Clear localStorage data
       StorageUtils.clearAllAppData()
 
-      // Reset databases with backup
       await invoke('reset_app_data_for_testing', { backup: true })
-      // Wait a moment before reloading
       setTimeout(() => {
         window.location.reload()
       }, 2000)
     } catch (error) {
-      logError(`Error resetting app data: ${error}`)
+      logAndToastError(`Error resetting app data: ${error}`)
     } finally {
       setIsResetting(false)
     }
   }
 
-  // Handle restoring app data
   const handleRestoreAppData = async () => {
     try {
       setIsRestoring(true)
 
-      // Call the Rust function to restore the most recent backup
       await invoke('restore_app_data_from_backup')
 
-
-      // Wait a moment before reloading
       setTimeout(() => {
         window.location.reload()
       }, 2000)
     } catch (error) {
-      logError(`Error restoring app data: ${error}`)
+      logAndToastError(`Error restoring app data: ${error}`)
 
     } finally {
       setIsRestoring(false)

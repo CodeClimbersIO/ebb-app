@@ -26,7 +26,7 @@ import { invoke } from '@tauri-apps/api/core'
 import { ShortcutInput } from '@/components/ShortcutInput'
 import { Switch } from '@/components/ui/switch'
 import { isEnabled } from '@tauri-apps/plugin-autostart'
-import { error as logError } from '@tauri-apps/plugin-log'
+import { logAndToastError } from '@/lib/utils/logAndToastError'
 import { ActiveDevicesSettings } from '@/components/ActiveDevicesSettings'
 import { UserProfileSettings } from '@/components/UserProfileSettings'
 import { userApi } from '@/api/ebbApi/userApi'
@@ -74,7 +74,7 @@ export function SettingsPage() {
           }
         }
       } catch (error) {
-        logError(`Error handling Spotify callback: ${error}`)
+        logAndToastError(`Error handling Spotify callback: ${error}`)
         setIsLoading(false)
       }
 
@@ -115,7 +115,7 @@ export function SettingsPage() {
     try {
       await SpotifyAuthService.connect()
     } catch (error) {
-      logError(`Error connecting to Spotify: ${error}`)
+      logAndToastError(`Error connecting to Spotify: ${error}`)
     }
   }
 
@@ -127,7 +127,7 @@ export function SettingsPage() {
       await supabase.auth.signOut()
       navigate('/')
     } catch (error) {
-      logError(`Error deleting account: ${error}`)
+      logAndToastError(`Error deleting account: ${error}`)
     } finally {
       setIsDeleting(false)
       setShowDeleteAccountDialog(false)
@@ -139,7 +139,7 @@ export function SettingsPage() {
       await invoke('change_autostart', { open: !autostartEnabled })
       setAutostartEnabled(!autostartEnabled)
     } catch (error) {
-      logError(`Error toggling autostart: ${error}`)
+      logAndToastError(`Error toggling autostart: ${error}`)
     }
   }
 

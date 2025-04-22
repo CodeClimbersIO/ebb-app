@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import supabase from '@/lib/integrations/supabase'
 import { SpotifyAuthService } from '@/lib/integrations/spotify/spotifyAuth'
-import { error as logError } from '@tauri-apps/plugin-log'
+import { logAndToastError } from '@/lib/utils/logAndToastError'
 import { useLicenseStore } from '@/stores/licenseStore'
 import { useAuth } from './useAuth'
 
@@ -60,7 +60,7 @@ export const useDeepLinkAuth = () => {
           return
         }
       } catch (err) {
-        logError(`Error handling deep link: ${err}`)
+        logAndToastError(`Error handling deep link: ${err}`)
       } finally {
         setIsHandlingAuth(false)
       }

@@ -11,7 +11,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { KeyRound } from 'lucide-react'
 import { RainbowButton } from '@/components/ui/rainbow-button'
-import { error as logError } from '@tauri-apps/plugin-log'
+import { logAndToastError } from '@/lib/utils/logAndToastError'
 import { StripeApi } from '@/lib/integrations/stripe/stripeApi'
 
 interface PaywallDialogProps {
@@ -35,10 +35,10 @@ export function PaywallDialog({ children }: PaywallDialogProps) {
     setError(null)
     try {
       await StripeApi.startCheckout('perpetual')
-    } catch (err) {
-      await logError(`Full checkout error: ${err}`)
-      const message = err instanceof Error ? err.message : 'Failed to start checkout'
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An unexpected error occurred'
       setError(message)
+      logAndToastError(`Checkout failed: ${error}`)
     } finally {
       setIsLoading(false)
     }

@@ -10,6 +10,7 @@ import { useUpdate } from './hooks/useUpdate'
 import { useAuth } from './hooks/useAuth'
 import { usePostHog } from 'posthog-js/react'
 import { useShortcutStore } from '@/lib/stores/shortcutStore'
+import { Toaster } from '@/components/ui/sonner'
 
 const App = () => {
   const posthog = usePostHog()
@@ -51,6 +52,7 @@ const App = () => {
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
       <AppRouter />
+      <Toaster position="bottom-right" richColors />
     </ThemeProvider>
   )
 }

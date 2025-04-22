@@ -1,5 +1,6 @@
 import { SpotifyAuthService } from './spotifyAuth'
-import { error as logError } from '@tauri-apps/plugin-log'
+import { logAndToastError } from '@/lib/utils/logAndToastError'
+
 interface SpotifyUserProfile {
   email: string
   display_name: string | null
@@ -52,7 +53,7 @@ export class SpotifyApiService {
         return await response.text()
       }
     } catch (error) {
-      logError(`Error fetching ${path}: ${error}`)
+      logAndToastError(`Error fetching ${path}: ${error}`)
       throw error
     }
   }
@@ -68,7 +69,7 @@ export class SpotifyApiService {
         product: data.product
       }
     } catch (error) {
-      logError(`Error fetching user profile: ${error}`)
+      logAndToastError(`Error fetching user profile: ${error}`)
       return null
     }
   }
@@ -82,7 +83,7 @@ export class SpotifyApiService {
         name: playlist.name
       }))
     } catch (error) {
-      logError(`Error fetching playlists: ${error}`)
+      logAndToastError(`Error fetching playlists: ${error}`)
       return []
     }
   }
@@ -111,13 +112,13 @@ export class SpotifyApiService {
           const token = await SpotifyAuthService.getAccessToken()
           cb(token)
         } catch (error) {
-          logError(`Error getting OAuth token for player: ${error}`)
+          logAndToastError(`Error getting OAuth token for player: ${error}`)
           const isConnected = await SpotifyAuthService.isConnected()
           if (isConnected) {
             const token = await SpotifyAuthService.getAccessToken()
             cb(token)
           } else {
-            logError('Spotify connection lost, unable to refresh token')
+            logAndToastError('Spotify connection lost, unable to refresh token')
           }
         }
       },
@@ -125,25 +126,25 @@ export class SpotifyApiService {
     })
 
     player.addListener('initialization_error', ({ message }) => {
-      logError(`Failed to initialize player: ${message}`)
+      logAndToastError(`Failed to initialize player: ${message}`)
     })
     
     player.addListener('authentication_error', async ({ message }) => {
-      logError(`Authentication error: ${message}`)
+      logAndToastError(`Authentication error: ${message}`)
       try {
         await SpotifyAuthService.refreshAccessToken()
         player.connect()
       } catch (refreshError) {
-        logError(`Failed to refresh token after authentication error: ${refreshError}`)
+        logAndToastError(`Failed to refresh token after authentication error: ${refreshError}`)
       }
     })
     
     player.addListener('account_error', ({ message }) => {
-      logError(`Account error: ${message}`)
+      logAndToastError(`Account error: ${message}`)
     })
     
     player.addListener('playback_error', ({ message }) => {
-      logError(`Playback error: ${message}`)
+      logAndToastError(`Playback error: ${message}`)
     })
 
     await player.connect()
@@ -170,7 +171,7 @@ export class SpotifyApiService {
         method: 'PUT',
       })
     } catch (error) {
-      logError(`Error stopping playback: ${error}`)
+      logAndToastError(`Error stopping playback: ${error}`)
     }
   }
 
@@ -179,7 +180,7 @@ export class SpotifyApiService {
       const images = await this.spotifyApiRequest(`playlists/${playlistId}/images`)
       return images[0]?.url || null
     } catch (error) {
-      logError(`Error fetching playlist cover image: ${error}`)
+      logAndToastError(`Error fetching playlist cover image: ${error}`)
       return null
     }
   }
@@ -189,7 +190,7 @@ export class SpotifyApiService {
       const response = await this.spotifyApiRequest('me/player/devices')
       return response.devices
     } catch (error) {
-      logError(`Error fetching available devices: ${error}`)
+      logAndToastError(`Error fetching available devices: ${error}`)
       return []
     }
   }
@@ -204,7 +205,7 @@ export class SpotifyApiService {
         })
       })
     } catch (error) {
-      logError(`Error transferring playback: ${error}`)
+      logAndToastError(`Error transferring playback: ${error}`)
     }
   }
 
@@ -219,7 +220,7 @@ export class SpotifyApiService {
         await this.transferPlaybackToDevice(computerDevice.id)
       }
     } catch (error) {
-      logError(`Error transferring playback to computer: ${error}`)
+      logAndToastError(`Error transferring playback to computer: ${error}`)
     }
   }
 

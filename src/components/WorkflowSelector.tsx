@@ -21,7 +21,7 @@ import { Badge } from './ui/badge'
 import { cn } from '@/lib/utils/tailwind.util'
 import { Button } from './ui/button'
 import { Switch } from '@/components/ui/switch'
-import { error as logError } from '@tauri-apps/plugin-log'
+import { logAndToastError } from '@/lib/utils/logAndToastError'
 import { PaywallDialog } from '@/components/PaywallDialog'
 import { usePermissions } from '@/hooks/usePermissions'
 
@@ -361,7 +361,7 @@ export function WorkflowSelector({ selectedId, onSelect, onSettingsChange }: Wor
           }
         }
       } catch (error) {
-        logError(`Failed to load workflows: ${error}`)
+        logAndToastError(`Failed to load workflows: ${error}`)
       }
     }
     
@@ -397,7 +397,7 @@ export function WorkflowSelector({ selectedId, onSelect, onSettingsChange }: Wor
           onSelect(savedWorkflow.id)
         }
       } catch (error) {
-        logError(`Failed to create new workflow: ${error}`)
+        logAndToastError(`Failed to create new workflow: ${error}`)
       }
     } else {
       onSelect(workflowId)
@@ -418,7 +418,7 @@ export function WorkflowSelector({ selectedId, onSelect, onSettingsChange }: Wor
         onSelect(workflow.id)
       }
     } catch (error) {
-      logError(`Failed to update workflow name: ${error}`)
+      logAndToastError(`Failed to update workflow name: ${error}`)
     }
   }
 
@@ -435,7 +435,7 @@ export function WorkflowSelector({ selectedId, onSelect, onSettingsChange }: Wor
         onSelect(updatedWorkflows[0].id)
       }
     } catch (error) {
-      logError(`Failed to delete workflow: ${error}`)
+      logAndToastError(`Failed to delete workflow: ${error}`)
     }
   }
 
@@ -454,7 +454,7 @@ export function WorkflowSelector({ selectedId, onSelect, onSettingsChange }: Wor
         onSettingsChange(savedWorkflow.id, savedWorkflow.settings)
       }
     } catch (error) {
-      logError(`Failed to update workflow settings: ${error}`)
+      logAndToastError(`Failed to update workflow settings: ${error}`)
     }
   }
 
