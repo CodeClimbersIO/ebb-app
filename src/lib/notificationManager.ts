@@ -1,4 +1,5 @@
-import { error, info } from '@tauri-apps/plugin-log'
+import { info } from '@tauri-apps/plugin-log'
+import { logAndToastError } from '@/lib/utils/logAndToastError'
 import { convertFileSrc, invoke } from '@tauri-apps/api/core'
 import { resolveResource } from '@tauri-apps/api/path'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
@@ -56,7 +57,7 @@ class NotificationManager {
       
       return { html: htmlPath, sound: soundPath }
     } catch (err) {
-      error(`Error getting notification resources: ${err}`)
+      logAndToastError(`Error getting notification resources: ${err}`)
       throw err
     }
   }
@@ -86,7 +87,7 @@ class NotificationManager {
         url.searchParams.set('sound', soundUrl)
         info(`Final sound URL after encoding: ${url.searchParams.get('sound')}`)
       } else {
-        error('No sound URL available')
+        logAndToastError('No sound URL available')
       }
       
       const finalUrl = url.toString()
@@ -94,7 +95,7 @@ class NotificationManager {
       
       return finalUrl
     } catch (err) {
-      error(`Error constructing notification URL: ${err}`)
+      logAndToastError(`Error constructing notification URL: ${err}`)
       throw err
     }
   }
@@ -151,30 +152,7 @@ class NotificationManager {
         transparent: true
       })
 
-      webviewWindow.once('tauri://load-start', () => {
-        info('Webview started loading')
-      })
-
-      webviewWindow.once('tauri://load-end', () => {
-        info('Webview finished loading')
-      })
-
-      webviewWindow.once('tauri://error', (e) => {
-        error(`Webview error: ${JSON.stringify(e)}`)
-      })
-
-      await new Promise<void>((resolve, reject) => {
-        webviewWindow.once('tauri://created', () => {
-          info('Notification webview created successfully')
-          this.notifications.push(webviewWindow)
-          resolve()
-        })
-        
-        webviewWindow.once('tauri://error', (event) => {
-          error(`Error creating notification webview: ${JSON.stringify(event)}`)
-          reject(new Error('Failed to create notification webview'))
-        })
-      })
+      this.notifications.push(webviewWindow)
 
       const closeWindow = async () => {
         const index = this.notifications.indexOf(webviewWindow)
@@ -208,7 +186,7 @@ class NotificationManager {
 
       info('Notification complete')
     } catch (err) {
-      error(`Error showing notification: ${err}`)
+      logAndToastError(`Error showing notification: ${err}`)
       throw err
     }
   }

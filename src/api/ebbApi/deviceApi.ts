@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core'
-import { error as logError } from '@tauri-apps/plugin-log'
+import { logAndToastError } from '@/lib/utils/logAndToastError'
 import { deviceRepo } from '@/db/supabase/deviceRepo'
 import { hostname } from '@tauri-apps/plugin-os'
 
@@ -27,7 +27,7 @@ const getMacAddress = async (): Promise<string> => {
     return macAddress
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
-    logError(`MAC Address Error: ${errorMessage}`)
+    logAndToastError(`MAC Address Error: ${errorMessage}`)
     throw new Error(`Device registration requires MAC address access: ${errorMessage}`)
   }
 }
@@ -66,7 +66,7 @@ const registerDevice = async (userId: string, maxDevices: number): Promise<Devic
   const { data: existingDevices, error: deviceError } = await getUserDevices(userId)
   
   if (deviceError) {
-    logError(`[DeviceReg] Error fetching devices: ${JSON.stringify(deviceError, null, 2)}`)
+    logAndToastError(`[DeviceReg] Error fetching devices: ${JSON.stringify(deviceError, null, 2)}`)
     throw new Error('Failed to fetch devices')
   }
 

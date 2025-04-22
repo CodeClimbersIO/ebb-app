@@ -3,7 +3,7 @@ import {
   unregister as unregisterShortcutTauri
 } from '@tauri-apps/plugin-global-shortcut'
 import { emit } from '@tauri-apps/api/event'
-import { error as logError, info as logInfo } from '@tauri-apps/plugin-log'
+import { logAndToastError } from '@/lib/utils/logAndToastError'
 import { UserPreferenceRepo } from '@/db/ebb/userPreferenceRepo'
 
 export const DEFAULT_SHORTCUT = 'CommandOrControl+E'
@@ -17,7 +17,7 @@ const getCurrentShortcutFromDb = async (): Promise<string> => {
     const savedShortcut = await UserPreferenceRepo.getPreference(SHORTCUT_KEY)
     return savedShortcut ?? ''
   } catch (err) {
-    logError(`(Global) Failed to load shortcut from database: ${err}`)
+    logAndToastError(`Failed to load shortcut from database: ${err}`)
     return ''
   }
 }
@@ -30,13 +30,13 @@ const saveShortcut = async (shortcut: string): Promise<void> => {
   try {
     await UserPreferenceRepo.setPreference(SHORTCUT_KEY, shortcut)
   } catch (err) {
-    logError(`(Global) Failed to save shortcut ${shortcut} to database: ${err}`)
+    logAndToastError(`Failed to save shortcut ${shortcut} to database: ${err}`)
   }
 }
 
 export const updateGlobalShortcut = async (newShortcut: string): Promise<void> => {
   if (!isInitialized) {
-    logError('(Global) Cannot update shortcut before initialization')
+    logAndToastError('Cannot update shortcut before initialization')
     return
   }
 
@@ -51,22 +51,20 @@ export const updateGlobalShortcut = async (newShortcut: string): Promise<void> =
     }
     
     if (newShortcut) {
-      logInfo(`(Global) Attempting to update shortcut to: ${newShortcut}`)
       try {
         await registerShortcutTauri(newShortcut, (event) => {
           if (event.state === 'Pressed') {
             emit(SHORTCUT_EVENT)
           }
         })
-        logInfo(`(Global) Successfully updated shortcut to: ${newShortcut}`)
       } catch (registrationError) {
-        logError(`(Global) Explicit error during shortcut update registration: ${registrationError}`)
+        logAndToastError(`Explicit error during shortcut update registration: ${registrationError}`)
       }
     }
     
     await saveShortcut(newShortcut)
   } catch (err) {
-    logError(`(Global) Failed to update shortcut: ${err}`)
+    logAndToastError(`Failed to update shortcut: ${err}`)
   }
 }
 
@@ -78,35 +76,20 @@ export const initializeGlobalShortcut = async (): Promise<void> => {
   try {
     const shortcutToRegister = await getCurrentShortcutFromDb()
     
-    try {
-      if (shortcutToRegister) {
-        await unregisterShortcutTauri(shortcutToRegister)
-      }
-    } catch (err) {
-      logError(`(Global) Failed to unregister existing shortcut during initialization: ${err}`)
+    if (shortcutToRegister) {
+      await unregisterShortcutTauri(shortcutToRegister)
     }
 
-    logInfo(`(Global) Shortcut loaded from DB for initialization: '${shortcutToRegister}'`)
-
-    try {
-      if (shortcutToRegister) {
-        logInfo(`(Global) Attempting to register initial shortcut: ${shortcutToRegister}`)
-        await registerShortcutTauri(shortcutToRegister, (event) => {
-          if (event.state === 'Pressed') {
-            emit(SHORTCUT_EVENT)
-          }
-        })
-        logInfo(`(Global) Successfully registered initial shortcut: ${shortcutToRegister}`)
-      } else {
-        logInfo('(Global) No shortcut found in DB during initialization.')
-      }
-    } catch (registrationError) {
-      logError(`(Global) Explicit error during initial shortcut registration: ${registrationError}`)
+    if (shortcutToRegister) {
+      await registerShortcutTauri(shortcutToRegister, (event) => {
+        if (event.state === 'Pressed') {
+          emit(SHORTCUT_EVENT)
+        }
+      })
     }
 
     isInitialized = true
-  } catch (err) {
-    logError(`(Global) Failed to initialize shortcut: ${err}`)
+  } catch {
     isInitialized = true
   }
 }
@@ -125,7 +108,7 @@ export const unregisterAllManagedShortcuts = async (): Promise<void> => {
       try {
         await unregisterShortcutTauri(currentShortcut)
       } catch (err) {
-        logError(`(Global) Failed to unregister ${currentShortcut} during cleanup: ${err}`)
+        logAndToastError(`Failed to unregister ${currentShortcut} during cleanup: ${err}`)
       }
     }
   }

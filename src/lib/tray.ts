@@ -6,7 +6,7 @@ import { DateTime, Duration } from 'luxon'
 import { useFlowTimer } from './stores/flowTimer'
 import { invoke } from '@tauri-apps/api/core'
 import { Image } from '@tauri-apps/api/image'
-import { error as logError } from '@tauri-apps/plugin-log'
+import { logAndToastError } from '@/lib/utils/logAndToastError'
 import { isDev } from './utils/environment'
 
 async function showAndFocusWindow() {
@@ -82,7 +82,7 @@ export const startFlowTimer = async (startTime: DateTime) => {
       const iconImage = await Image.fromBytes(iconBytes)
       await tray.setIcon(iconImage)
     } catch (error) {
-      logError(`Error generating/setting timer icon: ${error}`)
+      logAndToastError(`Error generating/setting timer icon: ${error}`)
     }
   }, 1000)
 

@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import supabase from '@/lib/integrations/supabase'
 import { subscribeWithSelector } from 'zustand/middleware'
 import { RealtimeChannel } from '@supabase/supabase-js'
-import { error as logError } from '@tauri-apps/plugin-log'
+import { logAndToastError } from '@/lib/utils/logAndToastError'
 import { defaultPermissions, License, licenseApi, LicensePermissions } from '@/api/ebbApi/licenseApi'
 import { DeviceInfo, defaultDeviceInfo } from '@/api/ebbApi/deviceApi'
 
@@ -49,7 +49,7 @@ export const useLicenseStore = create<LicenseStoreState>()(
 
           set({ ...defaultStoreState, license: data.license, permissions: data.permissions, deviceInfo: data.deviceInfo, isLoading: false })
         } catch (err) {
-          logError(`Failed to fetch license status: ${err instanceof Error ? err.message : String(err)}`)
+          logAndToastError(`Failed to fetch license status: ${err instanceof Error ? err.message : String(err)}`)
           set({ ...defaultStoreState, error: err instanceof Error ? err : new Error('Failed to fetch license') })
         }
       },
@@ -75,10 +75,10 @@ export const useLicenseStore = create<LicenseStoreState>()(
           )
           .subscribe((status, err) => {
             if (status === 'CHANNEL_ERROR') {
-              logError(`Subscription error for user ${userId}: ${err}`)
+              logAndToastError(`Subscription error for user ${userId}: ${err}`)
               get().clearSubscription()
             } else if (status === 'TIMED_OUT') {
-              logError(`Subscription timed out for user ${userId}.`)
+              logAndToastError(`Subscription timed out for user ${userId}.`)
               get().clearSubscription()
             }
           })
@@ -92,7 +92,7 @@ export const useLicenseStore = create<LicenseStoreState>()(
           try {
             await supabase.removeChannel(channel)
           } catch (error) {
-            logError(`Error removing Supabase channel: ${error}`)
+            logAndToastError(`Error removing Supabase channel: ${error}`)
           } finally {
             set({ channel: null })
           }

@@ -7,7 +7,7 @@ import { LogOut, KeyRound } from 'lucide-react'
 import { format } from 'date-fns'
 import { User } from '@supabase/supabase-js'
 import supabase from '@/lib/integrations/supabase'
-import { error as logError } from '@tauri-apps/plugin-log'
+import { logAndToastError } from '@/lib/utils/logAndToastError'
 import { useAuth } from '@/hooks/useAuth'
 import { useNavigate } from 'react-router-dom'
 import { usePermissions } from '@/hooks/usePermissions'
@@ -28,7 +28,7 @@ export function UserProfileSettings({ user }: UserProfileSettingsProps) {
   const handleLogout = async () => {
     const { error } = await logout()
     if (error) {
-      logError(`Error logging out: ${error.message}`)
+      logAndToastError(`Error logging out: ${error.message}`)
       return
     }
 
@@ -46,7 +46,7 @@ export function UserProfileSettings({ user }: UserProfileSettingsProps) {
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
-      logError(`Error creating portal session: ${message}`)
+      logAndToastError(`Error creating portal session: ${message}`)
     }
   }
 

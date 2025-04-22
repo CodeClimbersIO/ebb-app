@@ -34,7 +34,7 @@ import {
 } from './ui/dialog'
 import { Skeleton } from './ui/skeleton'
 import { Alert, AlertDescription } from './ui/alert'
-import { error as logError } from '@tauri-apps/plugin-log'
+import { logAndToastError } from '@/lib/utils/logAndToastError'
 
 interface MusicSelectorProps {
   selectedPlaylist: string | null
@@ -89,7 +89,7 @@ export function MusicSelector({ selectedPlaylist, onPlaylistSelect }: MusicSelec
         // Always check connection status after handling callback or on initial load
         await checkSpotifyConnection()
       } catch (error) {
-        logError(`Error handling Spotify callback: ${error}`)
+        logAndToastError(`Error handling Spotify callback: ${error}`)
         setIsLoading(false)
       }
     }
@@ -117,7 +117,7 @@ export function MusicSelector({ selectedPlaylist, onPlaylistSelect }: MusicSelec
         }
       }
     } catch (error) {
-      logError(`Error checking Spotify connection: ${error}`)
+      logAndToastError(`Error checking Spotify connection: ${error}`)
     } finally {
       setIsLoading(false)
     }
@@ -142,7 +142,7 @@ export function MusicSelector({ selectedPlaylist, onPlaylistSelect }: MusicSelec
         setPlaylistData(newPlaylistData)
         localStorage.setItem('playlistData', JSON.stringify(newPlaylistData))
       } catch (error) {
-        logError(`Error loading playlist data: ${error}`)
+        logAndToastError(`Error loading playlist data: ${error}`)
       }
     }
 
@@ -153,7 +153,7 @@ export function MusicSelector({ selectedPlaylist, onPlaylistSelect }: MusicSelec
     try {
       await SpotifyAuthService.connect()
     } catch (error) {
-      logError(`Error connecting to Spotify: ${error}`)
+      logAndToastError(`Error connecting to Spotify: ${error}`)
     }
   }
 
@@ -256,7 +256,7 @@ export function MusicSelector({ selectedPlaylist, onPlaylistSelect }: MusicSelec
                         : 'spotify:'
                       await invoke('plugin:shell|open', { path: spotifyUri })
                     } catch (error) {
-                      logError(`Failed to open Spotify: ${error}`)
+                      logAndToastError(`Failed to open Spotify: ${error}`)
                       // Fallback to web version if native app fails to open
                       const webUrl = selectedPlaylist
                         ? `https://open.spotify.com/playlist/${selectedPlaylist}`
