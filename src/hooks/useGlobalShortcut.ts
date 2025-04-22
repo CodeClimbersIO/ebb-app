@@ -8,7 +8,7 @@ import {
   initializeGlobalShortcut,
   SHORTCUT_EVENT,
 } from '@/api/ebbApi/shortcutApi'
-import { error as logError } from '@tauri-apps/plugin-log'
+import { error as logError, info as logInfo } from '@tauri-apps/plugin-log'
 
 export function useGlobalShortcut() {
   const navigate = useNavigate()
@@ -19,9 +19,11 @@ export function useGlobalShortcut() {
     let unlistenShortcut: (() => void) | undefined
 
     const handleShortcut = async () => {
+      logInfo('(Shortcut) handleShortcut called')
       if (!mounted) return
 
       try {
+        logInfo('(Shortcut) Showing window')
         const window = getCurrentWindow()
         void Promise.all([
           window.show().catch(err => logError(`(Shortcut) Error showing window: ${err}`)),
@@ -29,14 +31,19 @@ export function useGlobalShortcut() {
         ])
 
         if (location.pathname === '/onboarding/shortcut-tutorial') {
+          logInfo('(Shortcut) Marking onboarding completed')
           await OnboardingUtils.markOnboardingCompleted()
           if (mounted) {
+            logInfo('(Shortcut) Navigating to start-flow')
             navigate('/start-flow', { replace: true })
           }
+          logInfo('(Shortcut) handleShortcut completed')
           return
         }
 
+
         if (!OnboardingUtils.isOnboardingCompleted()) {
+          logInfo('(Shortcut) Onboarding not completed, skipping')
           return
         }
 
@@ -44,6 +51,7 @@ export function useGlobalShortcut() {
         const targetPath = activeSession ? '/flow' : '/start-flow'
         
         if (mounted) {
+          logInfo('(Shortcut) Navigating to target path')
           navigate(targetPath, { replace: true })
         }
       } catch (error) {
@@ -60,6 +68,7 @@ export function useGlobalShortcut() {
 
         if (mounted) {
           unlistenShortcut = await listen(SHORTCUT_EVENT, () => {
+            logInfo('(Shortcut) Shortcut event triggered')
             void handleShortcut()
           })
         }
