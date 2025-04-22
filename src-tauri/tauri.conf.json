@@ -35,6 +35,9 @@
     "withGlobalTauri": true
   },
   "plugins": {
+    "shell": {
+      "open": "^https?://.+|^ebb://.+|^spotify:.+"
+    },
     "deep-link": {
       "desktop": {
         "schemes": ["ebb"]
