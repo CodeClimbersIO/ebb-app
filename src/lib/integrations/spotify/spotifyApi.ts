@@ -60,6 +60,11 @@ export class SpotifyApiService {
 
 
   static async getUserProfile(): Promise<SpotifyUserProfile | null> {
+    const isConnected = await SpotifyAuthService.isConnected()
+    if (!isConnected) {
+      return null
+    }
+
     try {
       const data = await this.spotifyApiRequest('me')
       return {
@@ -69,10 +74,7 @@ export class SpotifyApiService {
         product: data.product
       }
     } catch (error) {
-      const isConnected = await SpotifyAuthService.isConnected()
-      if (isConnected) {
-        logAndToastError(`Error fetching user profile: ${error}`)
-      }
+      logAndToastError(`Error fetching user profile: ${error}`)
       return null
     }
   }
