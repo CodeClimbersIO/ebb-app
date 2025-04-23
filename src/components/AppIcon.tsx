@@ -164,8 +164,8 @@ export const AppIcon = ({ app, size = 'md' }: { app: App; size?: IconSize }) => 
 
   // For desktop apps, use one size larger if available
   const appSize = size === 'xl' ? 'xl' : 
-                 (size === 'lg' ? 'xl' : 
-                 (size === 'md' ? 'lg' : 
-                 (size === 'sm' ? 'md' : 'sm')))
+    (size === 'lg' ? 'xl' : 
+      (size === 'md' ? 'lg' : 
+        (size === 'sm' ? 'md' : 'sm')))
   return <DesktopIcon app={app} size={appSize} />
 }
