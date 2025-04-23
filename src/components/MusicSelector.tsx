@@ -256,7 +256,7 @@ export function MusicSelector({ selectedPlaylist, onPlaylistSelect }: MusicSelec
                         : 'spotify:'
                       await invoke('plugin:shell|open', { path: spotifyUri })
                     } catch (error) {
-                      logAndToastError(`Failed to open Spotify: ${error}`)
+                      logAndToastError('Failed to open Spotify app, defaulting to web version', error)
                       // Fallback to web version if native app fails to open
                       const webUrl = selectedPlaylist
                         ? `https://open.spotify.com/playlist/${selectedPlaylist}`

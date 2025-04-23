@@ -6,7 +6,11 @@ import supabase from '@/lib/integrations/supabase'
 import { SpotifyAuthService } from '@/lib/integrations/spotify/spotifyAuth'
 import { useLicenseStore } from '@/stores/licenseStore'
 import { useAuth } from './useAuth'
+import { logAndToastError } from '../lib/utils/logAndToastError'
 
+const processedUrls = new Set<string>()
+
+    
 export const useDeepLinkAuth = () => {
   const navigate = useNavigate()
   const [isHandlingAuth, setIsHandlingAuth] = useState(false)
@@ -22,11 +26,19 @@ export const useDeepLinkAuth = () => {
       setIsHandlingAuth(true)
     }
 
+
     const handleUrl = async (urls: string[]) => {
+      const url = urls[0]
       try {
-        setIsHandlingAuth(true)
-        const url = urls[0]
         
+        // Skip if this URL has already been processed
+        if (processedUrls.has(url)) {
+          return
+        }
+        
+        processedUrls.add(url)
+        
+        setIsHandlingAuth(true)
         const urlObj = new URL(url)
         const searchParams = new URLSearchParams(urlObj.search.substring(1))
 
@@ -51,7 +63,6 @@ export const useDeepLinkAuth = () => {
           }
         }
 
-        // Handle Supabase auth if not Spotify
         const code = searchParams.get('code')
         if (code) {
           const { data, error } = await supabase.auth.exchangeCodeForSession(code)
@@ -60,6 +71,8 @@ export const useDeepLinkAuth = () => {
           return
         }
       } catch (err) {
+        processedUrls.delete(url) // Remove the URL from the processed set to allow for retries
+        logAndToastError(`Error handling deep link: ${err}`)
         error(`Error handling deep link: ${err}`)
       } finally {
         setIsHandlingAuth(false)

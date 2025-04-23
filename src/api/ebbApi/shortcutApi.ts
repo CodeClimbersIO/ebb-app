@@ -5,7 +5,7 @@ import {
 import { emit } from '@tauri-apps/api/event'
 import { logAndToastError } from '@/lib/utils/logAndToastError'
 import { UserPreferenceRepo } from '@/db/ebb/userPreferenceRepo'
-import { info as logInfo } from '@tauri-apps/plugin-log'
+import { info as logInfo, error as logError } from '@tauri-apps/plugin-log'
 
 export const DEFAULT_SHORTCUT = 'CommandOrControl+E'
 export const SHORTCUT_EVENT = 'global-shortcut-triggered'
@@ -91,7 +91,9 @@ export const initializeGlobalShortcut = async (): Promise<void> => {
     }
 
     isInitialized = true
-  } catch {
+  } catch (err) {
+    // appears to happen every time we register a shortcut even if it is successful. Probably a bug with the plugin.
+    logError(`Failed to initialize global shortcut: ${err}`)
     isInitialized = true
   }
 }

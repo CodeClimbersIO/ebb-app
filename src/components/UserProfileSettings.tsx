@@ -29,7 +29,6 @@ export function UserProfileSettings({ user }: UserProfileSettingsProps) {
     const { error } = await logout()
     if (error) {
       logAndToastError(`Error logging out: ${error.message}`)
-      return
     }
 
     navigate('/login')
