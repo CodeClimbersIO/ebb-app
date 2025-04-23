@@ -2,7 +2,7 @@ import { SearchOption } from '@/components/AppSelector'
 import { WorkflowDb, WorkflowRepo, WorkflowSettings } from '@/db/ebb/workflowRepo'
 import { getEbbDb } from '@/db/ebb/ebbDb'
 import { BlockingPreferenceApi } from './blockingPreferenceApi'
-import { error as logError } from '@tauri-apps/plugin-log'
+import { logAndToastError } from '@/lib/utils/logAndToastError'
 
 export interface Workflow {
   id?: string
@@ -21,7 +21,7 @@ const fromDbWorkflow = async (dbWorkflow: WorkflowDb): Promise<Workflow> => {
   try {
     selectedApps = await BlockingPreferenceApi.getWorkflowBlockingPreferencesAsSearchOptions(dbWorkflow.id)
   } catch (error) {
-    logError(`Failed to load blocking preferences for workflow ${dbWorkflow.id}: ${error}`)
+    logAndToastError(`Failed to load blocking preferences for workflow ${dbWorkflow.id}: ${error}`)
   }
   
   return {

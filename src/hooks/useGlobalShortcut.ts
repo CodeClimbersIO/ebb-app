@@ -7,8 +7,8 @@ import { OnboardingUtils } from '@/lib/utils/onboarding'
 import {
   initializeGlobalShortcut,
   SHORTCUT_EVENT,
-} from '@/db/ebb/globalShortcutManager'
-import { error as logError } from '@tauri-apps/plugin-log'
+} from '@/api/ebbApi/shortcutApi'
+import { logAndToastError } from '@/lib/utils/logAndToastError'
 
 export function useGlobalShortcut() {
   const navigate = useNavigate()
@@ -24,8 +24,8 @@ export function useGlobalShortcut() {
       try {
         const window = getCurrentWindow()
         void Promise.all([
-          window.show().catch(err => logError(`(Shortcut) Error showing window: ${err}`)),
-          window.setFocus().catch(err => logError(`(Shortcut) Error focusing window: ${err}`))
+          window.show().catch(err => logAndToastError(`(Shortcut) Error showing window: ${err}`)),
+          window.setFocus().catch(err => logAndToastError(`(Shortcut) Error focusing window: ${err}`))
         ])
 
         if (location.pathname === '/onboarding/shortcut-tutorial') {
@@ -35,6 +35,7 @@ export function useGlobalShortcut() {
           }
           return
         }
+
 
         if (!OnboardingUtils.isOnboardingCompleted()) {
           return
@@ -47,7 +48,7 @@ export function useGlobalShortcut() {
           navigate(targetPath, { replace: true })
         }
       } catch (error) {
-        logError(`(Shortcut) Error getting session or navigating: ${error}`)
+        logAndToastError(`(Shortcut) Error getting session or navigating: ${error}`)
         if (mounted) {
           navigate('/start-flow', { replace: true })
         }
@@ -64,7 +65,7 @@ export function useGlobalShortcut() {
           })
         }
       } catch (error) {
-        logError(`(Shortcut) Setup failed: ${error}`)
+        logAndToastError(`(Shortcut) Setup failed: ${error}`)
       }
     }
 

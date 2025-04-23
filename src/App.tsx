@@ -10,13 +10,15 @@ import { useUpdate } from './hooks/useUpdate'
 import { useAuth } from './hooks/useAuth'
 import { usePostHog } from 'posthog-js/react'
 import { useShortcutStore } from '@/lib/stores/shortcutStore'
+import { Toaster } from '@/components/ui/sonner'
 
 const App = () => {
   const posthog = usePostHog()
   const { beginCheckForUpdates } = useUpdate()
   const { user } = useAuth()
   const { loadShortcutFromStorage } = useShortcutStore()
-
+  
+  
   useEffect(() => {
     initSentry()
 
@@ -39,8 +41,9 @@ const App = () => {
       posthog.identify(user.id, {
         email: user.email,
       })
-    }
-  }, [user])
+    } 
+
+  }, [user, posthog])
 
   useEffect(() => {
     loadShortcutFromStorage()
@@ -48,9 +51,8 @@ const App = () => {
 
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-      <main>
-        <AppRouter />
-      </main>
+      <AppRouter />
+      <Toaster position="bottom-right" richColors />
     </ThemeProvider>
   )
 }

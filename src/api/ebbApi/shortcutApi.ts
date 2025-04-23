@@ -3,8 +3,9 @@ import {
   unregister as unregisterShortcutTauri
 } from '@tauri-apps/plugin-global-shortcut'
 import { emit } from '@tauri-apps/api/event'
-import { error as logError, info as logInfo } from '@tauri-apps/plugin-log'
-import { UserPreferenceRepo } from './userPreferenceRepo'
+import { logAndToastError } from '@/lib/utils/logAndToastError'
+import { UserPreferenceRepo } from '@/db/ebb/userPreferenceRepo'
+import { info as logInfo, error as logError } from '@tauri-apps/plugin-log'
 
 export const DEFAULT_SHORTCUT = 'CommandOrControl+E'
 export const SHORTCUT_EVENT = 'global-shortcut-triggered'
@@ -17,7 +18,7 @@ const getCurrentShortcutFromDb = async (): Promise<string> => {
     const savedShortcut = await UserPreferenceRepo.getPreference(SHORTCUT_KEY)
     return savedShortcut ?? ''
   } catch (err) {
-    logError(`(Global) Failed to load shortcut from database: ${err}`)
+    logAndToastError(`Failed to load shortcut from database: ${err}`)
     return ''
   }
 }
@@ -30,13 +31,13 @@ const saveShortcut = async (shortcut: string): Promise<void> => {
   try {
     await UserPreferenceRepo.setPreference(SHORTCUT_KEY, shortcut)
   } catch (err) {
-    logError(`(Global) Failed to save shortcut ${shortcut} to database: ${err}`)
+    logAndToastError(`Failed to save shortcut ${shortcut} to database: ${err}`)
   }
 }
 
 export const updateGlobalShortcut = async (newShortcut: string): Promise<void> => {
   if (!isInitialized) {
-    logError('(Global) Cannot update shortcut before initialization')
+    logAndToastError('Cannot update shortcut before initialization')
     return
   }
 
@@ -51,16 +52,20 @@ export const updateGlobalShortcut = async (newShortcut: string): Promise<void> =
     }
     
     if (newShortcut) {
-      await registerShortcutTauri(newShortcut, (event) => {
-        if (event.state === 'Pressed') {
-          emit(SHORTCUT_EVENT)
-        }
-      })
+      try {
+        await registerShortcutTauri(newShortcut, (event) => {
+          if (event.state === 'Pressed') {
+            emit(SHORTCUT_EVENT)
+          }
+        })
+      } catch (registrationError) {
+        logAndToastError(`Explicit error during shortcut update registration: ${registrationError}`)
+      }
     }
     
     await saveShortcut(newShortcut)
   } catch (err) {
-    logError(`(Global) Failed to update shortcut: ${err}`)
+    logAndToastError(`Failed to update shortcut: ${err}`)
   }
 }
 
@@ -72,28 +77,24 @@ export const initializeGlobalShortcut = async (): Promise<void> => {
   try {
     const shortcutToRegister = await getCurrentShortcutFromDb()
     
-    try {
-      if (shortcutToRegister) {
-        await unregisterShortcutTauri(shortcutToRegister)
-      }
-    } catch (err) {
-      logError(`(Global) Failed to unregister existing shortcut during initialization: ${err}`)
+    if (shortcutToRegister) {
+      await unregisterShortcutTauri(shortcutToRegister)
     }
 
     if (shortcutToRegister) {
       await registerShortcutTauri(shortcutToRegister, (event) => {
+        logInfo(`(Global) Shortcut event: ${event.state}`)
         if (event.state === 'Pressed') {
           emit(SHORTCUT_EVENT)
         }
       })
-      logInfo(`(Global) Initialized shortcut: ${shortcutToRegister}`)
-    } else {
-      logInfo('(Global) No shortcut found in DB during initialization.')
     }
+
     isInitialized = true
   } catch (err) {
-     logError(`(Global) Failed to initialize shortcut: ${err}`)
-     isInitialized = true
+    // appears to happen every time we register a shortcut even if it is successful. Probably a bug with the plugin.
+    logError(`Failed to initialize global shortcut: ${err}`)
+    isInitialized = true
   }
 }
 
@@ -111,7 +112,7 @@ export const unregisterAllManagedShortcuts = async (): Promise<void> => {
       try {
         await unregisterShortcutTauri(currentShortcut)
       } catch (err) {
-        logError(`(Global) Failed to unregister ${currentShortcut} during cleanup: ${err}`)
+        logAndToastError(`Failed to unregister ${currentShortcut} during cleanup: ${err}`)
       }
     }
   }

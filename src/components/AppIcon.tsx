@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { App } from '../db/monitor/appRepo'
 import { categoryEmojis, AppCategory } from '../lib/app-directory/apps-types'
 import { invoke } from '@tauri-apps/api/core'
-import { error as logError } from '@tauri-apps/plugin-log'
+import { logAndToastError } from '@/lib/utils/logAndToastError'
 
 // Add this helper function at the top level
 const getAppIcon = (app: App) => {
@@ -92,8 +92,8 @@ const DesktopIcon = ({ app, size = 'md' }: { app: App; size?: IconSize }) => {
           const iconData = await invoke('get_app_icon', { bundleId: app.app_external_id })
           setIconDataUrl(iconData as string)
         }
-      } catch (err) {
-        logError(`Failed to load icon: ${err}`)
+      } catch (error) {
+        logAndToastError(`Error loading app icon for ${app.app_external_id}: ${error}`)
         setIconError(true)
       }
     }
@@ -164,8 +164,8 @@ export const AppIcon = ({ app, size = 'md' }: { app: App; size?: IconSize }) => 
 
   // For desktop apps, use one size larger if available
   const appSize = size === 'xl' ? 'xl' : 
-                 (size === 'lg' ? 'xl' : 
-                 (size === 'md' ? 'lg' : 
-                 (size === 'sm' ? 'md' : 'sm')))
+    (size === 'lg' ? 'xl' : 
+      (size === 'md' ? 'lg' : 
+        (size === 'sm' ? 'md' : 'sm')))
   return <DesktopIcon app={app} size={appSize} />
 }

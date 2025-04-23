@@ -1,13 +1,21 @@
 import { onOpenUrl } from '@tauri-apps/plugin-deep-link'
+import { error } from '@tauri-apps/plugin-log'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import supabase from '@/lib/integrations/supabase'
 import { SpotifyAuthService } from '@/lib/integrations/spotify/spotifyAuth'
-import { error as logError } from '@tauri-apps/plugin-log'
+import { useLicenseStore } from '@/stores/licenseStore'
+import { useAuth } from './useAuth'
+import { logAndToastError } from '../lib/utils/logAndToastError'
 
+const processedUrls = new Set<string>()
+
+    
 export const useDeepLinkAuth = () => {
   const navigate = useNavigate()
   const [isHandlingAuth, setIsHandlingAuth] = useState(false)
+  const { user } = useAuth()
+  const fetchLicense = useLicenseStore((state) => state.fetchLicense)
 
   useEffect(() => {
     const urlObj = new URL(window.location.href)
@@ -18,13 +26,30 @@ export const useDeepLinkAuth = () => {
       setIsHandlingAuth(true)
     }
 
+
     const handleUrl = async (urls: string[]) => {
+      const url = urls[0]
       try {
-        setIsHandlingAuth(true)
-        const url = urls[0]
         
+        // Skip if this URL has already been processed
+        if (processedUrls.has(url)) {
+          return
+        }
+        
+        processedUrls.add(url)
+        
+        setIsHandlingAuth(true)
         const urlObj = new URL(url)
         const searchParams = new URLSearchParams(urlObj.search.substring(1))
+
+        // Check if this is a license success callback
+        if (url.includes('license/success')) {
+          if (user) {
+            await fetchLicense(user.id)
+          }
+          navigate('/')
+          return
+        }
 
         // Check if this is a Spotify callback
         if (url.includes('spotify/callback')) {
@@ -38,7 +63,6 @@ export const useDeepLinkAuth = () => {
           }
         }
 
-        // Handle Supabase auth if not Spotify
         const code = searchParams.get('code')
         if (code) {
           const { data, error } = await supabase.auth.exchangeCodeForSession(code)
@@ -47,14 +71,16 @@ export const useDeepLinkAuth = () => {
           return
         }
       } catch (err) {
-        logError(`Error handling deep link: ${err}`)
+        processedUrls.delete(url) // Remove the URL from the processed set to allow for retries
+        logAndToastError(`Error handling deep link: ${err}`)
+        error(`Error handling deep link: ${err}`)
       } finally {
         setIsHandlingAuth(false)
       }
     }
 
     onOpenUrl(handleUrl)
-  }, [navigate])
+  }, [navigate, user, fetchLicense])
 
   return isHandlingAuth
 }

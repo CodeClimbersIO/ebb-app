@@ -11,23 +11,46 @@ import { FlowRecapPage } from '@/pages/FlowRecapPage'
 import { LoadingScreen } from '@/components/LoadingScreen'
 import { AccessibilityPage } from './pages/AccessibilityPage'
 import { ShortcutTutorialPage } from '@/pages/ShortcutTutorialPage'
+import { DeviceLimitPage } from './pages/DeviceLimitPage'
 import { OnboardingUtils } from '@/lib/utils/onboarding'
 import { useDeepLinkAuth } from './hooks/useDeepLinkAuth'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useEffect } from 'react'
 import { useGlobalShortcut } from './hooks/useGlobalShortcut'
-import { error as logError } from '@tauri-apps/plugin-log'
+import { logAndToastError } from '@/lib/utils/logAndToastError'
+import { useLicenseStore } from './stores/licenseStore'
+
 
 const ProtectedRoute = () => {
-  const { user, loading } = useAuth()
+  const { user, loading: authLoading } = useAuth()
+  const { deviceInfo } = useLicenseStore()
   const location = useLocation()
+  const { fetchLicense, initSubscription, clearSubscription } = useLicenseStore()
+  
+  useEffect(() => {
+    if (user) {
+      fetchLicense(user.id)
+      initSubscription(user.id)
+    } else {
+      fetchLicense(null)
+      clearSubscription()
+    }
 
-  if (loading) {
+    return () => {
+      clearSubscription()
+    }
+  }, [user, fetchLicense, initSubscription, clearSubscription])
+
+  if (authLoading) {
     return <LoadingScreen />
   }
 
   if (!user) {
     return <Navigate to="/login" replace />
+  }
+
+  if (deviceInfo.isDeviceLimitReached) {
+    return <DeviceLimitPage />
   }
 
   if (location.pathname === '/onboarding/accessibility' ||
@@ -58,7 +81,7 @@ const Router = () => {
           navigate(path)
         })
       } catch (error) {
-        logError(`(Router) Failed to set up tray navigation: ${error}`)
+        logAndToastError(`(Router) Failed to set up tray navigation: ${error}`)
       }
     }
 

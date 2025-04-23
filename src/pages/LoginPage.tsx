@@ -4,7 +4,8 @@ import { Logo } from '@/components/ui/logo'
 import supabase from '@/lib/integrations/supabase'
 import { invoke } from '@tauri-apps/api/core'
 import { OnboardingUtils } from '@/lib/utils/onboarding'
-import { error as logError } from '@tauri-apps/plugin-log'
+import { logAndToastError } from '@/lib/utils/logAndToastError'
+import { isDev } from '../lib/utils/environment'
 
 export const LoginPage = () => {
   const [error, setError] = useState('')
@@ -19,7 +20,7 @@ export const LoginPage = () => {
         provider: 'google',
         options: {
           skipBrowserRedirect: true,
-          redirectTo: import.meta.env.DEV 
+          redirectTo: isDev()
             ? 'http://localhost:1420/auth-success'
             : 'https://ebb.cool/auth-success',
           queryParams: {
@@ -31,14 +32,14 @@ export const LoginPage = () => {
 
       if (!data?.url) throw new Error('No auth URL returned')
       
-      if (import.meta.env.DEV) {
+      if (isDev()) {
         window.location.href = data.url
       } else {
         await invoke('plugin:shell|open', { path: data.url })
       }
     } catch (err) {
       setError('Failed to login with Google.')
-      logError(`${err}`)
+      logAndToastError(`${err}`)
     }
   }
 
@@ -46,7 +47,7 @@ export const LoginPage = () => {
     try {
       await invoke('plugin:shell|open', { path: url })
     } catch (err) {
-      logError(`Failed to open link: ${err}`)
+      logAndToastError(`Failed to open link: ${err}`)
     }
   }
 

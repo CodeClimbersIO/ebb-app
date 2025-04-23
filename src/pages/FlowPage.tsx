@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { FlowSession } from '@/db/ebb/flowSessionRepo'
 import { DateTime, Duration } from 'luxon'
 import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
-import type { Difficulty } from '@/components/DifficultySelector'
+import type { Difficulty } from '@/components/difficulty-selector/types'
 import {
   Card,
   CardContent,
@@ -28,7 +28,7 @@ import { useFlowTimer } from '../lib/stores/flowTimer'
 import { stopFlowTimer } from '../lib/tray'
 import { DifficultyButton } from '@/components/DifficultyButton'
 import { useSpotifyInstallation } from '@/hooks/useSpotifyInstallation'
-import { error as logError } from '@tauri-apps/plugin-log'
+import { logAndToastError } from '@/lib/utils/logAndToastError'
 
 const getDurationFormatFromSeconds = (seconds: number) => {
   const duration = Duration.fromMillis(seconds * 1000)
@@ -63,7 +63,7 @@ const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
 
       flowSession.duration = newTotalDurationInSeconds
     } catch (error) {
-      logError(`Failed to extend session duration: ${error}`)
+      logAndToastError(`Failed to extend session duration: ${error}`)
     } finally {
       setIsAddingTime(false)
       setTimeout(() => {
@@ -167,7 +167,7 @@ export const FlowPage = () => {
   const [isEndingSession, setIsEndingSession] = useState(false)
   const [difficulty, setDifficulty] = useState<Difficulty>()
   const [player, setPlayer] = useState<Spotify.Player | null>(null)
-  const [deviceId, setDeviceId] = useState<string>('')
+  const [spotifyDeviceId, setSpotifyDeviceId] = useState<string>('')
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTrack, setCurrentTrack] = useState<{
     name: string
@@ -212,7 +212,7 @@ export const FlowPage = () => {
 
   useEffect(() => {
     const handleSessionComplete = async () => {
-      if (player && deviceId) {
+      if (player && spotifyDeviceId) {
         await player.pause()
         await SpotifyApiService.transferPlaybackToComputerDevice()
         player.disconnect() // Disconnect the Web Playback SDK player
@@ -228,7 +228,7 @@ export const FlowPage = () => {
     return () => {
       window.removeEventListener('flowSessionComplete', handleSessionComplete)
     }
-  }, [flowSession, player, deviceId])
+  }, [flowSession, player, spotifyDeviceId])
 
   useEffect(() => {
     const initSpotify = async () => {
@@ -242,7 +242,7 @@ export const FlowPage = () => {
         const newPlayer = await SpotifyApiService.createPlayer()
 
         newPlayer.addListener('ready', ({ device_id }: { device_id: string }) => {
-          setDeviceId(device_id)
+          setSpotifyDeviceId(device_id)
           const state = window.history.state?.usr
           const playlistToUse = state?.selectedPlaylist || localStorage.getItem('lastPlaylist')
           if (playlistToUse) {
@@ -270,14 +270,14 @@ export const FlowPage = () => {
                 newPlayer.connect()
               }
             } catch (error) {
-              logError(`Error reconnecting player: ${error}`)
+              logAndToastError(`Error reconnecting player: ${error}`)
             }
           }, 2000)
         })
 
         setPlayer(newPlayer)
       } catch (error) {
-        logError(`Failed to initialize Spotify player: ${error}`)
+        logAndToastError(`Failed to initialize Spotify player: ${error}`)
       }
     }
 
@@ -319,7 +319,7 @@ export const FlowPage = () => {
         setPlaylistData(newPlaylistData)
         localStorage.setItem('playlistData', JSON.stringify(newPlaylistData))
       } catch (error) {
-        logError(`Error loading playlist data: ${error}`)
+        logAndToastError(`Error loading playlist data: ${error}`)
       }
     }
 
@@ -334,7 +334,7 @@ export const FlowPage = () => {
       try {
         await SpotifyAuthService.refreshAccessToken()
       } catch (error) {
-        logError(`Failed to refresh token in interval: ${error}`)
+        logAndToastError(`Failed to refresh token in interval: ${error}`)
       }
     }, 30 * 60 * 1000) // 30 minutes
 
@@ -350,7 +350,7 @@ export const FlowPage = () => {
     setIsEndingSession(true)
 
     // Stop playback, transfer to computer device, and clear player state
-    if (player && deviceId) {
+    if (player && spotifyDeviceId) {
       await player.pause()
       await SpotifyApiService.transferPlaybackToComputerDevice()
       player.disconnect() // Disconnect the Web Playback SDK player
@@ -385,7 +385,7 @@ export const FlowPage = () => {
         await player.resume()
       }
     } catch (error) {
-      logError(`Playback control error: ${error}`)
+      logAndToastError(`Playback control error: ${error}`)
     } finally {
       setTimeout(() => setClickedButton(null), 200)
     }
@@ -397,7 +397,7 @@ export const FlowPage = () => {
       setClickedButton('next')
       await player.nextTrack()
     } catch (error) {
-      logError(`Next track error: ${error}`)
+      logAndToastError(`Next track error: ${error}`)
     } finally {
       setTimeout(() => setClickedButton(null), 200)
     }
@@ -409,20 +409,20 @@ export const FlowPage = () => {
       setClickedButton('prev')
       await player.previousTrack()
     } catch (error) {
-      logError(`Previous track error: ${error}`)
+      logAndToastError(`Previous track error: ${error}`)
     } finally {
       setTimeout(() => setClickedButton(null), 200)
     }
   }
 
   const handlePlaylistChange = async (playlistId: string) => {
-    if (!deviceId) return
+    if (!spotifyDeviceId) return
     setSelectedPlaylistId(playlistId)
 
     // Always save the selected playlist to localStorage
     localStorage.setItem('lastPlaylist', playlistId)
     
-    await SpotifyApiService.startPlayback(playlistId, deviceId)
+    await SpotifyApiService.startPlayback(playlistId, spotifyDeviceId)
   }
 
   const MusicPlayer = () => (
@@ -505,7 +505,7 @@ export const FlowPage = () => {
                               : 'spotify:'
                             await invoke('plugin:shell|open', { path: spotifyUri })
                           } catch (error) {
-                            logError(`Failed to open Spotify: ${error}`)
+                            logAndToastError(`Failed to open Spotify: ${error}`)
                             // Fallback to web version if native app fails to open
                             const webUrl = selectedPlaylistId
                               ? `https://open.spotify.com/playlist/${selectedPlaylistId}`

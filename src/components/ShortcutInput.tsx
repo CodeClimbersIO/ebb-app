@@ -6,9 +6,9 @@ import { X, Check } from 'lucide-react'
 import {
   updateGlobalShortcut,
   loadShortcut as loadInitialShortcut,
-} from '../db/ebb/globalShortcutManager'
+} from '../api/ebbApi/shortcutApi'
 import { useShortcutStore } from '@/lib/stores/shortcutStore'
-import { error as logError } from '@tauri-apps/plugin-log'
+import { logAndToastError } from '@/lib/utils/logAndToastError'
 
 type ModifierKey = '⌘' | '⌥' | '⌃' | '⇧'
 
@@ -50,7 +50,7 @@ export function ShortcutInput({ popoverAlign = 'center' }: ShortcutInputProps) {
         setCurrentShortcut(initialShortcut)
         await loadShortcutFromStore()
       } catch (error) {
-        logError(`Failed to load initial shortcut: ${error}`)
+        logAndToastError(`Failed to load initial shortcut: ${error}`)
       }
     }
     void loadAndSetShortcut()
@@ -125,7 +125,7 @@ export function ShortcutInput({ popoverAlign = 'center' }: ShortcutInputProps) {
               setActiveKey(null)
             }, 500)
           } catch (error) {
-            logError(`Failed to update shortcut in ShortcutInput: ${error}`)
+            logAndToastError(`Failed to update shortcut in ShortcutInput: ${error}`)
             setActiveKey(null)
             setActiveModifiers([])
             setSnapshot(null)
@@ -167,7 +167,7 @@ export function ShortcutInput({ popoverAlign = 'center' }: ShortcutInputProps) {
       setCurrentShortcut('')
       await loadShortcutFromStore()
     } catch (error) {
-      logError(`Failed to clear shortcut: ${error}`)
+      logAndToastError(`Failed to clear shortcut: ${error}`)
     }
   }
 
