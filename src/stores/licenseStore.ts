@@ -76,7 +76,7 @@ export const useLicenseStore = create<LicenseStoreState>()(
           )
           .subscribe((status, err) => {
             if (status === 'CHANNEL_ERROR') {
-              logAndToastError(`Subscription timed out for user ${userId}.`)
+              logAndToastError(`Subscription errored out for user ${userId}.`, err)
               error(`Subscription error for user ${userId}: ${err}`)
             } else if (status === 'TIMED_OUT') {
               logAndToastError(`Subscription timed out for user ${userId}.`)
