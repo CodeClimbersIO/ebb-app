@@ -133,8 +133,6 @@ jobs:
 
             ${{ steps.create_changelog.outputs.changelog }}
           args: ${{ matrix.args }}
-          releaseDraft: true
-          includeUpdaterJson: true
 
   upload-dmg:
     runs-on: ubuntu-latest
