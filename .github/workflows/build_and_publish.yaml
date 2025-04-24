@@ -1,7 +1,10 @@
 name: "build and publish"
 
 on:
+  workflow_dispatch:
   push:
+    branches:
+      - "test-deploy"
     tags:
       - "v*" # Trigger on any tag that starts with 'v'
 
@@ -15,6 +18,10 @@ jobs:
         include:
           - platform: "macos-latest"
             args: "--target aarch64-apple-darwin"
+            arch: "apple-silicon"
+          - platform: "macos-latest"
+            args: "--target x86_64-apple-darwin"
+            arch: "intel"
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -26,7 +33,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           prefix-key: "rust-cache"
-          shared-key: ${{ matrix.platform }}
+          shared-key: ${{ matrix.platform }}-${{ matrix.arch }}
           workspaces: "./src-tauri -> target"
 
       - name: setup node
@@ -126,6 +133,7 @@ jobs:
 
             ${{ steps.create_changelog.outputs.changelog }}
           args: ${{ matrix.args }}
+          releaseDraft: true
           includeUpdaterJson: true
 
       - name: Add platform-only DMG to release
@@ -134,6 +142,7 @@ jobs:
           .github/scripts/process_dmg_releases.js \
             "${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}" \
             "${{ github.repository }}" \
-            "${{ env.VERSION }}"
+            "${{ env.VERSION }}" \
+            "${{ matrix.arch }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
