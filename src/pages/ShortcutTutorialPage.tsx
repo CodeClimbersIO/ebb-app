@@ -3,9 +3,28 @@ import { useNavigate } from 'react-router-dom'
 import { OnboardingUtils } from '@/lib/utils/onboarding'
 import { ShortcutInput } from '@/components/ShortcutInput'
 import { logAndToastError } from '@/lib/utils/logAndToastError'
+import { useEffect } from 'react'
+import { loadShortcut, updateGlobalShortcut, DEFAULT_SHORTCUT } from '@/api/ebbApi/shortcutApi'
+import { useShortcutStore } from '@/lib/stores/shortcutStore'
 
 export const ShortcutTutorialPage = () => {
   const navigate = useNavigate()
+  const loadShortcutFromStore = useShortcutStore((state) => state.loadShortcutFromStorage)
+
+  useEffect(() => {
+    const initializeShortcut = async () => {
+      try {
+        const currentShortcut = await loadShortcut()
+        if (!currentShortcut) {
+          await updateGlobalShortcut(DEFAULT_SHORTCUT)
+        }
+        await loadShortcutFromStore()
+      } catch (error) {
+        logAndToastError(`Failed to initialize shortcut on tutorial page: ${error}`)
+      }
+    }
+    void initializeShortcut()
+  }, [loadShortcutFromStore])
 
   const handleComplete = async () => {
     try {

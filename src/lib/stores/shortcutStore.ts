@@ -8,11 +8,11 @@ interface ShortcutState {
 }
 
 export const useShortcutStore = create<ShortcutState>((set) => ({
-  shortcutParts: ['⌘', 'E'],
+  shortcutParts: [],
   setShortcutParts: (parts) => set({ shortcutParts: parts }),
   loadShortcutFromStorage: async () => {
     const shortcut = await loadShortcut()
-    const parts = shortcut.split('+')
+    const parts = shortcut ? shortcut.split('+') : []
     const displayParts = parts.map(part => {
       if (part === 'CommandOrControl') return '⌘'
       if (part === 'Control') return '⌃'

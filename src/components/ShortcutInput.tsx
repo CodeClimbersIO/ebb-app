@@ -5,7 +5,6 @@ import { Hotkey } from '@/components/ui/hotkey'
 import { X, Check } from 'lucide-react'
 import {
   updateGlobalShortcut,
-  loadShortcut as loadInitialShortcut,
 } from '../api/ebbApi/shortcutApi'
 import { useShortcutStore } from '@/lib/stores/shortcutStore'
 import { logAndToastError } from '@/lib/utils/logAndToastError'
@@ -38,23 +37,10 @@ export function ShortcutInput({ popoverAlign = 'center' }: ShortcutInputProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [activeModifiers, setActiveModifiers] = useState<ModifierKey[]>([])
   const [activeKey, setActiveKey] = useState<string | null>(null)
-  const [currentShortcut, setCurrentShortcut] = useState('')
   const [recordingOpacity, setRecordingOpacity] = useState(1)
   const [snapshot, setSnapshot] = useState<KeySnapshot | null>(null)
   const loadShortcutFromStore = useShortcutStore((state) => state.loadShortcutFromStorage)
-
-  useEffect(() => {
-    const loadAndSetShortcut = async () => {
-      try {
-        const initialShortcut = await loadInitialShortcut()
-        setCurrentShortcut(initialShortcut)
-        await loadShortcutFromStore()
-      } catch (error) {
-        logAndToastError(`Failed to load initial shortcut: ${error}`)
-      }
-    }
-    void loadAndSetShortcut()
-  }, [loadShortcutFromStore])
+  const shortcutParts = useShortcutStore((state) => state.shortcutParts)
 
   const handleOpenChange = (open: boolean) => {
     setIsOpen(open)
@@ -93,7 +79,7 @@ export function ShortcutInput({ popoverAlign = 'center' }: ShortcutInputProps) {
       } else if (keyCodeMap[e.key]) {
         unmodifiedKey = keyCodeMap[e.key]
       } else if (e.key === ' ') {
-         unmodifiedKey = 'SPACE'
+        unmodifiedKey = 'SPACE'
       }
 
       if (keyCodeMap[unmodifiedKey]) {
@@ -115,7 +101,6 @@ export function ShortcutInput({ popoverAlign = 'center' }: ShortcutInputProps) {
             setRecordingOpacity(0)
             setSnapshot({ modifiers: currentModifiers, key: unmodifiedKey, isClosing: true })
             await updateGlobalShortcut(newShortcut)
-            setCurrentShortcut(newShortcut)
             await loadShortcutFromStore()
             
             setTimeout(() => {
@@ -164,7 +149,6 @@ export function ShortcutInput({ popoverAlign = 'center' }: ShortcutInputProps) {
     e.stopPropagation()
     try {
       await updateGlobalShortcut('')
-      setCurrentShortcut('')
       await loadShortcutFromStore()
     } catch (error) {
       logAndToastError(`Failed to clear shortcut: ${error}`)
@@ -172,20 +156,12 @@ export function ShortcutInput({ popoverAlign = 'center' }: ShortcutInputProps) {
   }
 
   const renderHotkeyPart = (part: string) => {
-    const content = part === 'CommandOrControl' ? '⌘' : 
-                   part === 'Control' ? '⌃' :
-                   part === 'Option' ? '⌥' :
-                   part === 'Shift' ? '⇧' :
-                   part === 'ENTER' ? '↵' :
-                   part === 'SPACE' ? '⎵' : part
-    return <Hotkey size="lg">{content}</Hotkey>
+    return <Hotkey size="lg">{part}</Hotkey>
   }
 
   const displayModifiers = snapshot?.isClosing ? snapshot.modifiers : activeModifiers
   const displayKey = snapshot?.isClosing ? snapshot.key : activeKey
-  const formattedDisplayKey = displayKey === 'SPACE' ? '⎵' : 
-                             displayKey === 'ENTER' ? '↵' : 
-                             displayKey
+  const formattedDisplayKey = displayKey === 'SPACE' ? '⎵' : displayKey === 'ENTER' ? '↵' : displayKey
 
   return (
     <Popover open={isOpen} onOpenChange={handleOpenChange}>
@@ -194,9 +170,9 @@ export function ShortcutInput({ popoverAlign = 'center' }: ShortcutInputProps) {
           variant='outline' 
           className='min-w-[140px] h-12 text-lg font-mono flex items-center gap-2 group relative'
         >
-          {currentShortcut ? (
+          {shortcutParts.length > 0 ? (
             <>
-              {currentShortcut.split('+').map((part, index) => (
+              {shortcutParts.map((part, index) => (
                 <span key={index}>{renderHotkeyPart(part)}</span>
               ))}
               <div 
