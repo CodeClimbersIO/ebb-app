@@ -11,18 +11,15 @@ import { WorkflowApi, type Workflow } from '@/api/ebbApi/workflowApi'
 import { invoke } from '@tauri-apps/api/core'
 import { DateTime, Duration } from 'luxon'
 import { startFlowTimer } from '../lib/tray'
-import { getDurationFromDefault, useFlowTimer } from '../lib/stores/flowTimer'
+import { useFlowTimer, getDurationFromDefault } from '../lib/stores/flowTimer'
 import { MusicSelector } from '@/components/MusicSelector'
 import { AppSelector, type SearchOption } from '@/components/AppSelector'
-import { Tag } from '../db/monitor/tagRepo'
 import { AlertCircle } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { SpotifyApiService } from '@/lib/integrations/spotify/spotifyApi'
 import { TypewriterModeToggle } from '@/components/TypewriterModeToggle'
 import { logAndToastError } from '@/lib/utils/logAndToastError'
-import { TagRepo, type TagWithAppCount } from '@/db/monitor/tagRepo'
-import type { AppCategory } from '@/lib/app-directory/apps-types'
-import { prepareBlockingConfig } from '@/lib/utils/blocking.util'
+import { BlockingPreferenceApi } from '@/api/ebbApi/blockingPreferenceApi'
 
 export const StartFlowPage = () => {
   const { duration, setDuration } = useFlowTimer()
@@ -54,25 +51,8 @@ export const StartFlowPage = () => {
           setDuration(Duration.fromObject({ minutes: 30 }))
 
           try {
-            const defaultCategoryNames = ['social media', 'entertainment']
-            const allCategoryTags = await TagRepo.getTagsByType('category')
-            const defaultTags = allCategoryTags.filter((tag: Tag) => 
-              defaultCategoryNames.includes(tag.name)
-            )
-            const defaultTagIds = defaultTags.map((tag: Tag) => tag.id).filter((id): id is string => !!id)
-            
-            let defaultSearchOptions: SearchOption[] = []
-            if (defaultTagIds.length > 0) {
-              const categoriesWithCounts = await TagRepo.getCategoriesWithAppCounts(defaultTagIds)
-              defaultSearchOptions = categoriesWithCounts.map((catInfo: TagWithAppCount): SearchOption => ({
-                type: 'category',
-                tag: catInfo, 
-                category: catInfo.name as AppCategory,
-                count: catInfo.count
-              }))
-            }
-
-            setSelectedApps(defaultSearchOptions)
+            const defaultSearchOptions = await BlockingPreferenceApi.getDefaultSearchOptions()
+            setSelectedApps(defaultSearchOptions) 
           } catch (tagError) {
             logAndToastError(`Failed to load default categories: ${tagError}`)
             setSelectedApps([]) 
@@ -235,7 +215,8 @@ export const StartFlowPage = () => {
         await WorkflowApi.updateLastSelected(workflowId)
       }
 
-      const { blockingApps, isBlockList } = await prepareBlockingConfig(selectedApps, isAllowList)
+      const blockingApps = workflowId ? await BlockingPreferenceApi.getWorkflowBlockedApps(workflowId) : []
+      const isBlockList = !isAllowList
 
       const sessionId = await FlowSessionApi.startFlowSession(
         workflowName,
