@@ -1,8 +1,9 @@
 import { SearchOption } from '@/components/AppSelector'
 import { BlockingPreferenceRepo, BlockingPreferenceDb } from '@/db/ebb/blockingPreferenceRepo'
-import { App, AppRepo } from '@/db/monitor/appRepo'
+import { AppRepo, App } from '@/db/monitor/appRepo'
 import { TagRepo } from '@/db/monitor/tagRepo'
 import { AppCategory } from '../../lib/app-directory/apps-types'
+import type { Tag, TagWithAppCount } from '@/db/monitor/tagRepo'
 
 const saveWorkflowBlockingPreferences = async (
   workflowId: string,
@@ -33,22 +34,6 @@ const saveWorkflowBlockingPreferences = async (
 const getWorkflowBlockingPreferencesAsSearchOptions = async (workflowId: string): Promise<SearchOption[]> => {
   const { preferences } = await BlockingPreferenceRepo.getWorkflowBlockingPreferences(workflowId)
   return await convertToSearchOptions(preferences)
-}
-
-const getWorkflowBlockedApps = async (workflowId: string): Promise<App[]> => {
-  const { preferences } = await BlockingPreferenceRepo.getWorkflowBlockingPreferences(workflowId)
-  // get all app ids from preferences
-  const prefAppIds = preferences
-    .filter(pref => pref.app_id)
-    .map(pref => pref.app_id as string)
-  const prefTagIds = preferences
-    .filter(pref => pref.tag_id)
-    .map(pref => pref.tag_id as string)
-
-  // get all apps that belong to the tags of type category
-  const categoryApps = await AppRepo.getAppsByCategoryTags(prefTagIds)
-  const apps = await AppRepo.getAppsByIds([...prefAppIds])
-  return [...apps, ...categoryApps]
 }
 
 const convertToSearchOptions = async (
@@ -93,9 +78,71 @@ const convertToSearchOptions = async (
   return searchOptions
 }
 
+interface BlockingAppConfig {
+  external_id: string | null
+  is_browser: boolean
+}
+
+const getWorkflowBlockedApps = async (workflowId: string): Promise<BlockingAppConfig[]> => {
+  const selectedApps = await getWorkflowBlockingPreferencesAsSearchOptions(workflowId)
+
+  const directAppSelections: App[] = selectedApps
+    .filter((option): option is Extract<SearchOption, { type: 'app' }> => option.type === 'app' && !!option.app)
+    .map(option => option.app)
+
+  const categorySelections: Tag[] = selectedApps
+    .filter((option): option is Extract<SearchOption, { type: 'category' }> => option.type === 'category' && !!option.tag)
+    .map(option => option.tag)
+
+  const categoryTagIds = categorySelections.map(tag => tag.id).filter(id => !!id) as string[]
+
+  const appsFromCategories = categoryTagIds.length > 0
+    ? await AppRepo.getAppsByCategoryTags(categoryTagIds)
+    : []
+
+  const allAppsToConsider = [...directAppSelections, ...appsFromCategories]
+
+  const uniqueAppsMap = new Map<string, App>()
+  allAppsToConsider.forEach(app => {
+    if (app && app.id) {
+      uniqueAppsMap.set(app.id, app)
+    }
+  })
+  const uniqueApps = Array.from(uniqueAppsMap.values())
+
+  const blockingAppConfig = uniqueApps.map((app: App) => ({
+    external_id: app.app_external_id,
+    is_browser: app.is_browser === 1
+  }))
+
+  return blockingAppConfig
+}
+
+const getDefaultSearchOptions = async (): Promise<SearchOption[]> => {
+  const defaultCategoryNames = ['social media', 'entertainment']
+  const allCategoryTags = await TagRepo.getTagsByType('category')
+  const defaultTags = allCategoryTags.filter((tag: Tag) => 
+    defaultCategoryNames.includes(tag.name)
+  )
+  const defaultTagIds = defaultTags.map((tag: Tag) => tag.id).filter((id): id is string => !!id)
+  
+  let defaultSearchOptions: SearchOption[] = []
+  if (defaultTagIds.length > 0) {
+    const categoriesWithCounts = await TagRepo.getCategoriesWithAppCounts(defaultTagIds)
+    defaultSearchOptions = categoriesWithCounts.map((catInfo: TagWithAppCount): SearchOption => ({
+      type: 'category',
+      tag: catInfo, 
+      category: catInfo.name as AppCategory,
+      count: catInfo.count
+    }))
+  }
+  return defaultSearchOptions
+}
+
 export const BlockingPreferenceApi = {
   getWorkflowBlockingPreferencesAsSearchOptions,
   saveWorkflowBlockingPreferences,
-  getWorkflowBlockedApps
+  getWorkflowBlockedApps,
+  getDefaultSearchOptions,
 }
 

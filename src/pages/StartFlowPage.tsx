@@ -11,16 +11,15 @@ import { WorkflowApi, type Workflow } from '@/api/ebbApi/workflowApi'
 import { invoke } from '@tauri-apps/api/core'
 import { DateTime, Duration } from 'luxon'
 import { startFlowTimer } from '../lib/tray'
-import { getDurationFromDefault, useFlowTimer } from '../lib/stores/flowTimer'
+import { useFlowTimer, getDurationFromDefault } from '../lib/stores/flowTimer'
 import { MusicSelector } from '@/components/MusicSelector'
 import { AppSelector, type SearchOption } from '@/components/AppSelector'
-import { BlockingPreferenceApi } from '../api/ebbApi/blockingPreferenceApi'
-import { App } from '../db/monitor/appRepo'
 import { AlertCircle } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { SpotifyApiService } from '@/lib/integrations/spotify/spotifyApi'
 import { TypewriterModeToggle } from '@/components/TypewriterModeToggle'
 import { logAndToastError } from '@/lib/utils/logAndToastError'
+import { BlockingPreferenceApi } from '@/api/ebbApi/blockingPreferenceApi'
 
 export const StartFlowPage = () => {
   const { duration, setDuration } = useFlowTimer()
@@ -47,7 +46,19 @@ export const StartFlowPage = () => {
         const loadedWorkflows = await WorkflowApi.getWorkflows()
         setWorkflows(loadedWorkflows)
         
-        if (loadedWorkflows.length > 0) {
+        if (loadedWorkflows.length === 0) {
+          // First session defaults
+          setDuration(Duration.fromObject({ minutes: 30 }))
+
+          try {
+            const defaultSearchOptions = await BlockingPreferenceApi.getDefaultSearchOptions()
+            setSelectedApps(defaultSearchOptions) 
+          } catch (tagError) {
+            logAndToastError(`Failed to load default categories: ${tagError}`)
+            setSelectedApps([]) 
+          }
+
+        } else {
           const mostRecentWorkflow = loadedWorkflows.reduce((prev, current) => {
             return (prev.lastSelected || 0) > (current.lastSelected || 0) ? prev : current
           }, loadedWorkflows[0])
@@ -166,16 +177,17 @@ export const StartFlowPage = () => {
 
   const handleBegin = async () => {
     try {
-      const workflowId = selectedWorkflowId
-      const workflowName = selectedWorkflow?.name || 'Focus Session'
+      let workflowId = selectedWorkflowId
+      let currentWorkflow = selectedWorkflow
+      const workflowName = currentWorkflow?.name || 'Focus Session'
 
-      // If this is the first session (no workflows), create one from current settings
+      // If first session (no workflows), create one from current settings
       if (workflows.length === 0) {
         const newWorkflow: Workflow = {
           name: 'New Profile',
           selectedApps,
           selectedPlaylist,
-          selectedPlaylistName: null,
+          selectedPlaylistName: currentWorkflow?.selectedPlaylistName,
           lastSelected: Date.now(),
           settings: {
             defaultDuration: duration?.as('minutes') ?? null,
@@ -190,26 +202,21 @@ export const StartFlowPage = () => {
         try {
           const savedWorkflow = await WorkflowApi.saveWorkflow(newWorkflow)
           setWorkflows([savedWorkflow])
-          setSelectedWorkflowId(savedWorkflow.id || null)
-          setSelectedWorkflow(savedWorkflow)
+          workflowId = savedWorkflow.id || null
+          currentWorkflow = savedWorkflow
+          setSelectedWorkflowId(workflowId)
+          setSelectedWorkflow(currentWorkflow)
         } catch (error) {
           logAndToastError(`Failed to save first workflow: ${error}`)
+          return
         }
-      }
+      } else if (workflowId) {
 
-      const blockedApps = workflowId ? 
-        await BlockingPreferenceApi.getWorkflowBlockedApps(workflowId) :
-        []
-      
-      const blockingApps = blockedApps.map((app: App) => ({
-        external_id: app.app_external_id,
-        is_browser: app.is_browser === 1
-      }))
-      const isBlockList = !isAllowList
-
-      if (workflowId) {
         await WorkflowApi.updateLastSelected(workflowId)
       }
+
+      const blockingApps = workflowId ? await BlockingPreferenceApi.getWorkflowBlockedApps(workflowId) : []
+      const isBlockList = !isAllowList
 
       const sessionId = await FlowSessionApi.startFlowSession(
         workflowName,
@@ -231,11 +238,11 @@ export const StartFlowPage = () => {
         objective: workflowName,
         sessionId,
         duration: duration ? duration.as('minutes') : undefined,
-        workflowId,
+        workflowId, 
         hasBreathing,
         hasMusic,
         selectedPlaylist,
-        selectedPlaylistName: selectedWorkflow?.selectedPlaylistName,
+        selectedPlaylistName: currentWorkflow?.selectedPlaylistName, 
         difficulty
       }
 

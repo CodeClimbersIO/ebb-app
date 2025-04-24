@@ -59,7 +59,9 @@ export const updateGlobalShortcut = async (newShortcut: string): Promise<void> =
           }
         })
       } catch (registrationError) {
-        logAndToastError(`Explicit error during shortcut update registration: ${registrationError}`)
+        if (newShortcut !== DEFAULT_SHORTCUT) {
+          logAndToastError(`Explicit error during shortcut update registration: ${registrationError}`)
+        }
       }
     }
     
