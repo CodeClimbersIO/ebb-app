@@ -1,6 +1,6 @@
 import { SearchOption } from '@/components/AppSelector'
 import { BlockingPreferenceRepo, BlockingPreferenceDb } from '@/db/ebb/blockingPreferenceRepo'
-import { App, AppRepo } from '@/db/monitor/appRepo'
+import { AppRepo } from '@/db/monitor/appRepo'
 import { TagRepo } from '@/db/monitor/tagRepo'
 import { AppCategory } from '../../lib/app-directory/apps-types'
 
@@ -33,22 +33,6 @@ const saveWorkflowBlockingPreferences = async (
 const getWorkflowBlockingPreferencesAsSearchOptions = async (workflowId: string): Promise<SearchOption[]> => {
   const { preferences } = await BlockingPreferenceRepo.getWorkflowBlockingPreferences(workflowId)
   return await convertToSearchOptions(preferences)
-}
-
-const getWorkflowBlockedApps = async (workflowId: string): Promise<App[]> => {
-  const { preferences } = await BlockingPreferenceRepo.getWorkflowBlockingPreferences(workflowId)
-  // get all app ids from preferences
-  const prefAppIds = preferences
-    .filter(pref => pref.app_id)
-    .map(pref => pref.app_id as string)
-  const prefTagIds = preferences
-    .filter(pref => pref.tag_id)
-    .map(pref => pref.tag_id as string)
-
-  // get all apps that belong to the tags of type category
-  const categoryApps = await AppRepo.getAppsByCategoryTags(prefTagIds)
-  const apps = await AppRepo.getAppsByIds([...prefAppIds])
-  return [...apps, ...categoryApps]
 }
 
 const convertToSearchOptions = async (
@@ -96,6 +80,5 @@ const convertToSearchOptions = async (
 export const BlockingPreferenceApi = {
   getWorkflowBlockingPreferencesAsSearchOptions,
   saveWorkflowBlockingPreferences,
-  getWorkflowBlockedApps
 }
 

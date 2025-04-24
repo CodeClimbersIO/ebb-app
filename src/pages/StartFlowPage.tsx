@@ -14,8 +14,8 @@ import { startFlowTimer } from '../lib/tray'
 import { getDurationFromDefault, useFlowTimer } from '../lib/stores/flowTimer'
 import { MusicSelector } from '@/components/MusicSelector'
 import { AppSelector, type SearchOption } from '@/components/AppSelector'
-import { BlockingPreferenceApi } from '../api/ebbApi/blockingPreferenceApi'
-import { App } from '../db/monitor/appRepo'
+import { App, AppRepo } from '../db/monitor/appRepo'
+import { Tag } from '../db/monitor/tagRepo'
 import { AlertCircle } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { SpotifyApiService } from '@/lib/integrations/spotify/spotifyApi'
@@ -166,20 +166,21 @@ export const StartFlowPage = () => {
 
   const handleBegin = async () => {
     try {
-      const workflowId = selectedWorkflowId
-      const workflowName = selectedWorkflow?.name || 'Focus Session'
+      let workflowId = selectedWorkflowId // Use let as it might be updated
+      let currentWorkflow = selectedWorkflow // Use let as it might be updated
+      const workflowName = currentWorkflow?.name || 'Focus Session'
 
       // If this is the first session (no workflows), create one from current settings
       if (workflows.length === 0) {
         const newWorkflow: Workflow = {
           name: 'New Profile',
-          selectedApps,
+          selectedApps, // Use current state
           selectedPlaylist,
-          selectedPlaylistName: null,
+          selectedPlaylistName: currentWorkflow?.selectedPlaylistName, // Get name if possible
           lastSelected: Date.now(),
           settings: {
             defaultDuration: duration?.as('minutes') ?? null,
-            isAllowList,
+            isAllowList, // Use current state
             hasBreathing,
             typewriterMode,
             hasMusic,
@@ -190,26 +191,56 @@ export const StartFlowPage = () => {
         try {
           const savedWorkflow = await WorkflowApi.saveWorkflow(newWorkflow)
           setWorkflows([savedWorkflow])
-          setSelectedWorkflowId(savedWorkflow.id || null)
-          setSelectedWorkflow(savedWorkflow)
+          workflowId = savedWorkflow.id || null // Update workflowId for sessionState
+          currentWorkflow = savedWorkflow // Update currentWorkflow for sessionState
+          setSelectedWorkflowId(workflowId)
+          setSelectedWorkflow(currentWorkflow)
         } catch (error) {
           logAndToastError(`Failed to save first workflow: ${error}`)
+          return // Exit if saving fails
         }
+      } else if (workflowId) {
+        // If it's an existing workflow, update its lastSelected timestamp
+        await WorkflowApi.updateLastSelected(workflowId)
       }
 
-      const blockedApps = workflowId ? 
-        await BlockingPreferenceApi.getWorkflowBlockedApps(workflowId) :
-        []
-      
-      const blockingApps = blockedApps.map((app: App) => ({
+      // --- Corrected Blocking Logic --- 
+      // Resolve apps from both direct selections and categories based on current state
+      const directAppSelections: App[] = selectedApps
+        .filter((option): option is Extract<SearchOption, { type: 'app' }> => option.type === 'app' && !!option.app)
+        .map(option => option.app)
+
+      const categorySelections: Tag[] = selectedApps
+        .filter((option): option is Extract<SearchOption, { type: 'category' }> => option.type === 'category' && !!option.tag)
+        .map(option => option.tag)
+
+      const categoryTagIds = categorySelections.map(tag => tag.id).filter(id => id) as string[] // Ensure IDs exist
+
+      // Fetch apps belonging to the selected categories
+      const appsFromCategories = categoryTagIds.length > 0 
+        ? await AppRepo.getAppsByCategoryTags(categoryTagIds) 
+        : []
+
+      // Combine direct selections and category-derived apps
+      const allAppsToConsider = [...directAppSelections, ...appsFromCategories]
+
+      // Remove duplicates using a Map based on app ID
+      const uniqueAppsMap = new Map<string, App>()
+      allAppsToConsider.forEach(app => {
+        if (app && app.id) { // Check if app and app.id are defined
+          uniqueAppsMap.set(app.id, app)
+        }
+      })
+      const uniqueAppsToBlock = Array.from(uniqueAppsMap.values())
+
+      // Map to the format required by invoke
+      const blockingApps = uniqueAppsToBlock.map((app: App) => ({
         external_id: app.app_external_id,
         is_browser: app.is_browser === 1
       }))
-      const isBlockList = !isAllowList
 
-      if (workflowId) {
-        await WorkflowApi.updateLastSelected(workflowId)
-      }
+      const isBlockList = !isAllowList // Use current state value
+      // --- End Corrected Blocking Logic ---
 
       const sessionId = await FlowSessionApi.startFlowSession(
         workflowName,
@@ -226,19 +257,21 @@ export const StartFlowPage = () => {
 
       await startFlowTimer(DateTime.now())
 
+      // Use potentially updated workflowId and currentWorkflow details
       const sessionState = {
         startTime: Date.now(),
         objective: workflowName,
         sessionId,
         duration: duration ? duration.as('minutes') : undefined,
-        workflowId,
+        workflowId, 
         hasBreathing,
         hasMusic,
         selectedPlaylist,
-        selectedPlaylistName: selectedWorkflow?.selectedPlaylistName,
+        selectedPlaylistName: currentWorkflow?.selectedPlaylistName, 
         difficulty
       }
 
+      // Invoke blocking with apps derived from state (including categories)
       await invoke('start_blocking', { blockingApps, isBlockList, typewriterMode })
 
       if (!hasBreathing) {
