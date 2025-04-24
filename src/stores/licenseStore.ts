@@ -79,7 +79,6 @@ export const useLicenseStore = create<LicenseStoreState>()(
               logAndToastError(`Subscription errored out for user ${userId}.`, err)
               error(`Subscription error for user ${userId}: ${err}`)
             } else if (status === 'TIMED_OUT') {
-              logAndToastError(`Subscription timed out for user ${userId}.`)
               get().clearSubscription()
             }
           })
