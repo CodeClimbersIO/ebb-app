@@ -149,6 +149,12 @@ jobs:
         with:
           node-version: lts/*
 
+      - name: Get Version
+        id: get_version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
       - name: Add DMG to release
         run: |
           chmod +x .github/scripts/process_dmg_releases.js
