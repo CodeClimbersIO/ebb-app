@@ -1,9 +1,8 @@
 import { SearchOption } from '@/components/AppSelector'
 import { BlockingPreferenceRepo, BlockingPreferenceDb } from '@/db/ebb/blockingPreferenceRepo'
-import { AppRepo } from '@/db/monitor/appRepo'
+import { AppRepo, App } from '@/db/monitor/appRepo'
 import { TagRepo } from '@/db/monitor/tagRepo'
 import { AppCategory } from '../../lib/app-directory/apps-types'
-import type { App } from '@/db/monitor/appRepo'
 import type { Tag, TagWithAppCount } from '@/db/monitor/tagRepo'
 
 const saveWorkflowBlockingPreferences = async (
