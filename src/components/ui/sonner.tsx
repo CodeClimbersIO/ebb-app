@@ -49,6 +49,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
 
 const toastError = (errorMessage: string) => {
   toast(<ErrorToastContent errorMessage={errorMessage} />, {
+    duration: 8000,
   })
 }
 
