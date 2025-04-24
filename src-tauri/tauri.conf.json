@@ -69,7 +69,10 @@
       "icons/icon.ico"
     ],
     "macOS": {
-      "frameworks": ["./target/libMacMonitor.dylib"]
+      "frameworks": ["./target/libMacMonitor.dylib"],
+      "dmg": {
+        "background": "./images/dmg-background.png"
+      }
     },
     "createUpdaterArtifacts": true,
     "publisher": "Ebb"
