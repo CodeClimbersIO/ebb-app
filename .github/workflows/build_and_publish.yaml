@@ -136,13 +136,20 @@ jobs:
           releaseDraft: true
           includeUpdaterJson: true
 
-      - name: Add platform-only DMG to release
+  upload-dmg:
+    runs-on: ubuntu-latest
+    steps:
+      - name: setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Add DMG to release
         run: |
           chmod +x .github/scripts/process_dmg_releases.js
           .github/scripts/process_dmg_releases.js \
             "${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}" \
             "${{ github.repository }}" \
             "${{ env.VERSION }}" \
-            "${{ matrix.arch }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
