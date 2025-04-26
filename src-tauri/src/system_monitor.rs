@@ -3,8 +3,8 @@ use std::sync::{Arc, Mutex};
 
 use os_monitor::{
     create_typewriter_window, detect_changes, has_accessibility_permissions,
-    remove_typewriter_window, run_loop_cycle, sync_typewriter_window_order, BlockedAppEvent,
-    Monitor, WindowEvent,
+    remove_typewriter_window, run_loop_cycle, sync_typewriter_window_order, AppEvent,
+    BlockedAppEvent, Monitor, WindowEvent,
 };
 use os_monitor_service::initialize_monitoring_service;
 
@@ -91,17 +91,32 @@ pub fn start_monitoring(app_handle: AppHandle) {
     async_runtime::spawn(async move {
         log::info!("Initializing monitor in async runtime...");
         let db_path = get_default_db_path();
-        let monitor = Arc::new(Monitor::new());
+
+        let monitor = Monitor::new();
+        let mut app_receiver = monitor.subscribe();
         let register_blocked_handle_clone = app_handle.clone();
         let register_window_handle_clone = app_handle.clone();
-        monitor.register_app_blocked_callback(Box::new(move |event| {
-            on_app_blocked(register_blocked_handle_clone.clone(), event);
-        }));
-        monitor.register_window_callback(Box::new(move |event| {
-            on_window_event(register_window_handle_clone.clone(), event);
-        }));
-        initialize_monitoring_service(monitor.clone(), db_path).await;
+
+        // Initialize monitoring service first
+        initialize_monitoring_service(Arc::new(monitor), db_path).await;
         log::info!("Monitor initialized");
+
+        std::thread::spawn(move || {
+            println!("Event listener thread started");
+            while let Ok(event) = app_receiver.blocking_recv() {
+                match event {
+                    AppEvent::Window(event) => {
+                        on_window_event(register_window_handle_clone.clone(), event);
+                    }
+                    AppEvent::AppBlocked(event) => {
+                        on_app_blocked(register_blocked_handle_clone.clone(), event);
+                    }
+                    AppEvent::Mouse(_) => {}
+                    AppEvent::Keyboard(_) => {}
+                }
+            }
+            log::warn!("Event receiver channel closed");
+        });
 
         loop {
             log::trace!("Monitor loop iteration starting");

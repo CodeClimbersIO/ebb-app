@@ -3,10 +3,12 @@ import { Button } from '@/components/ui/button'
 import { invoke } from '@tauri-apps/api/core'
 import { StorageUtils } from '@/lib/utils/storage'
 import { logAndToastError } from '@/lib/utils/logAndToastError'
+import { useAuth } from '../../hooks/useAuth'
 
 export const ResetAppData = () => {
   const [isResetting, setIsResetting] = useState(false)
   const [isRestoring, setIsRestoring] = useState(false)
+  const { logout } = useAuth()
 
   const handleResetAppData = async () => {
     try {
@@ -15,6 +17,7 @@ export const ResetAppData = () => {
       StorageUtils.clearAllAppData()
 
       await invoke('reset_app_data_for_testing', { backup: true })
+      await logout()
       setTimeout(() => {
         window.location.reload()
       }, 2000)

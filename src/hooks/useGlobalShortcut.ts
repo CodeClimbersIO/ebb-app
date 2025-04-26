@@ -9,6 +9,7 @@ import {
   SHORTCUT_EVENT,
 } from '@/api/ebbApi/shortcutApi'
 import { logAndToastError } from '@/lib/utils/logAndToastError'
+import { error as logError } from '@tauri-apps/plugin-log'
 
 export function useGlobalShortcut() {
   const navigate = useNavigate()
@@ -65,6 +66,12 @@ export function useGlobalShortcut() {
           })
         }
       } catch (error) {
+        // if database is locked, don't log and taost
+        if (error instanceof Error && error.message.includes('database is locked')) {
+          logError(`(Shortcut) Database is locked: ${error}`)
+          return
+        }
+
         logAndToastError(`(Shortcut) Setup failed: ${error}`)
       }
     }
