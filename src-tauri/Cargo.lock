@@ -3133,9 +3133,9 @@ dependencies = [
 
 [[package]]
 name = "os-monitor"
-version = "0.4.7"
+version = "0.4.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "97683a3819098ac2fa941221dd591fe73c46e426d9f6f805250f0da304e0e6f6"
+checksum = "878ae15aba733d2b82da8bae2e4330bb5bdabdfda1d23ed8b13af5a92d577b16"
 dependencies = [
  "cc",
  "ctrlc",
@@ -3144,13 +3144,14 @@ dependencies = [
  "once_cell",
  "serde",
  "thiserror 2.0.12",
+ "tokio",
 ]
 
 [[package]]
 name = "os-monitor-service"
-version = "0.4.7"
+version = "0.4.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "30e6c46c3d0da339e632981dd3161d950a9531bff72bfdfe81bb9c7bbd6ad528"
+checksum = "2c5379ee4574487901ddc17d23fd92e9b1004bc6f85eefa4651f6841ad270970"
 dependencies = [
  "dirs 6.0.0",
  "dotenv",
