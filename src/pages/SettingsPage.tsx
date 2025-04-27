@@ -19,7 +19,6 @@ import { useNavigate } from 'react-router-dom'
 import { SpotifyApiService } from '@/lib/integrations/spotify/spotifyApi'
 import { SpotifyAuthService } from '@/lib/integrations/spotify/spotifyAuth'
 import supabase from '@/lib/integrations/supabase'
-import { ResetAppData } from '@/components/developer/ResetAppData'
 import { version } from '../../package.json'
 import { useAuth } from '@/hooks/useAuth'
 import { invoke } from '@tauri-apps/api/core'
@@ -30,8 +29,8 @@ import { logAndToastError } from '@/lib/utils/logAndToastError'
 import { ActiveDevicesSettings } from '@/components/ActiveDevicesSettings'
 import { UserProfileSettings } from '@/components/UserProfileSettings'
 import { userApi } from '@/api/ebbApi/userApi'
-import { isDev } from '@/lib/utils/environment'
 import { usePermissions } from '@/hooks/usePermissions'
+import { DeveloperSettings } from '../components/developer/DeveloperSettings'
 
 export function SettingsPage() {
   const [showUnlinkDialog, setShowUnlinkDialog] = useState(false)
@@ -344,14 +343,7 @@ export function SettingsPage() {
                 </div>
               </div>
             </div>
-
-            {isDev() && (
-              <div className="mt-12 border-t pt-6">
-                <h2 className="text-xl font-semibold mb-4">Developer Options</h2>
-                <ResetAppData />
-              </div>
-            )}
-
+            <DeveloperSettings />
             <div className="mt-12 flex justify-between text-sm text-muted-foreground/50">
               <div>Ebb Version {version}</div>
               <div className="flex items-center gap-2">

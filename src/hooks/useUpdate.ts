@@ -3,12 +3,30 @@ import { relaunch } from '@tauri-apps/plugin-process'
 import { info } from '@tauri-apps/plugin-log'
 import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
 import { isDev } from '../lib/utils/environment'
+import { logAndToastError } from '../lib/utils/logAndToastError'
 
+let consecutiveErrorCount = 0
+
+const checkForUpdate = async () => {
+  try {
+    const update = await check()
+    consecutiveErrorCount = 0
+
+    return update
+  } catch (error) {
+    consecutiveErrorCount++
+    // Only log error after 5 consecutive failures
+    if (consecutiveErrorCount >= 5) {
+      logAndToastError('Failed to check for updates', error)
+      throw error
+    }
+    return null
+  }
+}
 export const checkAndUpdate = async () => {
   const flowSession = await FlowSessionApi.getInProgressFlowSession()
   if (flowSession) return // don't update if flow is in progress
-  
-  const update = await check()
+  const update = await checkForUpdate()
   if (update) {
     info(
       `found update ${update.version} from ${update.date} with notes ${update.body}`
