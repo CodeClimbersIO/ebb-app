@@ -1,5 +1,6 @@
 import { SpotifyAuthService } from './spotifyAuth'
 import { logAndToastError } from '@/lib/utils/logAndToastError'
+import { invoke } from '@tauri-apps/api/core'
 
 interface SpotifyUserProfile {
   email: string
@@ -19,32 +20,48 @@ interface SpotifyPlaylist {
 }
 
 interface SpotifyDevice {
-  id: string;
+  id: string | null;
   is_active: boolean;
   is_private_session: boolean;
   is_restricted: boolean;
   name: string;
   type: string;
-  volume_percent: number;
+}
+
+interface SpotifyPlaybackState {
+  device: SpotifyDevice
+  is_playing: boolean
 }
 
 const SPOTIFY_API_BASE = 'https://api.spotify.com/v1'
 
-export type PlaybackState = Spotify.PlaybackState;
-
 export class SpotifyApiService {
 
-  private static spotifyApiRequest = async (path: string, options: RequestInit = {})=>{
+  private static spotifyApiRequest = async (path: string, options: RequestInit = {}, ignoreNotFound: boolean = false) => {
     const accessToken = await SpotifyAuthService.getAccessToken()
+    if (!accessToken) {
+      throw new Error('Spotify access token not available')
+    }
     try {
       const response = await fetch(`${SPOTIFY_API_BASE}/${path}`, {
         headers: {
-          'Authorization': `Bearer ${accessToken}`
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
         },
         ...options
       })
+
+      if (response.status === 204) {
+        return null // Indicate success with no content
+      }
+
+      if (response.status === 404 && ignoreNotFound) {
+        return null // Indicate no active player found
+      }
+
       if (!response.ok) {
-        throw new Error(`Failed to fetch ${path}`)
+        const errorBody = await response.text()
+        throw new Error(`Failed to fetch ${path}. Status: ${response.status}. Body: ${errorBody}`)
       }
       const contentType = response.headers.get('Content-Type') || ''
       if (contentType.includes('application/json')) {
@@ -53,8 +70,27 @@ export class SpotifyApiService {
         return await response.text()
       }
     } catch (error) {
-      logAndToastError(`Error fetching ${path}: ${error}`)
+      console.error(`Error during Spotify API request to ${path}:`, error)
       throw error
+    }
+  }
+
+  private static async getPlaybackDeviceId(): Promise<string | null> {
+    try {
+      const devices = await this.getAvailableDevices()
+      if (!devices || devices.length === 0) return null
+
+      const activeDevice = devices.find(d => d.is_active)
+      if (activeDevice?.id) return activeDevice.id
+
+      const computerDevice = devices.find(d => d.type.toLowerCase() === 'computer' && !d.is_restricted)
+      if (computerDevice?.id) return computerDevice.id
+
+      // Fallback to the first available device if no active or computer found
+      return devices[0]?.id || null
+    } catch (error) {
+      logAndToastError(`Error getting playback device ID: ${error}`)
+      return null
     }
   }
 
@@ -81,8 +117,12 @@ export class SpotifyApiService {
 
   static async getUserPlaylists(): Promise<{ id: string, name: string }[]> {
     try {
+      const isConnected = await SpotifyAuthService.isConnected()
+      if (!isConnected) {
+        return []
+      }
       const data = await this.spotifyApiRequest('me/playlists?limit=50')
-      
+
       return data.items.map((playlist: SpotifyPlaylist) => ({
         id: playlist.id,
         name: playlist.name
@@ -93,97 +133,117 @@ export class SpotifyApiService {
     }
   }
 
-  static async initializePlayer(): Promise<void> {
-    const script = document.createElement('script')
-    script.src = 'https://sdk.scdn.co/spotify-player.js'
-    script.async = true
-    document.body.appendChild(script)
-
-    return new Promise((resolve) => {
-      window.onSpotifyWebPlaybackSDKReady = () => {
-        resolve()
-      }
-    })
+  static async getPlaybackState(): Promise<SpotifyPlaybackState | null> {
+    try {
+      const state = await this.spotifyApiRequest('me/player', { method: 'GET' }, true)
+      return state
+    } catch (error) {
+      console.error(`Error fetching playback state: ${error}`)
+      return null
+    }
   }
 
-  static async createPlayer(): Promise<Spotify.Player> {
-    const accessToken = await SpotifyAuthService.getAccessToken()
-    if (!accessToken) throw new Error('Not connected to Spotify')
-    
-    const player = new window.Spotify.Player({
-      name: 'Ebb Player',
-      getOAuthToken: async (cb) => {
-        try {
-          const token = await SpotifyAuthService.getAccessToken()
-          cb(token)
-        } catch (error) {
-          logAndToastError(`Error getting OAuth token for player: ${error}`)
-          const isConnected = await SpotifyAuthService.isConnected()
-          if (isConnected) {
-            const token = await SpotifyAuthService.getAccessToken()
-            cb(token)
-          } else {
-            logAndToastError('Spotify connection lost, unable to refresh token')
-          }
-        }
-      },
-      volume: 0.5
-    })
-
-    player.addListener('initialization_error', ({ message }) => {
-      logAndToastError(`Failed to initialize player: ${message}`)
-    })
-    
-    player.addListener('authentication_error', async ({ message }) => {
-      logAndToastError(`Authentication error: ${message}`)
+  static async startPlayback(playlistId: string): Promise<void> {
+    const deviceId = await this.getPlaybackDeviceId()
+    if (!deviceId) {
+      logAndToastError('No active Spotify device found. Opening Spotify...')
       try {
-        await SpotifyAuthService.refreshAccessToken()
-        player.connect()
-      } catch (refreshError) {
-        logAndToastError(`Failed to refresh token after authentication error: ${refreshError}`)
+        await invoke('plugin:shell|open', { path: 'spotify:' })
+      } catch (error) {
+        console.warn('Failed to open Spotify app via URI, trying web URL:', error)
+        try {
+          await invoke('plugin:shell|open', { path: 'https://open.spotify.com' })
+        } catch (webError) {
+          logAndToastError('Failed to open Spotify app or web version.', webError)
+        }
       }
-    })
-    
-    player.addListener('account_error', ({ message }) => {
-      logAndToastError(`Account error: ${message}`)
-    })
-    
-    player.addListener('playback_error', ({ message }) => {
-      logAndToastError(`Playback error: ${message}`)
-    })
+      return
+    }
 
-    await player.connect()
-    return player
+    try {
+      try {
+        await this.spotifyApiRequest(`me/player/shuffle?state=true&device_id=${deviceId}`, {
+          method: 'PUT',
+        })
+      } catch (shuffleError) {
+        console.warn(`Could not enable shuffle: ${shuffleError}`)
+      }
+
+      await this.spotifyApiRequest(`me/player/play?device_id=${deviceId}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          context_uri: `spotify:playlist:${playlistId}`,
+        }),
+      })
+    } catch (error) {
+      logAndToastError(`Error starting playback: ${error}`)
+    }
   }
 
-  static async startPlayback(playlistId: string, deviceId: string): Promise<void> {
-    // Enable shuffle.
-    await this.spotifyApiRequest(`me/player/shuffle?device_id=${deviceId}&state=true`, {
-      method: 'PUT',
-    })
-    
-    await this.spotifyApiRequest(`me/player/play?device_id=${deviceId}`, {
-      method: 'PUT',
-      body: JSON.stringify({
-        context_uri: `spotify:playlist:${playlistId}`,
-      }),
-    })
-  }
+  static async pausePlayback(): Promise<void> {
+    const deviceId = await this.getPlaybackDeviceId()
+    if (!deviceId) return
 
-  static async stopPlayback(deviceId: string): Promise<void> {
     try {
       await this.spotifyApiRequest(`me/player/pause?device_id=${deviceId}`, {
         method: 'PUT',
       })
     } catch (error) {
-      logAndToastError(`Error stopping playback: ${error}`)
+      console.error(`Error pausing playback: ${error}`)
     }
   }
 
+  static async resumePlayback(): Promise<void> {
+    const deviceId = await this.getPlaybackDeviceId()
+    if (!deviceId) {
+      logAndToastError('No active Spotify device found to resume.')
+      return
+    }
+    try {
+      await this.spotifyApiRequest(`me/player/play?device_id=${deviceId}`, {
+        method: 'PUT',
+      })
+    } catch (error) {
+      logAndToastError(`Error resuming playback: ${error}`)
+    }
+  }
+
+  static async nextTrack(): Promise<void> {
+    const deviceId = await this.getPlaybackDeviceId()
+    if (!deviceId) return
+
+    try {
+      await this.spotifyApiRequest(`me/player/next?device_id=${deviceId}`, {
+        method: 'POST',
+      })
+    } catch (error) {
+      console.error(`Error skipping to next track: ${error}`)
+    }
+  }
+
+  static async previousTrack(): Promise<void> {
+    const deviceId = await this.getPlaybackDeviceId()
+    if (!deviceId) return
+
+    try {
+      await this.spotifyApiRequest(`me/player/previous?device_id=${deviceId}`, {
+        method: 'POST',
+      })
+    } catch (error) {
+      console.error(`Error skipping to previous track: ${error}`)
+    }
+  }
+
+
   static async getPlaylistCoverImage(playlistId: string): Promise<string | null> {
     try {
-      const images = await this.spotifyApiRequest(`playlists/${playlistId}/images`)
-      return images[0]?.url || null
+      // Added connection check
+      const isConnected = await SpotifyAuthService.isConnected()
+      if (!isConnected) return null
+
+      const data = await this.spotifyApiRequest(`playlists/${playlistId}/images`)
+      // Check if images array exists and has items before accessing index 0
+      return data?.[0]?.url || null
     } catch (error) {
       logAndToastError(`Error fetching playlist cover image: ${error}`)
       return null
@@ -192,40 +252,14 @@ export class SpotifyApiService {
 
   static async getAvailableDevices(): Promise<SpotifyDevice[]> {
     try {
+      const isConnected = await SpotifyAuthService.isConnected()
+      if (!isConnected) return []
+
       const response = await this.spotifyApiRequest('me/player/devices')
-      return response.devices
+      return response?.devices || []
     } catch (error) {
       logAndToastError(`Error fetching available devices: ${error}`)
       return []
-    }
-  }
-
-  static async transferPlaybackToDevice(deviceId: string): Promise<void> {
-    try {
-      await this.spotifyApiRequest('me/player', {
-        method: 'PUT',
-        body: JSON.stringify({
-          device_ids: [deviceId],
-          play: false
-        })
-      })
-    } catch (error) {
-      logAndToastError(`Error transferring playback: ${error}`)
-    }
-  }
-
-  static async transferPlaybackToComputerDevice(): Promise<void> {
-    try {
-      const devices = await this.getAvailableDevices()
-      const computerDevice = devices.find(device => 
-        device.type.toLowerCase() === 'computer' && !device.is_restricted
-      )
-      
-      if (computerDevice) {
-        await this.transferPlaybackToDevice(computerDevice.id)
-      }
-    } catch (error) {
-      logAndToastError(`Error transferring playback to computer: ${error}`)
     }
   }
 
