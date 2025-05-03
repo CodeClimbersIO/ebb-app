@@ -5,7 +5,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { Bar, BarChart, CartesianGrid, XAxis } from 'recharts'
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import {
   ChartConfig,
   ChartContainer,
@@ -59,6 +59,7 @@ export interface UsageSummaryProps {
   onRatingChange?: (tagId: string, rating: ActivityRating, tags: Tag[]) => void;
   tags?: Tag[];
   isLoading?: boolean;
+  yAxisMax?: number;
 }
 
 export const UsageSummary = ({
@@ -72,7 +73,8 @@ export const UsageSummary = ({
   showAppRatingControls = false,
   onRatingChange,
   tags = [],
-  isLoading = false
+  isLoading = false,
+  yAxisMax,
 }: UsageSummaryProps) => {
   // Sort app usage
   const sortedAppUsage = [...appUsage].sort((a, b) => b.duration - a.duration)
@@ -172,6 +174,23 @@ export const UsageSummary = ({
                 axisLine={false}
                 interval={0}
               />
+              <YAxis
+                type="number"
+                domain={[0, yAxisMax || 60]}
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                width={40}
+                allowDataOverflow={true}
+                tickFormatter={value => {
+                  // Show hours/minutes for week view, minutes for today
+                  if (yAxisMax && yAxisMax > 60) {
+                    const hours = Math.round(value / 60 * 10) / 10
+                    return hours > 0 ? `${hours}h` : `${value}m`
+                  }
+                  return ''
+                }}
+              />
               <ChartTooltip
                 content={({ active, payload }) => {
                   if (!active || !payload?.length) return null
@@ -256,7 +275,7 @@ export const UsageSummary = ({
                                     className={`h-6 px-2 py-0 text-xs font-medium justify-start ${app.rating >= 4 ? 'text-[rgb(124,58,237)] hover:bg-primary/10' :
                                       app.rating <= 2 ? 'text-[rgb(239,68,68)] hover:bg-destructive/10' :
                                         'text-gray-500 hover:bg-muted'
-                                      }`}
+                                    }`}
                                   >
                                     {app.rating === 5 ? 'High Creation' :
                                       app.rating === 4 ? 'Creation' :

@@ -172,6 +172,55 @@ export const getTimeCreatingByHour = async (start: DateTime, end: DateTime): Pro
   return graphableTimeByHourBlocks
 }
 
+export const getTimeCreatingByDay = async (start: DateTime, end: DateTime): Promise<GraphableTimeByHourBlock[]> => {
+  const tags = await TagRepo.getTagsByType('default')
+  const activityStatesDB = await getActivityStatesByTagsAndTimePeriod(tags.map(tag => tag.id), start, end)
+  const activityStates: ActivityState[] = activityStatesDB.map(state => ({
+    ...state,
+    tags_json: state.tags ? JSON.parse(state.tags) : []
+  }))
+
+  // Group activity states by day
+  const daysMap: { [iso: string]: { creating: number, consuming: number, neutral: number, offline: number } } = {}
+  let current = start.startOf('day')
+  while (current <= end.startOf('day')) {
+    daysMap[current.toISODate()!] = { creating: 0, consuming: 0, neutral: 0, offline: 0 }
+    current = current.plus({ days: 1 })
+  }
+
+  for (const activityState of activityStates) {
+    const startTime = DateTime.fromISO(activityState.start_time).startOf('day')
+    const key = startTime.toISODate()!
+    const tags = activityState.tags_json || []
+    const endTime = DateTime.fromISO(activityState.end_time)
+    const duration = endTime.diff(DateTime.fromISO(activityState.start_time), 'minutes').minutes
+    if (tags.length > 0) {
+      const durationPerTag = duration / tags.length
+      tags.forEach(tag => {
+        if (daysMap[key]) {
+          if (tag.name === 'creating' || tag.name === 'consuming' || tag.name === 'neutral') {
+            daysMap[key][tag.name] += durationPerTag
+          }
+        }
+      })
+    }
+  }
+
+  // Convert to array of GraphableTimeByHourBlock-like objects (but by day)
+  return Object.entries(daysMap).map(([iso, vals]) => {
+    const dt = DateTime.fromISO(iso)
+    return {
+      creating: Math.round(vals.creating),
+      consuming: Math.round(vals.consuming),
+      neutral: Math.round(vals.neutral),
+      offline: Math.max(0, 24 * 60 - (vals.creating + vals.consuming + vals.neutral)),
+      time: dt.toFormat('ccc'),
+      timeRange: dt.toFormat('cccc, LLL dd'),
+      xAxisLabel: dt.toFormat('ccc'),
+    }
+  })
+}
+
 export const getTopAppsByPeriod = async (start: DateTime, end: DateTime): Promise<AppsWithTime[]> => {
   const activityStatesDB = await getActivityStatesWithApps(start, end)
   const activityStates: ActivityState[] = activityStatesDB.map(state => ({
@@ -225,6 +274,7 @@ export const MonitorApi = {
   getApps,
   getTagsByType,
   getTimeCreatingByHour,
+  getTimeCreatingByDay,
   getTopAppsByPeriod,
   setAppDefaultTag,
   createApp
