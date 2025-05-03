@@ -30,6 +30,9 @@ function makeActivityState({ start, end, tags }: { start: string, end: string, t
   }
 }
 
+const mockActivityStatesByTagsAndTimePeriod = vi.fn()
+ActivityStateRepo.getActivityStatesByTagsAndTimePeriod = mockActivityStatesByTagsAndTimePeriod 
+
 describe('createTimeBlockFromActivityState', () => {
   it('should create time blocks from activity states', () => {
     const activityStates = mockActivityStates()
@@ -72,7 +75,7 @@ describe('Time Aggregation', () => {
         tags: [{ tag_id: '1', name: 'creating' }],
       }),
     ]
-    ActivityStateRepo.getActivityStatesByTagsAndTimePeriod.mockResolvedValueOnce(activityStates)
+    mockActivityStatesByTagsAndTimePeriod.mockResolvedValueOnce(activityStates)
     const result = await getTimeCreatingByHour(today, today.endOf('day'))
     expect(result.length).toBe(24)
     expect(result[2].creating).toBeGreaterThan(0)
@@ -100,7 +103,7 @@ describe('Time Aggregation', () => {
         tags: [{ tag_id: '2', name: 'consuming' }],
       }),
     ]
-    ActivityStateRepo.getActivityStatesByTagsAndTimePeriod.mockResolvedValueOnce(activityStates)
+    mockActivityStatesByTagsAndTimePeriod.mockResolvedValueOnce(activityStates)
     const result = await getTimeCreatingByDay(start, end)
     expect(result.length).toBe(7)
     expect(result[1].creating).toBeGreaterThan(0)
@@ -116,7 +119,7 @@ describe('Time Aggregation', () => {
 
   it('handles no activity (all zeros)', async () => {
     const today = DateTime.local().startOf('day')
-    ActivityStateRepo.getActivityStatesByTagsAndTimePeriod.mockResolvedValueOnce([])
+    mockActivityStatesByTagsAndTimePeriod.mockResolvedValueOnce([])
     const result = await getTimeCreatingByHour(today, today.endOf('day'))
     expect(result.length).toBe(24)
     for (let i = 0; i < 24; i++) {
@@ -138,7 +141,7 @@ describe('Time Aggregation', () => {
         ],
       }),
     ]
-    ActivityStateRepo.getActivityStatesByTagsAndTimePeriod.mockResolvedValueOnce(activityStates)
+    mockActivityStatesByTagsAndTimePeriod.mockResolvedValueOnce(activityStates)
     const result = await getTimeCreatingByHour(today, today.endOf('day'))
     expect(result[5].creating).toBeGreaterThan(0)
     expect(result[5].consuming).toBeGreaterThan(0)
@@ -154,7 +157,7 @@ describe('Time Aggregation', () => {
         tags: [{ tag_id: '1', name: 'creating' }],
       }),
     ]
-    ActivityStateRepo.getActivityStatesByTagsAndTimePeriod.mockResolvedValueOnce(activityStates)
+    mockActivityStatesByTagsAndTimePeriod.mockResolvedValueOnce(activityStates)
     const result = await getTimeCreatingByDay(start, end)
     expect(result.length).toBe(7)
     for (let i = 0; i < 7; i++) {
