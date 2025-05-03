@@ -127,6 +127,88 @@ export const createTimeBlockFromActivityState = (activityStates: ActivityState[]
   return timeBlocks
 }
 
+// Shared aggregation function
+function aggregateTimeBlocks(
+  activityStates: ActivityState[],
+  unit: 'hour' | 'day',
+  start?: DateTime,
+  end?: DateTime
+): GraphableTimeByHourBlock[] {
+  const buckets: Record<string, { creating: number, consuming: number, neutral: number }> = {}
+
+  // Pre-populate buckets for all hours or days in the range
+  if (unit === 'hour' && start && end) {
+    let current = start.startOf('day')
+    while (current <= end.startOf('day')) {
+      for (let h = 0; h < 24; h++) {
+        const dt = current.set({ hour: h })
+        const key = dt.toFormat('yyyy-MM-dd-HH')
+        if (!buckets[key]) {
+          buckets[key] = { creating: 0, consuming: 0, neutral: 0 }
+        }
+      }
+      current = current.plus({ days: 1 })
+    }
+  } else if (unit === 'day' && start && end) {
+    let current = start.startOf('day')
+    while (current <= end.startOf('day')) {
+      const key = current.toISODate()!
+      if (!buckets[key]) {
+        buckets[key] = { creating: 0, consuming: 0, neutral: 0 }
+      }
+      current = current.plus({ days: 1 })
+    }
+  }
+
+  for (const state of activityStates) {
+    const dt = DateTime.fromISO(state.start_time)
+    const key = unit === 'hour'
+      ? dt.toFormat('yyyy-MM-dd-HH')
+      : dt.toISODate()!
+    if (!buckets[key]) {
+      buckets[key] = { creating: 0, consuming: 0, neutral: 0 }
+    }
+    const tags = state.tags_json || []
+    const duration = DateTime.fromISO(state.end_time).diff(dt, 'minutes').minutes
+    if (tags.length > 0) {
+      const durationPerTag = duration / tags.length
+      tags.forEach(tag => {
+        if (tag.name === 'creating' || tag.name === 'consuming' || tag.name === 'neutral') {
+          buckets[key][tag.name] += durationPerTag
+        }
+      })
+    }
+  }
+
+  return Object.entries(buckets).map(([key, vals]) => {
+    let dt: DateTime
+    let time, timeRange, xAxisLabel
+    if (unit === 'hour') {
+      dt = DateTime.fromFormat(key, 'yyyy-MM-dd-HH')
+      time = dt.toFormat('h:mm a')
+      timeRange = `${dt.toFormat('h:mm a')} - ${dt.plus({ hours: 1 }).toFormat('h:mm a')}`
+      xAxisLabel = [6, 10, 14, 18, 22].includes(dt.hour) ? dt.toFormat('h a') : ''
+    } else {
+      dt = DateTime.fromISO(key)
+      time = dt.toFormat('ccc')
+      timeRange = dt.toFormat('cccc, LLL dd')
+      xAxisLabel = dt.toFormat('ccc')
+    }
+    const offline = unit === 'hour'
+      ? Math.max(0, 60 - (vals.creating + vals.consuming + vals.neutral))
+      : Math.max(0, 24 * 60 - (vals.creating + vals.consuming + vals.neutral))
+    return {
+      creating: Math.round(vals.creating),
+      consuming: Math.round(vals.consuming),
+      neutral: Math.round(vals.neutral),
+      offline,
+      time,
+      timeRange,
+      xAxisLabel,
+    }
+  })
+}
+
 export const getTimeCreatingByHour = async (start: DateTime, end: DateTime): Promise<GraphableTimeByHourBlock[]> => {
   const tags = await TagRepo.getTagsByType('default')
   const activityStatesDB = await getActivityStatesByTagsAndTimePeriod(tags.map(tag => tag.id), start, end)
@@ -134,42 +216,7 @@ export const getTimeCreatingByHour = async (start: DateTime, end: DateTime): Pro
     ...state,
     tags_json: state.tags ? JSON.parse(state.tags) : []
   }))
-  const timeBlocks = createTimeBlockFromActivityState(activityStates)
-  const currentHour = DateTime.now().hour
-  const currentMinute = DateTime.now().minute
-
-  // convert time blocks to graphable time by hour block
-  const graphableTimeByHourBlocks = timeBlocks.map(timeBlock => {
-    const startHour = DateTime.now().set({ hour: parseInt(timeBlock.startTime.split(':')[0]) }).startOf('hour')
-    const endHour = DateTime.now().set({ hour: parseInt(timeBlock.endTime.split(':')[0]) }).startOf('hour')
-    const time = startHour.toFormat('h:mm a')
-    const timeRange = `${startHour.toFormat('h:mm a')} - ${endHour.toFormat('h:mm a')}`
-    const showLabel = [6, 10, 14, 18, 22].includes(startHour.hour)
-    const xAxisLabel = showLabel ? startHour.toFormat('h a') : ''
-
-    // Scale values based on whether it's the current hour
-    const isCurrentHour = startHour.hour === currentHour
-
-    // Get raw values
-    const creating = Math.round((timeBlock.tags['creating']?.duration || 0))
-    const consuming = Math.round((timeBlock.tags['consuming']?.duration || 0))
-    const neutral = Math.round((timeBlock.tags['neutral']?.duration || 0))
-    const offline = isCurrentHour 
-      ? Math.max(0, currentMinute - (creating + consuming + neutral))
-      : Math.max(0, 60 - (creating + consuming + neutral))
-
-    return {
-      time,
-      timeRange,
-      xAxisLabel,
-      creating,
-      consuming,
-      neutral,
-      offline
-    }
-  })
-
-  return graphableTimeByHourBlocks
+  return aggregateTimeBlocks(activityStates, 'hour', start, end)
 }
 
 export const getTimeCreatingByDay = async (start: DateTime, end: DateTime): Promise<GraphableTimeByHourBlock[]> => {
@@ -179,46 +226,7 @@ export const getTimeCreatingByDay = async (start: DateTime, end: DateTime): Prom
     ...state,
     tags_json: state.tags ? JSON.parse(state.tags) : []
   }))
-
-  // Group activity states by day
-  const daysMap: { [iso: string]: { creating: number, consuming: number, neutral: number, offline: number } } = {}
-  let current = start.startOf('day')
-  while (current <= end.startOf('day')) {
-    daysMap[current.toISODate()!] = { creating: 0, consuming: 0, neutral: 0, offline: 0 }
-    current = current.plus({ days: 1 })
-  }
-
-  for (const activityState of activityStates) {
-    const startTime = DateTime.fromISO(activityState.start_time).startOf('day')
-    const key = startTime.toISODate()!
-    const tags = activityState.tags_json || []
-    const endTime = DateTime.fromISO(activityState.end_time)
-    const duration = endTime.diff(DateTime.fromISO(activityState.start_time), 'minutes').minutes
-    if (tags.length > 0) {
-      const durationPerTag = duration / tags.length
-      tags.forEach(tag => {
-        if (daysMap[key]) {
-          if (tag.name === 'creating' || tag.name === 'consuming' || tag.name === 'neutral') {
-            daysMap[key][tag.name] += durationPerTag
-          }
-        }
-      })
-    }
-  }
-
-  // Convert to array of GraphableTimeByHourBlock-like objects (but by day)
-  return Object.entries(daysMap).map(([iso, vals]) => {
-    const dt = DateTime.fromISO(iso)
-    return {
-      creating: Math.round(vals.creating),
-      consuming: Math.round(vals.consuming),
-      neutral: Math.round(vals.neutral),
-      offline: Math.max(0, 24 * 60 - (vals.creating + vals.consuming + vals.neutral)),
-      time: dt.toFormat('ccc'),
-      timeRange: dt.toFormat('cccc, LLL dd'),
-      xAxisLabel: dt.toFormat('ccc'),
-    }
-  })
+  return aggregateTimeBlocks(activityStates, 'day', start, end)
 }
 
 export const getTopAppsByPeriod = async (start: DateTime, end: DateTime): Promise<AppsWithTime[]> => {

@@ -60,15 +60,14 @@ export const HomePage = () => {
               </h1>
             </div>
             <div className="flex items-center gap-2">
-              {/* Toggle for Today / Week */}
               <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
                 <Button
-                  variant={rangeMode === 'today' ? 'default' : 'ghost'}
+                  variant={rangeMode === 'day' ? 'default' : 'ghost'}
                   size="sm"
                   className="px-3 py-1 text-xs font-medium rounded-lg"
-                  onClick={() => setRangeMode('today')}
+                  onClick={() => setRangeMode('day')}
                 >
-                  Today
+                  Day
                 </Button>
                 <Button
                   variant={rangeMode === 'week' ? 'default' : 'ghost'}
@@ -111,7 +110,7 @@ export const HomePage = () => {
           </div>
           <UsageSummary
             totalTimeLabel="Total Time"
-            totalTimeTooltip={rangeMode === 'today' ? 'Total time spent online today' : 'Total time spent online this week'}
+            totalTimeTooltip={rangeMode === 'day' ? 'Total time spent online today' : 'Total time spent online this week'}
             totalTime={totalTime}
             totalCreating={totalCreating}
             chartData={chartData}

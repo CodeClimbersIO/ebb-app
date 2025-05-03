@@ -6,7 +6,7 @@ import { ActivityRating } from '@/lib/app-directory/apps-types'
 
 export function useUsageSummary() {
   const [date, setDate] = useState<Date>(new Date())
-  const [rangeMode, setRangeMode] = useState<'today' | 'week'>('today')
+  const [rangeMode, setRangeMode] = useState<'day' | 'week'>('day')
   const [appUsage, setAppUsage] = useState<AppsWithTime[]>([])
   const [totalCreating, setTotalCreating] = useState(0)
   const [totalTime, setTotalTime] = useState(0)
@@ -18,7 +18,7 @@ export function useUsageSummary() {
   const refreshData = useCallback(async () => {
     setIsLoading(true)
     let start, end
-    if (rangeMode === 'today') {
+    if (rangeMode === 'day') {
       start = DateTime.fromJSDate(date).startOf('day')
       end = DateTime.fromJSDate(date).endOf('day')
     } else {
@@ -46,14 +46,14 @@ export function useUsageSummary() {
   useEffect(() => {
     refreshData()
     refreshIntervalRef.current = window.setInterval(async () => {
-      if (rangeMode === 'today' && date.toDateString() === new Date().toDateString()) {
+      if (rangeMode === 'day' && date.toDateString() === new Date().toDateString()) {
         await refreshData()
       } else if (rangeMode === 'week') {
         await refreshData()
       }
     }, 30000)
     const handleFocus = async () => {
-      if (rangeMode === 'today' && date.toDateString() === new Date().toDateString()) {
+      if (rangeMode === 'day' && date.toDateString() === new Date().toDateString()) {
         await refreshData()
       } else if (rangeMode === 'week') {
         await refreshData()
