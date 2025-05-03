@@ -14,6 +14,22 @@ export function useUsageSummary() {
   const [tags, setTags] = useState<Tag[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const refreshIntervalRef = useRef<number | null>(null)
+  const [totalCreatingTrend, setTotalCreatingTrend] = useState<{ percent: number, direction: 'up' | 'down' | 'none' }>({ percent: 0, direction: 'none' })
+  const [totalTimeTrend, setTotalTimeTrend] = useState<{ percent: number, direction: 'up' | 'down' | 'none' }>({ percent: 0, direction: 'none' })
+
+  const getPreviousPeriod = () => {
+    let prevStart, prevEnd
+    if (rangeMode === 'week') {
+      prevStart = DateTime.fromJSDate(date).minus({ days: 13 }).startOf('day')
+      prevEnd = DateTime.fromJSDate(date).minus({ days: 7 }).endOf('day')
+    } else {
+      // Month view - previous 4 weeks before current 4 weeks
+      const currentDate = DateTime.fromJSDate(date)
+      prevEnd = currentDate.minus({ weeks: 4 }).endOf('day')
+      prevStart = currentDate.minus({ weeks: 8 }).startOf('week')
+    }
+    return { prevStart, prevEnd }
+  }
 
   const refreshData = useCallback(async () => {
     if (rangeMode === 'month') setIsLoading(true)
@@ -52,6 +68,38 @@ export function useUsageSummary() {
     setTotalTime(online)
     setChartData(chartData)
     setIsLoading(false)
+
+    // --- Trend Calculation ---
+    const { prevStart, prevEnd } = getPreviousPeriod()
+    let prevChartData: GraphableTimeByHourBlock[]
+    if (rangeMode === 'week') {
+      prevChartData = await MonitorApi.getTimeCreatingByDay(prevStart, prevEnd)
+    } else if (rangeMode === 'month') {
+      prevChartData = await MonitorApi.getTimeCreatingByWeek(prevStart, prevEnd)
+    } else {
+      prevChartData = []
+    }
+
+    const prevCreating = prevChartData.reduce((acc, curr) => acc + curr.creating, 0)
+    const prevOnline = prevChartData.reduce((acc, curr) => acc + curr.creating + curr.neutral + curr.consuming, 0)
+
+    // Calculate trends
+    const calcTrend = (current: number, prev: number): { percent: number, direction: 'up' | 'down' | 'none' } => {
+      if (prev === 0 && current === 0) return { percent: 0, direction: 'none' }
+      if (prev === 0) return { percent: 100, direction: 'up' }
+      const percent = Math.abs(((current - prev) / prev) * 100)
+      if (current > prev) return { percent, direction: 'up' }
+      if (current < prev) return { percent, direction: 'down' }
+      return { percent: 0, direction: 'none' }
+    }
+    if(rangeMode !== 'day') {
+      setTotalCreatingTrend(calcTrend(chartData.reduce((acc, curr) => acc + curr.creating, 0), prevCreating))
+      setTotalTimeTrend(calcTrend(online, prevOnline))
+    } else {
+      setTotalCreatingTrend({ percent: 0, direction: 'none' })
+      setTotalTimeTrend({ percent: 0, direction: 'none' })
+    }
+    
   }, [date, rangeMode])
 
   useEffect(() => {
@@ -101,8 +149,8 @@ export function useUsageSummary() {
     rangeMode,
     setRangeMode,
     appUsage,
-    totalCreating,
-    totalTime,
+    totalCreating: { value: totalCreating, trend: totalCreatingTrend },
+    totalTime: { value: totalTime, trend: totalTimeTrend },
     chartData,
     tags,
     isLoading,
