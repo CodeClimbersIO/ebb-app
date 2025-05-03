@@ -1,6 +1,6 @@
 import { Layout } from '@/components/Layout'
 import { useNavigate } from 'react-router-dom'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { ChevronDown } from 'lucide-react'
 import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
@@ -11,52 +11,32 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
-import { ActivityRating } from '@/lib/app-directory/apps-types'
 import { useAuth } from '../hooks/useAuth'
-import { GraphableTimeByHourBlock, MonitorApi, AppsWithTime } from '../api/monitorApi/monitorApi'
-import { Tag } from '../db/monitor/tagRepo'
 import { UsageSummary } from '@/components/UsageSummary'
 import { PermissionAlert } from '@/components/PermissionAlert'
-
-const fetchData = async (selectedDate: Date) => {
-  const start = DateTime.fromJSDate(selectedDate).startOf('day')
-  const end = DateTime.fromJSDate(selectedDate).endOf('day')
-
-  const chartData = await MonitorApi.getTimeCreatingByHour(start, end)
-  const tags = await MonitorApi.getTagsByType('default')
-  const topApps = await MonitorApi.getTopAppsByPeriod(start, end)
-
-  return { chartData, tags, topApps }
-}
+import { useUsageSummary } from './useUsageSummary'
 
 export const HomePage = () => {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const [date, setDate] = useState<Date>(new Date())
-  const [appUsage, setAppUsage] = useState<AppsWithTime[]>([])
-  const [totalCreating, setTotalCreating] = useState(0)
-  const [totalTime, setTotalTime] = useState(0)
-  const [chartData, setChartData] = useState<GraphableTimeByHourBlock[]>([])
-  const [tags, setTags] = useState<Tag[]>([])
-  const refreshIntervalRef = useRef<number | null>(null)
-
   const firstName = user?.user_metadata?.full_name?.split(' ')[0] ||
     user?.user_metadata?.name?.split(' ')[0] ||
     user?.email?.split('@')[0]
 
-  const refreshData = async () => {
-    const { chartData, tags, topApps } = await fetchData(date)
-    setTags(tags)
-    setAppUsage(topApps)
-    setTotalCreating(chartData.reduce((acc, curr) => acc + curr.creating, 0))
-
-    // Calculate total online time (creating + neutral + consuming)
-    const online = chartData.reduce((acc, curr) =>
-      acc + curr.creating + curr.neutral + curr.consuming, 0)
-    setTotalTime(online)
-
-    setChartData(chartData.slice(6))
-  }
+  const {
+    date,
+    setDate,
+    rangeMode,
+    setRangeMode,
+    appUsage,
+    totalCreating,
+    totalTime,
+    chartData,
+    tags,
+    isLoading,
+    handleRatingChange,
+    yAxisMax,
+  } = useUsageSummary()
 
   useEffect(() => {
     const init = async () => {
@@ -64,45 +44,9 @@ export const HomePage = () => {
       if (flowSession) {
         navigate('/flow')
       }
-
-      await refreshData()
     }
-
     init()
-
-    // Set up auto-refresh interval (every 30 seconds)
-    refreshIntervalRef.current = window.setInterval(async () => {
-      if (date.toDateString() === new Date().toDateString()) {
-        await refreshData()
-      }
-    }, 30000)
-
-    const handleFocus = async () => {
-      if (date.toDateString() === new Date().toDateString()) {
-        await refreshData()
-      }
-    }
-
-    window.addEventListener('focus', handleFocus)
-
-    // Clean up interval and event listener on unmount
-    return () => {
-      if (refreshIntervalRef.current !== null) {
-        clearInterval(refreshIntervalRef.current)
-      }
-      window.removeEventListener('focus', handleFocus)
-    }
-  }, [date])
-
-  const handleRatingChange = (tagId: string, rating: ActivityRating, tags: Tag[]) => {
-    MonitorApi.setAppDefaultTag(tagId, rating, tags)
-    setAppUsage(prev => prev.map(a => {
-      if (a.default_tag?.id === tagId) {
-        return { ...a, rating }
-      }
-      return a
-    }))
-  }
+  }, [navigate])
 
   return (
     <Layout>
@@ -115,40 +59,72 @@ export const HomePage = () => {
                 {firstName ? `Welcome, ${firstName}` : 'Welcome'}
               </h1>
             </div>
-
-            <Popover>
-              <PopoverTrigger asChild>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
                 <Button
-                  variant="outline"
-                  className="justify-start text-left font-normal"
+                  variant={rangeMode === 'day' ? 'default' : 'ghost'}
+                  size="sm"
+                  className="px-3 py-1 text-xs font-medium rounded-lg"
+                  onClick={() => setRangeMode('day')}
                 >
-                  <div className="flex items-center gap-2">
-                    {date.toLocaleDateString() === new Date().toLocaleDateString()
-                      ? 'Today'
-                      : DateTime.fromJSDate(date).toFormat('LLL dd, yyyy')}
-                    <ChevronDown className="h-4 w-4" />
-                  </div>
+                  Day
                 </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={date}
-                  onSelect={(newDate) => {
-                    if (newDate) {
-                      setDate(newDate)
-                    }
-                  }}
-                  disabled={(date) => date > new Date()}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
+                <Button
+                  variant={rangeMode === 'week' ? 'default' : 'ghost'}
+                  size="sm"
+                  className="px-3 py-1 text-xs font-medium rounded-lg"
+                  onClick={() => setRangeMode('week')}
+                >
+                  Week
+                </Button>
+                <Button
+                  variant={rangeMode === 'month' ? 'default' : 'ghost'}
+                  size="sm"
+                  className="px-3 py-1 text-xs font-medium rounded-lg"
+                  onClick={() => setRangeMode('month')}
+                >
+                  Month
+                </Button>
+              </div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="justify-start text-left font-normal"
+                  >
+                    <div className="flex items-center gap-2">
+                      {date.toLocaleDateString() === new Date().toLocaleDateString()
+                        ? 'Today'
+                        : DateTime.fromJSDate(date).toFormat('LLL dd, yyyy')}
+                      <ChevronDown className="h-4 w-4" />
+                    </div>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={date}
+                    onSelect={(newDate) => {
+                      if (newDate) {
+                        setDate(newDate)
+                      }
+                    }}
+                    disabled={(date) => date > new Date()}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
-
           <UsageSummary
             totalTimeLabel="Total Time"
-            totalTimeTooltip="Total time spent online today"
+            totalTimeTooltip={
+              rangeMode === 'day' 
+                ? 'Total time spent online today' 
+                : rangeMode === 'week'
+                  ? 'Total time spent online this week'
+                  : 'Total time spent online this month'
+            }
             totalTime={totalTime}
             totalCreating={totalCreating}
             chartData={chartData}
@@ -157,6 +133,8 @@ export const HomePage = () => {
             showAppRatingControls={true}
             onRatingChange={handleRatingChange}
             tags={tags}
+            isLoading={isLoading}
+            yAxisMax={yAxisMax}
           />
         </div>
       </div>
