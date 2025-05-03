@@ -130,13 +130,13 @@ export const createTimeBlockFromActivityState = (activityStates: ActivityState[]
 // Shared aggregation function
 function aggregateTimeBlocks(
   activityStates: ActivityState[],
-  unit: 'hour' | 'day',
+  unit: 'hour' | 'day' | 'week',
   start?: DateTime,
   end?: DateTime
 ): GraphableTimeByHourBlock[] {
   const buckets: Record<string, { creating: number, consuming: number, neutral: number }> = {}
 
-  // Pre-populate buckets for all hours or days in the range
+  // Pre-populate buckets for all hours, days, or weeks in the range
   if (unit === 'hour' && start && end) {
     let current = start.startOf('day')
     while (current <= end.startOf('day')) {
@@ -158,13 +158,25 @@ function aggregateTimeBlocks(
       }
       current = current.plus({ days: 1 })
     }
+  } else if (unit === 'week' && start && end) {
+    let current = start.startOf('week')
+    const today = DateTime.local().endOf('day')
+    while (current <= end.startOf('week') && current <= today) {
+      const key = current.toFormat('kkkk-WW')
+      if (!buckets[key]) {
+        buckets[key] = { creating: 0, consuming: 0, neutral: 0 }
+      }
+      current = current.plus({ weeks: 1 })
+    }
   }
 
   for (const state of activityStates) {
     const dt = DateTime.fromISO(state.start_time)
     const key = unit === 'hour'
       ? dt.toFormat('yyyy-MM-dd-HH')
-      : dt.toISODate()!
+      : unit === 'day'
+        ? dt.toISODate()!
+        : dt.toFormat('kkkk-WW')
     if (!buckets[key]) {
       buckets[key] = { creating: 0, consuming: 0, neutral: 0 }
     }
@@ -180,33 +192,46 @@ function aggregateTimeBlocks(
     }
   }
 
-  return Object.entries(buckets).map(([key, vals]) => {
-    let dt: DateTime
-    let time, timeRange, xAxisLabel
-    if (unit === 'hour') {
-      dt = DateTime.fromFormat(key, 'yyyy-MM-dd-HH')
-      time = dt.toFormat('h:mm a')
-      timeRange = `${dt.toFormat('h:mm a')} - ${dt.plus({ hours: 1 }).toFormat('h:mm a')}`
-      xAxisLabel = [6, 10, 14, 18, 22].includes(dt.hour) ? dt.toFormat('h a') : ''
-    } else {
-      dt = DateTime.fromISO(key)
-      time = dt.toFormat('ccc')
-      timeRange = dt.toFormat('cccc, LLL dd')
-      xAxisLabel = dt.toFormat('ccc')
-    }
-    const offline = unit === 'hour'
-      ? Math.max(0, 60 - (vals.creating + vals.consuming + vals.neutral))
-      : Math.max(0, 24 * 60 - (vals.creating + vals.consuming + vals.neutral))
-    return {
-      creating: Math.round(vals.creating),
-      consuming: Math.round(vals.consuming),
-      neutral: Math.round(vals.neutral),
-      offline,
-      time,
-      timeRange,
-      xAxisLabel,
-    }
-  })
+  return Object.entries(buckets)
+    .filter(([key]) => {
+      if (unit !== 'week') return true
+      // Only include weeks that have started and are not in the future
+      const dt = DateTime.fromFormat(key, 'kkkk-WW')
+      return dt <= DateTime.local().endOf('day')
+    })
+    .map(([key, vals]) => {
+      let dt: DateTime
+      let time, timeRange, xAxisLabel, offline
+      if (unit === 'hour') {
+        dt = DateTime.fromFormat(key, 'yyyy-MM-dd-HH')
+        time = dt.toFormat('h:mm a')
+        timeRange = `${dt.toFormat('h:mm a')} - ${dt.plus({ hours: 1 }).toFormat('h:mm a')}`
+        xAxisLabel = [6, 10, 14, 18, 22].includes(dt.hour) ? dt.toFormat('h a') : ''
+        offline = Math.max(0, 60 - (vals.creating + vals.consuming + vals.neutral))
+      } else if (unit === 'day') {
+        dt = DateTime.fromISO(key)
+        time = dt.toFormat('ccc')
+        timeRange = dt.toFormat('cccc, LLL dd')
+        xAxisLabel = dt.toFormat('ccc')
+        offline = Math.max(0, 24 * 60 - (vals.creating + vals.consuming + vals.neutral))
+      } else {
+        dt = DateTime.fromFormat(key, 'kkkk-WW')
+        time = `Week ${dt.weekNumber}`
+        timeRange = `Week of ${dt.startOf('week').toFormat('LLL dd')}`
+        xAxisLabel = dt.startOf('week').toFormat('LLL d')
+        offline = Math.max(0, 7 * 24 * 60 - (vals.creating + vals.consuming + vals.neutral))
+      }
+
+      return {
+        creating: Math.round(vals.creating),
+        consuming: Math.round(vals.consuming),
+        neutral: Math.round(vals.neutral),
+        offline,
+        time,
+        timeRange,
+        xAxisLabel,
+      }
+    })
 }
 
 export const getTimeCreatingByHour = async (start: DateTime, end: DateTime): Promise<GraphableTimeByHourBlock[]> => {
@@ -227,6 +252,16 @@ export const getTimeCreatingByDay = async (start: DateTime, end: DateTime): Prom
     tags_json: state.tags ? JSON.parse(state.tags) : []
   }))
   return aggregateTimeBlocks(activityStates, 'day', start, end)
+}
+
+export const getTimeCreatingByWeek = async (start: DateTime, end: DateTime): Promise<GraphableTimeByHourBlock[]> => {
+  const tags = await TagRepo.getTagsByType('default')
+  const activityStatesDB = await getActivityStatesByTagsAndTimePeriod(tags.map(tag => tag.id), start, end)
+  const activityStates: ActivityState[] = activityStatesDB.map(state => ({
+    ...state,
+    tags_json: state.tags ? JSON.parse(state.tags) : []
+  }))
+  return aggregateTimeBlocks(activityStates, 'week', start, end)
 }
 
 export const getTopAppsByPeriod = async (start: DateTime, end: DateTime): Promise<AppsWithTime[]> => {
@@ -283,6 +318,7 @@ export const MonitorApi = {
   getTagsByType,
   getTimeCreatingByHour,
   getTimeCreatingByDay,
+  getTimeCreatingByWeek,
   getTopAppsByPeriod,
   setAppDefaultTag,
   createApp

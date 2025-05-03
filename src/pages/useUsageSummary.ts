@@ -6,7 +6,7 @@ import { ActivityRating } from '@/lib/app-directory/apps-types'
 
 export function useUsageSummary() {
   const [date, setDate] = useState<Date>(new Date())
-  const [rangeMode, setRangeMode] = useState<'day' | 'week'>('day')
+  const [rangeMode, setRangeMode] = useState<'day' | 'week' | 'month'>('day')
   const [appUsage, setAppUsage] = useState<AppsWithTime[]>([])
   const [totalCreating, setTotalCreating] = useState(0)
   const [totalTime, setTotalTime] = useState(0)
@@ -16,22 +16,33 @@ export function useUsageSummary() {
   const refreshIntervalRef = useRef<number | null>(null)
 
   const refreshData = useCallback(async () => {
-    setIsLoading(true)
+    if (rangeMode === 'month') setIsLoading(true)
+    else setIsLoading(false)
+
     let start, end
     if (rangeMode === 'day') {
       start = DateTime.fromJSDate(date).startOf('day')
       end = DateTime.fromJSDate(date).endOf('day')
-    } else {
+    } else if (rangeMode === 'week') {
       start = DateTime.fromJSDate(date).minus({ days: 6 }).startOf('day')
       end = DateTime.fromJSDate(date).endOf('day')
+    } else {
+      // Month view - show current week and previous 4 weeks
+      const currentDate = DateTime.fromJSDate(date)
+      end = currentDate.endOf('day')
+      start = currentDate.minus({ weeks: 4 }).startOf('week')
     }
+
     let chartData: GraphableTimeByHourBlock[]
     if (rangeMode === 'week') {
       chartData = await MonitorApi.getTimeCreatingByDay(start, end)
+    } else if (rangeMode === 'month') {
+      chartData = await MonitorApi.getTimeCreatingByWeek(start, end)
     } else {
       const chartDataRaw = await MonitorApi.getTimeCreatingByHour(start, end)
       chartData = chartDataRaw.slice(6)
     }
+
     const tags = await MonitorApi.getTagsByType('default')
     const topApps = await MonitorApi.getTopAppsByPeriod(start, end)
     setTags(tags)
@@ -48,14 +59,14 @@ export function useUsageSummary() {
     refreshIntervalRef.current = window.setInterval(async () => {
       if (rangeMode === 'day' && date.toDateString() === new Date().toDateString()) {
         await refreshData()
-      } else if (rangeMode === 'week') {
+      } else if (rangeMode === 'week' || rangeMode === 'month') {
         await refreshData()
       }
     }, 30000)
     const handleFocus = async () => {
       if (rangeMode === 'day' && date.toDateString() === new Date().toDateString()) {
         await refreshData()
-      } else if (rangeMode === 'week') {
+      } else if (rangeMode === 'week' || rangeMode === 'month') {
         await refreshData()
       }
     }
@@ -78,9 +89,9 @@ export function useUsageSummary() {
     }))
   }
 
-  // Calculate yAxisMax for week view
+  // Calculate yAxisMax for week/month view
   let yAxisMax: number | undefined = undefined
-  if (rangeMode === 'week' && chartData.length > 0) {
+  if ((rangeMode === 'week' || rangeMode === 'month') && chartData.length > 0) {
     yAxisMax = Math.max(...chartData.map(day => day.creating + day.consuming + day.neutral))
   }
 

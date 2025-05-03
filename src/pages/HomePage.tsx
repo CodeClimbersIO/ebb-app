@@ -77,6 +77,14 @@ export const HomePage = () => {
                 >
                   Week
                 </Button>
+                <Button
+                  variant={rangeMode === 'month' ? 'default' : 'ghost'}
+                  size="sm"
+                  className="px-3 py-1 text-xs font-medium rounded-lg"
+                  onClick={() => setRangeMode('month')}
+                >
+                  Month
+                </Button>
               </div>
               <Popover>
                 <PopoverTrigger asChild>
@@ -110,7 +118,13 @@ export const HomePage = () => {
           </div>
           <UsageSummary
             totalTimeLabel="Total Time"
-            totalTimeTooltip={rangeMode === 'day' ? 'Total time spent online today' : 'Total time spent online this week'}
+            totalTimeTooltip={
+              rangeMode === 'day' 
+                ? 'Total time spent online today' 
+                : rangeMode === 'week'
+                  ? 'Total time spent online this week'
+                  : 'Total time spent online this month'
+            }
             totalTime={totalTime}
             totalCreating={totalCreating}
             chartData={chartData}
