@@ -99,8 +99,8 @@ export const FlowRecapPage = () => {
             <UsageSummary
               totalTimeLabel="Duration"
               totalTimeTooltip="Total duration of the session"
-              totalTime={totalTime}
-              totalCreating={totalCreating}
+              totalTime={{ value: totalTime, trend: { percent: 0, direction: 'none' } }}
+              totalCreating={{ value: totalCreating, trend: { percent: 0, direction: 'none' } }}
               chartData={chartData}
               appUsage={appUsage}
               showTopAppsButton={true}
