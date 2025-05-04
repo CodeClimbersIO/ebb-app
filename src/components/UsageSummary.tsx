@@ -50,8 +50,8 @@ export const formatTime = (minutes: number) => {
 export interface UsageSummaryProps {
   totalTimeLabel?: string;
   totalTimeTooltip?: string;
-  totalTime: number;
-  totalCreating: number;
+  totalTime: { value: number; trend: { percent: number; direction: 'up' | 'down' | 'none' } };
+  totalCreating: { value: number; trend: { percent: number; direction: 'up' | 'down' | 'none' } };
   chartData: GraphableTimeByHourBlock[];
   appUsage: AppsWithTime[];
   showTopAppsButton?: boolean;
@@ -60,6 +60,20 @@ export interface UsageSummaryProps {
   tags?: Tag[];
   isLoading?: boolean;
   yAxisMax?: number;
+}
+
+function TrendIndicator({ trend }: { trend?: { percent: number; direction: 'up' | 'down' | 'none' } }) {
+  if (!trend || trend.direction === 'none') return null
+  const color = trend.direction === 'up' ? 'text-green-500' : 'text-red-500'
+  const Arrow = trend.direction === 'up'
+    ? (<svg className="inline w-4 h-4 ml-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>)
+    : (<svg className="inline w-4 h-4 ml-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" /></svg>)
+  return (
+    <span className={`ml-2 flex items-center font-normal text-xs ${color} opacity-50`}
+      title={trend.direction === 'up' ? 'Increase from previous period' : 'Decrease from previous period'}>
+      {trend.percent.toFixed(0)}% {Arrow}
+    </span>
+  )
 }
 
 export const UsageSummary = ({
@@ -95,7 +109,10 @@ export const UsageSummary = ({
             <CardContent>
               <Tooltip>
                 <TooltipTrigger>
-                  <div className="text-2xl font-bold">{formatTime(totalTime)}</div>
+                  <div className="text-2xl font-bold flex items-center">
+                    {formatTime(totalTime.value)}
+                    <TrendIndicator trend={totalTime.trend} />
+                  </div>
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>{totalTimeTooltip}</p>
@@ -113,7 +130,10 @@ export const UsageSummary = ({
             <CardContent>
               <Tooltip>
                 <TooltipTrigger>
-                  <div className="text-2xl font-bold">{formatTime(totalCreating)}</div>
+                  <div className="text-2xl font-bold flex items-center">
+                    {formatTime(totalCreating.value)}
+                    <TrendIndicator trend={totalCreating.trend} />
+                  </div>
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>Total time spent creating</p>
