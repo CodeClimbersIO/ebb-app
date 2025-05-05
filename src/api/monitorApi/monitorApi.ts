@@ -226,7 +226,7 @@ function aggregateTimeBlocks(
         creating: Math.round(vals.creating),
         consuming: Math.round(vals.consuming),
         neutral: Math.round(vals.neutral),
-        offline,
+        offline: Math.round(offline),
         time,
         timeRange,
         xAxisLabel,
