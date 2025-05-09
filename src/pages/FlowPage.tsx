@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/select'
 import { Music, Loader2 } from 'lucide-react'
 import { SpotifyIcon } from '@/components/icons/SpotifyIcon'
-import { PlaybackState, SpotifyApiService } from '@/lib/integrations/spotify/spotifyApi'
+import { getSpotifyIdFromUri, openSpotifyLink, PlaybackState, SpotifyApiService } from '@/lib/integrations/spotify/spotifyApi'
 import { SpotifyAuthService } from '@/lib/integrations/spotify/spotifyAuth'
 import { invoke } from '@tauri-apps/api/core'
 import NotificationManager from '@/lib/notificationManager'
@@ -160,6 +160,26 @@ const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
   )
 }
 
+type CurrentTrack = {
+  song: {
+    name: string
+    uri: string
+    id: string
+  }
+  artist: {
+    name: string
+    uri: string
+    id: string
+  }
+  album: {
+    name: string
+    uri: string
+    id: string
+  }
+  duration_ms: number
+  position_ms: number
+}
+
 export const FlowPage = () => {
   useRustEvents()
   const navigate = useNavigate()
@@ -169,12 +189,7 @@ export const FlowPage = () => {
   const [player, setPlayer] = useState<Spotify.Player | null>(null)
   const [spotifyDeviceId, setSpotifyDeviceId] = useState<string>('')
   const [isPlaying, setIsPlaying] = useState(false)
-  const [currentTrack, setCurrentTrack] = useState<{
-    name: string
-    artist: string
-    duration_ms: number
-    position_ms: number
-  } | null>(null)
+  const [currentTrack, setCurrentTrack] = useState<CurrentTrack | null>(null)
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string>(() => {
     const state = window.history.state?.usr
     // Try getting from session state first, then fall back to localStorage for non-workflow sessions
@@ -255,8 +270,21 @@ export const FlowPage = () => {
 
           setIsPlaying(!state.paused)
           setCurrentTrack({
-            name: state.track_window.current_track.name,
-            artist: state.track_window.current_track.artists[0].name,
+            song: {
+              name: state.track_window.current_track.name,
+              uri: state.track_window.current_track.uri,
+              id: state.track_window.current_track.id,
+            },
+            artist: {
+              name: state.track_window.current_track.artists[0].name,
+              uri: state.track_window.current_track.artists[0].uri,
+              id: getSpotifyIdFromUri(state.track_window.current_track.artists[0].uri),
+            },
+            album: {
+              name: state.track_window.current_track.album.name,
+              uri: state.track_window.current_track.album.uri,
+              id: getSpotifyIdFromUri(state.track_window.current_track.album.uri),
+            },
             duration_ms: state.duration,
             position_ms: state.position
           })
@@ -430,8 +458,36 @@ export const FlowPage = () => {
       <div className="text-center">
         {currentTrack && selectedPlaylistId ? (
           <>
-            <h3 className="text-2xl font-semibold">{currentTrack.name}</h3>
-            <p className="text-sm text-muted-foreground">{currentTrack.artist}</p>
+            <a
+              href="#"
+              onClick={async (e) => {
+                e.preventDefault()
+                await openSpotifyLink(isSpotifyInstalled, 'track', getSpotifyIdFromUri(currentTrack.song.uri))
+              }}
+              className="text-2xl font-semibold block hover:underline"
+            >
+              {currentTrack.song.name}
+            </a>
+            <a
+              href="#"
+              onClick={async (e) => {
+                e.preventDefault()
+                await openSpotifyLink(isSpotifyInstalled, 'artist', getSpotifyIdFromUri(currentTrack.artist.uri))
+              }}
+              className="text-sm text-muted-foreground block hover:underline"
+            >
+              {currentTrack.artist.name}
+            </a>
+            <a
+              href="#"
+              onClick={async (e) => {
+                e.preventDefault()
+                await openSpotifyLink(isSpotifyInstalled, 'album', getSpotifyIdFromUri(currentTrack.album.uri))
+              }}
+              className="text-sm text-muted-foreground block hover:underline"
+            >
+              {currentTrack.album.name}
+            </a>
           </>
         ) : (
           <h3 className="text-2xl font-semibold">
@@ -498,23 +554,7 @@ export const FlowPage = () => {
                       href="#"
                       onClick={async (e) => {
                         e.preventDefault()
-                        if (isSpotifyInstalled) {
-                          try {
-                            const spotifyUri = selectedPlaylistId
-                              ? `spotify:playlist:${selectedPlaylistId}`
-                              : 'spotify:'
-                            await invoke('plugin:shell|open', { path: spotifyUri })
-                          } catch (error) {
-                            logAndToastError(`Failed to open Spotify: ${error}`)
-                            // Fallback to web version if native app fails to open
-                            const webUrl = selectedPlaylistId
-                              ? `https://open.spotify.com/playlist/${selectedPlaylistId}`
-                              : 'https://open.spotify.com'
-                            await invoke('plugin:shell|open', { path: webUrl })
-                          }
-                        } else {
-                          await invoke('plugin:shell|open', { path: 'https://open.spotify.com/download' })
-                        }
+                        await openSpotifyLink(isSpotifyInstalled, 'playlist', selectedPlaylistId)
                       }}
                       className="text-sm text-muted-foreground hover:underline cursor-pointer"
                     >

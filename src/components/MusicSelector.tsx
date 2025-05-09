@@ -35,7 +35,7 @@ import {
 import { Skeleton } from './ui/skeleton'
 import { Alert, AlertDescription } from './ui/alert'
 import { logAndToastError } from '@/lib/utils/logAndToastError'
-
+import { error as logError } from '@tauri-apps/plugin-log'
 interface MusicSelectorProps {
   selectedPlaylist: string | null
   onPlaylistSelect: (playlist: { id: string, service: 'spotify' | 'apple' | null }) => void
@@ -89,7 +89,7 @@ export function MusicSelector({ selectedPlaylist, onPlaylistSelect }: MusicSelec
         // Always check connection status after handling callback or on initial load
         await checkSpotifyConnection()
       } catch (error) {
-        logAndToastError(`Error handling Spotify callback: ${error}`)
+        logError(`Error handling Spotify callback: ${error}`)
         setIsLoading(false)
       }
     }
@@ -117,7 +117,7 @@ export function MusicSelector({ selectedPlaylist, onPlaylistSelect }: MusicSelec
         }
       }
     } catch (error) {
-      logAndToastError(`Error checking Spotify connection: ${error}`)
+      logError(`Error checking Spotify connection: ${error}`)
     } finally {
       setIsLoading(false)
     }
@@ -142,7 +142,7 @@ export function MusicSelector({ selectedPlaylist, onPlaylistSelect }: MusicSelec
         setPlaylistData(newPlaylistData)
         localStorage.setItem('playlistData', JSON.stringify(newPlaylistData))
       } catch (error) {
-        logAndToastError(`Error loading playlist data: ${error}`)
+        logError(`Error loading playlist data: ${error}`)
       }
     }
 
@@ -153,7 +153,7 @@ export function MusicSelector({ selectedPlaylist, onPlaylistSelect }: MusicSelec
     try {
       await SpotifyAuthService.connect()
     } catch (error) {
-      logAndToastError(`Error connecting to Spotify: ${error}`)
+      logError(`Error connecting to Spotify: ${error}`)
     }
   }
 
@@ -292,7 +292,7 @@ export function MusicSelector({ selectedPlaylist, onPlaylistSelect }: MusicSelec
           <Alert className="mb-4 border-yellow-500 text-yellow-600">
             <AlertCircle className="h-4 w-4 !text-yellow-600" />
             <AlertDescription>
-              The Spotify integration is still in beta and only works for permitted users. If you would like to try it, please email nathan@ebb.cool
+              The Spotify integration is still in beta and only works for permitted users. If you would like to try it, please email paul@ebb.cool
             </AlertDescription>
           </Alert>
           <div className="grid grid-cols-2 gap-4">
