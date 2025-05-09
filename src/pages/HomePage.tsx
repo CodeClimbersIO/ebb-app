@@ -15,6 +15,7 @@ import { useAuth } from '../hooks/useAuth'
 import { UsageSummary } from '@/components/UsageSummary'
 import { PermissionAlert } from '@/components/PermissionAlert'
 import { useUsageSummary } from './useUsageSummary'
+import { RangeModeSelector } from '@/components/RangeModeSelector'
 
 export const HomePage = () => {
   const { user } = useAuth()
@@ -60,32 +61,7 @@ export const HomePage = () => {
               </h1>
             </div>
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
-                <Button
-                  variant={rangeMode === 'day' ? 'default' : 'ghost'}
-                  size="sm"
-                  className="px-3 py-1 text-xs font-medium rounded-lg"
-                  onClick={() => setRangeMode('day')}
-                >
-                  Day
-                </Button>
-                <Button
-                  variant={rangeMode === 'week' ? 'default' : 'ghost'}
-                  size="sm"
-                  className="px-3 py-1 text-xs font-medium rounded-lg"
-                  onClick={() => setRangeMode('week')}
-                >
-                  Week
-                </Button>
-                <Button
-                  variant={rangeMode === 'month' ? 'default' : 'ghost'}
-                  size="sm"
-                  className="px-3 py-1 text-xs font-medium rounded-lg"
-                  onClick={() => setRangeMode('month')}
-                >
-                  Month
-                </Button>
-              </div>
+              <RangeModeSelector value={rangeMode} onChange={setRangeMode} />
               <Popover>
                 <PopoverTrigger asChild>
                   <Button

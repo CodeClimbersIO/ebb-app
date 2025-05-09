@@ -22,6 +22,8 @@ import { Popover, PopoverContent, PopoverTrigger } from './ui/popover'
 import { Slider } from './ui/slider'
 import { ActivityRating } from '@/lib/app-directory/apps-types'
 import { Tag } from '../db/monitor/tagRepo'
+import { Skeleton } from './ui/skeleton'
+import { ArrowUpRight, ArrowDownRight } from 'lucide-react'
 
 export const chartConfig = {
   creating: {
@@ -64,14 +66,18 @@ export interface UsageSummaryProps {
 
 function TrendIndicator({ trend }: { trend?: { percent: number; direction: 'up' | 'down' | 'none' } }) {
   if (!trend || trend.direction === 'none') return null
-  const color = trend.direction === 'up' ? 'text-green-500' : 'text-red-500'
-  const Arrow = trend.direction === 'up'
-    ? (<svg className="inline w-4 h-4 ml-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>)
-    : (<svg className="inline w-4 h-4 ml-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" /></svg>)
+
+  const isUp = trend.direction === 'up'
+  const colorClasses = isUp
+    ? 'text-green-600 dark:text-green-400'
+    : 'text-red-600 dark:text-red-400'
+
+  const ArrowIcon = isUp ? ArrowUpRight : ArrowDownRight
+
   return (
-    <span className={`ml-2 flex items-center font-normal text-xs ${color} opacity-50`}
-      title={trend.direction === 'up' ? 'Increase from previous period' : 'Decrease from previous period'}>
-      {trend.percent.toFixed(0)}% {Arrow}
+    <span className={`ml-2 flex items-center font-normal text-xs ${colorClasses}`}
+      title={isUp ? 'Increase from previous period' : 'Decrease from previous period'}>
+      {trend.percent.toFixed(0)}% <ArrowIcon className="inline w-3 h-3 ml-0.5" strokeWidth={2.5} />
     </span>
   )
 }
@@ -167,8 +173,8 @@ export const UsageSummary = ({
       <Card>
         <CardContent className="pt-6">
           {isLoading ? (
-            <div className="flex h-[200px] items-center justify-center text-muted-foreground">
-                Crunching the numbers...
+            <div className="aspect-video">
+              <Skeleton className="h-full w-full" />
             </div>
           ) : (
             <ChartContainer config={chartConfig}>
@@ -276,9 +282,7 @@ export const UsageSummary = ({
         <CardContent>
           <div className="space-y-6">
             {isLoading ? (
-              <div className="flex h-[200px] items-center justify-center text-muted-foreground">
-                Crunching the numbers...
-              </div>
+              <Skeleton className="h-[200px] w-full" />
             ) : (
               sortedAppUsage
                 .filter(app => app.duration >= 1)
