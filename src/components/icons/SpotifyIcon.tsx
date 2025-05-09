@@ -6,4 +6,3 @@ export const SpotifyIcon = () => (
     />
   </svg>
 )
-

@@ -6,7 +6,14 @@ declare global {
       track_window: {
         current_track: {
           name: string;
-          artists: Array<{ name: string }>;
+          uri: string;
+          id: string;
+          artists: Array<{ name: string; uri: string, id: string }>;
+          album: {
+            name: string;
+            uri: string;
+            id: string;
+          }
         };
       };
       paused: boolean;
