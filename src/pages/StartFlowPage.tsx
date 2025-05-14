@@ -17,7 +17,6 @@ import { AppSelector, type SearchOption } from '@/components/AppSelector'
 import { AlertCircle } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { SpotifyApiService } from '@/lib/integrations/spotify/spotifyApi'
-import { TypewriterModeToggle } from '@/components/TypewriterModeToggle'
 import { logAndToastError } from '@/lib/utils/logAndToastError'
 import { error as logError } from '@tauri-apps/plugin-log'
 import { BlockingPreferenceApi } from '@/api/ebbApi/blockingPreferenceApi'
@@ -31,7 +30,6 @@ export const StartFlowPage = () => {
   const [selectedApps, setSelectedApps] = useState<SearchOption[]>([])
   const [isAllowList, setIsAllowList] = useState(false)
   const [hasBreathing, setHasBreathing] = useState(true)
-  const [typewriterMode, setTypewriterMode] = useState(false)
   const [workflows, setWorkflows] = useState<Workflow[]>([])
   const [hasMusic, setHasMusic] = useState(true)
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard' | null>(null)
@@ -73,7 +71,6 @@ export const StartFlowPage = () => {
           setSelectedApps(mostRecentWorkflow.selectedApps || [])
           setIsAllowList(mostRecentWorkflow.settings.isAllowList || false)
           setHasBreathing(mostRecentWorkflow.settings.hasBreathing ?? true)
-          setTypewriterMode(mostRecentWorkflow.settings.typewriterMode ?? false)
           setHasMusic(mostRecentWorkflow.settings.hasMusic ?? true)
           setDifficulty(mostRecentWorkflow.settings.difficulty || null)
         }
@@ -112,7 +109,6 @@ export const StartFlowPage = () => {
         defaultDuration: duration?.as('minutes') ?? null,
         isAllowList,
         hasBreathing,
-        typewriterMode,
         hasMusic,
         difficulty
       }
@@ -123,7 +119,7 @@ export const StartFlowPage = () => {
     } catch (error) {
       logAndToastError(`Failed to save workflow changes: ${error}`)
     }
-  }, [duration, selectedPlaylist, selectedApps, isAllowList, selectedWorkflow, hasBreathing, typewriterMode, hasMusic, difficulty])
+  }, [duration, selectedPlaylist, selectedApps, isAllowList, selectedWorkflow, hasBreathing, hasMusic, difficulty])
 
   useEffect(() => {
     if (selectedWorkflow?.id) {
@@ -132,7 +128,7 @@ export const StartFlowPage = () => {
       }, 150)
       return () => clearTimeout(timeoutId)
     }
-  }, [selectedWorkflow, duration, selectedPlaylist, selectedApps, isAllowList, hasBreathing, typewriterMode, hasMusic, saveChanges])
+  }, [selectedWorkflow, duration, selectedPlaylist, selectedApps, isAllowList, hasBreathing, hasMusic, saveChanges])
 
   const handleWorkflowSelect = async (workflowId: string) => {
     try {
@@ -146,7 +142,6 @@ export const StartFlowPage = () => {
         setSelectedApps(workflow.selectedApps || [])
         setIsAllowList(workflow.settings.isAllowList || false)
         setHasBreathing(workflow.settings.hasBreathing ?? true)
-        setTypewriterMode(workflow.settings.typewriterMode ?? false)
         setHasMusic(workflow.settings.hasMusic ?? true)
         setDifficulty(workflow.settings.difficulty || null)
       }
@@ -189,7 +184,6 @@ export const StartFlowPage = () => {
         duration_minutes: duration?.as('minutes') ?? null,
         is_allowlist: isAllowList,
         difficulty: difficulty,
-        typewriter_mode: typewriterMode,
         has_music: hasMusic,
         has_breathing: hasBreathing,
         selected_categories: selectedApps.map(app => {
@@ -225,8 +219,8 @@ export const StartFlowPage = () => {
             defaultDuration: duration?.as('minutes') ?? null,
             isAllowList,
             hasBreathing,
-            typewriterMode,
             hasMusic,
+            typewriterMode: false,
             difficulty,
           }
         }
@@ -278,7 +272,7 @@ export const StartFlowPage = () => {
         difficulty
       }
 
-      await invoke('start_blocking', { blockingApps, isBlockList, typewriterMode })
+      await invoke('start_blocking', { blockingApps, isBlockList })
 
       if (!hasBreathing) {
         navigate('/flow', { state: sessionState })
@@ -349,6 +343,15 @@ export const StartFlowPage = () => {
                 </AlertDescription>
               </Alert>
             )}
+            
+            <div className="flex items-center gap-4">
+              <div className="flex-1">
+                <TimeSelector
+                  value={duration?.as('minutes') ?? null}
+                  onChange={(value) => setDuration(value ? Duration.fromObject({ minutes: value }) : null)}
+                />
+              </div>
+            </div>
 
             {hasMusic && (
               <div>
@@ -361,20 +364,6 @@ export const StartFlowPage = () => {
               </div>
             )}
 
-            <div className="flex items-center gap-4">
-              <div className="flex-1">
-                <TimeSelector
-                  value={duration?.as('minutes') ?? null}
-                  onChange={(value) => setDuration(value ? Duration.fromObject({ minutes: value }) : null)}
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <TypewriterModeToggle
-                  typewriterMode={typewriterMode}
-                  onToggle={(value) => setTypewriterMode(value)}
-                />
-              </div>
-            </div>
 
             <Button
               className="w-full"
