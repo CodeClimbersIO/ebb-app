@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Layout } from '@/components/Layout'
@@ -8,6 +8,7 @@ import supabase from '../lib/integrations/supabase'
 import { logAndToastError } from '../lib/utils/logAndToastError'
 import { useAuth } from '../hooks/useAuth'
 import { Input } from '../components/ui/input'
+import { toastStore } from '../lib/stores/toastStore'
 
 export default function FeedbackPage() {
   const { user } = useAuth()
@@ -15,12 +16,36 @@ export default function FeedbackPage() {
   const [submitting, setSubmitting] = useState(false)
   const [email, setEmail] = useState(user?.email || '')
   const [submitted, setSubmitted] = useState(false)
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null)
 
   useEffect(() => {
     if (user) {
       setEmail(user.email || '')
     }
   }, [user])
+
+  useEffect(() => {
+    const error = toastStore.getState().error
+    if (error) {
+      const prefillText = `${error}\n\n---\nSorry about that! We want to help you. Please describe what you were doing when this error occurred:`
+      setFeedback(prefillText)
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.selectionStart = textareaRef.current.selectionEnd = prefillText.length
+          textareaRef.current.focus()
+        }
+      }, 0)
+      toastStore.setState({ error: null })
+    }
+  }, [])
+
+  useEffect(() => {
+    const textarea = textareaRef.current
+    if (textarea) {
+      textarea.style.height = 'auto'
+      textarea.style.height = textarea.scrollHeight + 'px'
+    }
+  }, [feedback])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -35,7 +60,7 @@ export default function FeedbackPage() {
       }
       setSubmitted(true)
     } catch (error) {
-      logAndToastError(`Error submitting feedback: ${error}`)
+      logAndToastError(`Error submitting feedback: ${error}`, error)
     } finally {
       setTimeout(() => {
         setSubmitting(false)
@@ -64,12 +89,14 @@ export default function FeedbackPage() {
                   required
                 />
                 <textarea
+                  ref={textareaRef}
                   className="w-full min-h-[100px] rounded border bg-background p-3 text-base"
                   placeholder="Share your feedback, bug report, or feature request..."
                   value={feedback}
                   onChange={e => setFeedback(e.target.value)}
                   required
                   disabled={submitting}
+                  style={{ resize: 'none', overflow: 'hidden' }}
                 />
                 <div className="flex justify-end">
                   <Button type="submit" disabled={submitting || !feedback.trim()}>

@@ -28,7 +28,7 @@ export function UserProfileSettings({ user }: UserProfileSettingsProps) {
   const handleLogout = async () => {
     const { error } = await logout()
     if (error) {
-      logAndToastError(`Error logging out: ${error.message}`)
+      logAndToastError(`Error logging out: ${error.message}`, error)
     }
 
     navigate('/login')
@@ -45,7 +45,7 @@ export function UserProfileSettings({ user }: UserProfileSettingsProps) {
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
-      logAndToastError(`Error creating portal session: ${message}`)
+      logAndToastError(`Error creating portal session: ${message}`, err)
     }
   }
 

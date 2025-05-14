@@ -39,7 +39,7 @@ export const LoginPage = () => {
       }
     } catch (err) {
       setError('Failed to login with Google.')
-      logAndToastError(`${err}`)
+      logAndToastError(`${err}`, error)
     }
   }
 
@@ -47,7 +47,7 @@ export const LoginPage = () => {
     try {
       await invoke('plugin:shell|open', { path: url })
     } catch (err) {
-      logAndToastError(`Failed to open link: ${err}`)
+      logAndToastError(`Failed to open link: ${err}`, err)
     }
   }
 

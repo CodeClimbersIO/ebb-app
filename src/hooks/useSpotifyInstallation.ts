@@ -12,7 +12,7 @@ export const useSpotifyInstallation = () => {
         const installed = await invoke<boolean>('detect_spotify')
         setIsSpotifyInstalled(installed)
       } catch (error) {
-        logAndToastError(`Error detecting Spotify: ${error}`)
+        logAndToastError(`Error detecting Spotify: ${error}`, error)
         setIsSpotifyInstalled(false)
       } finally {
         setIsChecking(false)

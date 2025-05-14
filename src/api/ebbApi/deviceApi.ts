@@ -27,7 +27,7 @@ const getMacAddress = async (): Promise<string> => {
     return macAddress
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
-    logAndToastError(`MAC Address Error: ${errorMessage}`)
+    logAndToastError(`MAC Address Error: ${errorMessage}`, error)
     throw new Error(`Device registration requires MAC address access: ${errorMessage}`)
   }
 }
@@ -66,7 +66,7 @@ const registerDevice = async (userId: string, maxDevices: number): Promise<Devic
   const { data: existingDevices, error: deviceError } = await getUserDevices(userId)
   
   if (deviceError) {
-    logAndToastError(`[DeviceReg] Error fetching devices: ${JSON.stringify(deviceError, null, 2)}`)
+    logAndToastError(`[DeviceRegister] Error fetching devices: ${JSON.stringify(deviceError, null, 2)}`, deviceError)
     throw new Error('Failed to fetch devices')
   }
 

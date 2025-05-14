@@ -33,7 +33,7 @@ export const AccessibilityPage = () => {
         return hasPermissions
       } catch (error) {
         if (mounted) {
-          logAndToastError(`❌ Error during permission check: ${error}`)
+          logAndToastError(`❌ Error during permission check: ${error}`, error)
           setPermissionStatus('not_granted')
         }
         return false
@@ -63,7 +63,7 @@ export const AccessibilityPage = () => {
     try {
       await invoke('request_system_permissions')
     } catch (error) {
-      logAndToastError(`Failed to request permissions: ${error}`)
+      logAndToastError(`Failed to request permissions: ${error}`, error)
     }
   }
 

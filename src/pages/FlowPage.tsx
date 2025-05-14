@@ -63,7 +63,7 @@ const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
 
       flowSession.duration = newTotalDurationInSeconds
     } catch (error) {
-      logAndToastError(`Failed to extend session duration: ${error}`)
+      logAndToastError(`Failed to extend session duration: ${error}`, error)
     } finally {
       setIsAddingTime(false)
       setTimeout(() => {
@@ -298,14 +298,14 @@ export const FlowPage = () => {
                 newPlayer.connect()
               }
             } catch (error) {
-              logAndToastError(`Error reconnecting player: ${error}`)
+              logAndToastError(`Error reconnecting player: ${error}`, error)
             }
           }, 2000)
         })
 
         setPlayer(newPlayer)
       } catch (error) {
-        logAndToastError(`Failed to initialize Spotify player: ${error}`)
+        logAndToastError(`Failed to initialize Spotify player: ${error}`, error)
       }
     }
 
@@ -347,7 +347,7 @@ export const FlowPage = () => {
         setPlaylistData(newPlaylistData)
         localStorage.setItem('playlistData', JSON.stringify(newPlaylistData))
       } catch (error) {
-        logAndToastError(`Error loading playlist data: ${error}`)
+        logAndToastError(`Error loading playlist data: ${error}`, error)
       }
     }
 
@@ -362,7 +362,7 @@ export const FlowPage = () => {
       try {
         await SpotifyAuthService.refreshAccessToken()
       } catch (error) {
-        logAndToastError(`Failed to refresh token in interval: ${error}`)
+        logAndToastError(`Failed to refresh token in interval: ${error}`, error)
       }
     }, 30 * 60 * 1000) // 30 minutes
 
@@ -413,7 +413,7 @@ export const FlowPage = () => {
         await player.resume()
       }
     } catch (error) {
-      logAndToastError(`Playback control error: ${error}`)
+      logAndToastError(`Playback control error: ${error}`, error)
     } finally {
       setTimeout(() => setClickedButton(null), 200)
     }
@@ -425,7 +425,7 @@ export const FlowPage = () => {
       setClickedButton('next')
       await player.nextTrack()
     } catch (error) {
-      logAndToastError(`Next track error: ${error}`)
+      logAndToastError(`Next track error: ${error}`, error)
     } finally {
       setTimeout(() => setClickedButton(null), 200)
     }
@@ -437,7 +437,7 @@ export const FlowPage = () => {
       setClickedButton('prev')
       await player.previousTrack()
     } catch (error) {
-      logAndToastError(`Previous track error: ${error}`)
+      logAndToastError(`Previous track error: ${error}`, error)
     } finally {
       setTimeout(() => setClickedButton(null), 200)
     }

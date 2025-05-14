@@ -361,7 +361,7 @@ export function WorkflowSelector({ selectedId, onSelect, onSettingsChange }: Wor
           }
         }
       } catch (error) {
-        logAndToastError(`Failed to load workflows: ${error}`)
+        logAndToastError(`Failed to load workflows: ${error}`, error)
       }
     }
     
@@ -397,7 +397,7 @@ export function WorkflowSelector({ selectedId, onSelect, onSettingsChange }: Wor
           onSelect(savedWorkflow.id)
         }
       } catch (error) {
-        logAndToastError(`Failed to create new workflow: ${error}`)
+        logAndToastError(`Failed to create new workflow: ${error}`, error)
       }
     } else {
       onSelect(workflowId)
@@ -418,7 +418,7 @@ export function WorkflowSelector({ selectedId, onSelect, onSettingsChange }: Wor
         onSelect(workflow.id)
       }
     } catch (error) {
-      logAndToastError(`Failed to update workflow name: ${error}`)
+      logAndToastError(`Failed to update workflow name: ${error}`, error)
     }
   }
 
@@ -435,7 +435,7 @@ export function WorkflowSelector({ selectedId, onSelect, onSettingsChange }: Wor
         onSelect(updatedWorkflows[0].id)
       }
     } catch (error) {
-      logAndToastError(`Failed to delete workflow: ${error}`)
+      logAndToastError(`Failed to delete workflow: ${error}`, error)
     }
   }
 
@@ -454,7 +454,7 @@ export function WorkflowSelector({ selectedId, onSelect, onSettingsChange }: Wor
         onSettingsChange(savedWorkflow.id, savedWorkflow.settings)
       }
     } catch (error) {
-      logAndToastError(`Failed to update workflow settings: ${error}`)
+      logAndToastError(`Failed to update workflow settings: ${error}`, error)
     }
   }
 

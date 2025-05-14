@@ -72,7 +72,7 @@ export const useDeepLinkAuth = () => {
         }
       } catch (err) {
         processedUrls.delete(url) // Remove the URL from the processed set to allow for retries
-        logAndToastError(`Error handling deep link: ${err}`)
+        logAndToastError(`Error handling deep link: ${err}`, error)
         error(`Error handling deep link: ${err}`)
       } finally {
         setIsHandlingAuth(false)
