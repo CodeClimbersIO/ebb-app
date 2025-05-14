@@ -24,7 +24,7 @@ pub async fn get_app_icon(bundle_id: String) -> Result<String, String> {
 }
 
 #[command]
-pub fn start_blocking(blocking_apps: Vec<BlockingApp>, is_block_list: bool, typewriter_mode: bool) {
+pub fn start_blocking(blocking_apps: Vec<BlockingApp>, is_block_list: bool) {
     let apps: Vec<BlockableItem> = blocking_apps
         .iter()
         .map(|app| BlockableItem {
@@ -36,16 +36,12 @@ pub fn start_blocking(blocking_apps: Vec<BlockingApp>, is_block_list: bool, type
     *BLOCKING_STATE.lock().unwrap() = Some((apps.clone(), is_block_list));
 
     os_start_blocking(&apps, "https://ebb.cool/vibes", is_block_list);
-    if typewriter_mode {
-        system_monitor::start_typewriter_mode();
-    }
 }
 
 #[command]
 pub fn stop_blocking() {
     *BLOCKING_STATE.lock().unwrap() = None;
     os_stop_blocking();
-    system_monitor::stop_typewriter_mode();
 }
 
 #[command]
@@ -281,7 +277,7 @@ pub fn get_mac_address() -> Result<String, String> {
         Ok(Some(addr)) => {
             println!("Found MAC address: {}", addr);
             Ok(addr.to_string())
-        },
+        }
         Ok(None) => Err("No MAC address found on this device".to_string()),
         Err(e) => {
             println!("Error getting MAC address: {}", e);

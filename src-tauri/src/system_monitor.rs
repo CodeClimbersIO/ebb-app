@@ -2,9 +2,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
 use os_monitor::{
-    create_typewriter_window, detect_changes, has_accessibility_permissions,
-    remove_typewriter_window, run_loop_cycle, sync_typewriter_window_order, AppEvent,
-    BlockedAppEvent, Monitor, WindowEvent,
+    detect_changes, has_accessibility_permissions, AppEvent, BlockedAppEvent, Monitor,
 };
 use os_monitor_service::initialize_monitoring_service;
 
@@ -13,7 +11,6 @@ use tokio::time::{sleep, Duration};
 
 // Static flag to track if monitoring is already running
 static MONITOR_RUNNING: AtomicBool = AtomicBool::new(false);
-static TYPEWRITER_MODE_ON: AtomicBool = AtomicBool::new(false);
 static MONITOR_APP_HANDLE: Mutex<Option<AppHandle>> = Mutex::new(None);
 
 pub fn is_monitoring_running() -> bool {
@@ -43,37 +40,6 @@ fn on_app_blocked(app_handle: tauri::AppHandle, event: BlockedAppEvent) {
         });
 }
 
-fn on_window_event(app_handle: AppHandle, _: WindowEvent) {
-    if TYPEWRITER_MODE_ON
-        .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
-        .is_err()
-    {
-        let _ = app_handle.run_on_main_thread(|| {
-            sync_typewriter_window_order();
-        });
-    }
-}
-
-pub fn start_typewriter_mode() {
-    TYPEWRITER_MODE_ON.store(true, Ordering::SeqCst);
-    if let Some(app_handle) = MONITOR_APP_HANDLE.lock().unwrap().as_ref() {
-        let _ = app_handle.run_on_main_thread(|| {
-            create_typewriter_window(0.9);
-            run_loop_cycle();
-        });
-    }
-}
-
-pub fn stop_typewriter_mode() {
-    TYPEWRITER_MODE_ON.store(false, Ordering::SeqCst);
-    if let Some(app_handle) = MONITOR_APP_HANDLE.lock().unwrap().as_ref() {
-        let _ = app_handle.run_on_main_thread(|| {
-            remove_typewriter_window();
-            run_loop_cycle();
-        });
-    }
-}
-
 pub fn start_monitoring(app_handle: AppHandle) {
     log::info!("Starting monitoring service...");
     *MONITOR_APP_HANDLE.lock().unwrap() = Some(app_handle.clone());
@@ -95,7 +61,6 @@ pub fn start_monitoring(app_handle: AppHandle) {
         let monitor = Monitor::new();
         let mut app_receiver = monitor.subscribe();
         let register_blocked_handle_clone = app_handle.clone();
-        let register_window_handle_clone = app_handle.clone();
 
         // Initialize monitoring service first
         initialize_monitoring_service(Arc::new(monitor), db_path).await;
@@ -105,12 +70,10 @@ pub fn start_monitoring(app_handle: AppHandle) {
             println!("Event listener thread started");
             while let Ok(event) = app_receiver.blocking_recv() {
                 match event {
-                    AppEvent::Window(event) => {
-                        on_window_event(register_window_handle_clone.clone(), event);
-                    }
                     AppEvent::AppBlocked(event) => {
                         on_app_blocked(register_blocked_handle_clone.clone(), event);
                     }
+                    AppEvent::Window(_) => {}
                     AppEvent::Mouse(_) => {}
                     AppEvent::Keyboard(_) => {}
                 }
