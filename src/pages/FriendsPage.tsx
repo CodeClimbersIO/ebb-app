@@ -37,12 +37,12 @@ export const FriendsPage = () => {
 
   const getStatusColor = (status: 'focus' | 'online' | 'offline') => {
     switch (status) {
-      case 'focus':
-        return 'bg-primary'
-      case 'online':
-        return 'bg-green-500'
-      case 'offline':
-        return 'bg-muted-foreground/50'
+    case 'focus':
+      return 'bg-primary'
+    case 'online':
+      return 'bg-green-500'
+    case 'offline':
+      return 'bg-muted-foreground/50'
     }
   }
 
@@ -92,8 +92,8 @@ export const FriendsPage = () => {
                       <div className={cn('h-2 w-2 rounded-full', getStatusColor(friend.status))} />
                       <span>
                         {friend.status === 'focus' ? 'In focus' : 
-                         friend.status === 'online' ? 'Online' : 
-                         'Offline'}
+                          friend.status === 'online' ? 'Online' : 
+                            'Offline'}
                       </span>
                     </div>
                   </div>

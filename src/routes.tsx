@@ -19,6 +19,7 @@ import { useEffect } from 'react'
 import { useGlobalShortcut } from './hooks/useGlobalShortcut'
 import { logAndToastError } from '@/lib/utils/logAndToastError'
 import { useLicenseStore } from './stores/licenseStore'
+import FeedbackPage from './pages/FeedbackPage'
 
 
 const ProtectedRoute = () => {
@@ -107,6 +108,7 @@ const Router = () => {
         <Route path="/breathing-exercise" element={<BreathingExercisePage />} />
         <Route path="/flow" element={<FlowPage />} />
         <Route path="/flow-recap" element={<FlowRecapPage />} />
+        <Route path="/feedback" element={<FeedbackPage />} />
         <Route path="/onboarding/accessibility" element={<AccessibilityPage />} />
         <Route path="/onboarding/shortcut-tutorial" element={<ShortcutTutorialPage />} />
       </Route>

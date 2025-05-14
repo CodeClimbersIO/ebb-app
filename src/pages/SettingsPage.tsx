@@ -5,8 +5,6 @@ import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip'
 import { SpotifyIcon } from '@/components/icons/SpotifyIcon'
 import { AppleMusicIcon } from '@/components/icons/AppleMusicIcon'
-import { DiscordIcon } from '@/components/icons/DiscordIcon'
-import { GithubIcon } from '@/components/icons/GithubIcon'
 import {
   Dialog,
   DialogContent,
@@ -31,6 +29,7 @@ import { UserProfileSettings } from '@/components/UserProfileSettings'
 import { userApi } from '@/api/ebbApi/userApi'
 import { usePermissions } from '@/hooks/usePermissions'
 import { DeveloperSettings } from '../components/developer/DeveloperSettings'
+import { CommunityCard } from '../components/CommunityCard'
 
 export function SettingsPage() {
   const [showUnlinkDialog, setShowUnlinkDialog] = useState(false)
@@ -290,36 +289,7 @@ export function SettingsPage() {
                 </div>
               </div>
 
-              <div className="border rounded-lg p-6">
-                <h2 className="text-lg font-semibold mb-4">Community</h2>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between gap-8">
-                    <div>
-                      <div className="text-sm text-muted-foreground">
-                        Ebb is maintained by an open source community called CodeClimbers. Join us on Discord or GitHub to get involved.
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Button
-                        variant="outline"
-                        onClick={() => invoke('plugin:shell|open', { path: 'https://discord.gg/qhST6C5XxV' })}
-                        className="gap-2"
-                      >
-                        <DiscordIcon />
-                        Discord
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => invoke('plugin:shell|open', { path: 'https://github.com/CodeClimbersIO/ebb-app' })}
-                        className="gap-2"
-                      >
-                        <GithubIcon />
-                        GitHub
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <CommunityCard/>
 
               <div className="border rounded-lg p-6 mt-8">
                 <h2 className="text-lg font-semibold mb-4 text-red-500">Danger Zone</h2>

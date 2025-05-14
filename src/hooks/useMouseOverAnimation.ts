@@ -1,6 +1,6 @@
 // credit to pqoqubbw for the icon animation: https://github.com/pqoqubbw/icons
 
-import { useAnimation } from 'motion/react'
+import { useAnimation } from 'framer-motion'
 import type { ForwardedRef } from 'react'
 import { useCallback, useImperativeHandle, useRef } from 'react'
 

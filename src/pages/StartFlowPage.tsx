@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion } from 'motion/react'
+import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { TopNav } from '@/components/TopNav'
@@ -19,6 +19,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { SpotifyApiService } from '@/lib/integrations/spotify/spotifyApi'
 import { TypewriterModeToggle } from '@/components/TypewriterModeToggle'
 import { logAndToastError } from '@/lib/utils/logAndToastError'
+import { error as logError } from '@tauri-apps/plugin-log'
 import { BlockingPreferenceApi } from '@/api/ebbApi/blockingPreferenceApi'
 
 export const StartFlowPage = () => {
@@ -90,7 +91,7 @@ export const StartFlowPage = () => {
           setSpotifyProfile(profile)
         }
       } catch (error) {
-        logAndToastError(`Error checking Spotify profile: ${error}`)
+        logError(`Error checking Spotify profile: ${error}`)
       }
     }
     checkSpotifyProfile()
