@@ -21,6 +21,7 @@ import { TypewriterModeToggle } from '@/components/TypewriterModeToggle'
 import { logAndToastError } from '@/lib/utils/logAndToastError'
 import { error as logError } from '@tauri-apps/plugin-log'
 import { BlockingPreferenceApi } from '@/api/ebbApi/blockingPreferenceApi'
+import { usePostHog } from 'posthog-js/react'
 
 export const StartFlowPage = () => {
   const { duration, setDuration } = useFlowTimer()
@@ -40,6 +41,7 @@ export const StartFlowPage = () => {
     product?: string
   } | null>(null)
   const navigate = useNavigate()
+  const posthog = usePostHog()
 
   useEffect(() => {
     const loadWorkflows = async () => {
@@ -181,6 +183,35 @@ export const StartFlowPage = () => {
       let workflowId = selectedWorkflowId
       let currentWorkflow = selectedWorkflow
       const workflowName = currentWorkflow?.name || 'Focus Session'
+
+      // Track flow session start with PostHog
+      posthog.capture('flow_session_started', {
+        duration_minutes: duration?.as('minutes') ?? null,
+        is_allowlist: isAllowList,
+        difficulty: difficulty,
+        typewriter_mode: typewriterMode,
+        has_music: hasMusic,
+        has_breathing: hasBreathing,
+        selected_categories: selectedApps.map(app => {
+          if (app.type === 'app') {
+            return {
+              type: 'app',
+              name: app.app.name,
+              is_browser: app.app.is_browser === 1
+            }
+          } else if (app.type === 'category') {
+            return {
+              type: 'category',
+              name: app.category
+            }
+          } else {
+            return {
+              type: 'custom',
+              name: app.url
+            }
+          }
+        })
+      })
 
       // If first session (no workflows), create one from current settings
       if (workflows.length === 0) {

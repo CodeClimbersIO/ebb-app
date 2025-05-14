@@ -17,8 +17,12 @@ const checkForUpdate = async () => {
     consecutiveErrorCount++
     // Only log error after 5 consecutive failures
     if (consecutiveErrorCount >= 5) {
-      logAndToastError('Failed to check for updates', error)
-      throw error
+      if(error instanceof Error && error.message.includes('read-only filesystem error (os error 30)')) {
+        logAndToastError('Failed to install update', 'Make sure your app has been installed to the applications folder. If you continue to have trouble, reach out to paul@ebb.cool')
+      } else {
+        logAndToastError('Failed to check for updates', 'Unknown error')
+        throw error
+      }
     }
     return null
   }
