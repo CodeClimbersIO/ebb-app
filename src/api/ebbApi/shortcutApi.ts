@@ -5,7 +5,7 @@ import {
 import { emit } from '@tauri-apps/api/event'
 import { logAndToastError } from '@/lib/utils/logAndToastError'
 import { UserPreferenceRepo } from '@/db/ebb/userPreferenceRepo'
-import { info as logInfo, error as logError } from '@tauri-apps/plugin-log'
+import { info as logInfo, error as logError, error } from '@tauri-apps/plugin-log'
 
 export const DEFAULT_SHORTCUT = 'CommandOrControl+E'
 export const SHORTCUT_EVENT = 'global-shortcut-triggered'
@@ -18,7 +18,7 @@ const getCurrentShortcutFromDb = async (): Promise<string> => {
     const savedShortcut = await UserPreferenceRepo.getPreference(SHORTCUT_KEY)
     return savedShortcut ?? ''
   } catch (err) {
-    logAndToastError(`Failed to load shortcut from database: ${err}`)
+    logAndToastError(`Failed to load shortcut from database: ${err}`, error)
     return ''
   }
 }
@@ -31,13 +31,13 @@ const saveShortcut = async (shortcut: string): Promise<void> => {
   try {
     await UserPreferenceRepo.setPreference(SHORTCUT_KEY, shortcut)
   } catch (err) {
-    logAndToastError(`Failed to save shortcut ${shortcut} to database: ${err}`)
+    logAndToastError(`Failed to save shortcut ${shortcut} to database: ${err}`, error)
   }
 }
 
 export const updateGlobalShortcut = async (newShortcut: string): Promise<void> => {
   if (!isInitialized) {
-    logAndToastError('Cannot update shortcut before initialization')
+    logAndToastError('Cannot update shortcut before initialization', error)
     return
   }
 
@@ -60,14 +60,14 @@ export const updateGlobalShortcut = async (newShortcut: string): Promise<void> =
         })
       } catch (registrationError) {
         if (newShortcut !== DEFAULT_SHORTCUT) {
-          logAndToastError(`Explicit error during shortcut update registration: ${registrationError}`)
+          logAndToastError(`Explicit error during shortcut update registration: ${registrationError}`, error)
         }
       }
     }
     
     await saveShortcut(newShortcut)
   } catch (err) {
-    logAndToastError(`Failed to update shortcut: ${err}`)
+    logAndToastError(`Failed to update shortcut: ${err}`, error)
   }
 }
 
@@ -114,7 +114,7 @@ export const unregisterAllManagedShortcuts = async (): Promise<void> => {
       try {
         await unregisterShortcutTauri(currentShortcut)
       } catch (err) {
-        logAndToastError(`Failed to unregister ${currentShortcut} during cleanup: ${err}`)
+        logAndToastError(`Failed to unregister ${currentShortcut} during cleanup: ${err}`, error)
       }
     }
   }

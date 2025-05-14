@@ -38,7 +38,7 @@ export function PaywallDialog({ children }: PaywallDialogProps) {
     } catch (error) {
       const message = error instanceof Error ? error.message : 'An unexpected error occurred'
       setError(message)
-      logAndToastError(`Checkout failed: ${error}`)
+      logAndToastError(`Checkout failed: ${error}`, error)
     } finally {
       setIsLoading(false)
     }

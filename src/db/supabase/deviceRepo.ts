@@ -17,7 +17,7 @@ const upsertDevice = async (
     .upsert(upsertData, { onConflict: 'user_id,device_id' })
 
   if (response.error) {
-    logAndToastError(`[DeviceReg] Error upserting device: ${JSON.stringify(response.error, null, 2)}`)
+    logAndToastError(`[DeviceReg] Error upserting device: ${JSON.stringify(response.error, null, 2)}`, response.error)
   }
   return response
 }

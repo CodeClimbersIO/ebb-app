@@ -21,7 +21,7 @@ const fromDbWorkflow = async (dbWorkflow: WorkflowDb): Promise<Workflow> => {
   try {
     selectedApps = await BlockingPreferenceApi.getWorkflowBlockingPreferencesAsSearchOptions(dbWorkflow.id)
   } catch (error) {
-    logAndToastError(`Failed to load blocking preferences for workflow ${dbWorkflow.id}: ${error}`)
+    logAndToastError(`Failed to load blocking preferences for workflow ${dbWorkflow.id}: ${error}`, error)
   }
   
   return {

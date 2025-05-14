@@ -22,7 +22,7 @@ export const ResetAppData = () => {
         window.location.reload()
       }, 2000)
     } catch (error) {
-      logAndToastError(`Error resetting app data: ${error}`)
+      logAndToastError(`Error resetting app data: ${error}`, error)
     } finally {
       setIsResetting(false)
     }
@@ -38,7 +38,7 @@ export const ResetAppData = () => {
         window.location.reload()
       }, 2000)
     } catch (error) {
-      logAndToastError(`Error restoring app data: ${error}`)
+      logAndToastError(`Error restoring app data: ${error}`, error)
 
     } finally {
       setIsRestoring(false)

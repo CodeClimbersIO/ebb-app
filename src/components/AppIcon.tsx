@@ -93,7 +93,7 @@ const DesktopIcon = ({ app, size = 'md' }: { app: App; size?: IconSize }) => {
           setIconDataUrl(iconData as string)
         }
       } catch (error) {
-        logAndToastError(`Error loading app icon for ${app.app_external_id}: ${error}`)
+        logAndToastError(`Error loading app icon for ${app.app_external_id}: ${error}`, error)
         setIconError(true)
       }
     }

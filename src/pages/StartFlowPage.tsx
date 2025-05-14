@@ -57,7 +57,7 @@ export const StartFlowPage = () => {
             const defaultSearchOptions = await BlockingPreferenceApi.getDefaultSearchOptions()
             setSelectedApps(defaultSearchOptions) 
           } catch (tagError) {
-            logAndToastError(`Failed to load default categories: ${tagError}`)
+            logAndToastError(`Failed to load default categories: ${tagError}`, tagError)
             setSelectedApps([]) 
           }
 
@@ -78,7 +78,7 @@ export const StartFlowPage = () => {
           setDifficulty(mostRecentWorkflow.settings.difficulty || null)
         }
       } catch (error) {
-        logAndToastError(`Failed to load workflows: ${error}`)
+        logAndToastError(`Failed to load workflows: ${error}`, error)
       }
     }
 
@@ -121,7 +121,7 @@ export const StartFlowPage = () => {
     try {
       await WorkflowApi.saveWorkflow(updatedWorkflow)
     } catch (error) {
-      logAndToastError(`Failed to save workflow changes: ${error}`)
+      logAndToastError(`Failed to save workflow changes: ${error}`, error)
     }
   }, [duration, selectedPlaylist, selectedApps, isAllowList, selectedWorkflow, hasBreathing, typewriterMode, hasMusic, difficulty])
 
@@ -151,7 +151,7 @@ export const StartFlowPage = () => {
         setDifficulty(workflow.settings.difficulty || null)
       }
     } catch (error) {
-      logAndToastError(`Failed to select workflow: ${error}`)
+      logAndToastError(`Failed to select workflow: ${error}`, error)
     }
   }
 
@@ -164,7 +164,7 @@ export const StartFlowPage = () => {
             setSelectedWorkflow(workflow)
           }
         } catch (error) {
-          logAndToastError(`Failed to refresh workflow: ${error}`)
+          logAndToastError(`Failed to refresh workflow: ${error}`, error)
         }
       }
       refreshWorkflow()
@@ -239,7 +239,7 @@ export const StartFlowPage = () => {
           setSelectedWorkflowId(workflowId)
           setSelectedWorkflow(currentWorkflow)
         } catch (error) {
-          logAndToastError(`Failed to save first workflow: ${error}`)
+          logAndToastError(`Failed to save first workflow: ${error}`, error)
           return
         }
       } else if (workflowId) {
@@ -286,7 +286,7 @@ export const StartFlowPage = () => {
         navigate('/breathing-exercise', { state: sessionState })
       }
     } catch (error) {
-      logAndToastError(`Failed to start flow session: ${error}`)
+      logAndToastError(`Failed to start flow session: ${error}`, error)
     }
   }
 

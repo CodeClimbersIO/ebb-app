@@ -50,7 +50,7 @@ export const useLicenseStore = create<LicenseStoreState>()(
 
           set({ ...defaultStoreState, license: data.license, permissions: data.permissions, deviceInfo: data.deviceInfo, isLoading: false })
         } catch (err) {
-          logAndToastError(`Failed to fetch license status: ${err instanceof Error ? err.message : String(err)}`)
+          logAndToastError(`Failed to fetch license status: ${err instanceof Error ? err.message : String(err)}`, err)
           set({ ...defaultStoreState, error: err instanceof Error ? err : new Error('Failed to fetch license') })
         }
       },
@@ -91,7 +91,7 @@ export const useLicenseStore = create<LicenseStoreState>()(
           try {
             await supabase.removeChannel(channel)
           } catch (error) {
-            logAndToastError(`Error removing Supabase channel: ${error}`)
+            logAndToastError(`Error removing Supabase channel: ${error}`, error)
           } finally {
             set({ channel: null })
           }

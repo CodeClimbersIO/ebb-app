@@ -25,8 +25,8 @@ export function useGlobalShortcut() {
       try {
         const window = getCurrentWindow()
         void Promise.all([
-          window.show().catch(err => logAndToastError(`(Shortcut) Error showing window: ${err}`)),
-          window.setFocus().catch(err => logAndToastError(`(Shortcut) Error focusing window: ${err}`))
+          window.show().catch(err => logAndToastError(`(Shortcut) Error showing window: ${err}`, err)),
+          window.setFocus().catch(err => logAndToastError(`(Shortcut) Error focusing window: ${err}`, err))
         ])
 
         if (location.pathname === '/onboarding/shortcut-tutorial') {
@@ -49,7 +49,7 @@ export function useGlobalShortcut() {
           navigate(targetPath, { replace: true })
         }
       } catch (error) {
-        logAndToastError(`(Shortcut) Error getting session or navigating: ${error}`)
+        logAndToastError(`(Shortcut) Error getting session or navigating: ${error}`, error)
         if (mounted) {
           navigate('/start-flow', { replace: true })
         }
@@ -72,7 +72,7 @@ export function useGlobalShortcut() {
           return
         }
 
-        logAndToastError(`(Shortcut) Setup failed: ${error}`)
+        logAndToastError(`(Shortcut) Setup failed: ${error}`, error)
       }
     }
 

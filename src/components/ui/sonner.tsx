@@ -1,28 +1,26 @@
 import { Toaster as Sonner, toast } from 'sonner'
-import { useState } from 'react'
-import { Clipboard, Check } from 'lucide-react'
+import { LifeBuoy } from 'lucide-react'
+import { toastStore } from '../../lib/stores/toastStore'
 
 type ToasterProps = React.ComponentProps<typeof Sonner>
 
-function ErrorToastContent({ errorMessage }: { errorMessage: string }) {
-  const [isCopied, setIsCopied] = useState(false)
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(errorMessage).then(() => {
-      setIsCopied(true)
-    })
+function ErrorToastContent({ error }: { error: Error }) {
+  const handleSupport = () => {
+    toastStore.setState({ error })
+    // window.dispatchEvent(new CustomEvent('navigate-to-support'))
   }
-
   return (
     <div className="flex items-center justify-between w-full gap-2">
-      <span className="text-red-400">{errorMessage}</span>
-      <button 
-        onClick={handleCopy} 
-        className='shrink-0 p-1.5 rounded-md text-red-400 hover:bg-red-800/30 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-red-800 disabled:opacity-50 transition-colors'
-        disabled={isCopied}
-      >
-        {isCopied ? <Check size={14} className="text-green-300" /> : <Clipboard size={14} />}
-      </button>
+      <span className="text-red-400">{error.message}</span>
+      <div className="flex gap-1">
+        <button
+          onClick={handleSupport}
+          className='shrink-0 p-1.5 rounded-md text-red-400 hover:bg-red-800/30 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-red-800 transition-colors flex items-center gap-1'
+        >
+          <LifeBuoy size={14} />
+          <span className="text-xs">Contact Support</span>
+        </button>
+      </div>
     </div>
   )
 }
@@ -47,8 +45,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
   )
 }
 
-const toastError = (errorMessage: string) => {
-  toast(<ErrorToastContent errorMessage={errorMessage} />, {
+const toastError = (error: Error) => {
+  toast(<ErrorToastContent error={error} />, {
     duration: 8000,
   })
 }

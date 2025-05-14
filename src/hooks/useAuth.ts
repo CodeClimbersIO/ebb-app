@@ -41,7 +41,7 @@ export const useAuth = () => {
         setLoading(false)
       }
     }).catch((error) => {
-      logAndToastError(`[useAuth Simple] Error getting initial session: ${error}`)
+      logAndToastError(`[useAuth Simple] Error getting initial session: ${error}`, error)
       if (isMounted) {
         setLoading(false)
       }

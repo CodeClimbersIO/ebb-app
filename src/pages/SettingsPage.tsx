@@ -72,7 +72,7 @@ export function SettingsPage() {
           }
         }
       } catch (error) {
-        logAndToastError(`Error handling Spotify callback: ${error}`)
+        logAndToastError(`Error handling Spotify callback: ${error}`, error)
         setIsLoading(false)
       }
 
@@ -113,7 +113,7 @@ export function SettingsPage() {
     try {
       await SpotifyAuthService.connect()
     } catch (error) {
-      logAndToastError(`Error connecting to Spotify: ${error}`)
+      logAndToastError(`Error connecting to Spotify: ${error}`, error)
     }
   }
 
@@ -125,7 +125,7 @@ export function SettingsPage() {
       await supabase.auth.signOut()
       navigate('/')
     } catch (error) {
-      logAndToastError(`Error deleting account: ${error}`)
+      logAndToastError(`Error deleting account: ${error}`, error)
     } finally {
       setIsDeleting(false)
       setShowDeleteAccountDialog(false)
@@ -137,7 +137,7 @@ export function SettingsPage() {
       await invoke('change_autostart', { open: !autostartEnabled })
       setAutostartEnabled(!autostartEnabled)
     } catch (error) {
-      logAndToastError(`Error toggling autostart: ${error}`)
+      logAndToastError(`Error toggling autostart: ${error}`, error)
     }
   }
 

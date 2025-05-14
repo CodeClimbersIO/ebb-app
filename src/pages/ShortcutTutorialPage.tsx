@@ -20,7 +20,7 @@ export const ShortcutTutorialPage = () => {
         }
         await loadShortcutFromStore()
       } catch (error) {
-        logAndToastError(`Failed to initialize shortcut on tutorial page: ${error}`)
+        logAndToastError(`Failed to initialize shortcut on tutorial page: ${error}`, error)
       }
     }
     void initializeShortcut()
@@ -31,7 +31,7 @@ export const ShortcutTutorialPage = () => {
       await OnboardingUtils.markOnboardingCompleted()
       navigate('/start-flow')
     } catch (error) {
-      logAndToastError(`Failed to complete shortcut tutorial step: ${error}`)
+      logAndToastError(`Failed to complete shortcut tutorial step: ${error}`, error)
     }
   }
 

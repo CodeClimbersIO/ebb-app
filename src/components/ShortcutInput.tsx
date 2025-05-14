@@ -110,7 +110,7 @@ export function ShortcutInput({ popoverAlign = 'center' }: ShortcutInputProps) {
               setActiveKey(null)
             }, 500)
           } catch (error) {
-            logAndToastError(`Failed to update shortcut in ShortcutInput: ${error}`)
+            logAndToastError(`Failed to update shortcut in ShortcutInput: ${error}`, error)
             setActiveKey(null)
             setActiveModifiers([])
             setSnapshot(null)
@@ -151,7 +151,7 @@ export function ShortcutInput({ popoverAlign = 'center' }: ShortcutInputProps) {
       await updateGlobalShortcut('')
       await loadShortcutFromStore()
     } catch (error) {
-      logAndToastError(`Failed to clear shortcut: ${error}`)
+      logAndToastError(`Failed to clear shortcut: ${error}`, error)
     }
   }
 

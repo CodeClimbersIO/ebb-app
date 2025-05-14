@@ -82,7 +82,7 @@ export const startFlowTimer = async (startTime: DateTime) => {
       const iconImage = await Image.fromBytes(iconBytes)
       await tray.setIcon(iconImage)
     } catch (error) {
-      logAndToastError(`Error generating/setting timer icon: ${error}`)
+      logAndToastError(`Error generating/setting timer icon: ${error}`, error)
     }
   }, 1000)
 

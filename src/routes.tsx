@@ -20,6 +20,8 @@ import { useGlobalShortcut } from './hooks/useGlobalShortcut'
 import { logAndToastError } from '@/lib/utils/logAndToastError'
 import { useLicenseStore } from './stores/licenseStore'
 import FeedbackPage from './pages/FeedbackPage'
+import { toastStore } from './lib/stores/toastStore'
+import { useStore } from 'zustand'
 
 
 const ProtectedRoute = () => {
@@ -70,6 +72,13 @@ const Router = () => {
   useDeepLinkAuth()
   const navigate = useNavigate()
   useGlobalShortcut()
+  const { error } = useStore(toastStore)
+
+  useEffect(() => {
+    if (error) {
+      navigate('/feedback')
+    }
+  }, [error])
 
   useEffect(() => {
     let unlistenNavigate: (() => void) | undefined
@@ -82,7 +91,7 @@ const Router = () => {
           navigate(path)
         })
       } catch (error) {
-        logAndToastError(`(Router) Failed to set up tray navigation: ${error}`)
+        logAndToastError(`(Router) Failed to set up tray navigation: ${error}`, error)
       }
     }
 
