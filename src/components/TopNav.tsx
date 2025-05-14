@@ -1,10 +1,12 @@
 import { Button } from '@/components/ui/button'
 import { X } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
 import { Hotkey } from '@/components/ui/hotkey'
 import { useEffect } from 'react'
 import { useShortcutStore } from '@/lib/stores/shortcutStore'
+import { CircleHelpIcon } from './icons/CircleHelpIcon'
+import { Tooltip, TooltipContent , TooltipTrigger } from './ui/tooltip'
 
 interface TopNavProps {
   variant?: 'default' | 'modal'
@@ -38,6 +40,21 @@ export function TopNav({ variant = 'default' }: TopNavProps) {
         <div className="h-14 border-b w-full flex items-center pl-16 pr-4">
           <div className="flex-1" />
           <div className="flex items-center gap-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  iconSize={5}
+                  className={`w-9 h-9 p-2 ${location.pathname === '/feedback' ? 'text-foreground [&>svg]:text-foreground' : 'text-muted-foreground [&>svg]:text-muted-foreground'}`}
+                  asChild
+                >
+                  <Link to="/feedback">
+                    <CircleHelpIcon size={20} />
+                  </Link>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" sideOffset={10}>Feedback</TooltipContent>
+            </Tooltip>
             {variant === 'default' ? (
               <Button  
                 size="sm" 

@@ -11,6 +11,7 @@ import { useAuth } from './hooks/useAuth'
 import { usePostHog } from 'posthog-js/react'
 import { useShortcutStore } from '@/lib/stores/shortcutStore'
 import { Toaster } from '@/components/ui/sonner'
+import { TooltipProvider } from '@radix-ui/react-tooltip'
 
 const App = () => {
   const posthog = usePostHog()
@@ -51,8 +52,10 @@ const App = () => {
 
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-      <AppRouter />
-      <Toaster position="bottom-right" richColors />
+      <TooltipProvider>
+        <AppRouter />
+        <Toaster position="bottom-right" richColors />
+      </TooltipProvider>
     </ThemeProvider>
   )
 }
