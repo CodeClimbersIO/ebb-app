@@ -43,6 +43,7 @@ describe('createTimeBlockFromActivityState', () => {
   it('10 am should have the 4 tags, creating, consuming, creating, consuming with the correct duration', () => {
     const activityStates = mockActivityStates()
     const timeBlocks = createTimeBlockFromActivityState(activityStates)
+    console.log('timeBlocks', JSON.stringify(timeBlocks, null, 2))
     expect(Object.keys(timeBlocks[10].tags).length).toBe(4)
     expect(timeBlocks[10].tags['creating'].name).toBeDefined()
     expect(timeBlocks[10].tags['consuming'].name).toBeDefined()
