@@ -24,25 +24,25 @@ import { invoke } from '@tauri-apps/api/core'
 import NotificationManager from '@/lib/notificationManager'
 import { listen } from '@tauri-apps/api/event'
 import { useRustEvents } from '@/hooks/useRustEvents'
-import { useFlowTimer } from '../lib/stores/flowTimer'
 import { stopFlowTimer } from '../lib/tray'
 import { DifficultyButton } from '@/components/DifficultyButton'
 import { useSpotifyInstallation } from '@/hooks/useSpotifyInstallation'
 import { logAndToastError } from '@/lib/utils/logAndToastError'
+import { useFlowSession } from '../lib/stores/flowSession'
 
-const getDurationFormatFromSeconds = (seconds: number) => {
+const getDurationFormatFromSeconds = (seconds: number): Duration => {
   const duration = Duration.fromMillis(seconds * 1000)
-  const format = duration.as('minutes') >= 60 ? 'hh:mm:ss' : 'mm:ss'
-  return duration.toFormat(format)
+  return duration
 }
 
 const MAX_SESSION_DURATION = 8 * 60 * 60
 
-const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
-  const [time, setTime] = useState<string>('00:00')
+const Timer = () => {
   const [isAddingTime, setIsAddingTime] = useState(false)
   const [cooldown, setCooldown] = useState(false)
   const [hasShownWarning, setHasShownWarning] = useState(false)
+  const [time, setTime] = useState<string>()
+  const flowSession = useFlowSession()
 
   const handleAddTime = async () => {
     if (!flowSession || !flowSession.duration || isAddingTime || cooldown) return
@@ -57,7 +57,7 @@ const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
       await FlowSessionApi.updateFlowSessionDuration(flowSession.id, newTotalDurationInSeconds)
 
       const newTotalDurationForStore = Duration.fromObject({ seconds: newTotalDurationInSeconds })
-      useFlowTimer.getState().setTotalDuration(newTotalDurationForStore)
+      useFlowSession.getState().setTotalDuration(newTotalDurationForStore)
 
       setHasShownWarning(false)
 
@@ -99,10 +99,10 @@ const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
         }
 
         const duration = getDurationFormatFromSeconds(remaining)
-        setTime(duration)
+        useFlowSession.getState().setDuration(duration)
       } else {
         const duration = getDurationFormatFromSeconds(diff)
-        setTime(duration)
+        useFlowSession.getState().setDuration(duration)
       }
     }
 
@@ -130,9 +130,17 @@ const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
     }
   }, [handleAddTime])
 
+  useEffect(() => {
+    if (!flowSession) return
+
+    const time = flowSession.duration || Duration.fromObject({ minutes: 0 })
+    const formattedTime = time?.as('minutes') >= 60 ? time?.toFormat('hh:mm:ss') : time?.toFormat('mm:ss')
+    setTime(formattedTime)
+  }, [flowSession])
+
   return (
     <>
-      <div className="text-sm text-muted-foreground mb-2">{flowSession?.objective}</div>
+      <div className="text-sm text-muted-foreground mb-2">Flow Session</div>
       <div className="text-6xl font-bold mb-2 font-mono tracking-tight">
         {time}
       </div>
@@ -182,6 +190,7 @@ type CurrentTrack = {
 
 export const FlowPage = () => {
   useRustEvents()
+  const session = useFlowSession.getState().session
   const navigate = useNavigate()
   const [flowSession, setFlowSession] = useState<FlowSession | null>(null)
   const [isEndingSession, setIsEndingSession] = useState(false)
@@ -191,9 +200,8 @@ export const FlowPage = () => {
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTrack, setCurrentTrack] = useState<CurrentTrack | null>(null)
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string>(() => {
-    const state = window.history.state?.usr
-    // Try getting from session state first, then fall back to localStorage for non-workflow sessions
-    return state?.selectedPlaylist || localStorage.getItem('lastPlaylist') || ''
+    const state = session?.workflow?.selectedPlaylist
+    return state || localStorage.getItem('lastPlaylist') || ''
   })
   const [isSpotifyAuthenticated, setIsSpotifyAuthenticated] = useState(false)
   const [playlistData, setPlaylistData] = useState<{
@@ -219,8 +227,8 @@ export const FlowPage = () => {
         navigate('/start-flow')
       }
       setFlowSession(flowSession)
-      const state = window.history.state?.usr
-      setDifficulty(state?.difficulty || 'medium')
+      const state = session?.workflow?.settings.difficulty
+      setDifficulty(state || 'medium')
     }
     init()
   }, [])
@@ -258,8 +266,7 @@ export const FlowPage = () => {
 
         newPlayer.addListener('ready', ({ device_id }: { device_id: string }) => {
           setSpotifyDeviceId(device_id)
-          const state = window.history.state?.usr
-          const playlistToUse = state?.selectedPlaylist || localStorage.getItem('lastPlaylist')
+          const playlistToUse = session?.workflow?.selectedPlaylist || localStorage.getItem('lastPlaylist')
           if (playlistToUse) {
             SpotifyApiService.startPlayback(playlistToUse, device_id)
           }
@@ -309,8 +316,7 @@ export const FlowPage = () => {
       }
     }
 
-    const state = window.history.state?.usr
-    const hasMusic = state?.hasMusic ?? true
+    const hasMusic = session?.workflow?.settings.hasMusic
     if (hasMusic) {
       initSpotify()
     }
@@ -389,6 +395,7 @@ export const FlowPage = () => {
 
     await invoke('stop_blocking')
     await stopFlowTimer()
+    useFlowSession.getState().setSession(null)
     await FlowSessionApi.endFlowSession(flowSession.id)
 
     navigate('/flow-recap', {
@@ -543,7 +550,7 @@ export const FlowPage = () => {
 
       <div className="flex-1 flex flex-col items-center justify-center">
         <Timer flowSession={flowSession} />
-        {(window.history.state?.usr?.hasMusic ?? true) && isSpotifyAuthenticated && (
+        {(session?.workflow?.settings.hasMusic) && isSpotifyAuthenticated && (
           <div className="w-full max-w-lg mx-auto px-4 mb-4 mt-12">
             <Card className="p-6">
               <CardContent className="space-y-12">

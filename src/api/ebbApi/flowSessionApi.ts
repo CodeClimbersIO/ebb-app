@@ -2,13 +2,12 @@ import { QueryResult } from '@tauri-apps/plugin-sql'
 import { FlowSession, FlowSessionRepo, FlowSessionSchema } from '@/db/ebb/flowSessionRepo'
 
 const startFlowSession = async (
-  objective: string, 
   duration?: number,
 ): Promise<string> => {
   const flowSession: FlowSessionSchema = {
     id: self.crypto.randomUUID(),
     start: new Date().toISOString(),
-    objective,
+    objective: '',
     self_score: 0,
     duration: duration ? duration * 60 : undefined,
   }

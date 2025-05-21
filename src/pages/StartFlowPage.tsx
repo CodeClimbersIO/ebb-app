@@ -11,7 +11,7 @@ import { WorkflowApi, type Workflow } from '@/api/ebbApi/workflowApi'
 import { invoke } from '@tauri-apps/api/core'
 import { DateTime, Duration } from 'luxon'
 import { startFlowTimer } from '../lib/tray'
-import { useFlowTimer, getDurationFromDefault } from '../lib/stores/flowTimer'
+import { FlowSessionState, getDurationFromDefault, useFlowSession } from '../lib/stores/flowSession'
 import { MusicSelector } from '@/components/MusicSelector'
 import { AppSelector, type SearchOption } from '@/components/AppSelector'
 import { AlertCircle } from 'lucide-react'
@@ -23,7 +23,7 @@ import { BlockingPreferenceApi } from '@/api/ebbApi/blockingPreferenceApi'
 import { usePostHog } from 'posthog-js/react'
 
 export const StartFlowPage = () => {
-  const { duration, setDuration } = useFlowTimer()
+  const { duration, setDuration } = useFlowSession()
   const [selectedWorkflowId, setSelectedWorkflowId] = useState<string | null>(null)
   const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(null)
   const [selectedPlaylist, setSelectedPlaylist] = useState<string | null>(null)
@@ -99,6 +99,8 @@ export const StartFlowPage = () => {
   const saveChanges = useCallback(async () => {
     if (!selectedWorkflow?.id) return
 
+    console.log('selectedApps', selectedApps)
+    console.log('selectedApps', selectedApps.length)
     const updatedWorkflow: Workflow = {
       ...selectedWorkflow,
       selectedApps,
@@ -177,7 +179,6 @@ export const StartFlowPage = () => {
     try {
       let workflowId = selectedWorkflowId
       let currentWorkflow = selectedWorkflow
-      const workflowName = currentWorkflow?.name || 'Focus Session'
 
       // Track flow session start with PostHog
       posthog.capture('flow_session_started', {
@@ -245,13 +246,12 @@ export const StartFlowPage = () => {
       const isBlockList = !isAllowList
 
       const sessionId = await FlowSessionApi.startFlowSession(
-        workflowName,
         duration ? duration.as('minutes') : undefined
       )
       
       const totalDurationForStore = duration ? Duration.fromObject({ minutes: duration.as('minutes') }) : null
-      useFlowTimer.getState().setTotalDuration(totalDurationForStore)
-      useFlowTimer.getState().setDuration(null)
+      useFlowSession.getState().setTotalDuration(totalDurationForStore)
+      useFlowSession.getState().setDuration(null)
 
       if (!sessionId) {
         throw new Error('No session ID returned from API')
@@ -259,26 +259,23 @@ export const StartFlowPage = () => {
 
       await startFlowTimer(DateTime.now())
 
-      const sessionState = {
-        startTime: Date.now(),
-        objective: workflowName,
+      const sessionState: FlowSessionState = {
+        id: sessionId,
         sessionId,
-        duration: duration ? duration.as('minutes') : undefined,
-        workflowId, 
-        hasBreathing,
-        hasMusic,
-        selectedPlaylist,
-        selectedPlaylistName: currentWorkflow?.selectedPlaylistName, 
-        difficulty
+        workflowId: workflowId || '',
+        workflow: currentWorkflow,
       }
 
+      useFlowSession.getState().setSession(sessionState)
+      
       await invoke('start_blocking', { blockingApps, isBlockList })
 
       if (!hasBreathing) {
-        navigate('/flow', { state: sessionState })
+        navigate('/flow')
       } else {
-        navigate('/breathing-exercise', { state: sessionState })
+        navigate('/breathing-exercise')
       }
+
     } catch (error) {
       logAndToastError(`Failed to start flow session: ${error}`, error)
     }

@@ -27,6 +27,9 @@ const App = () => {
       await supabase.auth.getSession()
       await setupTray()
       const hasPermissions = await invoke<boolean>('check_accessibility_permissions')
+      // const flowSession = await FlowSessionApi.getInProgressFlowSession()
+      // useFlowSession.getState().setSession(flowSession)
+
       beginCheckForUpdates()
 
       if (hasPermissions) {
