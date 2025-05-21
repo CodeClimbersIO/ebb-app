@@ -115,5 +115,51 @@ pub fn get_migrations() -> Vec<Migration> {
             );"#,
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 10,
+            description: "create_user_profile",
+            sql: r#"
+            CREATE TABLE IF NOT EXISTS user_profile (
+                id TEXT PRIMARY KEY NOT NULL,
+                user_id TEXT,
+                preferences TEXT NOT NULL DEFAULT '{}',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+            -- Migrate user_preference data into user_profile.preferences (as a single row, if any exist)
+            INSERT INTO user_profile (id, user_id, preferences, created_at, updated_at)
+            SELECT
+                'default',
+                NULL,
+                (
+                  SELECT '{' || group_concat('"' || key || '":' || value) || '}' FROM (
+                    SELECT key, json_quote(value) as value FROM user_preference
+                  )
+                ),
+                CURRENT_TIMESTAMP,
+                CURRENT_TIMESTAMP
+            WHERE EXISTS (SELECT 1 FROM user_preference);
+            "#,
+            kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 11,
+            description: "create_user_notification",
+            sql: r#"
+            CREATE TABLE IF NOT EXISTS user_notification (
+                id TEXT PRIMARY KEY NOT NULL,
+                user_id TEXT,
+                notification_type TEXT NOT NULL,
+                notification_sub_type TEXT NOT NULL,
+                notification_sent_id TEXT NOT NULL,
+                read INTEGER NOT NULL DEFAULT 0,
+                dismissed INTEGER NOT NULL DEFAULT 0,
+                notification_sent_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(user_id, notification_sent_id)
+            );"#,
+            kind: MigrationKind::Up,
+        },
     ]
 }
