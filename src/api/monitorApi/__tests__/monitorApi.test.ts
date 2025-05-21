@@ -1,4 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { DateTime, Settings } from 'luxon'
+
+Settings.defaultZone = 'UTC'
 
 // Mock before importing the module that uses it!
 vi.mock('../../../db/monitor/tagRepo', () => ({
@@ -18,7 +21,6 @@ vi.mock('../../../db/monitor/activityStateRepo', () => ({
 
 import { ActivityStateRepo } from '../../../db/monitor/activityStateRepo'
 import { getTimeCreatingByHour, getTimeCreatingByDay, createTimeBlockFromActivityState } from '../monitorApi'
-import { DateTime } from 'luxon'
 import { mockActivityStates } from './activityState.mock'
 
 function makeActivityState({ start, end, tags }: { start: string, end: string, tags: { tag_id: string, name: string }[] }) {
@@ -43,15 +45,16 @@ describe('createTimeBlockFromActivityState', () => {
   it('10 am should have the 4 tags, creating, consuming, creating, consuming with the correct duration', () => {
     const activityStates = mockActivityStates()
     const timeBlocks = createTimeBlockFromActivityState(activityStates)
-    expect(Object.keys(timeBlocks[10].tags).length).toBe(4)
-    expect(timeBlocks[10].tags['creating'].name).toBeDefined()
-    expect(timeBlocks[10].tags['consuming'].name).toBeDefined()
-    expect(timeBlocks[10].tags['neutral'].name).toBeDefined()
-    expect(timeBlocks[10].tags['idle'].name).toBeDefined()
-    expect(timeBlocks[10].tags['creating'].duration).toBeCloseTo(45, 1)
-    expect(timeBlocks[10].tags['consuming'].duration).toBeCloseTo(3, 1)
-    expect(timeBlocks[10].tags['neutral'].duration).toBeCloseTo(1, 1)
-    expect(timeBlocks[10].tags['idle'].duration).toBeCloseTo(8, 1)
+    
+    expect(Object.keys(timeBlocks[17].tags).length).toBe(4)
+    expect(timeBlocks[17].tags['creating'].name).toBeDefined()
+    expect(timeBlocks[17].tags['consuming'].name).toBeDefined()
+    expect(timeBlocks[17].tags['neutral'].name).toBeDefined()
+    expect(timeBlocks[17].tags['idle'].name).toBeDefined()
+    expect(timeBlocks[17].tags['creating'].duration).toBeCloseTo(45, 1)
+    expect(timeBlocks[17].tags['consuming'].duration).toBeCloseTo(3, 1)
+    expect(timeBlocks[17].tags['neutral'].duration).toBeCloseTo(1, 1)
+    expect(timeBlocks[17].tags['idle'].duration).toBeCloseTo(8, 1)
   })
 
   it('9 am should have no tags', () => {

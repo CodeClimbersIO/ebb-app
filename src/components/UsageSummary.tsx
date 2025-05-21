@@ -17,13 +17,15 @@ import { Progress } from '@/components/ui/progress'
 import { GraphableTimeByHourBlock, AppsWithTime } from '../api/monitorApi/monitorApi'
 import { AppIcon } from './AppIcon'
 import { Button } from './ui/button'
-import { useRef } from 'react'
+import { useRef, useEffect } from 'react'
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover'
 import { Slider } from './ui/slider'
 import { ActivityRating } from '@/lib/app-directory/apps-types'
 import { Tag } from '../db/monitor/tagRepo'
 import { Skeleton } from './ui/skeleton'
 import { ArrowUpRight, ArrowDownRight } from 'lucide-react'
+import { useCreateNotification, useGetNotificationBySentId } from '@/hooks/useNotifications'
+import { useAuth } from '@/hooks/useAuth'
 
 export const chartConfig = {
   creating: {
@@ -96,9 +98,27 @@ export const UsageSummary = ({
   isLoading = false,
   yAxisMax,
 }: UsageSummaryProps) => {
-  // Sort app usage
+  const { user } = useAuth()
+  const { mutate: createNotification } = useCreateNotification()
+  const { data: notificationBySentId } = useGetNotificationBySentId('firefox_not_supported')
   const sortedAppUsage = [...appUsage].sort((a, b) => b.duration - a.duration)
   const appUsageRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const hasFirefox = appUsage.some(app => app.app_external_id === 'org.mozilla.firefox')
+    if (user?.id && hasFirefox) {
+      if (notificationBySentId) return
+      createNotification({
+        user_id: user.id,
+        content: 'Site blocking is not currently supported for Firefox',
+        notification_type: 'app',
+        notification_sub_type: 'warning',
+        notification_sent_id: 'firefox_not_supported',
+        read: 0,
+        dismissed: 0,
+      })
+    }
+  }, [user?.id, appUsage, createNotification])
 
   const scrollToAppUsage = () => {
     appUsageRef.current?.scrollIntoView({ behavior: 'smooth' })
