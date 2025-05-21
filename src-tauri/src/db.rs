@@ -161,5 +161,22 @@ pub fn get_migrations() -> Vec<Migration> {
             );"#,
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 12,
+            description: "add_audit_timestamps_to_tables",
+            sql: r#"
+            -- Add timestamps to flow_session
+            ALTER TABLE flow_session ADD COLUMN created_at DATETIME;
+            ALTER TABLE flow_session ADD COLUMN updated_at DATETIME;
+            
+            -- Add updated_at to flow_period
+            ALTER TABLE flow_period ADD COLUMN updated_at DATETIME;
+            
+            -- Update existing rows with current timestamp
+            UPDATE flow_session SET created_at = datetime('now'), updated_at = datetime('now');
+            UPDATE flow_period SET updated_at = datetime('now');
+            "#,
+            kind: MigrationKind::Up,
+        },
     ]
 }
