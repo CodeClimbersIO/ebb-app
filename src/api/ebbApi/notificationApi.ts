@@ -1,8 +1,8 @@
 import { NotificationRepo, Notification, CreateNotificationSchema } from '@/db/ebb/notificationRepo'
 
-const getLatestActiveNotifications = async (): Promise<Notification> => {
-  const [notification] = await NotificationRepo.getAppNotifications({ dismissed: false, read: false })
-  return notification
+const getLatestActiveNotifications = async (): Promise<Notification | null> => {
+  const [notification] = await NotificationRepo.getAppNotifications({ dismissed: false })
+  return notification || null
 }
 
 const createAppNotification = async (notification: CreateNotificationSchema) => {
@@ -18,8 +18,15 @@ const updateAppNotificationStatus = async (
   return NotificationRepo.updateNotificationStatus(id, options)
 }
 
+const getNotificationBySentId = async (sentId: string): Promise<Notification | null> => {
+  const notifications = await NotificationRepo.getNotificationBySentId(sentId)
+  const [notification] = notifications
+  return notification || null
+}
+
 export const NotificationApi = {
   getLatestActiveNotifications,
   createAppNotification,
   updateAppNotificationStatus,
+  getNotificationBySentId,
 }

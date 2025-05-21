@@ -117,6 +117,23 @@ pub fn get_migrations() -> Vec<Migration> {
         },
         Migration {
             version: 10,
+            description: "add_audit_timestamps_to_tables",
+            sql: r#"
+            -- Add timestamps to flow_session
+            ALTER TABLE flow_session ADD COLUMN created_at DATETIME;
+            ALTER TABLE flow_session ADD COLUMN updated_at DATETIME;
+            
+            -- Add updated_at to flow_period
+            ALTER TABLE flow_period ADD COLUMN updated_at DATETIME;
+            
+            -- Update existing rows with current timestamp
+            UPDATE flow_session SET created_at = datetime('now'), updated_at = datetime('now');
+            UPDATE flow_period SET updated_at = datetime('now');
+            "#,
+            kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 11,
             description: "create_user_profile",
             sql: r#"
             CREATE TABLE IF NOT EXISTS user_profile (
@@ -143,12 +160,13 @@ pub fn get_migrations() -> Vec<Migration> {
             kind: MigrationKind::Up,
         },
         Migration {
-            version: 11,
+            version: 12,
             description: "create_user_notification",
             sql: r#"
             CREATE TABLE IF NOT EXISTS user_notification (
                 id TEXT PRIMARY KEY NOT NULL,
                 user_id TEXT,
+                content TEXT NOT NULL,
                 notification_type TEXT NOT NULL,
                 notification_sub_type TEXT NOT NULL,
                 notification_sent_id TEXT NOT NULL,
@@ -159,23 +177,6 @@ pub fn get_migrations() -> Vec<Migration> {
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE(user_id, notification_sent_id)
             );"#,
-            kind: MigrationKind::Up,
-        },
-        Migration {
-            version: 12,
-            description: "add_audit_timestamps_to_tables",
-            sql: r#"
-            -- Add timestamps to flow_session
-            ALTER TABLE flow_session ADD COLUMN created_at DATETIME;
-            ALTER TABLE flow_session ADD COLUMN updated_at DATETIME;
-            
-            -- Add updated_at to flow_period
-            ALTER TABLE flow_period ADD COLUMN updated_at DATETIME;
-            
-            -- Update existing rows with current timestamp
-            UPDATE flow_session SET created_at = datetime('now'), updated_at = datetime('now');
-            UPDATE flow_period SET updated_at = datetime('now');
-            "#,
             kind: MigrationKind::Up,
         },
     ]

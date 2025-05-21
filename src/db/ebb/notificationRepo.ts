@@ -4,9 +4,10 @@ import { getEbbDb } from './ebbDb'
 export interface NotificationSchema {
   id: string
   user_id?: string
+  content: string
   notification_type: 'app'
   notification_sub_type: 'warning'
-  notification_sent_id: string
+  notification_sent_id: 'firefox_not_supported'
   read: number
   dismissed: number
   notification_sent_at: string
@@ -24,24 +25,28 @@ const getAppNotifications = async (
   const ebbDb = await getEbbDb()
   let query = 'SELECT * FROM user_notification WHERE notification_type = \'app\''
   const params: unknown[] = []
-  const dismissedVal = toSqlBool(options.dismissed)
-  if (dismissedVal !== undefined) {
+  if (options.dismissed !== undefined) {
     query += ' AND dismissed = ?'
-    params.push(dismissedVal)
+    params.push(toSqlBool(options.dismissed))
   }
-  const readVal = toSqlBool(options.read)
-  if (readVal !== undefined) {
+  if (options.read !== undefined) {
     query += ' AND read = ?'
-    params.push(readVal)
+    params.push(toSqlBool(options.read))
   }
   query += ' ORDER BY notification_sent_at DESC'
-  return ebbDb.select<Notification[]>(query, params)
+  return ebbDb.select<Notification[]>(query, params) || []
+}
+
+const getNotificationBySentId = async (sentId: string): Promise<Notification[]> => {
+  const ebbDb = await getEbbDb()
+  return ebbDb.select<Notification[]>('SELECT * FROM user_notification WHERE notification_sent_id = ?', [sentId])
 }
 
 const createNotification = async (notification: CreateNotificationSchema): Promise<void> => {
   const ebbDb = await getEbbDb()
   const record = {
     ...notification,
+    id: crypto.randomUUID(),
     notification_type: 'app',
     read: notification.read ? 1 : 0,
     dismissed: notification.dismissed ? 1 : 0,
@@ -49,10 +54,6 @@ const createNotification = async (notification: CreateNotificationSchema): Promi
   await insert(ebbDb, 'user_notification', record)
 }
 
-/**
- * Update the read and/or dismissed status of a notification by id.
- * At least one of read or dismissed must be provided.
- */
 const updateNotificationStatus = async (
   id: string,
   options: { read?: boolean; dismissed?: boolean }
@@ -62,13 +63,18 @@ const updateNotificationStatus = async (
   }
   const ebbDb = await getEbbDb()
   const record: Record<string, unknown> = {}
-  record.read = toSqlBool(options.read)
-  record.dismissed = toSqlBool(options.dismissed)
+  if (options.read !== undefined) {
+    record.read = toSqlBool(options.read)
+  }
+  if (options.dismissed !== undefined) {
+    record.dismissed = toSqlBool(options.dismissed)
+  }
   await update(ebbDb, 'user_notification', record, id)
 }
 
 export const NotificationRepo = {
   getAppNotifications,
+  getNotificationBySentId,
   createNotification,
   updateNotificationStatus,
 }
