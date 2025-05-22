@@ -7,6 +7,7 @@ import { useEffect } from 'react'
 import { useShortcutStore } from '@/lib/stores/shortcutStore'
 import { CircleHelpIcon } from './icons/CircleHelpIcon'
 import { Tooltip, TooltipContent , TooltipTrigger } from './ui/tooltip'
+import { SocialStatusSummary } from './SocialStatusSummary'
 
 interface TopNavProps {
   variant?: 'default' | 'modal'
@@ -38,6 +39,7 @@ export function TopNav({ variant = 'default' }: TopNavProps) {
       </div>
       <div className="-ml-16 flex-1">
         <div className="h-14 border-b w-full flex items-center pl-16 pr-4">
+          <SocialStatusSummary />
           <div className="flex-1" />
           <div className="flex items-center gap-2">
             <Tooltip>
