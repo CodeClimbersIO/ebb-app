@@ -9,12 +9,14 @@ import { usePostHog } from 'posthog-js/react'
 import { useShortcutStore } from '@/lib/stores/shortcutStore'
 import { useConnectedStore } from '@/lib/stores/connectedStore'
 import { useProfile } from './api/useProfile'
+import { useEbbStatus } from './useEbbStatus'
 
 export const useInitializeAppState = () => {  
+  useProfile()
+  useEbbStatus()
   const posthog = usePostHog()
   const { beginCheckForUpdates } = useUpdate()
   const { user } = useAuth()
-  useProfile()
   const { setConnected } = useConnectedStore()
   const { loadShortcutFromStorage } = useShortcutStore()
   

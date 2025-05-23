@@ -10,9 +10,12 @@ const profileKeys = {
   current: () => [...profileKeys.all, 'current'] as const,
 }
 
-type UserProfile = {
+export type EbbStatus = 'online' | 'flowing' | 'active' | 'offline'
+
+export type UserProfile = {
   id: string
-  online_status: 'online' | 'flowing' | 'active' | 'offline'
+  online_status: EbbStatus
+  status_updated_at: string
   preferences: Record<string, string | number | boolean>
   created_at: string
   updated_at: string
@@ -20,7 +23,8 @@ type UserProfile = {
 
 interface CreateProfile {
   id: string
-  online_status: 'online' | 'flowing' | 'active' | 'offline'
+  online_status: EbbStatus
+  status_updated_at: string
   preferences: Record<string, string | number | boolean>
 }
 
@@ -46,9 +50,15 @@ const createProfile = async (profile: CreateProfile) => {
 }
 
 const updateProfile = async (updates: Partial<UserProfile>) => {
+  const now = new Date().toISOString()
+  const {id, ...finalUpdates} = updates
+  if(finalUpdates.online_status) {
+    finalUpdates.status_updated_at = now
+  }
   const { data, error } = await supabase
     .from('user_profile')
-    .update(updates)
+    .update(finalUpdates)
+    .eq('id', id)
     .select()
     .single()
 
@@ -80,6 +90,7 @@ export function useCreateProfile() {
 }
 
 export function useUpdateProfile() {
+
   const queryClient = useQueryClient()
   
   return useMutation({
@@ -95,7 +106,7 @@ export function useUpdateProfile() {
 
 export const useProfile = () => {
   const { user, loading: authLoading } = useAuth()
-  const { data: profile, isLoading } = useGetCurrentProfile()
+  const { data: profile, isLoading, refetch } = useGetCurrentProfile()
   const { mutate: createProfile } = useCreateProfile()
 
   useEffect(() => {
@@ -104,10 +115,12 @@ export const useProfile = () => {
       createProfile({
         id: user.id,
         online_status: 'active',
+        status_updated_at: new Date().toISOString(),
         preferences: {},
       })
     }
     
   }, [profile, isLoading, user])
 
+  return { profile, isLoading, refetch }
 }

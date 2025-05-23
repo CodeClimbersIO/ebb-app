@@ -218,7 +218,7 @@ export const FlowPage = () => {
       if (!flowSession) {
         navigate('/start-flow')
       }
-      setFlowSession(flowSession)
+      setFlowSession(flowSession || null)
       const state = window.history.state?.usr
       setDifficulty(state?.difficulty || 'medium')
     }

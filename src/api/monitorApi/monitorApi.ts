@@ -3,6 +3,7 @@ import { Tag, TagRepo, TagType } from '../../db/monitor/tagRepo'
 import { ActivityState, ActivityStateRepo } from '../../db/monitor/activityStateRepo'
 import { ActivityRating } from '../../lib/app-directory/apps-types'
 import { App, AppDb, AppRepo, AppTagJoined } from '../../db/monitor/appRepo'
+import { Activity, ActivityRepo } from '../../db/monitor/activityRepo'
 
 
 // during this time block, tags had the following duration
@@ -312,6 +313,11 @@ export const createApp = async (externalId: string, isBrowser: boolean, name = '
   return id
 }
 
+const getLatestActivity = async (): Promise<Activity | undefined> => {
+  const activity = await ActivityRepo.getLatestActivity()
+  return activity
+}
+
 
 export const MonitorApi = {
   getApps,
@@ -321,5 +327,6 @@ export const MonitorApi = {
   getTimeCreatingByWeek,
   getTopAppsByPeriod,
   setAppDefaultTag,
-  createApp
+  createApp,
+  getLatestActivity,
 }
