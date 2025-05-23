@@ -1,5 +1,4 @@
-import { UseMutateFunction } from '@tanstack/react-query'
-import { EbbStatus, UserProfile } from '@/hooks/api/useProfile'
+import { EbbStatus } from '@/hooks/api/useProfile'
 import { FlowSessionApi } from '@/api/ebbApi/flowSessionApi'
 import { MonitorApi } from '../api/monitorApi/monitorApi'
 import { DateTime } from 'luxon'
@@ -13,14 +12,6 @@ import { Activity } from '../db/monitor/activityRepo'
  * Active: User is online and has activity within the last 5 minutes
  * Offline: User's app is closed and not connected to the internet
  */
-export const startEbbStatusManager = (
-  updateProfile: UseMutateFunction<UserProfile, Error, Partial<UserProfile>, unknown>) => { 
-  const interval = setInterval(async () => {
-    const currentStatus = await calculateCurrentStatus()
-    updateProfile({ online_status: currentStatus })
-  }, 1000 * 30)
-  return () => clearInterval(interval)
-}
 
 const isActive = (activity?: Activity) => {
   const lastActivity = activity && DateTime.fromISO(activity.timestamp)
