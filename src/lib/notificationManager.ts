@@ -2,7 +2,7 @@ import { error, info } from '@tauri-apps/plugin-log'
 import { convertFileSrc, invoke } from '@tauri-apps/api/core'
 import { resolveResource } from '@tauri-apps/api/path'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { isDev } from './utils/environment'
+import { isDev } from './utils/environment.util'
 
 interface NotificationOptions {
   duration?: number

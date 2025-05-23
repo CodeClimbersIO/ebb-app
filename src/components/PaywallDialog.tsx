@@ -11,7 +11,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { KeyRound } from 'lucide-react'
 import { RainbowButton } from '@/components/ui/rainbow-button'
-import { logAndToastError } from '@/lib/utils/logAndToastError'
+import { logAndToastError } from '@/lib/utils/ebbError.util'
 import { StripeApi } from '@/lib/integrations/stripe/stripeApi'
 
 interface PaywallDialogProps {

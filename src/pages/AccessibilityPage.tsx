@@ -5,7 +5,7 @@ import { Github, Lock, Loader2, CheckCircle2 } from 'lucide-react'
 import { invoke } from '@tauri-apps/api/core'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { open } from '@tauri-apps/plugin-shell'
-import { logAndToastError } from '@/lib/utils/logAndToastError'
+import { logAndToastError } from '@/lib/utils/ebbError.util'
 
 export const AccessibilityPage = () => {
   const navigate = useNavigate()

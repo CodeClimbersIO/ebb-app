@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Button } from './ui/button'
 import { ConnectIcon } from './icons/ConnectIcon'
+import { useNavigate } from 'react-router-dom'
+import { useConnectedStore } from '../lib/stores/connectedStore'
 
 interface StatusBadgeProps {
   color: 'green' | 'purple'
@@ -29,8 +31,7 @@ function StatusBadge({ color, count, statusName, disabled = false }: StatusBadge
         <div className={`w-2 h-2 ${colorClass.bg} rounded-full`}></div>
         {!disabled && (
           <>
-            <div className={`absolute inset-0 w-2 h-2 ${colorClass.bg} rounded-full animate-ping opacity-40`} style={{animationDuration: '3s'}}></div>
-            <div className={`absolute inset-0 w-2 h-2 ${colorClass.bg} rounded-full shadow-lg ${colorClass.shadow} animate-pulse opacity-50`} style={{animationDuration: '4s'}}></div>
+            <div className={`absolute inset-0 w-2 h-2 ${colorClass.bg} rounded-full animate-ping opacity-80`} style={{animationDuration: '3s'}}></div>
           </>
         )}
       </div>
@@ -43,7 +44,8 @@ function StatusBadge({ color, count, statusName, disabled = false }: StatusBadge
 
 export function SocialStatusSummary() {
   // Mock state for status counts and connection
-  const [connected, setConnected] = useState(false)
+  const { connected, setConnected } = useConnectedStore()
+  const navigate = useNavigate()
   const [statusCounts] = useState({
     online: 42,
     flowing: 17,
@@ -51,6 +53,10 @@ export function SocialStatusSummary() {
 
   const handleConnect = () => {
     setConnected(true)
+  }
+
+  const handleStatusClick = () => {
+    navigate('/friends')
   }
 
   return (
@@ -69,18 +75,23 @@ export function SocialStatusSummary() {
           <div className="absolute inset-0 border border-primary/50 rounded-md animate-ping opacity-75" style={{animationDuration: '3s'}}></div>
         </div>
       )}
-      <StatusBadge 
-        color="green" 
-        count={connected ? statusCounts.online : ''} 
-        statusName="Online" 
-        disabled={!connected}
-      />
-      <StatusBadge 
-        color="purple" 
-        count={connected ? statusCounts.flowing : ''} 
-        statusName="Flowing" 
-        disabled={!connected}
-      />
+      <div 
+        onClick={connected ? handleStatusClick : undefined}
+        className={`flex items-center gap-2 ${connected ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
+      >
+        <StatusBadge 
+          color="green" 
+          count={connected ? statusCounts.online : ''} 
+          statusName="Online" 
+          disabled={!connected}
+        />
+        <StatusBadge 
+          color="purple" 
+          count={connected ? statusCounts.flowing : ''} 
+          statusName="Flowing" 
+          disabled={!connected}
+        />
+      </div>
     </div>
   )
 } 

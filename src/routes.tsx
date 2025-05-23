@@ -12,12 +12,12 @@ import { LoadingScreen } from '@/components/LoadingScreen'
 import { AccessibilityPage } from './pages/AccessibilityPage'
 import { ShortcutTutorialPage } from '@/pages/ShortcutTutorialPage'
 import { DeviceLimitPage } from './pages/DeviceLimitPage'
-import { OnboardingUtils } from '@/lib/utils/onboarding'
+import { OnboardingUtils } from '@/lib/utils/onboarding.util'
 import { useDeepLinkAuth } from './hooks/useDeepLinkAuth'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useEffect } from 'react'
 import { useGlobalShortcut } from './hooks/useGlobalShortcut'
-import { logAndToastError } from '@/lib/utils/logAndToastError'
+import { logAndToastError } from '@/lib/utils/ebbError.util'
 import { useLicenseStore } from './stores/licenseStore'
 import FeedbackPage from './pages/FeedbackPage'
 import { toastStore } from './lib/stores/toastStore'
@@ -38,7 +38,6 @@ const ProtectedRoute = () => {
       fetchLicense(null)
       clearSubscription()
     }
-
     return () => {
       clearSubscription()
     }

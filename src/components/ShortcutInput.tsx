@@ -7,7 +7,7 @@ import {
   updateGlobalShortcut,
 } from '../api/ebbApi/shortcutApi'
 import { useShortcutStore } from '@/lib/stores/shortcutStore'
-import { logAndToastError } from '@/lib/utils/logAndToastError'
+import { logAndToastError } from '@/lib/utils/ebbError.util'
 
 type ModifierKey = '⌘' | '⌥' | '⌃' | '⇧'
 
