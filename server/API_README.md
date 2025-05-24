@@ -1,6 +1,6 @@
 # CodeClimbers API Server
 
-A layered Express.js API server built with Bun.js, TypeScript, and PostgreSQL.
+A layered Express.js API server built with Bun.js, TypeScript, PostgreSQL, and Supabase authentication.
 
 ## Architecture
 
@@ -10,6 +10,7 @@ The server follows a clean layered architecture with module-based exports:
 - **Services** (`/services`): Business logic layer - export named functions grouped in objects
 - **Repositories** (`/repos`): Data access layer - export named functions grouped in objects
 - **Config** (`/config`): Configuration modules
+- **Middleware** (`/middleware`): Authentication and other middleware
 
 ## Getting Started
 
@@ -17,6 +18,7 @@ The server follows a clean layered architecture with module-based exports:
 
 - Bun.js installed
 - PostgreSQL database running
+- Supabase project set up
 - Node.js (for TypeScript support)
 
 ### Installation
@@ -39,6 +41,11 @@ DB_NAME=codeclimbers
 
 # Server Configuration
 PORT=3001
+
+# Supabase Configuration
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_JWT_SECRET=your_supabase_jwt_secret
 ```
 
 ### Database Setup
@@ -67,18 +74,44 @@ Production mode:
 bun run start
 ```
 
+## Authentication
+
+The API uses Supabase JWT authentication. All `/api` routes require a valid JWT token.
+
+### How to authenticate:
+
+1. Include the JWT token in the Authorization header:
+   ```
+   Authorization: Bearer <your_jwt_token>
+   ```
+
+2. The middleware will validate the token and add user information to `req.user`:
+   ```typescript
+   req.user = {
+     id: string;      // Supabase user ID
+     email?: string;  // User email
+     role?: string;   // User role
+   }
+   ```
+
+### Authentication Methods:
+
+- **`authenticateToken`**: Validates token by calling Supabase API (recommended for production)
+- **`authenticateTokenLocal`**: Validates token locally using JWT secret (faster, requires SUPABASE_JWT_SECRET)
+
 ## API Endpoints
 
 ### Health Check
-- **GET** `/health` - Server health status
+- **GET** `/health` - Server health status (no auth required)
 
 ### Users API
 
-Base URL: `/api/users`
+Base URL: `/api/users` (🔐 **Authentication required**)
 
 #### Get Status Counts
 - **GET** `/status-counts`
 - Returns count of users by online status
+- **Headers**: `Authorization: Bearer <jwt_token>`
 - Response:
 ```json
 {
@@ -126,12 +159,31 @@ Base URL: `/api/users`
 }
 ```
 
+### Authentication Errors
+
+```json
+{
+  "success": false,
+  "error": "Access token required"
+}
+```
+
+```json
+{
+  "success": false,
+  "error": "Invalid or expired token"
+}
+```
+
 ## Project Structure
 
 ```
 server/
 ├── config/
-│   └── database.ts          # Database connection configuration
+│   ├── database.ts          # Database connection configuration
+│   └── supabase.ts          # Supabase client configuration
+├── middleware/
+│   └── auth.ts              # Authentication middleware
 ├── controllers/
 │   └── UserController.ts    # User-related HTTP endpoints (module-based)
 ├── services/
@@ -149,14 +201,16 @@ Each layer uses a consistent module-based pattern:
 ### Controllers
 ```typescript
 import { Router } from 'express';
+import { AuthMiddleware } from '../middleware/auth.js';
 
 const router = Router();
 
 const handlerFunction = async (req: Request, res: Response) => {
+  // Access authenticated user: req.user.id
   // implementation
 };
 
-router.get('/endpoint', handlerFunction);
+router.get('/endpoint', AuthMiddleware.authenticateToken, handlerFunction);
 
 export const ControllerName = {
   router,
@@ -186,6 +240,18 @@ export const RepoName = {
 };
 ```
 
+### Middleware
+```typescript
+const middlewareFunction = async (req: Request, res: Response, next: NextFunction) => {
+  // middleware logic
+  next();
+};
+
+export const MiddlewareName = {
+  middlewareFunction
+};
+```
+
 ## Error Handling
 
 All endpoints return consistent error responses:
@@ -200,6 +266,7 @@ All endpoints return consistent error responses:
 Common HTTP status codes:
 - `200` - Success
 - `400` - Bad Request (missing required fields)
+- `401` - Unauthorized (invalid or missing token)
 - `404` - Not Found (resource doesn't exist)
 - `500` - Internal Server Error
 
@@ -210,5 +277,13 @@ The server uses TypeScript with strict type checking and follows clean architect
 - **Controllers**: Handle HTTP concerns (request/response) with exported router and functions
 - **Services**: Implement business logic and validation as named function exports
 - **Repositories**: Manage database operations as named function exports
+- **Middleware**: Handle cross-cutting concerns like authentication
 
-This module-based separation makes the code maintainable, testable, and scalable without the overhead of classes. 
+This module-based separation makes the code maintainable, testable, and scalable without the overhead of classes.
+
+## Security Notes
+
+- JWT tokens are validated on every request to protected routes
+- User information is automatically added to the request object after successful authentication
+- The `/health` endpoint is intentionally unprotected for monitoring purposes
+- CORS is configured to allow all origins (adjust for production) 

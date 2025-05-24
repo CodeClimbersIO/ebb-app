@@ -1,5 +1,5 @@
 import express, { json, urlencoded } from 'express'
-import { UserController } from './controllers/UserController'
+import { UserController } from './controllers/UserController.js'
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -21,7 +21,7 @@ app.use((req, res, next) => {
   }
 })
 
-// Health check endpoint
+// Health check endpoint (no auth required)
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'OK', 
@@ -30,7 +30,7 @@ app.get('/health', (req, res) => {
   })
 })
 
-// API Routes
+// API Routes (protected by authentication middleware)
 app.use('/api/users', UserController.router)
 
 // 404 handler
@@ -54,7 +54,8 @@ app.use((err: Error, req: express.Request, res: express.Response) => {
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`)
   console.log(`📊 Health check: http://localhost:${PORT}/health`)
-  console.log(`👥 Users API: http://localhost:${PORT}/api/users`)
+  console.log(`👥 Users API (auth required): http://localhost:${PORT}/api/users`)
+  console.log('🔐 Authentication: Supabase JWT required for /api routes')
 })
 
 export default app
