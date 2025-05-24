@@ -3,7 +3,7 @@ CREATE TYPE user_status AS ENUM ('online', 'flowing', 'active', 'offline');
 CREATE TABLE user_profile (
     id UUID REFERENCES auth.users(id) PRIMARY KEY,
     online_status user_status DEFAULT 'offline',
-    status_updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    last_check_in TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     preferences JSONB DEFAULT '{}',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP

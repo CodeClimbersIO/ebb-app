@@ -9,15 +9,25 @@ export const useEbbStatus = () => {
 
   useEffect(() => {
     if(isLoading || !profile) return
-    const interval = setInterval(() => {      
+    const statusInterval = setInterval(() => {      
       calculateCurrentStatus().then((status) => {
+        const last_check_in = new Date().toISOString()
         if(profile?.online_status !== status) {
-          updateProfile({ id: profile.id, online_status: status })
+          updateProfile({ id: profile.id, online_status: status, last_check_in })
           refetch()
         }
       })
-    }, 1000 * 39)
-    return () => clearInterval(interval)
+    }, 1000 * 30)
+
+    const checkInInterval = setInterval(() => {
+      const last_check_in = profile?.last_check_in
+      updateProfile({ id: profile.id, last_check_in })
+    }, 1000 * 60 * 5)
+
+    return () => {
+      clearInterval(statusInterval)
+      clearInterval(checkInInterval)
+    }
   }, [profile, isLoading])
 
 }

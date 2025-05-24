@@ -15,7 +15,7 @@ export type EbbStatus = 'online' | 'flowing' | 'active' | 'offline'
 export type UserProfile = {
   id: string
   online_status: EbbStatus
-  status_updated_at: string
+  last_check_in: string
   preferences: Record<string, string | number | boolean>
   created_at: string
   updated_at: string
@@ -24,7 +24,7 @@ export type UserProfile = {
 interface CreateProfile {
   id: string
   online_status: EbbStatus
-  status_updated_at: string
+  last_check_in: string
   preferences: Record<string, string | number | boolean>
 }
 
@@ -50,14 +50,11 @@ const createProfile = async (profile: CreateProfile) => {
 }
 
 const updateProfile = async (updates: Partial<UserProfile>) => {
-  const now = new Date().toISOString()
-  const {id, ...finalUpdates} = updates
-  if(finalUpdates.online_status) {
-    finalUpdates.status_updated_at = now
-  }
+  const {id, ...profileUpdates} = updates
+
   const { data, error } = await supabase
     .from('user_profile')
-    .update(finalUpdates)
+    .update(profileUpdates)
     .eq('id', id)
     .select()
     .single()
@@ -115,7 +112,7 @@ export const useProfile = () => {
       createProfile({
         id: user.id,
         online_status: 'active',
-        status_updated_at: new Date().toISOString(),
+        last_check_in: new Date().toISOString(),
         preferences: {},
       })
     }
