@@ -21,3 +21,32 @@ jobs:
 
       - name: Run tests
         run: npm run test
+
+  server-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for server changes
+        uses: dorny/paths-filter@v3
+        id: server-changes
+        with:
+          filters: |
+            server:
+              - 'server/**'
+
+      - name: Setup Bun
+        if: steps.server-changes.outputs.server == 'true'
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install server dependencies
+        if: steps.server-changes.outputs.server == 'true'
+        working-directory: ./server
+        run: bun install
+
+      - name: Run server tests
+        if: steps.server-changes.outputs.server == 'true'
+        working-directory: ./server
+        run: bun test
