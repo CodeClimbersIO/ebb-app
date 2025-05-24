@@ -1,7 +1,7 @@
 import { invoke } from '@tauri-apps/api/core'
 import { SpotifyAuthService } from './spotifyAuth'
 import { error as logError } from '@tauri-apps/plugin-log'
-import { logAndToastError } from '../../utils/logAndToastError'
+import { logAndToastError } from '../../utils/ebbError.util'
 interface SpotifyUserProfile {
   email: string
   display_name: string | null

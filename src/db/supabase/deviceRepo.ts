@@ -1,5 +1,5 @@
 import supabase from '@/lib/integrations/supabase'
-import { logAndToastError } from '@/lib/utils/logAndToastError'
+import { logAndToastError } from '@/lib/utils/ebbError.util'
 
 const upsertDevice = async (
   userId: string,

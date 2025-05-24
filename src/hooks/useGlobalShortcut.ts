@@ -3,12 +3,12 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { listen } from '@tauri-apps/api/event'
 import { FlowSessionApi } from '@/api/ebbApi/flowSessionApi'
-import { OnboardingUtils } from '@/lib/utils/onboarding'
+import { OnboardingUtils } from '@/lib/utils/onboarding.util'
 import {
   initializeGlobalShortcut,
   SHORTCUT_EVENT,
 } from '@/api/ebbApi/shortcutApi'
-import { logAndToastError } from '@/lib/utils/logAndToastError'
+import { logAndToastError } from '@/lib/utils/ebbError.util'
 import { error as logError } from '@tauri-apps/plugin-log'
 
 export function useGlobalShortcut() {

@@ -1,14 +1,12 @@
-import { useState, useEffect } from 'react'
-import { User, Session } from '@supabase/supabase-js'
+import { useEffect } from 'react'
 import supabase from '@/lib/integrations/supabase'
-import { logAndToastError } from '@/lib/utils/logAndToastError'
+import { logAndToastError } from '@/lib/utils/ebbError.util'
 import { userApi } from '@/api/ebbApi/userApi'
 import { deviceApi } from '@/api/ebbApi/deviceApi'
+import { useAuthStore } from '@/lib/stores/authStore'
 
 export const useAuth = () => {
-  const [user, setUser] = useState<User | null>(null)
-  const [session, setSession] = useState<Session | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { user, setUser, session, setSession, loading, setLoading } = useAuthStore()
 
   const logout = async () => {
     const deviceId = await deviceApi.getMacAddress()
@@ -51,7 +49,7 @@ export const useAuth = () => {
       if (isMounted) {
         setUser(changedSession?.user ?? null)
         setSession(changedSession)
-        setLoading(loading => loading ? false : false) 
+        setLoading(false) 
       }
     })
 

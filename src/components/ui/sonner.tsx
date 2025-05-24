@@ -7,15 +7,16 @@ type ToasterProps = React.ComponentProps<typeof Sonner>
 function ErrorToastContent({ error }: { error: Error }) {
   const handleSupport = () => {
     toastStore.setState({ error })
-    // window.dispatchEvent(new CustomEvent('navigate-to-support'))
   }
   return (
-    <div className="flex items-center justify-between w-full gap-2">
-      <span className="text-red-400">{error.message}</span>
-      <div className="flex gap-1">
+    <div className="flex w-full gap-2 items-start">
+      <div className="text-red-400 flex-1 min-w-0 break-words">
+        {error.message}
+      </div>
+      <div className="flex gap-1 shrink-0 ml-2">
         <button
           onClick={handleSupport}
-          className='shrink-0 p-1.5 rounded-md text-red-400 hover:bg-red-800/30 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-red-800 transition-colors flex items-center gap-1'
+          className="shrink-0 p-1.5 rounded-md text-red-400 hover:bg-red-800/30 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-red-800 transition-colors flex items-center gap-1"
         >
           <LifeBuoy size={14} />
           <span className="text-xs">Contact Support</span>

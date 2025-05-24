@@ -34,7 +34,7 @@ import {
 } from './ui/dialog'
 import { Skeleton } from './ui/skeleton'
 import { Alert, AlertDescription } from './ui/alert'
-import { logAndToastError } from '@/lib/utils/logAndToastError'
+import { logAndToastError } from '@/lib/utils/ebbError.util'
 import { error as logError } from '@tauri-apps/plugin-log'
 interface MusicSelectorProps {
   selectedPlaylist: string | null

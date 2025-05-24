@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core'
 import { SpotifyApiService } from './spotifyApi'
-import { isDev } from '../../utils/environment'
+import { isDev } from '../../utils/environment.util'
 
 const SPOTIFY_CONFIG = {
   clientId: import.meta.env.VITE_SPOTIFY_CLIENT_ID,

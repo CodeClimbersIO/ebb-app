@@ -1,6 +1,6 @@
 import supabase from '../supabase'
 import { invoke } from '@tauri-apps/api/core'
-import { isDev } from '../../utils/environment'
+import { isDev } from '../../utils/environment.util'
 export type LicenseType = 'perpetual' | 'subscription'
 const env = isDev() ? 'dev' : 'prod'
 

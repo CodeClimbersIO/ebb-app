@@ -83,7 +83,7 @@ const getFlowSessionById = async (id: string): Promise<FlowSession | undefined> 
   return flowSession
 }
 
-const getInProgressFlowSession = async () => {
+const getInProgressFlowSession = async (): Promise<FlowSession | undefined> => {
   const ebbDb = await getEbbDb()
   const [flowSession] = await ebbDb.select<FlowSession[]>(
     `SELECT 

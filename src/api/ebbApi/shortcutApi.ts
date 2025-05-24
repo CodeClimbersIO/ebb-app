@@ -3,7 +3,7 @@ import {
   unregister as unregisterShortcutTauri
 } from '@tauri-apps/plugin-global-shortcut'
 import { emit } from '@tauri-apps/api/event'
-import { logAndToastError } from '@/lib/utils/logAndToastError'
+import { logAndToastError } from '@/lib/utils/ebbError.util'
 import { UserPreferenceRepo } from '@/db/ebb/userPreferenceRepo'
 import { info as logInfo, error as logError, error } from '@tauri-apps/plugin-log'
 

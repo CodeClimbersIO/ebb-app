@@ -28,7 +28,7 @@ import { useFlowTimer } from '../lib/stores/flowTimer'
 import { stopFlowTimer } from '../lib/tray'
 import { DifficultyButton } from '@/components/DifficultyButton'
 import { useSpotifyInstallation } from '@/hooks/useSpotifyInstallation'
-import { logAndToastError } from '@/lib/utils/logAndToastError'
+import { logAndToastError } from '@/lib/utils/ebbError.util'
 
 const getDurationFormatFromSeconds = (seconds: number) => {
   const duration = Duration.fromMillis(seconds * 1000)
@@ -218,7 +218,7 @@ export const FlowPage = () => {
       if (!flowSession) {
         navigate('/start-flow')
       }
-      setFlowSession(flowSession)
+      setFlowSession(flowSession || null)
       const state = window.history.state?.usr
       setDifficulty(state?.difficulty || 'medium')
     }

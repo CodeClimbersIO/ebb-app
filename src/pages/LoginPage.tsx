@@ -3,9 +3,9 @@ import { Button } from '@/components/ui/button'
 import { Logo } from '@/components/ui/logo'
 import supabase from '@/lib/integrations/supabase'
 import { invoke } from '@tauri-apps/api/core'
-import { OnboardingUtils } from '@/lib/utils/onboarding'
-import { logAndToastError } from '@/lib/utils/logAndToastError'
-import { isDev } from '../lib/utils/environment'
+import { OnboardingUtils } from '@/lib/utils/onboarding.util'
+import { logAndToastError } from '@/lib/utils/ebbError.util'
+import { isDev } from '../lib/utils/environment.util'
 
 export const LoginPage = () => {
   const [error, setError] = useState('')

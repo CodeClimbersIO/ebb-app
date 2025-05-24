@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { invoke } from '@tauri-apps/api/core'
-import { StorageUtils } from '@/lib/utils/storage'
-import { logAndToastError } from '@/lib/utils/logAndToastError'
+import { StorageUtils } from '@/lib/utils/storage.util'
+import { logAndToastError } from '@/lib/utils/ebbError.util'
 import { useAuth } from '../../hooks/useAuth'
 
 export const ResetAppData = () => {

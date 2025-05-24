@@ -1,5 +1,5 @@
 import supabase from '@/lib/integrations/supabase'
-import { getEnv } from '@/lib/utils/environment'
+import { getEnv } from '@/lib/utils/environment.util'
 
 const env = getEnv()
 

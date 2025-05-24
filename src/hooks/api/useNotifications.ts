@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { NotificationApi } from '@/api/ebbApi/notificationApi'
-import { logAndToastError } from '@/lib/utils/logAndToastError'
+import { logAndToastError } from '@/lib/utils/ebbError.util'
 import { CreateNotificationSchema } from '@/db/ebb/notificationRepo'
 
 const notificationKeys = {
