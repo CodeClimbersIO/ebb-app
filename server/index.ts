@@ -2,7 +2,7 @@ import express, { json, urlencoded } from 'express'
 import { UserController } from './controllers/UserController.js'
 
 const app = express()
-const PORT = process.env.PORT || 3001
+const PORT = parseInt(process.env.PORT || '3001', 10)
 
 // Middleware
 app.use(json())
@@ -50,12 +50,19 @@ app.use((err: Error, req: express.Request, res: express.Response) => {
   })
 })
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`)
-  console.log(`📊 Health check: http://localhost:${PORT}/health`)
-  console.log(`👥 Users API (auth required): http://localhost:${PORT}/api/users`)
-  console.log('🔐 Authentication: Supabase JWT required for /api routes')
-})
+// Function to start the server
+export const startServer = (port: number = PORT) => {
+  return app.listen(port, () => {
+    console.log(`🚀 Server running on port ${port}`)
+    console.log(`📊 Health check: http://localhost:${port}/health`)
+    console.log(`👥 Users API (auth required): http://localhost:${port}/api/users`)
+    console.log('🔐 Authentication: Supabase JWT required for /api routes')
+  })
+}
+
+// Auto-start server only when this file is run directly
+if (import.meta.main) {
+  startServer()
+}
 
 export default app
