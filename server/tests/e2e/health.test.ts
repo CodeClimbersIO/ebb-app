@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'bun:test'
 import request from 'supertest'
-import app from '../../index.js'
-import { startTestServer, stopTestServer } from '../helpers/testServer.js'
+import app from '../../index'
+import { startTestServer, stopTestServer } from '../helpers/testServer'
 
 describe('Health Check API', () => {
   beforeAll(async () => {

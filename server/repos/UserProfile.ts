@@ -3,7 +3,7 @@ import { db } from '../config/database.js'
 export interface UserProfile {
   id: number;
   user_id: string;
-  online_status: 'online' | 'offline' | 'away' | 'busy';
+  online_status: 'online' | 'offline' | 'active' | 'flowing';
   created_at: Date;
   updated_at: Date;
 }

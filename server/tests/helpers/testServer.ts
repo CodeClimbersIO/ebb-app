@@ -1,5 +1,5 @@
 import { Server } from 'http'
-import app from '../../index.js'
+import app from '../../index'
 
 let server: Server | null = null
 const TEST_PORT = 3002 // Use different port for testing
