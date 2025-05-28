@@ -7,7 +7,6 @@ import {
 } from '@/components/ui/tooltip'
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import {
-  ChartConfig,
   ChartContainer,
   ChartLegend,
   ChartLegendContent,
@@ -28,7 +27,19 @@ import { ArrowUpRight, ArrowDownRight } from 'lucide-react'
 import { useCreateNotification, useGetNotificationBySentId } from '@/hooks/useNotifications'
 import { useAuth } from '@/hooks/useAuth'
 
-export const chartConfig = {
+type ChartLabel = {
+  label: string
+  color: string
+}
+
+type ChartConfig = {
+  creating: ChartLabel
+  neutral: ChartLabel
+  consuming: ChartLabel
+  idle?: ChartLabel
+}
+
+const defaultChartConfig: ChartConfig = {
   creating: {
     label: 'Creating',
     color: 'rgb(124,58,237)', // Purple
@@ -36,16 +47,21 @@ export const chartConfig = {
   neutral: {
     label: 'Neutral',
     color: 'hsl(var(--muted-foreground) / 0.5)', // Using the muted foreground color with 50% opacity
-  },
+  },  
   consuming: {
     label: 'Consuming',
     color: 'rgb(248,113,113)', // Red
   },
+}
+
+const idleChartConfig: ChartConfig = {
+  ...defaultChartConfig,
   idle: {
     label: 'Idle',
     color: 'rgb(156,163,175)', // Light gray - lighter than neutral to show less activity
   },
-} satisfies ChartConfig
+}
+
 
 export const formatTime = (minutes: number) => {
   const hours = Math.floor(minutes / 60)
@@ -107,6 +123,7 @@ export const UsageSummary = ({
   const { mutate: createNotification } = useCreateNotification()
   const { data: notificationBySentId } = useGetNotificationBySentId('firefox_not_supported')
   const [chartDataState, setChartDataState] = useState(chartData)
+  const [chartConfigState, setChartConfigState] = useState(defaultChartConfig)
   const sortedAppUsage = [...appUsage].sort((a, b) => b.duration - a.duration)
   const appUsageRef = useRef<HTMLDivElement>(null)
   const [showIdleTime, setShowIdleTime] = useState(false)
@@ -130,8 +147,10 @@ export const UsageSummary = ({
   useEffect(() => {
     if(showIdleTime) {
       setChartDataState(chartData)
+      setChartConfigState(idleChartConfig)
     } else {
       setChartDataState(chartData.map(d => ({...d, idle: 0})))
+      setChartConfigState(defaultChartConfig)
     }
   }, [showIdleTime, chartData])
 
@@ -235,7 +254,7 @@ export const UsageSummary = ({
                 </TooltipContent>
               </Tooltip>
               
-              <ChartContainer config={chartConfig}>
+              <ChartContainer config={chartConfigState}>
                 <BarChart height={200} data={chartDataState}>
                   <defs>
                     <linearGradient id="creatingGradient" x1="0" y1="0" x2="0" y2="1">
@@ -303,28 +322,28 @@ export const UsageSummary = ({
                   <Bar
                     dataKey="idle"
                     stackId="a"
-                    fill={chartConfig.idle.color}
+                    fill={chartConfigState.idle?.color}
                     radius={[0, 0, 4, 4]}
                     barSize={20}
                   />
                   <Bar
                     dataKey="consuming"
                     stackId="a"
-                    fill={chartConfig.consuming.color}
+                    fill={chartConfigState.consuming.color}
                     radius={showIdleTime ? [0, 0, 0, 0] : [0, 0, 4, 4]}
                     barSize={20}
                   />
                   <Bar
                     dataKey="neutral"
                     stackId="a"
-                    fill={chartConfig.neutral.color}
+                    fill={chartConfigState.neutral.color}
                     radius={[0, 0, 0, 0]}
                     barSize={20}
                   />
                   <Bar
                     dataKey="creating"
                     stackId="a"
-                    fill={chartConfig.creating.color}
+                    fill={chartConfigState.creating.color}
                     radius={[4, 4, 0, 0]}
                     barSize={20}
                   />
