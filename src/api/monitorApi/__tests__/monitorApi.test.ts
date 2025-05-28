@@ -87,6 +87,7 @@ describe('Time Aggregation', () => {
         expect(result[i].creating).toBe(0)
         expect(result[i].consuming).toBe(0)
         expect(result[i].neutral).toBe(0)
+        expect(result[i].idle).toBe(0)
       }
     }
   })
@@ -116,6 +117,7 @@ describe('Time Aggregation', () => {
         expect(result[i].creating).toBe(0)
         expect(result[i].consuming).toBe(0)
         expect(result[i].neutral).toBe(0)
+        expect(result[i].idle).toBe(0)
       }
     }
   })
@@ -129,6 +131,7 @@ describe('Time Aggregation', () => {
       expect(result[i].creating).toBe(0)
       expect(result[i].consuming).toBe(0)
       expect(result[i].neutral).toBe(0)
+      expect(result[i].idle).toBe(0)
     }
   })
 
@@ -168,7 +171,55 @@ describe('Time Aggregation', () => {
         expect(result[i].creating).toBe(0)
         expect(result[i].consuming).toBe(0)
         expect(result[i].neutral).toBe(0)
+        expect(result[i].idle).toBe(0)
       }
     }
+  })
+
+  it('filters out noise: periods with less than 2 minutes idle and no other activity', async () => {
+    const today = DateTime.local().startOf('day')
+    const activityStates = [
+      // Noise period: 1 minute idle, no other activity
+      makeActivityState({
+        start: today.set({ hour: 6, minute: 0 }).toISO(),
+        end: today.set({ hour: 6, minute: 1 }).toISO(),
+        tags: [{ tag_id: '4', name: 'idle' }],
+      }),
+      // Valid period: 3 minutes idle (above threshold)
+      makeActivityState({
+        start: today.set({ hour: 8, minute: 0 }).toISO(),
+        end: today.set({ hour: 8, minute: 3 }).toISO(),
+        tags: [{ tag_id: '4', name: 'idle' }],
+      }),
+      // Valid period: 1 minute idle but has other activity
+      makeActivityState({
+        start: today.set({ hour: 10, minute: 0 }).toISO(),
+        end: today.set({ hour: 10, minute: 1 }).toISO(),
+        tags: [{ tag_id: '4', name: 'idle' }],
+      }),
+      makeActivityState({
+        start: today.set({ hour: 10, minute: 1 }).toISO(),
+        end: today.set({ hour: 10, minute: 31 }).toISO(),
+        tags: [{ tag_id: '1', name: 'creating' }],
+      }),
+    ]
+    mockActivityStatesByTagsAndTimePeriod.mockResolvedValueOnce(activityStates)
+    const result = await getTimeCreatingByHour(today, today.endOf('day'))
+    
+    // Hour 6: Should be filtered out as noise (1 min idle, no other activity)
+    expect(result[6].idle).toBe(0)
+    expect(result[6].creating).toBe(0)
+    expect(result[6].consuming).toBe(0)
+    expect(result[6].neutral).toBe(0)
+    expect(result[6].offline).toBe(60) // Full hour offline
+    
+    // Hour 8: Should preserve 3 minutes idle (above threshold)
+    expect(result[8].idle).toBe(3)
+    expect(result[8].offline).toBe(57) // 60 - 3
+    
+    // Hour 10: Should preserve 1 minute idle because there's other activity
+    expect(result[10].idle).toBe(1)
+    expect(result[10].creating).toBe(30)
+    expect(result[10].offline).toBe(29) // 60 - 1 - 30
   })
 })
