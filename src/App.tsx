@@ -13,6 +13,7 @@ import { useShortcutStore } from '@/lib/stores/shortcutStore'
 import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@radix-ui/react-tooltip'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { info as tauriInfoLogger } from '@tauri-apps/plugin-log'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -24,6 +25,7 @@ const queryClient = new QueryClient({
 })
 
 const App = () => {
+  tauriInfoLogger('App.tsx intializing')
   const posthog = usePostHog()
   const { beginCheckForUpdates } = useUpdate()
   const { user } = useAuth()
