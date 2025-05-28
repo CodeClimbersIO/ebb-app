@@ -154,10 +154,6 @@ export const UsageSummary = ({
     }
   }, [showIdleTime, chartData])
 
-  useEffect(() => {
-    console.log('chartDataState', chartDataState)
-  }, [chartDataState])
-
   const scrollToAppUsage = () => {
     appUsageRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
