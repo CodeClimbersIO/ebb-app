@@ -40,6 +40,10 @@ export const chartConfig = {
     label: 'Consuming',
     color: 'rgb(248,113,113)', // Red
   },
+  idle: {
+    label: 'Idle',
+    color: 'rgb(156,163,175)', // Light gray - lighter than neutral to show less activity
+  },
 } satisfies ChartConfig
 
 export const formatTime = (minutes: number) => {
@@ -254,6 +258,7 @@ export const UsageSummary = ({
                           <div className="text-[rgb(124,58,237)]">Creating: {data.creating} min</div>
                           <div className="text-gray-500">Neutral: {data.neutral} min</div>
                           <div className="text-[rgb(239,68,68)]">Consuming: {data.consuming} min</div>
+                          <div className="text-[rgb(156,163,175)]">Idle: {data.idle} min</div>
                           <div className="text-gray-600">Offline: {data.offline} min</div>
                         </div>
                       </div>
@@ -262,10 +267,17 @@ export const UsageSummary = ({
                 />
                 <ChartLegend content={<ChartLegendContent />} />
                 <Bar
+                  dataKey="idle"
+                  stackId="a"
+                  fill={chartConfig.idle.color}
+                  radius={[0, 0, 4, 4]}
+                  barSize={20}
+                />
+                <Bar
                   dataKey="consuming"
                   stackId="a"
                   fill={chartConfig.consuming.color}
-                  radius={[0, 0, 4, 4]}
+                  radius={[0, 0, 0, 0]}
                   barSize={20}
                 />
                 <Bar

@@ -22,7 +22,8 @@ export interface GraphableTimeByHourBlock {
   consuming: number 
   neutral: number // in minutes
   creating: number // in minutes
-  offline: number // in minutes -- remaining in the hour
+  idle: number // in minutes -- time when user is idle but computer is on
+  offline: number // in minutes -- remaining time when computer is off or app not running
   time: string // "6:00"
   timeRange: string // "6:00 AM - 7:00 AM"
   xAxisLabel: string // "6 AM"
@@ -134,7 +135,7 @@ function aggregateTimeBlocks(
   start?: DateTime,
   end?: DateTime
 ): GraphableTimeByHourBlock[] {
-  const buckets: Record<string, { creating: number, consuming: number, neutral: number }> = {}
+  const buckets: Record<string, { creating: number, consuming: number, neutral: number, idle: number }> = {}
 
   // Pre-populate buckets for all hours, days, or weeks in the range
   if (unit === 'hour' && start && end) {
@@ -144,7 +145,7 @@ function aggregateTimeBlocks(
         const dt = current.set({ hour: h })
         const key = dt.toFormat('yyyy-MM-dd-HH')
         if (!buckets[key]) {
-          buckets[key] = { creating: 0, consuming: 0, neutral: 0 }
+          buckets[key] = { creating: 0, consuming: 0, neutral: 0, idle: 0 }
         }
       }
       current = current.plus({ days: 1 })
@@ -154,7 +155,7 @@ function aggregateTimeBlocks(
     while (current <= end.startOf('day')) {
       const key = current.toISODate()!
       if (!buckets[key]) {
-        buckets[key] = { creating: 0, consuming: 0, neutral: 0 }
+        buckets[key] = { creating: 0, consuming: 0, neutral: 0, idle: 0 }
       }
       current = current.plus({ days: 1 })
     }
@@ -164,7 +165,7 @@ function aggregateTimeBlocks(
     while (current <= end.startOf('week') && current <= today) {
       const key = current.toFormat('kkkk-WW')
       if (!buckets[key]) {
-        buckets[key] = { creating: 0, consuming: 0, neutral: 0 }
+        buckets[key] = { creating: 0, consuming: 0, neutral: 0, idle: 0 }
       }
       current = current.plus({ weeks: 1 })
     }
@@ -178,14 +179,14 @@ function aggregateTimeBlocks(
         ? dt.toISODate()!
         : dt.toFormat('kkkk-WW')
     if (!buckets[key]) {
-      buckets[key] = { creating: 0, consuming: 0, neutral: 0 }
+      buckets[key] = { creating: 0, consuming: 0, neutral: 0, idle: 0 }
     }
     const tags = state.tags_json || []
     const duration = DateTime.fromISO(state.end_time).diff(dt, 'minutes').minutes
     if (tags.length > 0) {
       const durationPerTag = duration / tags.length
       tags.forEach(tag => {
-        if (tag.name === 'creating' || tag.name === 'consuming' || tag.name === 'neutral') {
+        if (tag.name === 'creating' || tag.name === 'consuming' || tag.name === 'neutral' || tag.name === 'idle') {
           buckets[key][tag.name] += durationPerTag
         }
       })
@@ -202,30 +203,42 @@ function aggregateTimeBlocks(
     .map(([key, vals]) => {
       let dt: DateTime
       let time, timeRange, xAxisLabel, offline
+      
+      // Check if this is a noise period: less than 2 minutes of idle AND no other activity
+      const hasOtherActivity = vals.creating > 0 || vals.consuming > 0 || vals.neutral > 0
+      const isNoiseIdlePeriod = vals.idle < 2 && !hasOtherActivity
+      
       if (unit === 'hour') {
         dt = DateTime.fromFormat(key, 'yyyy-MM-dd-HH')
         time = dt.toFormat('h:mm a')
         timeRange = `${dt.toFormat('h:mm a')} - ${dt.plus({ hours: 1 }).toFormat('h:mm a')}`
         xAxisLabel = [6, 10, 14, 18, 22].includes(dt.hour) ? dt.toFormat('h a') : ''
-        offline = Math.max(0, 60 - (vals.creating + vals.consuming + vals.neutral))
+        
+        if (isNoiseIdlePeriod) {
+          // Set all activity to 0 and offline to full hour
+          offline = 60
+        } else {
+          offline = Math.max(0, 60 - (vals.creating + vals.consuming + vals.neutral + vals.idle))
+        }
       } else if (unit === 'day') {
         dt = DateTime.fromISO(key)
         time = dt.toFormat('ccc')
         timeRange = dt.toFormat('cccc, LLL dd')
         xAxisLabel = dt.toFormat('ccc')
-        offline = Math.max(0, 24 * 60 - (vals.creating + vals.consuming + vals.neutral))
+        offline = Math.max(0, 24 * 60 - (vals.creating + vals.consuming + vals.neutral + vals.idle))
       } else {
         dt = DateTime.fromFormat(key, 'kkkk-WW')
         time = `Week ${dt.weekNumber}`
         timeRange = `Week of ${dt.startOf('week').toFormat('LLL dd')}`
         xAxisLabel = dt.startOf('week').toFormat('LLL d')
-        offline = Math.max(0, 7 * 24 * 60 - (vals.creating + vals.consuming + vals.neutral))
+        offline = Math.max(0, 7 * 24 * 60 - (vals.creating + vals.consuming + vals.neutral + vals.idle))
       }
 
       return {
-        creating: Math.round(vals.creating),
-        consuming: Math.round(vals.consuming),
-        neutral: Math.round(vals.neutral),
+        creating: isNoiseIdlePeriod ? 0 : Math.round(vals.creating),
+        consuming: isNoiseIdlePeriod ? 0 : Math.round(vals.consuming),
+        neutral: isNoiseIdlePeriod ? 0 : Math.round(vals.neutral),
+        idle: isNoiseIdlePeriod ? 0 : Math.round(vals.idle),
         offline: Math.round(offline),
         time,
         timeRange,
