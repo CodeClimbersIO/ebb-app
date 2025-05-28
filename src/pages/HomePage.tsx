@@ -93,13 +93,13 @@ export const HomePage = () => {
             </div>
           </div>
           <UsageSummary
-            totalTimeLabel="Total Time"
+            totalTimeLabel="Total Active Time"
             totalTimeTooltip={
               rangeMode === 'day' 
-                ? 'Total time spent online today' 
+                ? 'Total time spent online today (not including idle time)' 
                 : rangeMode === 'week'
-                  ? 'Total time spent online this week'
-                  : 'Total time spent online this month'
+                  ? 'Total time spent online this week (not including idle time)'
+                  : 'Total time spent online this month (not including idle time)'
             }
             totalTime={totalTime}
             totalCreating={totalCreating}

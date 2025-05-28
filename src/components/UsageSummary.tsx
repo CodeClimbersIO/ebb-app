@@ -90,8 +90,8 @@ function TrendIndicator({ trend }: { trend?: { percent: number; direction: 'up' 
 }
 
 export const UsageSummary = ({
-  totalTimeLabel = 'Total Time',
-  totalTimeTooltip = 'Total time spent online',
+  totalTimeLabel = 'Total Time Active',
+  totalTimeTooltip = 'Total time spent online (not including idle time)',
   totalTime,
   totalCreating,
   chartData,
