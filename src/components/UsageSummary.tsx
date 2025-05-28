@@ -106,9 +106,10 @@ export const UsageSummary = ({
   const { user } = useAuth()
   const { mutate: createNotification } = useCreateNotification()
   const { data: notificationBySentId } = useGetNotificationBySentId('firefox_not_supported')
+  const [chartDataState, setChartDataState] = useState(chartData)
   const sortedAppUsage = [...appUsage].sort((a, b) => b.duration - a.duration)
   const appUsageRef = useRef<HTMLDivElement>(null)
-  const [showIdleTime, setShowIdleTime] = useState(true)
+  const [showIdleTime, setShowIdleTime] = useState(false)
 
   useEffect(() => {
     const hasFirefox = appUsage.some(app => app.app_external_id === 'org.mozilla.firefox')
@@ -125,6 +126,18 @@ export const UsageSummary = ({
       })
     }
   }, [user?.id, appUsage, createNotification])
+
+  useEffect(() => {
+    if(showIdleTime) {
+      setChartDataState(chartData)
+    } else {
+      setChartDataState(chartData.map(d => ({...d, idle: 0})))
+    }
+  }, [showIdleTime, chartData])
+
+  useEffect(() => {
+    console.log('chartDataState', chartDataState)
+  }, [chartDataState])
 
   const scrollToAppUsage = () => {
     appUsageRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -197,27 +210,33 @@ export const UsageSummary = ({
       </div>
 
       <Card>
-        <CardContent className="pt-6">
+        <CardContent className="p-0">
           {isLoading ? (
-            <div className="aspect-video">
+            <div className="pt-6 aspect-video">
               <Skeleton className="h-full w-full" />
             </div>
           ) : (
-            <div className="relative">
-              {/* Checkbox overlay */}
-              <div className="absolute top-2 right-2 z-10 flex items-center space-x-2 bg-background/80 backdrop-blur-sm rounded-md px-3 py-2 border">
-                <label htmlFor="show-idle-time" className="text-sm font-medium opacity-50 cursor-pointer">
-                  Idle Time
-                </label>
-                <Switch
-                  id="show-idle-time"
-                  checked={showIdleTime}
-                  onCheckedChange={setShowIdleTime}
-                />
-              </div>
+            <div className="relative p-6">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="absolute top-4 right-4 z-10 flex items-center space-x-2 bg-background/80 backdrop-blur-sm rounded-md px-3 py-2 border">
+                    <label htmlFor="show-idle-time" className="text-sm font-medium opacity-50 cursor-pointer">
+                      Idle Time
+                    </label>
+                    <Switch
+                      id="show-idle-time"
+                      checked={showIdleTime}
+                      onCheckedChange={setShowIdleTime}
+                    />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>When Ebb is online and no keyboard, mouse, or window events occur</p>
+                </TooltipContent>
+              </Tooltip>
               
               <ChartContainer config={chartConfig}>
-                <BarChart height={200} data={chartData}>
+                <BarChart height={200} data={chartDataState}>
                   <defs>
                     <linearGradient id="creatingGradient" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="rgb(124 58 237)" stopOpacity={1} />
@@ -281,15 +300,13 @@ export const UsageSummary = ({
                     }}
                   />
                   <ChartLegend content={<ChartLegendContent />} />
-                  {showIdleTime && (
-                    <Bar
-                      dataKey="idle"
-                      stackId="a"
-                      fill={chartConfig.idle.color}
-                      radius={[0, 0, 4, 4]}
-                      barSize={20}
-                    />
-                  )}
+                  <Bar
+                    dataKey="idle"
+                    stackId="a"
+                    fill={chartConfig.idle.color}
+                    radius={[0, 0, 4, 4]}
+                    barSize={20}
+                  />
                   <Bar
                     dataKey="consuming"
                     stackId="a"
