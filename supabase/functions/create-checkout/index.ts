@@ -4,6 +4,11 @@ import { StripeApi } from '@shared/stripe.ts'
 const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
 const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') || ''
 
+const supabase = createClient(
+  supabaseUrl,
+  supabaseAnonKey,
+)
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -15,22 +20,12 @@ Deno.serve(async (req) => {
       throw new Error('No authorization header')
     }
 
-    const supabase = createClient(
-      supabaseUrl,
-      supabaseAnonKey,
-      {
-        global: {
-          headers: { Authorization: authHeader }
-        }
-      }
-    )
-
     const token = authHeader.replace('Bearer ', '')
     const {
       data: { user },
       error: userError,
     } = await supabase.auth.getUser(token)
-
+    
     if (userError || !user) {
       console.error('Supabase user error:', userError)
       throw new Error('Unauthorized')
