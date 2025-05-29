@@ -56,7 +56,7 @@ const getStatusCounts = (userStatusCounts?: UserStatusCounts) => {
 
 export function SocialStatusSummary() {
   const { connected, setConnected } = useConnectedStore()
-  const { data: communityStatuses, isLoading: isLoadingStatuses } = useUserStatusCounts()
+  const { data: communityStatuses, isLoading: isLoadingStatuses, refetch: refetchStatusCounts } = useUserStatusCounts()
   const { mutateAsync: updateProfileLocation, isPending: isUpdatingProfileLocation } = useUpdateProfileLocation()
   const { profile, isLoading: isLoadingProfile } = useProfile()
   const { user } = useAuth()
@@ -72,6 +72,20 @@ export function SocialStatusSummary() {
       setStatusCounts(counts)
     }
   }, [communityStatuses])
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && connected) {
+        refetchStatusCounts()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [refetchStatusCounts, connected])
 
   const handleConnect = async () => {
     if (!user) {

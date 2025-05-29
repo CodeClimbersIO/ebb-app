@@ -38,12 +38,12 @@ const getLocations = async () => {
 }
 
 export const useUserStatusCounts = () => {
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: communityKeys.all,
     queryFn: () => getUserStatusCounts(),
   })
 
-  return { data, isLoading, error }
+  return { data, isLoading, error, refetch }
 }
 
 export const useUserLocations = () => {
