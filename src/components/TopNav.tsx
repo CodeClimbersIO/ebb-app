@@ -9,12 +9,11 @@ import { CircleHelpIcon } from './icons/CircleHelpIcon'
 import { Tooltip, TooltipContent , TooltipTrigger } from './ui/tooltip'
 import { SocialStatusSummary } from './SocialStatusSummary'
 import { useAuthStore } from '../lib/stores/authStore'
+import { canaryUsers } from '../lib/utils/environment.util'
 
 interface TopNavProps {
   variant?: 'default' | 'modal'
 }
-
-const accessToSocial = ['rphovley@gmail.com', 'paul@ebb.cool']
 
 export function TopNav({ variant = 'default' }: TopNavProps) {
   const navigate = useNavigate()
@@ -29,7 +28,7 @@ export function TopNav({ variant = 'default' }: TopNavProps) {
     navigate('/start-flow')
   }
 
-  const hasAccessToSocial = accessToSocial.includes(user?.email || '')
+  const hasAccessToSocial = canaryUsers.includes(user?.email || '')
 
   return (
     <div className="flex">

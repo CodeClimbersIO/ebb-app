@@ -5,3 +5,5 @@ export const getEnv = (): 'dev' | 'prod' => {
 export const isDev = () => {
   return import.meta.env.DEV
 }
+
+export const canaryUsers = ['rphovley@gmail.com', 'paul@ebb.cool']

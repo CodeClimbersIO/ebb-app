@@ -2,6 +2,7 @@ import { HashRouter, Route, Routes, Navigate, useNavigate, Outlet, useLocation }
 import { HomePage } from '@/pages/HomePage'
 import { LoginPage } from '@/pages/LoginPage'
 import { FriendsPage } from '@/pages/FriendsPage'
+import { FriendsPage as OldFriendsPage } from '@/pages/OldFriendsPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 import { StartFlowPage } from './pages/StartFlowPage'
 import { useAuth } from './hooks/useAuth'
@@ -22,6 +23,7 @@ import { useLicenseStore } from './lib/stores/licenseStore'
 import FeedbackPage from './pages/FeedbackPage'
 import { toastStore } from './lib/stores/toastStore'
 import { useStore } from 'zustand'
+import { canaryUsers } from './lib/utils/environment.util'
 
 
 const ProtectedRoute = () => {
@@ -72,6 +74,7 @@ const Router = () => {
   const navigate = useNavigate()
   useGlobalShortcut()
   const { error } = useStore(toastStore)
+  const { user } = useAuth()
 
   useEffect(() => {
     if (error) {
@@ -103,6 +106,8 @@ const Router = () => {
     }
   }, [navigate])
 
+  const canSeeNewFriendsPage = canaryUsers.includes(user?.email || '')
+
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
@@ -110,7 +115,7 @@ const Router = () => {
       {/* Protected routes group */}
       <Route element={<ProtectedRoute />}>
         <Route path="/" element={<HomePage />} />
-        <Route path="/friends" element={<FriendsPage />} />
+        <Route path="/friends" element={canSeeNewFriendsPage ? <FriendsPage /> : <OldFriendsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/start-flow" element={<StartFlowPage />} />
         <Route path="/breathing-exercise" element={<BreathingExercisePage />} />
