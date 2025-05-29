@@ -18,7 +18,7 @@ const getLatestActivity = async (): Promise<Activity | undefined> => {
   const monitorDb = await MonitorDb.getMonitorDb()
   const query = 'SELECT * FROM activity ORDER BY id DESC LIMIT 1'
   const [activity] = await monitorDb.select<Activity[]>(query)
-  console.log('activity created_at', activity?.timestamp)
+  
   return activity
 }
 

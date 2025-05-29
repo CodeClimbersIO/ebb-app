@@ -8,12 +8,13 @@ import { useAuth } from '@/hooks/useAuth'
 import { usePostHog } from 'posthog-js/react'
 import { useShortcutStore } from '@/lib/stores/shortcutStore'
 import { useConnectedStore } from '@/lib/stores/connectedStore'
-import { useProfile } from './api/useProfile'
-import { useEbbStatus } from './useEbbStatus'
+import { useProfile } from '@/api/hooks/useProfile'
+import { useEbbStatus } from '@/hooks/useEbbStatus'
 
 export const useInitializeAppState = () => {  
   useProfile()
   useEbbStatus()
+  
   const posthog = usePostHog()
   const { beginCheckForUpdates } = useUpdate()
   const { user } = useAuth()

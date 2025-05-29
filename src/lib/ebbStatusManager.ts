@@ -1,4 +1,4 @@
-import { EbbStatus } from '@/hooks/api/useProfile'
+import { EbbStatus } from '@/api/hooks/useProfile'
 import { FlowSessionApi } from '@/api/ebbApi/flowSessionApi'
 import { MonitorApi } from '../api/monitorApi/monitorApi'
 import { DateTime } from 'luxon'

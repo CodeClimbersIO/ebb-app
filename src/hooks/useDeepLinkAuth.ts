@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import supabase from '@/lib/integrations/supabase'
 import { SpotifyAuthService } from '@/lib/integrations/spotify/spotifyAuth'
-import { useLicenseStore } from '@/stores/licenseStore'
+import { useLicenseStore } from '@/lib/stores/licenseStore'
 import { useAuth } from './useAuth'
 import { logAndToastError } from '../lib/utils/ebbError.util'
 

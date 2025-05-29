@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { useGetActiveNotification, useUpdateNotificationStatus } from '@/hooks/api/useNotifications'
+import { useGetActiveNotification, useUpdateNotificationStatus } from '@/api/hooks/useNotifications'
 import { useEffect } from 'react'
 
 export const NotificationBanner: React.FC = () => {

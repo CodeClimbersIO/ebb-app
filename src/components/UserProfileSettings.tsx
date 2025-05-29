@@ -11,7 +11,7 @@ import { logAndToastError } from '@/lib/utils/ebbError.util'
 import { useAuth } from '@/hooks/useAuth'
 import { useNavigate } from 'react-router-dom'
 import { usePermissions } from '@/hooks/usePermissions'
-import { useLicenseStore } from '@/stores/licenseStore'
+import { useLicenseStore } from '@/lib/stores/licenseStore'
 
 
 interface UserProfileSettingsProps {

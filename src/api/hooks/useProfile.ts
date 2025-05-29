@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import supabase from '@/lib/integrations/supabase'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
 import { useEffect } from 'react'
-import { useAuth } from '../useAuth'
+import { useAuth } from '../../hooks/useAuth'
 import { isSupabaseError, SupabaseErrorCodes } from '@/lib/utils/supabase.util'
 
 const profileKeys = {

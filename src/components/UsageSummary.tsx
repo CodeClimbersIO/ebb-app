@@ -24,7 +24,7 @@ import { ActivityRating } from '@/lib/app-directory/apps-types'
 import { Tag } from '../db/monitor/tagRepo'
 import { Skeleton } from './ui/skeleton'
 import { ArrowUpRight, ArrowDownRight } from 'lucide-react'
-import { useCreateNotification, useGetNotificationBySentId } from '@/hooks/api/useNotifications'
+import { useCreateNotification, useGetNotificationBySentId } from '@/api/hooks/useNotifications'
 import { useAuth } from '@/hooks/useAuth'
 
 export const chartConfig = {

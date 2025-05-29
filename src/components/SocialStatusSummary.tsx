@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from './ui/button'
 import { ConnectIcon } from './icons/ConnectIcon'
 import { useNavigate } from 'react-router-dom'
 import { useConnectedStore } from '../lib/stores/connectedStore'
+import { useUserStatusCounts } from '../api/hooks/useUserStatusCounts'
 
 interface StatusBadgeProps {
   color: 'green' | 'purple'
@@ -24,7 +25,6 @@ function StatusBadge({ color, count, statusName, disabled = false }: StatusBadge
   }
 
   const colorClass = colorClasses[color]
-
   return (
     <div className={`flex items-center gap-2 px-1 py-1 bg-secondary/20 rounded-full ${disabled ? 'opacity-50' : ''}`}>
       <div className="relative">
@@ -45,11 +45,22 @@ function StatusBadge({ color, count, statusName, disabled = false }: StatusBadge
 export function SocialStatusSummary() {
   // Mock state for status counts and connection
   const { connected, setConnected } = useConnectedStore()
+  const { data: communityStatuses } = useUserStatusCounts()
   const navigate = useNavigate()
-  const [statusCounts] = useState({
+  const [statusCounts, setStatusCounts] = useState({
     online: 42,
     flowing: 17,
   })
+
+  useEffect(() => {
+    if (communityStatuses) {
+      const counts = {
+        online: communityStatuses.online + communityStatuses.active,
+        flowing: communityStatuses.flowing,
+      }
+      setStatusCounts(counts)
+    }
+  }, [communityStatuses])
 
   const handleConnect = () => {
     setConnected(true)
