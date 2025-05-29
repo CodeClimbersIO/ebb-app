@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { ConnectIcon } from '@/components/icons/ConnectIcon'
 import { useConnectedStore } from '@/lib/stores/connectedStore'
-import { useUserStatusCounts } from '@/api/hooks/useUserStatusCounts'
+import { UserStatusCounts, useUserStatusCounts } from '@/api/hooks/useUserStatusCounts'
 import { useProfile, useUpdateProfileLocation } from '@/api/hooks/useProfile'
 import { useAuth } from '@/hooks/useAuth'
 import { logAndToastError } from '../lib/utils/ebbError.util'
@@ -45,6 +45,14 @@ function StatusBadge({ color, count, statusName, disabled = false }: StatusBadge
   )
 }
 
+const getStatusCounts = (userStatusCounts?: UserStatusCounts) => {
+  if (!userStatusCounts) return { online: 0, flowing: 0 }
+  return {
+    online: userStatusCounts.online + userStatusCounts.active,
+    flowing: userStatusCounts.flowing,
+  }
+}
+
 export function SocialStatusSummary() {
   const { connected, setConnected } = useConnectedStore()
   const { data: communityStatuses } = useUserStatusCounts()
@@ -53,17 +61,11 @@ export function SocialStatusSummary() {
   const { user } = useAuth()
 
   const navigate = useNavigate()
-  const [statusCounts, setStatusCounts] = useState({
-    online: 0,
-    flowing: 0,
-  })
+  const [statusCounts, setStatusCounts] = useState(getStatusCounts(communityStatuses))
 
   useEffect(() => {
     if (communityStatuses) {
-      const counts = {
-        online: communityStatuses.online + communityStatuses.active,
-        flowing: communityStatuses.flowing,
-      }
+      const counts = getStatusCounts(communityStatuses)
       setStatusCounts(counts)
     }
   }, [communityStatuses])

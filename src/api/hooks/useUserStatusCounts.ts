@@ -5,18 +5,20 @@ const communityKeys = {
   all: ['communityKeys'] as const,
 }
 
+export interface UserStatusCounts {
+  online: number
+  flowing: number
+  active: number
+  offline: number
+}
+
 const getUserStatusCounts = async () => {
   const data = await platformApiRequest({
     url: '/api/users/status-counts',
     method: 'GET',
   })
   
-  return data as {
-    online: number
-    flowing: number
-    active: number
-    offline: number
-  }
+  return data as UserStatusCounts
 }
 
 export const useUserStatusCounts = () => {

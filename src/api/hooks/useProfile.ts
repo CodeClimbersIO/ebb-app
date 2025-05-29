@@ -68,7 +68,7 @@ const updateProfile = async (updates: Partial<UserProfile>) => {
 
 const updateProfileLocation = async () => {
   const data = await platformApiRequest({
-    url: '/api/geolocation/current',
+    url: '/api/users/location',
     method: 'POST',
   })
 
