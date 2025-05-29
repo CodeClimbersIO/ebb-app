@@ -48,7 +48,7 @@ export const useInitializeAppState = () => {
       })
     } 
 
-  }, [user, posthog])
+  }, [user, posthog, profile])
 
   useEffect(() => {
     loadShortcutFromStorage()

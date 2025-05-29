@@ -1,107 +1,121 @@
 import { Layout } from '@/components/Layout'
-import { Badge } from '@/components/ui/badge'
-import { motion } from 'framer-motion'
+import { FriendsPreview } from '@/components/FriendsPreview'
+import { useConnectedStore } from '../lib/stores/connectedStore'
 import { Globe } from '@/components/ui/globe'
-import { useState } from 'react'
-import { cn } from '@/lib/utils/tailwind.util'
 import { useTheme } from '@/components/ThemeProvider'
+import { EbbLocation, useUserLocations } from '../api/hooks/useUsers'
+import { Marker } from 'cobe'
+import { cn } from '../lib/utils/tailwind.util'
+import { useEffect, useState } from 'react'
 
-// Mock data for friends - replace with real data later
-const friends = [
-  { 
-    id: 1, 
-    name: 'Alex', 
-    status: 'focus' as const, 
-    location: [37.7749, -122.4194] as [number, number] 
-  }, // San Francisco
-  { 
-    id: 2, 
-    name: 'Sarah', 
-    status: 'online' as const, 
-    location: [51.5074, -0.1278] as [number, number] 
-  }, // London
-  { 
-    id: 3, 
-    name: 'Mike', 
-    status: 'offline' as const, 
-    location: [35.6762, 139.6503] as [number, number] 
-  }, // Tokyo
-]
+const geLocationsAsMarkers = (userLocations?: EbbLocation[]): Marker[] => {
+  if (!userLocations) return []
+  return userLocations.map(location => ({
+    location: [location.latitude, location.longitude],
+    size: 0.1,
+  }))
+}
+
+interface CommunityStatusCardProps {
+  locations: EbbLocation[]
+  title: string
+  onLocationHover: (location: EbbLocation) => void
+}
+
+const CommunityStatusCard = ({ locations, title, onLocationHover }: CommunityStatusCardProps) => {
+  return (
+    <div
+      key={'1'}
+      className={cn(
+        'bg-card text-card-foreground p-2.5 rounded-lg shadow-sm w-full text-left transition-colors border',
+        'border-border',
+      )}
+    >
+      <div className="flex flex-col gap-1">
+        <h3 className="text-sm font-medium">{locations.length} {title}</h3>
+        <div className=" items-center gap-2 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1 flex-column">
+            {locations.map((location, index) => (
+              <div 
+                key={index} 
+                className={cn('h-2 w-2 rounded-full bg-green-500 animate-pulse hover:scale-125 transition-transform cursor-pointer')}
+                onMouseEnter={() => onLocationHover(location)}
+              />
+            ))}
+
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export const FriendsPage = () => {
-  const [selectedFriend, setSelectedFriend] = useState<[number, number]>([0, 0])
+  const { data: userLocations } = useUserLocations()
+
+  const { connected } = useConnectedStore()
   const { theme } = useTheme()
+  const [location, setLocation] = useState<[number, number]>()
 
-  const isSelected = (location: [number, number]) => 
-    location[0] === selectedFriend[0] && location[1] === selectedFriend[1]
+  const onlineLocations = userLocations?.filter(location => location.online_status === 'active' || location.online_status === 'flowing' || location.online_status === 'online') || []
+  const flowingLocations = userLocations?.filter(location => location.online_status === 'flowing') || []
 
-  const getStatusColor = (status: 'focus' | 'online' | 'offline') => {
-    switch (status) {
-    case 'focus':
-      return 'bg-primary'
-    case 'online':
-      return 'bg-green-500'
-    case 'offline':
-      return 'bg-muted-foreground/50'
-    }
+  const handleLocationHover = (newLocation: EbbLocation) => {
+    const [newLatitude, newLongitude] = [newLocation.latitude, newLocation.longitude]
+    setLocation([newLatitude, newLongitude])
   }
+
+  const markers = geLocationsAsMarkers(userLocations)
+  
+  useEffect(() => {
+    const firstMarkerLongitude = markers[0]?.location[1] || 0
+    const defaultFocusLocation = [0, firstMarkerLongitude] as [number, number]
+    if(markers.length > 0) {
+      setLocation(defaultFocusLocation)
+    }
+  }, [userLocations])
 
   return (
     <Layout>
-      <div className="p-8">
+      <div className="p-8 relative">
         <div className="max-w-5xl mx-auto">
-          <div className="flex items-center gap-3 mb-4">
-            <h1 className="text-2xl font-semibold">Friends</h1>
-            <Badge variant="secondary">Coming Soon</Badge>
-          </div>
+          {!connected && <FriendsPreview />}
+          {connected && (
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_250px] items-center">
+              <div className="relative w-full aspect-square max-w-[500px] justify-self-center">
+                <Globe 
+                  focusLocation={location} 
+                  config={{
+                    dark: theme === 'dark' ? 1 : 0,
+                    baseColor: [0.42, 0.3, 0.9], // Primary color from theme
+                    glowColor: [0.42, 0.15, 0.85], // Primary color
+                    markerColor: [0.42, 0.15, 0.85], // Primary color
+                    markers,
+                    mapBrightness: 3,
+                    diffuse: 1.2
+                  }}
+                />
+              </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_250px] items-center">
-            {/* Left column: Globe */}
-            <div className="relative w-full aspect-square max-w-[500px] justify-self-center">
-              <Globe 
-                focusLocation={selectedFriend} 
-                config={{
-                  dark: theme === 'dark' ? 1 : 0,
-                  baseColor: [0.42, 0.3, 0.9], // Primary color from theme
-                  glowColor: [0.42, 0.15, 0.85], // Primary color
-                  markerColor: [0.42, 0.15, 0.85], // Primary color
-                  markers: friends.map(f => ({ location: f.location, size: 0.1 })),
-                  mapBrightness: 3,
-                  diffuse: 1.2
-                }}
-              />
-            </div>
+              <div className="flex flex-col gap-2 md:max-w-[200px] self-center">
+                <h3 className="text-sm font-bold">Community</h3>
+                <CommunityStatusCard 
+                  locations={onlineLocations} 
+                  title="Online" 
+                  onLocationHover={handleLocationHover}
+                />
+                <CommunityStatusCard 
+                  locations={flowingLocations} 
+                  title="Flowing" 
+                  onLocationHover={handleLocationHover}
+                />
+              </div>
 
-            {/* Right column: Friend cards */}
-            <div className="flex flex-col gap-2 md:max-w-[200px] self-center">
-              {friends.map((friend) => (
-                <motion.button
-                  key={friend.id}
-                  onClick={() => setSelectedFriend(friend.location)}
-                  className={cn(
-                    'bg-card text-card-foreground p-2.5 rounded-lg shadow-sm w-full text-left transition-colors border',
-                    isSelected(friend.location) 
-                      ? 'border-primary' 
-                      : 'border-border hover:border-primary/50'
-                  )}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <div className="flex flex-col gap-1">
-                    <h3 className="text-sm font-medium">{friend.name}</h3>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <div className={cn('h-2 w-2 rounded-full', getStatusColor(friend.status))} />
-                      <span>
-                        {friend.status === 'focus' ? 'In focus' : 
-                          friend.status === 'online' ? 'Online' : 
-                            'Offline'}
-                      </span>
-                    </div>
-                  </div>
-                </motion.button>
-              ))}
             </div>
-          </div>
+          ) }
         </div>
+
+
       </div>
     </Layout>
   )

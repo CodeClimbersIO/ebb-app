@@ -9,23 +9,32 @@ export function Globe({
   className = '',
   config = {},
   focusLocation = [0, 0] as [number, number],
+  onDragStateChange,
 }: {
   className?: string
   config?: Partial<COBEOptions>
   focusLocation?: [number, number]
+  onDragStateChange?: (isDragged: boolean) => void
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const focusRef = useRef<[number, number]>([0, 0])
+  const pointerInteracting = useRef<number | null>(null)
+  const pointerInteractionMovement = useRef(0)
+  const dragRotation = useRef(0)
+  const currentPhiRef = useRef(0)
+  const currentThetaRef = useRef(0.3)
+  const isDraggedRef = useRef(false)
 
-  // Update focus when focusLocation prop changes
+  // Update focus when focusLocation prop changes and reset interaction state
   useEffect(() => {
     focusRef.current = locationToAngles(focusLocation[0], focusLocation[1])
+    // Reset drag rotation when focus location changes
+    dragRotation.current = 0
+    pointerInteractionMovement.current = 0
   }, [focusLocation])
 
   useEffect(() => {
     let width = 0
-    let currentPhi = 0
-    let currentTheta = 0
     const doublePi = Math.PI * 2
 
     const onResize = () => {
@@ -53,18 +62,24 @@ export function Globe({
         markers: [],
         opacity: 0.9,
         onRender: (state) => {
-          state.phi = currentPhi
-          state.theta = currentTheta
-          const [focusPhi, focusTheta] = focusRef.current
-          const distPositive = (focusPhi - currentPhi + doublePi) % doublePi
-          const distNegative = (currentPhi - focusPhi + doublePi) % doublePi
-          // Control the speed
-          if (distPositive < distNegative) {
-            currentPhi += distPositive * 0.08
-          } else {
-            currentPhi -= distNegative * 0.08
+          // Auto-rotation when not being dragged
+          if (!pointerInteracting.current) {
+            // Smooth transition to focus location
+            const [focusPhi, focusTheta] = focusRef.current
+            const distPositive = (focusPhi - currentPhiRef.current + doublePi) % doublePi
+            const distNegative = (currentPhiRef.current - focusPhi + doublePi) % doublePi
+            // Control the speed
+            if (distPositive < distNegative) {
+              currentPhiRef.current += distPositive * 0.08
+            } else {
+              currentPhiRef.current -= distNegative * 0.08
+            }
+            currentThetaRef.current = currentThetaRef.current * 0.92 + focusTheta * 0.08
           }
-          currentTheta = currentTheta * 0.92 + focusTheta * 0.08
+          
+          // Apply user interaction rotation
+          state.phi = currentPhiRef.current + dragRotation.current
+          state.theta = currentThetaRef.current
           state.width = width * 2
           state.height = width * 2
         },
@@ -85,10 +100,67 @@ export function Globe({
     }
   }, [config])
 
+  const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    pointerInteracting.current = e.clientX - pointerInteractionMovement.current
+    if (canvasRef.current) {
+      canvasRef.current.style.cursor = 'grabbing'
+    }
+    
+    if (!isDraggedRef.current) {
+      isDraggedRef.current = true
+      onDragStateChange?.(true)
+    }
+  }
+
+  const handlePointerUp = () => {
+    pointerInteracting.current = null
+    if (canvasRef.current) {
+      canvasRef.current.style.cursor = 'grab'
+    }
+    
+    if (isDraggedRef.current) {
+      isDraggedRef.current = false
+      onDragStateChange?.(false)
+    }
+  }
+
+  const handlePointerOut = () => {
+    pointerInteracting.current = null
+    if (canvasRef.current) {
+      canvasRef.current.style.cursor = 'grab'
+    }
+    
+    if (isDraggedRef.current) {
+      isDraggedRef.current = false
+      onDragStateChange?.(false)
+    }
+  }
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (pointerInteracting.current !== null) {
+      const delta = e.clientX - pointerInteracting.current
+      pointerInteractionMovement.current = delta
+      dragRotation.current = delta / 200
+    }
+  }
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (pointerInteracting.current !== null && e.touches[0]) {
+      const delta = e.touches[0].clientX - pointerInteracting.current
+      pointerInteractionMovement.current = delta
+      dragRotation.current = delta / 100
+    }
+  }
+
   return (
     <canvas 
       ref={canvasRef} 
       className={className}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerOut={handlePointerOut}
+      onMouseMove={handleMouseMove}
+      onTouchMove={handleTouchMove}
       style={{ 
         width: '100%',
         height: '100%',

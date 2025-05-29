@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 import { ConnectIcon } from '@/components/icons/ConnectIcon'
 import { useConnectedStore } from '@/lib/stores/connectedStore'
-import { UserStatusCounts, useUserStatusCounts } from '@/api/hooks/useUserStatusCounts'
+import { UserStatusCounts, useUserStatusCounts } from '@/api/hooks/useUsers'
 import { useProfile, useUpdateProfileLocation } from '@/api/hooks/useProfile'
 import { useAuth } from '@/hooks/useAuth'
 import { logAndToastError } from '../lib/utils/ebbError.util'
@@ -55,13 +56,15 @@ const getStatusCounts = (userStatusCounts?: UserStatusCounts) => {
 
 export function SocialStatusSummary() {
   const { connected, setConnected } = useConnectedStore()
-  const { data: communityStatuses } = useUserStatusCounts()
+  const { data: communityStatuses, isLoading: isLoadingStatuses } = useUserStatusCounts()
   const { mutateAsync: updateProfileLocation, isPending: isUpdatingProfileLocation } = useUpdateProfileLocation()
-  const { profile } = useProfile()
+  const { profile, isLoading: isLoadingProfile } = useProfile()
   const { user } = useAuth()
 
   const navigate = useNavigate()
   const [statusCounts, setStatusCounts] = useState(getStatusCounts(communityStatuses))
+
+  const isLoading = isLoadingStatuses || isLoadingProfile
 
   useEffect(() => {
     if (communityStatuses) {
@@ -71,11 +74,9 @@ export function SocialStatusSummary() {
   }, [communityStatuses])
 
   const handleConnect = async () => {
-    // if user not set, show login modal
     if (!user) {
       navigate('/login')
     }
-    // if profile lat and long not set, save location to db
     if (!profile?.latitude || !profile?.longitude) {
       try {
         await updateProfileLocation()
@@ -88,6 +89,17 @@ export function SocialStatusSummary() {
 
   const handleStatusClick = () => {
     navigate('/friends')
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-4 pl-6">
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-6 w-16 rounded-full" />
+          <Skeleton className="h-6 w-16 rounded-full" />
+        </div>
+      </div>
+    )
   }
 
   return (
