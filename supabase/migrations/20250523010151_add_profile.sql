@@ -4,6 +4,8 @@ CREATE TABLE user_profile (
     id UUID REFERENCES auth.users(id) PRIMARY KEY,
     online_status user_status DEFAULT 'offline',
     last_check_in TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    latitude INT NULL, -- rounded to closest integer (within 111km square)
+    longitude INT NULL, -- rounded to closest integer (within 111km square)
     preferences JSONB DEFAULT '{}',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -36,4 +38,4 @@ CREATE POLICY "Users can create own profile"
 -- ROLLBACK:
 -- DROP TABLE user_profile;
 -- DROP TYPE user_status;
--- DROP SCHEMA "user";
+-- DELETE FROM supabase_migrations.schema_migrations WHERE version = '20250523010151';

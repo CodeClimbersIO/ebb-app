@@ -4,6 +4,7 @@ import { logAndToastError } from '@/lib/utils/ebbError.util'
 import { useEffect } from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import { isSupabaseError, SupabaseErrorCodes } from '@/lib/utils/supabase.util'
+import { platformApiRequest } from '../platformRequest'
 
 const profileKeys = {
   all: ['profile'] as const,
@@ -16,6 +17,8 @@ export type UserProfile = {
   id: string
   online_status: EbbStatus
   last_check_in: string
+  latitude: number | null
+  longitude: number | null
   preferences: Record<string, string | number | boolean>
   created_at: string
   updated_at: string
@@ -63,6 +66,15 @@ const updateProfile = async (updates: Partial<UserProfile>) => {
   return data as UserProfile
 }
 
+const updateProfileLocation = async () => {
+  const data = await platformApiRequest({
+    url: '/api/geolocation/current',
+    method: 'POST',
+  })
+
+  return data
+}
+
 export function useGetCurrentProfile() {
   return useQuery({
     queryKey: profileKeys.current(),
@@ -97,6 +109,19 @@ export function useUpdateProfile() {
     },
     onError: (error) => {
       logAndToastError('Failed to update profile', error)
+    },
+  })
+}
+
+export const useUpdateProfileLocation = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: updateProfileLocation,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: profileKeys.all })
+    },
+    onError: (error) => {
+      logAndToastError('Failed to update profile location', error)
     },
   })
 }

@@ -4,10 +4,12 @@ const BASE_URL = 'https://api.ebb.cool'
 
 export class ApiError extends Error {
   statusCode: number
-  constructor(message: string, statusCode: number) {
-    super(message)
-    this.message = message
+  constructor(message: string | undefined, statusCode: number) {
+    const errorMessage = message || `HTTP Error ${statusCode}` || 'Unknown API Error'
+    super(errorMessage)
+    this.message = errorMessage
     this.statusCode = statusCode
+    this.name = 'ApiError'
   }
 }
 
@@ -74,7 +76,18 @@ const requestFn = () => {
           } catch {
             responseObject = await response.text()
           }
-          throw new ApiError(responseObject?.message, response.status)
+          
+          // Provide a better fallback message when responseObject?.message is undefined
+          let errorMessage = responseObject?.message
+          if (!errorMessage) {
+            if (typeof responseObject === 'string') {
+              errorMessage = responseObject
+            } else {
+              errorMessage = `API request ${url} failed with status ${response.status}`
+            }
+          }
+          
+          throw new ApiError(errorMessage, response.status)
         }
         switch (responseType) {
         case 'blob':

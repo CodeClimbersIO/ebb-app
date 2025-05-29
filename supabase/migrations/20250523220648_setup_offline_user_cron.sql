@@ -20,3 +20,5 @@ SELECT cron.schedule(
 
 
 -- rollback 
+-- SELECT cron.unschedule('update-offline-users-sql');
+-- DELETE FROM supabase_migrations.schema_migrations WHERE version = '20250523220648';

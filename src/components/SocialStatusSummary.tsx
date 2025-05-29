@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Button } from './ui/button'
-import { ConnectIcon } from './icons/ConnectIcon'
 import { useNavigate } from 'react-router-dom'
-import { useConnectedStore } from '../lib/stores/connectedStore'
-import { useUserStatusCounts } from '../api/hooks/useUserStatusCounts'
+import { Button } from '@/components/ui/button'
+import { ConnectIcon } from '@/components/icons/ConnectIcon'
+import { useConnectedStore } from '@/lib/stores/connectedStore'
+import { useUserStatusCounts } from '@/api/hooks/useUserStatusCounts'
+import { useProfile, useUpdateProfileLocation } from '@/api/hooks/useProfile'
+import { useAuth } from '@/hooks/useAuth'
+import { logAndToastError } from '../lib/utils/ebbError.util'
 
 interface StatusBadgeProps {
   color: 'green' | 'purple'
@@ -43,13 +46,16 @@ function StatusBadge({ color, count, statusName, disabled = false }: StatusBadge
 }
 
 export function SocialStatusSummary() {
-  // Mock state for status counts and connection
   const { connected, setConnected } = useConnectedStore()
   const { data: communityStatuses } = useUserStatusCounts()
+  const { mutateAsync: updateProfileLocation, isPending: isUpdatingProfileLocation } = useUpdateProfileLocation()
+  const { profile } = useProfile()
+  const { user } = useAuth()
+
   const navigate = useNavigate()
   const [statusCounts, setStatusCounts] = useState({
-    online: 42,
-    flowing: 17,
+    online: 0,
+    flowing: 0,
   })
 
   useEffect(() => {
@@ -62,8 +68,20 @@ export function SocialStatusSummary() {
     }
   }, [communityStatuses])
 
-  const handleConnect = () => {
-    setConnected(true)
+  const handleConnect = async () => {
+    // if user not set, show login modal
+    if (!user) {
+      navigate('/login')
+    }
+    // if profile lat and long not set, save location to db
+    if (!profile?.latitude || !profile?.longitude) {
+      try {
+        await updateProfileLocation()
+        setConnected(true)
+      } catch (error) {
+        logAndToastError('Failed to update profile location', error)
+      }
+    }
   }
 
   const handleStatusClick = () => {
@@ -78,6 +96,7 @@ export function SocialStatusSummary() {
             variant="outline" 
             size="sm" 
             onClick={handleConnect} 
+            disabled={isUpdatingProfileLocation}
             className="gap-2 border-primary text-white hover:bg-primary hover:text-primary-foreground relative z-10"
           >
             Connect

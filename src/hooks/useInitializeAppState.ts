@@ -18,6 +18,7 @@ export const useInitializeAppState = () => {
   const posthog = usePostHog()
   const { beginCheckForUpdates } = useUpdate()
   const { user } = useAuth()
+  const { profile } = useProfile()
   const { setConnected } = useConnectedStore()
   const { loadShortcutFromStorage } = useShortcutStore()
   
@@ -40,7 +41,7 @@ export const useInitializeAppState = () => {
   }, [])
 
   useEffect(() => {
-    if (user) {
+    if (user && profile?.latitude && profile?.longitude) {
       setConnected(true)
       posthog.identify(user.id, {
         email: user.email,
