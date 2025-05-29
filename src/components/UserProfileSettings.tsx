@@ -7,11 +7,11 @@ import { LogOut, KeyRound } from 'lucide-react'
 import { format } from 'date-fns'
 import { User } from '@supabase/supabase-js'
 import supabase from '@/lib/integrations/supabase'
-import { logAndToastError } from '@/lib/utils/logAndToastError'
+import { logAndToastError } from '@/lib/utils/ebbError.util'
 import { useAuth } from '@/hooks/useAuth'
 import { useNavigate } from 'react-router-dom'
 import { usePermissions } from '@/hooks/usePermissions'
-import { useLicenseStore } from '@/stores/licenseStore'
+import { useLicenseStore } from '@/lib/stores/licenseStore'
 
 
 interface UserProfileSettingsProps {

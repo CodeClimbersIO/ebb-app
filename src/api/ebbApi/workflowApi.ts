@@ -2,7 +2,7 @@ import { SearchOption } from '@/components/AppSelector'
 import { WorkflowDb, WorkflowRepo, WorkflowSettings } from '@/db/ebb/workflowRepo'
 import { getEbbDb } from '@/db/ebb/ebbDb'
 import { BlockingPreferenceApi } from './blockingPreferenceApi'
-import { logAndToastError } from '@/lib/utils/logAndToastError'
+import { logAndToastError } from '@/lib/utils/ebbError.util'
 
 export interface Workflow {
   id?: string

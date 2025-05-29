@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core'
-import { logAndToastError } from '@/lib/utils/logAndToastError'
+import { logAndToastError } from '@/lib/utils/ebbError.util'
 import { deviceRepo } from '@/db/supabase/deviceRepo'
 import { hostname } from '@tauri-apps/plugin-os'
 

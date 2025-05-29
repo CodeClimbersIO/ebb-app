@@ -1,4 +1,4 @@
-import { useLicenseStore } from '@/stores/licenseStore'
+import { useLicenseStore } from '@/lib/stores/licenseStore'
 
 export const usePermissions = () => {
   const { permissions } = useLicenseStore()

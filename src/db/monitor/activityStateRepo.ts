@@ -7,20 +7,6 @@ export enum ActivityStateType {
   Inactive = 'INACTIVE',
 }
 
-export enum ActivityType {
-  Window = 'WINDOW',
-  Mouse = 'MOUSE',
-  Keyboard = 'KEYBOARD',
-}
-
-export interface Activity {
-  activity_type: ActivityType
-  app_window_title: string
-  created_at: string
-  timestamp: string
-  bundle_id: string
-} 
-
 
 
 export interface ActivityStateDb {

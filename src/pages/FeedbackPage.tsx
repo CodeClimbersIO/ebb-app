@@ -5,7 +5,7 @@ import { Layout } from '@/components/Layout'
 import { CommunityCard } from '../components/CommunityCard'
 import { FAQ } from '../components/FAQ'
 import supabase from '../lib/integrations/supabase'
-import { logAndToastError } from '../lib/utils/logAndToastError'
+import { logAndToastError } from '../lib/utils/ebbError.util'
 import { useAuth } from '../hooks/useAuth'
 import { Input } from '../components/ui/input'
 import { toastStore } from '../lib/stores/toastStore'
@@ -27,7 +27,7 @@ export default function FeedbackPage() {
   useEffect(() => {
     const error = toastStore.getState().error
     if (error) {
-      const prefillText = `${error}\n\n---\nSorry about that! We want to help you. Please describe what you were doing when this error occurred:`
+      const prefillText = `${JSON.stringify(error)}\n\n---\nSorry about that! We want to help you. Please describe what you were doing when this error occurred:`
       setFeedback(prefillText)
       setTimeout(() => {
         if (textareaRef.current) {

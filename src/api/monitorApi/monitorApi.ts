@@ -3,6 +3,7 @@ import { Tag, TagRepo, TagType } from '../../db/monitor/tagRepo'
 import { ActivityState, ActivityStateRepo } from '../../db/monitor/activityStateRepo'
 import { ActivityRating } from '../../lib/app-directory/apps-types'
 import { App, AppDb, AppRepo, AppTagJoined } from '../../db/monitor/appRepo'
+import { Activity, ActivityRepo } from '../../db/monitor/activityRepo'
 
 
 // during this time block, tags had the following duration
@@ -206,7 +207,7 @@ function aggregateTimeBlocks(
       
       // Check if this is a noise period: less than 2 minutes of idle AND no other activity
       const hasOtherActivity = vals.creating > 0 || vals.consuming > 0 || vals.neutral > 0
-      const isNoiseIdlePeriod = vals.idle < 2 && !hasOtherActivity
+      const isNoiseIdlePeriod = !hasOtherActivity
       
       if (unit === 'hour') {
         dt = DateTime.fromFormat(key, 'yyyy-MM-dd-HH')
@@ -325,6 +326,11 @@ export const createApp = async (externalId: string, isBrowser: boolean, name = '
   return id
 }
 
+const getLatestActivity = async (): Promise<Activity | undefined> => {
+  const activity = await ActivityRepo.getLatestActivity()
+  return activity
+}
+
 
 export const MonitorApi = {
   getApps,
@@ -334,5 +340,6 @@ export const MonitorApi = {
   getTimeCreatingByWeek,
   getTopAppsByPeriod,
   setAppDefaultTag,
-  createApp
+  createApp,
+  getLatestActivity,
 }

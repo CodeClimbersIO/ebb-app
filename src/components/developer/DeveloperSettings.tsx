@@ -1,4 +1,4 @@
-import { isDev } from '../../lib/utils/environment'
+import { isDev } from '../../lib/utils/environment.util'
 import { ResetAppData } from './ResetAppData'
 import NotificationManager from '../../lib/notificationManager'
 import { Button } from '../ui/button'

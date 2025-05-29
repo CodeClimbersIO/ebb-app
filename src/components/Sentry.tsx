@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/react'
-import { isDev } from '@/lib/utils/environment'
+import { isDev } from '@/lib/utils/environment.util'
 export const initSentry = () => {
   if (!isDev()) {
     Sentry.init({

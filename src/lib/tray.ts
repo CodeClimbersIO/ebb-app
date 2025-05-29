@@ -6,8 +6,8 @@ import { DateTime, Duration } from 'luxon'
 import { useFlowTimer } from './stores/flowTimer'
 import { invoke } from '@tauri-apps/api/core'
 import { Image } from '@tauri-apps/api/image'
-import { logAndToastError } from '@/lib/utils/logAndToastError'
-import { isDev } from './utils/environment'
+import { logAndToastError } from '@/lib/utils/ebbError.util'
+import { isDev } from './utils/environment.util'
 
 async function showAndFocusWindow() {
   const mainWindow = Window.getCurrent()

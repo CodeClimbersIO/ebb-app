@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { App } from '../db/monitor/appRepo'
 import { categoryEmojis, AppCategory } from '../lib/app-directory/apps-types'
 import { invoke } from '@tauri-apps/api/core'
-import { logAndToastError } from '@/lib/utils/logAndToastError'
+import { logAndToastError } from '@/lib/utils/ebbError.util'
 
 // Add this helper function at the top level
 const getAppIcon = (app: App) => {

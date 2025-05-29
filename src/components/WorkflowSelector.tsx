@@ -21,7 +21,7 @@ import { Badge } from './ui/badge'
 import { cn } from '@/lib/utils/tailwind.util'
 import { Button } from './ui/button'
 import { Switch } from '@/components/ui/switch'
-import { logAndToastError } from '@/lib/utils/logAndToastError'
+import { logAndToastError } from '@/lib/utils/ebbError.util'
 import { PaywallDialog } from '@/components/PaywallDialog'
 import { usePermissions } from '@/hooks/usePermissions'
 

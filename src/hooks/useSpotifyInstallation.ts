@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { invoke } from '@tauri-apps/api/core'
-import { logAndToastError } from '@/lib/utils/logAndToastError'
+import { logAndToastError } from '@/lib/utils/ebbError.util'
 
 export const useSpotifyInstallation = () => {
   const [isSpotifyInstalled, setIsSpotifyInstalled] = useState(false)

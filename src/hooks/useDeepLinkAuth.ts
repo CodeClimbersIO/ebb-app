@@ -4,9 +4,10 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import supabase from '@/lib/integrations/supabase'
 import { SpotifyAuthService } from '@/lib/integrations/spotify/spotifyAuth'
-import { useLicenseStore } from '@/stores/licenseStore'
+import { useLicenseStore } from '@/lib/stores/licenseStore'
 import { useAuth } from './useAuth'
-import { logAndToastError } from '../lib/utils/logAndToastError'
+import { logAndToastError } from '../lib/utils/ebbError.util'
+import { useUpdateProfileLocation } from '../api/hooks/useProfile'
 
 const processedUrls = new Set<string>()
 
@@ -16,7 +17,8 @@ export const useDeepLinkAuth = () => {
   const [isHandlingAuth, setIsHandlingAuth] = useState(false)
   const { user } = useAuth()
   const fetchLicense = useLicenseStore((state) => state.fetchLicense)
-
+  const { mutate: updateProfileLocation } = useUpdateProfileLocation()
+  
   useEffect(() => {
     const urlObj = new URL(window.location.href)
     const searchParams = new URLSearchParams(urlObj.search)
@@ -57,6 +59,7 @@ export const useDeepLinkAuth = () => {
           const state = searchParams.get('state')
           if (spotifyCode && state) {
             await SpotifyAuthService.handleCallback(spotifyCode, state)
+            await updateProfileLocation()
             navigate('/start-flow', { replace: true })
             window.location.reload()
             return
