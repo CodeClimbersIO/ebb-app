@@ -64,7 +64,7 @@ export function useUsageSummary() {
     setTags(tags)
     setAppUsage(topApps)
     setTotalCreating(chartData.reduce((acc, curr) => acc + curr.creating, 0))
-    const online = chartData.reduce((acc, curr) => acc + curr.creating + curr.neutral + curr.consuming, 0)
+    const online = chartData.reduce((acc, curr) => acc + curr.creating + curr.neutral + curr.consuming + curr.idle, 0)
     setTotalTime(online)
     setChartData(chartData)
     setIsLoading(false)
@@ -81,7 +81,7 @@ export function useUsageSummary() {
     }
 
     const prevCreating = prevChartData.reduce((acc, curr) => acc + curr.creating, 0)
-    const prevOnline = prevChartData.reduce((acc, curr) => acc + curr.creating + curr.neutral + curr.consuming, 0)
+    const prevOnline = prevChartData.reduce((acc, curr) => acc + curr.creating + curr.neutral + curr.consuming + curr.idle, 0)
 
     // Calculate trends
     const calcTrend = (current: number, prev: number): { percent: number, direction: 'up' | 'down' | 'none' } => {
@@ -140,7 +140,7 @@ export function useUsageSummary() {
   // Calculate yAxisMax for week/month view
   let yAxisMax: number | undefined = undefined
   if ((rangeMode === 'week' || rangeMode === 'month') && chartData.length > 0) {
-    yAxisMax = Math.max(...chartData.map(day => day.creating + day.consuming + day.neutral))
+    yAxisMax = Math.max(...chartData.map(day => day.creating + day.consuming + day.neutral + day.idle))
   }
 
   return {

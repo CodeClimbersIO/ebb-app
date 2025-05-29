@@ -2,6 +2,9 @@ import * as React from 'react'
 import * as ReactDOM from 'react-dom/client'
 import { PostHogProvider } from 'posthog-js/react'
 import App from './App'
+import { info as tauriInfoLogger } from '@tauri-apps/plugin-log'
+
+tauriInfoLogger('Main.tsx intializing')
 
 const options = {
   api_host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST || 'https://app.posthog.com'
