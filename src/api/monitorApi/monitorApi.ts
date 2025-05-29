@@ -207,7 +207,7 @@ function aggregateTimeBlocks(
       
       // Check if this is a noise period: less than 2 minutes of idle AND no other activity
       const hasOtherActivity = vals.creating > 0 || vals.consuming > 0 || vals.neutral > 0
-      const isNoiseIdlePeriod = vals.idle < 2 && !hasOtherActivity
+      const isNoiseIdlePeriod = !hasOtherActivity
       
       if (unit === 'hour') {
         dt = DateTime.fromFormat(key, 'yyyy-MM-dd-HH')
