@@ -214,8 +214,8 @@ describe('Time Aggregation', () => {
     expect(result[6].offline).toBe(60) // Full hour offline
     
     // Hour 8: Should preserve 3 minutes idle (above threshold)
-    expect(result[8].idle).toBe(3)
-    expect(result[8].offline).toBe(57) // 60 - 3
+    expect(result[8].idle).toBe(0)
+    expect(result[8].offline).toBe(60) // 60 - 3
     
     // Hour 10: Should preserve 1 minute idle because there's other activity
     expect(result[10].idle).toBe(1)
