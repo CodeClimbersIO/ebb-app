@@ -5,7 +5,6 @@ import { hostname } from '@tauri-apps/plugin-os'
 import { User } from '@supabase/supabase-js'
 import { Laptop2 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
-import { invoke } from '@tauri-apps/api/core'
 import { Skeleton } from '@/components/ui/skeleton'
 import { error } from '@tauri-apps/plugin-log'
 import { deviceApi } from '../api/ebbApi/deviceApi'
@@ -36,8 +35,8 @@ export function ActiveDevicesSettings({ user, maxDevices }: ActiveDevicesSetting
   useEffect(() => {
     const getCurrentDeviceId = async () => {
       try {
-        const macAddress = await invoke<string>('get_mac_address')
-        setCurrentDeviceId(macAddress)
+        const deviceId = await deviceApi.getCurrentDeviceId()
+        setCurrentDeviceId(deviceId)
       } catch (err) {
         error(`Error getting MAC address: ${err}`)
         setCurrentDeviceId(null)

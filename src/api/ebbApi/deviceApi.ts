@@ -1,4 +1,3 @@
-import { invoke } from '@tauri-apps/api/core'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
 import { deviceRepo } from '@/db/supabase/deviceRepo'
 import { hostname } from '@tauri-apps/plugin-os'
@@ -21,21 +20,22 @@ export const defaultDeviceInfo: DeviceInfo = {
   isDeviceLimitReached: false,
 }
 
-const getMacAddress = async (): Promise<string> => {
-  try {
-    const macAddress = await invoke<string>('get_mac_address')
-    return macAddress
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error)
-    logAndToastError(`MAC Address Error: ${errorMessage}`, error)
-    throw new Error(`Device registration requires MAC address access: ${errorMessage}`)
-  }
-}
-
 const cleanupHostname = (name: string): string => {
   return name
     .replace(/\.local$/, '')
     .replace(/-/g, ' ')
+}
+
+
+// gets the device id from local storage  
+const getCurrentDeviceId = async (): Promise<string> => {
+  const deviceId = await localStorage.getItem('deviceId')
+  if (!deviceId) {
+    const newDeviceId = crypto.randomUUID()
+    localStorage.setItem('deviceId', newDeviceId)
+    return newDeviceId
+  }
+  return deviceId
 }
 
 const upsertDevice = async (
@@ -51,7 +51,7 @@ const getUserDevices = async (userId: string, filter: { active?: boolean } = {})
 }
 
 const logoutDevice = async (userId: string, deviceId: string) => {
-  const currentDeviceId = await getMacAddress()
+  const currentDeviceId = await getCurrentDeviceId()
   if (deviceId === currentDeviceId) throw new Error('Cannot logout current device')
 
   return deviceRepo.deleteDevice(userId, deviceId)
@@ -80,7 +80,7 @@ const registerDevice = async (userId: string, maxDevices: number): Promise<Devic
     }
   }
 
-  const deviceId = await getMacAddress()
+  const deviceId = await getCurrentDeviceId()
   const exists =  deviceExists(existingDevices, deviceId)
   if(!exists) {
     const rawHostname = await hostname()
@@ -96,7 +96,7 @@ const registerDevice = async (userId: string, maxDevices: number): Promise<Devic
 }
 
 export const deviceApi = {
-  getMacAddress,
+  getCurrentDeviceId,
   cleanupHostname,
   upsertDevice,
   getUserDevices,
