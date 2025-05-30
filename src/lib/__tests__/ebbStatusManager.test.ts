@@ -4,7 +4,9 @@ import { calculateCurrentStatus } from '../ebbStatusManager'
 import { FlowSessionApi } from '@/api/ebbApi/flowSessionApi'
 import { MonitorApi } from '../../api/monitorApi/monitorApi'
 import { ActivityType } from '../../db/monitor/activityRepo'
-import { DateTime } from 'luxon'
+import { DateTime, Settings } from 'luxon'
+
+Settings.defaultZone = 'UTC'
 
 describe('ebbStatusManager', () => {
   describe('calculateCurrentStatus', () => {
