@@ -80,7 +80,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             commands::restore_app_data_from_backup,
             commands::detect_spotify,
             change_autostart,
-            commands::get_mac_address,
             tray_icon_gen::generate_timer_icon,
         ])
         .build(tauri::generate_context!())?

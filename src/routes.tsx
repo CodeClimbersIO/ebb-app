@@ -12,7 +12,7 @@ import { FlowRecapPage } from '@/pages/FlowRecapPage'
 import { LoadingScreen } from '@/components/LoadingScreen'
 import { AccessibilityPage } from './pages/AccessibilityPage'
 import { ShortcutTutorialPage } from '@/pages/ShortcutTutorialPage'
-import { DeviceLimitPage } from './pages/DeviceLimitPage'
+// import { DeviceLimitPage } from './pages/DeviceLimitPage'
 import { OnboardingUtils } from '@/lib/utils/onboarding.util'
 import { useDeepLinkAuth } from './hooks/useDeepLinkAuth'
 import { getCurrentWindow } from '@tauri-apps/api/window'
@@ -28,7 +28,7 @@ import { canaryUsers } from './lib/utils/environment.util'
 
 const ProtectedRoute = () => {
   const { user, loading: authLoading } = useAuth()
-  const { deviceInfo } = useLicenseStore()
+  // const { deviceInfo } = useLicenseStore()
   const location = useLocation()
   const { fetchLicense, initSubscription, clearSubscription } = useLicenseStore()
   
@@ -53,9 +53,9 @@ const ProtectedRoute = () => {
     return <Navigate to="/login" replace />
   }
 
-  if (deviceInfo.isDeviceLimitReached) {
-    return <DeviceLimitPage />
-  }
+  // if (deviceInfo.isDeviceLimitReached) {
+  //   return <DeviceLimitPage />
+  // }
 
   if (location.pathname === '/onboarding/accessibility' ||
     location.pathname === '/onboarding/shortcut-tutorial') {
