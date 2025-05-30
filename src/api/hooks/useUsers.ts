@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { platformApiRequest } from '../platformRequest'
 import { EbbStatus } from './useProfile'
+import { getRandomPoint } from '../../lib/utils/location.util'
 
 const communityKeys = {
   all: ['communityKeys'] as const,
@@ -29,12 +30,23 @@ const getUserStatusCounts = async () => {
 }
 
 const getLocations = async () => {
-  const data = await platformApiRequest({
+  const data: EbbLocation[] = await platformApiRequest({
     url: '/api/users/locations',
     method: 'GET',
   })
 
-  return data as EbbLocation[]
+  const locations = data.map(location => { 
+    let markerLocation: [number, number] = [location.latitude, location.longitude]
+    if(!location.latitude && !location.longitude) {
+      markerLocation = getRandomPoint()
+    }
+    return {
+      online_status: location.online_status,
+      latitude: markerLocation[0],
+      longitude: markerLocation[1],
+    }
+  })
+  return locations
 }
 
 export const useUserStatusCounts = () => {
