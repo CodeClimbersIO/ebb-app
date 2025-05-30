@@ -1,7 +1,7 @@
 {
   "name": "ebb",
   "private": true,
-  "version": "0.2.20",
+  "version": "0.2.21",
   "type": "module",
   "author": "Paul Hovley <rphovley@gmail.com>",
   "scripts": {
