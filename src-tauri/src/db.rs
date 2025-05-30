@@ -179,5 +179,23 @@ pub fn get_migrations() -> Vec<Migration> {
             );"#,
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 13,
+            description: "delete_duplicate_blocking_preferences",
+            sql: r#"
+            DELETE FROM blocking_preference 
+            WHERE id NOT IN (
+                SELECT MIN(id) 
+                FROM blocking_preference 
+                GROUP BY workflow_id, app_id, tag_id
+            );
+
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_blocking_preference_workflow_tag_unique 
+            ON blocking_preference(workflow_id, tag_id);
+            
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_blocking_preference_workflow_app_unique 
+            ON blocking_preference(workflow_id, app_id);"#,
+            kind: MigrationKind::Up,
+        },
     ]
 }
