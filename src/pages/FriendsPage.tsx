@@ -10,10 +10,16 @@ import { useEffect, useState } from 'react'
 
 const geLocationsAsMarkers = (userLocations?: EbbLocation[]): Marker[] => {
   if (!userLocations) return []
-  return userLocations.map(location => ({
-    location: [location.latitude, location.longitude],
-    size: 0.1,
-  }))
+  const markers = userLocations.filter(
+    ({online_status}) => online_status === 'active' || online_status === 'flowing' || online_status === 'online'
+  ).map(location => {
+    return {
+      location: [location.latitude, location.longitude] as [number, number],
+      size: 0.1,
+    }
+  })
+
+  return [...markers]
 }
 
 interface CommunityStatusCardProps {
@@ -23,6 +29,7 @@ interface CommunityStatusCardProps {
 }
 
 const CommunityStatusCard = ({ locations, title, onLocationHover }: CommunityStatusCardProps) => {
+  const color = title === 'Online' ? 'bg-green-500' : 'bg-primary'
   return (
     <div
       key={'1'}
@@ -38,7 +45,7 @@ const CommunityStatusCard = ({ locations, title, onLocationHover }: CommunitySta
             {locations.map((location, index) => (
               <div 
                 key={index} 
-                className={cn('h-2 w-2 rounded-full bg-green-500 animate-pulse hover:scale-125 transition-transform cursor-pointer')}
+                className={cn('h-2 w-2 rounded-full animate-pulse hover:scale-125 transition-transform cursor-pointer', color)}
                 onMouseEnter={() => onLocationHover(location)}
               />
             ))}
