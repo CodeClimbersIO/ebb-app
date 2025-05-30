@@ -51,7 +51,7 @@ describe('ebbStatusManager', () => {
         activity_type: ActivityType.Window,
         app_window_title: 'test',
         created_at: DateTime.now().minus({ minutes: 6 }).toISO(),
-        timestamp: new Date().toISOString(),
+        timestamp: DateTime.now().minus({ minutes: 6 }).toISO(),
         bundle_id: 'test',
       })
       const status = await calculateCurrentStatus()
