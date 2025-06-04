@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 use os_monitor::{
     detect_changes, has_accessibility_permissions, AppEvent, BlockedAppEvent, Monitor,
 };
-use os_monitor_service::initialize_monitoring_service;
+use os_monitor_service::MonitoringConfig;
 
 use tauri::{async_runtime, AppHandle, Emitter};
 use tokio::time::{sleep, Duration};
@@ -63,7 +63,10 @@ pub fn start_monitoring(app_handle: AppHandle) {
         let register_blocked_handle_clone = app_handle.clone();
 
         // Initialize monitoring service first
-        initialize_monitoring_service(Arc::new(monitor), db_path).await;
+        MonitoringConfig::new(Arc::new(monitor), db_path)
+            .with_interval(Duration::from_secs(60))
+            .initialize()
+            .await;
         log::info!("Monitor initialized");
 
         std::thread::spawn(move || {

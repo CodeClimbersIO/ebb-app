@@ -301,7 +301,8 @@ export const getTopAppsByPeriod = async (start: DateTime, end: DateTime): Promis
           rating: getRatingFromTag(app.tags?.find(tag => tag.tag_type === 'default')),
         }
       }
-      appsWithTime[app.id].duration += 0.5 / appsUsed
+      const duration = DateTime.fromISO(activityState.end_time).diff(DateTime.fromISO(activityState.start_time), 'minutes').minutes
+      appsWithTime[app.id].duration += duration / appsUsed
     }
   }
 
