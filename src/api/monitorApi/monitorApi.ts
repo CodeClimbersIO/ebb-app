@@ -4,6 +4,7 @@ import { ActivityState, ActivityStateRepo } from '../../db/monitor/activityState
 import { ActivityRating } from '../../lib/app-directory/apps-types'
 import { App, AppDb, AppRepo, AppTagJoined } from '../../db/monitor/appRepo'
 import { Activity, ActivityRepo } from '../../db/monitor/activityRepo'
+import { ActivityStateTagRepo } from '../../db/monitor/activityStateTagRepo'
 
 
 // during this time block, tags had the following duration
@@ -85,6 +86,7 @@ export const setAppDefaultTag = async (appTagId: string, rating: ActivityRating,
   const [tag, weight] = getTagIdByRating(rating, tags)
   if (!tag || !weight) return
   await AppRepo.setAppTag(appTagId, tag.id, weight)
+  await ActivityStateTagRepo.updateActivityStateTagById(appTagId, tag.id)
 }
 
 

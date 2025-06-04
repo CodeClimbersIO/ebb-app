@@ -127,14 +127,15 @@ export function useUsageSummary() {
     }
   }, [date, rangeMode, refreshData])
 
-  const handleRatingChange = (tagId: string, rating: ActivityRating, tags: Tag[]) => {
-    MonitorApi.setAppDefaultTag(tagId, rating, tags)
+  const handleRatingChange = async (tagId: string, rating: ActivityRating, tags: Tag[]) => {
+    await MonitorApi.setAppDefaultTag(tagId, rating, tags)
     setAppUsage(prev => prev.map(a => {
       if (a.default_tag?.id === tagId) {
         return { ...a, rating }
       }
       return a
     }))
+    refreshData()
   }
 
   // Calculate yAxisMax for week/month view
