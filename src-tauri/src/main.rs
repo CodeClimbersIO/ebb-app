@@ -1,9 +1,9 @@
+use ebb_db::{db_manager, migrations};
 use tauri::Manager;
 use tokio;
 
 mod autostart;
 mod commands;
-mod db;
 mod system_monitor;
 mod tray_icon_gen;
 
@@ -17,13 +17,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }));
 
     tauri::async_runtime::set(tokio::runtime::Handle::current());
-    let db_path = db::get_db_path();
+    let db_path = db_manager::get_default_ebb_db_path();
     let path = std::path::Path::new(&db_path);
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent).expect("Failed to create directory");
     }
 
-    let migrations = db::get_migrations();
+    let migrations = migrations::get_migrations();
     tauri::Builder::default()
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
