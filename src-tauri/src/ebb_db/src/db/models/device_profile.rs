@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use time::OffsetDateTime;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
-pub struct UserPreferences {
+pub struct DevicePreference {
     // Define common preference fields with defaults
     #[serde(default)]
     pub global_focus_shortcut: Option<String>,
@@ -20,7 +20,7 @@ pub struct UserPreferences {
     pub additional: HashMap<String, serde_json::Value>,
 }
 
-impl UserPreferences {
+impl DevicePreference {
     pub fn new() -> Self {
         Self::default()
     }
@@ -43,21 +43,21 @@ impl UserPreferences {
 }
 
 // Custom implementation for SQLx to handle JSON serialization
-impl Type<sqlx::Sqlite> for UserPreferences {
+impl Type<sqlx::Sqlite> for DevicePreference {
     fn type_info() -> sqlx::sqlite::SqliteTypeInfo {
         <String as Type<sqlx::Sqlite>>::type_info()
     }
 }
 
-impl<'r> Decode<'r, sqlx::Sqlite> for UserPreferences {
+impl<'r> Decode<'r, sqlx::Sqlite> for DevicePreference {
     fn decode(value: sqlx::sqlite::SqliteValueRef<'r>) -> Result<Self, sqlx::error::BoxDynError> {
         let json_str = <String as Decode<sqlx::Sqlite>>::decode(value)?;
-        let preferences: UserPreferences = serde_json::from_str(&json_str)?;
+        let preferences: DevicePreference = serde_json::from_str(&json_str)?;
         Ok(preferences)
     }
 }
 
-impl<'q> Encode<'q, sqlx::Sqlite> for UserPreferences {
+impl<'q> Encode<'q, sqlx::Sqlite> for DevicePreference {
     fn encode_by_ref(
         &self,
         args: &mut Vec<sqlx::sqlite::SqliteArgumentValue<'q>>,
@@ -69,11 +69,11 @@ impl<'q> Encode<'q, sqlx::Sqlite> for UserPreferences {
 }
 
 #[derive(Debug, Serialize, Deserialize, FromRow)]
-pub struct UserProfile {
+pub struct DeviceProfile {
     pub id: String,
     pub user_id: Option<String>,
     pub device_id: Option<String>,
-    pub preferences: UserPreferences,
+    pub preferences: DevicePreference,
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
 }
@@ -84,7 +84,7 @@ mod tests {
 
     #[test]
     fn test_set_and_get_string_preference() {
-        let mut prefs = UserPreferences::new();
+        let mut prefs = DevicePreference::new();
 
         // Set a string preference
         prefs.set_preference("language", "en-US").unwrap();
@@ -96,7 +96,7 @@ mod tests {
 
     #[test]
     fn test_set_and_get_bool_preference() {
-        let mut prefs = UserPreferences::new();
+        let mut prefs = DevicePreference::new();
 
         // Set a boolean preference
         prefs.set_preference("notifications_enabled", true).unwrap();
@@ -108,7 +108,7 @@ mod tests {
 
     #[test]
     fn test_set_and_get_number_preference() {
-        let mut prefs = UserPreferences::new();
+        let mut prefs = DevicePreference::new();
 
         // Set a number preference
         prefs.set_preference("max_sessions", 42i32).unwrap();
@@ -120,7 +120,7 @@ mod tests {
 
     #[test]
     fn test_get_nonexistent_preference() {
-        let prefs = UserPreferences::new();
+        let prefs = DevicePreference::new();
 
         // Try to get a preference that doesn't exist
         let nonexistent: Option<String> = prefs.get_preference("does_not_exist");
@@ -129,7 +129,7 @@ mod tests {
 
     #[test]
     fn test_overwrite_preference() {
-        let mut prefs = UserPreferences::new();
+        let mut prefs = DevicePreference::new();
 
         // Set initial value
         prefs.set_preference("counter", 1i32).unwrap();
@@ -144,7 +144,7 @@ mod tests {
 
     #[test]
     fn test_multiple_preferences() {
-        let mut prefs = UserPreferences::new();
+        let mut prefs = DevicePreference::new();
 
         // Set multiple preferences
         prefs.set_preference("name", "Alice").unwrap();
@@ -163,7 +163,7 @@ mod tests {
 
     #[test]
     fn test_wrong_type_returns_none() {
-        let mut prefs = UserPreferences::new();
+        let mut prefs = DevicePreference::new();
 
         // Set a string preference
         prefs.set_preference("setting", "hello").unwrap();
@@ -179,7 +179,7 @@ mod tests {
 
     #[test]
     fn test_user_profile_idle_sensitivity() {
-        let mut prefs = UserPreferences::new();
+        let mut prefs = DevicePreference::new();
         prefs.set_preference("idle_sensitivity", 30i32).unwrap();
         let idle_sensitivity: Option<i32> = prefs.get_preference("idle_sensitivity");
         assert_eq!(idle_sensitivity, Some(30));

@@ -1,1 +1,1 @@
-pub mod user_profile;
+pub mod device_profile;

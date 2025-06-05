@@ -192,6 +192,7 @@ pub fn get_migrations() -> Vec<Migration> {
             sql: r#"
             ALTER TABLE user_profile RENAME TO device_profile;
             ALTER TABLE device_profile ADD COLUMN device_id TEXT;
+            CREATE UNIQUE INDEX idx_device_profile_device_id_unique ON device_profile(device_id);
             "#,
             kind: MigrationKind::Up,
         },

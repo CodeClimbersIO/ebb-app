@@ -1,2 +1,2 @@
+pub mod device_profile_repo;
 pub mod models;
-pub mod user_profile_repo;

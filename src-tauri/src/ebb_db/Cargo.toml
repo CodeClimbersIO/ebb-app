@@ -12,3 +12,4 @@ tauri-plugin-sql = { version = "2", features = ["sqlite"] }
 time = { version = "0.3", features = ["serde"] }
 serde_json = "1.0"
 serde = "1.0.219"
+uuid = { version = "1.17.0", features = ["v4"] }
