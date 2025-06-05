@@ -30,20 +30,17 @@ const ProtectedRoute = () => {
   const { user, loading: authLoading } = useAuth()
   // const { deviceInfo } = useLicenseStore()
   const location = useLocation()
-  const { fetchLicense, initSubscription, clearSubscription } = useLicenseStore()
+  const { fetchLicense } = useLicenseStore()
   
   useEffect(() => {
     if (user) {
       fetchLicense(user.id)
-      initSubscription(user.id)
     } else {
       fetchLicense(null)
-      clearSubscription()
     }
     return () => {
-      clearSubscription()
     }
-  }, [user, fetchLicense, initSubscription, clearSubscription])
+  }, [user, fetchLicense])
 
   if (authLoading) {
     return <LoadingScreen />
