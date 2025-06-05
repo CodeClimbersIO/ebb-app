@@ -81,6 +81,8 @@ export interface UsageSummaryProps {
   appUsage: AppsWithTime[];
   showTopAppsButton?: boolean;
   showAppRatingControls?: boolean;
+  showIdleTime?: boolean;
+  setShowIdleTime?: (showIdleTime: boolean) => void;
   onRatingChange?: (tagId: string, rating: ActivityRating, tags: Tag[]) => void;
   tags?: Tag[];
   isLoading?: boolean;
@@ -118,6 +120,8 @@ export const UsageSummary = ({
   tags = [],
   isLoading = false,
   yAxisMax,
+  showIdleTime,
+  setShowIdleTime,
 }: UsageSummaryProps) => {
   const { user } = useAuth()
   const { mutate: createNotification } = useCreateNotification()
@@ -126,7 +130,6 @@ export const UsageSummary = ({
   const [chartConfigState, setChartConfigState] = useState(defaultChartConfig)
   const sortedAppUsage = [...appUsage].sort((a, b) => b.duration - a.duration)
   const appUsageRef = useRef<HTMLDivElement>(null)
-  const [showIdleTime, setShowIdleTime] = useState(false)
 
   useEffect(() => {
     const hasFirefox = appUsage.some(app => app.app_external_id === 'org.mozilla.firefox')

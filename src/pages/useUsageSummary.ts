@@ -4,6 +4,28 @@ import { MonitorApi, GraphableTimeByHourBlock, AppsWithTime } from '../api/monit
 import { Tag } from '../db/monitor/tagRepo'
 import { ActivityRating } from '@/lib/app-directory/apps-types'
 
+const buildTotalTimeTooltip = (rangeMode: 'day' | 'week' | 'month', showIdleTime: boolean) => {
+  let message = 'Total time spent online'
+  if (rangeMode === 'day') {
+    message += ' today'
+  } else if (rangeMode === 'week') {
+    message += ' this week'
+  } else {
+    message += ' this month'
+  }
+  if (showIdleTime) {
+    message += ' (including idle time)'
+  } else {
+    message += ' (not including idle time)'
+  }
+
+  return message
+}
+
+const buildTotalTimeLabel = (showIdleTime: boolean) => {
+  return showIdleTime ? 'Total Time Online' : 'Total Time Active'
+}
+
 export function useUsageSummary() {
   const [date, setDate] = useState<Date>(new Date())
   const [rangeMode, setRangeMode] = useState<'day' | 'week' | 'month'>('day')
@@ -16,6 +38,18 @@ export function useUsageSummary() {
   const refreshIntervalRef = useRef<number | null>(null)
   const [totalCreatingTrend, setTotalCreatingTrend] = useState<{ percent: number, direction: 'up' | 'down' | 'none' }>({ percent: 0, direction: 'none' })
   const [totalTimeTrend, setTotalTimeTrend] = useState<{ percent: number, direction: 'up' | 'down' | 'none' }>({ percent: 0, direction: 'none' })
+  const [showIdleTime, setShowIdleTime] = useState(false)
+  const [totalTimeTooltip, setTotalTimeTooltip] = useState('Total time spent online today (not including idle time)' )
+  const [totalTimeLabel, setTotalTimeLabel] = useState('Total Active Time')
+
+  useEffect(() => {
+    const tooltip = buildTotalTimeTooltip(rangeMode, showIdleTime)
+    const label = buildTotalTimeLabel(showIdleTime)
+    setTotalTimeTooltip(tooltip)
+    setTotalTimeLabel(label)
+  }, [rangeMode, showIdleTime])
+
+
 
   const getPreviousPeriod = () => {
     let prevStart, prevEnd
@@ -64,7 +98,7 @@ export function useUsageSummary() {
     setTags(tags)
     setAppUsage(topApps)
     setTotalCreating(chartData.reduce((acc, curr) => acc + curr.creating, 0))
-    const online = chartData.reduce((acc, curr) => acc + curr.creating + curr.neutral + curr.consuming + curr.idle, 0)
+    const online = chartData.reduce((acc, curr) => acc + curr.creating + curr.neutral + curr.consuming + (showIdleTime ? curr.idle : 0), 0)
     setTotalTime(online)
     setChartData(chartData)
     setIsLoading(false)
@@ -81,7 +115,7 @@ export function useUsageSummary() {
     }
 
     const prevCreating = prevChartData.reduce((acc, curr) => acc + curr.creating, 0)
-    const prevOnline = prevChartData.reduce((acc, curr) => acc + curr.creating + curr.neutral + curr.consuming + curr.idle, 0)
+    const prevOnline = prevChartData.reduce((acc, curr) => acc + curr.creating + curr.neutral + curr.consuming, 0)
 
     // Calculate trends
     const calcTrend = (current: number, prev: number): { percent: number, direction: 'up' | 'down' | 'none' } => {
@@ -100,7 +134,7 @@ export function useUsageSummary() {
       setTotalTimeTrend({ percent: 0, direction: 'none' })
     }
     
-  }, [date, rangeMode])
+  }, [date, rangeMode, showIdleTime])
 
   useEffect(() => {
     refreshData()
@@ -127,14 +161,15 @@ export function useUsageSummary() {
     }
   }, [date, rangeMode, refreshData])
 
-  const handleRatingChange = (tagId: string, rating: ActivityRating, tags: Tag[]) => {
-    MonitorApi.setAppDefaultTag(tagId, rating, tags)
+  const handleRatingChange = async (tagId: string, rating: ActivityRating, tags: Tag[]) => {
+    await MonitorApi.setAppDefaultTag(tagId, rating, tags)
     setAppUsage(prev => prev.map(a => {
       if (a.default_tag?.id === tagId) {
         return { ...a, rating }
       }
       return a
     }))
+    refreshData()
   }
 
   // Calculate yAxisMax for week/month view
@@ -156,5 +191,9 @@ export function useUsageSummary() {
     isLoading,
     handleRatingChange,
     yAxisMax,
+    showIdleTime,
+    setShowIdleTime,
+    totalTimeTooltip,
+    totalTimeLabel,
   }
 } 

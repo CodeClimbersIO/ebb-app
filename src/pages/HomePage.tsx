@@ -37,6 +37,10 @@ export const HomePage = () => {
     isLoading,
     handleRatingChange,
     yAxisMax,
+    showIdleTime,
+    setShowIdleTime,
+    totalTimeTooltip,
+    totalTimeLabel,
   } = useUsageSummary()
 
   useEffect(() => {
@@ -93,14 +97,8 @@ export const HomePage = () => {
             </div>
           </div>
           <UsageSummary
-            totalTimeLabel="Total Active Time"
-            totalTimeTooltip={
-              rangeMode === 'day' 
-                ? 'Total time spent online today (not including idle time)' 
-                : rangeMode === 'week'
-                  ? 'Total time spent online this week (not including idle time)'
-                  : 'Total time spent online this month (not including idle time)'
-            }
+            totalTimeLabel={totalTimeLabel}
+            totalTimeTooltip={totalTimeTooltip}
             totalTime={totalTime}
             totalCreating={totalCreating}
             chartData={chartData}
@@ -111,6 +109,8 @@ export const HomePage = () => {
             tags={tags}
             isLoading={isLoading}
             yAxisMax={yAxisMax}
+            showIdleTime={showIdleTime}
+            setShowIdleTime={setShowIdleTime}
           />
         </div>
       </div>

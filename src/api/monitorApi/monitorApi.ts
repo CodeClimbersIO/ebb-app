@@ -4,6 +4,7 @@ import { ActivityState, ActivityStateRepo } from '../../db/monitor/activityState
 import { ActivityRating } from '../../lib/app-directory/apps-types'
 import { App, AppDb, AppRepo, AppTagJoined } from '../../db/monitor/appRepo'
 import { Activity, ActivityRepo } from '../../db/monitor/activityRepo'
+import { ActivityStateTagRepo } from '../../db/monitor/activityStateTagRepo'
 
 
 // during this time block, tags had the following duration
@@ -85,6 +86,7 @@ export const setAppDefaultTag = async (appTagId: string, rating: ActivityRating,
   const [tag, weight] = getTagIdByRating(rating, tags)
   if (!tag || !weight) return
   await AppRepo.setAppTag(appTagId, tag.id, weight)
+  await ActivityStateTagRepo.updateActivityStateTagById(appTagId, tag.id)
 }
 
 
@@ -299,7 +301,8 @@ export const getTopAppsByPeriod = async (start: DateTime, end: DateTime): Promis
           rating: getRatingFromTag(app.tags?.find(tag => tag.tag_type === 'default')),
         }
       }
-      appsWithTime[app.id].duration += 0.5 / appsUsed
+      const duration = DateTime.fromISO(activityState.end_time).diff(DateTime.fromISO(activityState.start_time), 'minutes').minutes
+      appsWithTime[app.id].duration += duration / appsUsed
     }
   }
 

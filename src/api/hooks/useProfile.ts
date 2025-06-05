@@ -32,13 +32,12 @@ interface CreateProfile {
 }
 
 const fetchCurrentProfile = async () => {
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from('user_profile')
     .select('*')
     .single()
 
-  if (error) throw error
-  return data as UserProfile || null
+  return data as UserProfile
 }
 
 const createProfile = async (profile: CreateProfile) => {
@@ -80,6 +79,7 @@ export function useGetCurrentProfile() {
     queryKey: profileKeys.current(),
     queryFn: fetchCurrentProfile,
     retry: false,
+    
   })
 }
 
