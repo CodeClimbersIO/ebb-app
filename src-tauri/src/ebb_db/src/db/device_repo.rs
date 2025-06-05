@@ -4,25 +4,25 @@ use crate::db::models::device::Device;
 
 pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
-pub struct DeviceProfileRepo {
+pub struct DeviceRepo {
     pool: Pool<Sqlite>,
 }
 
-impl DeviceProfileRepo {
+impl DeviceRepo {
     pub fn new(pool: Pool<Sqlite>) -> Self {
         Self { pool }
     }
 
-    pub async fn get_device(&self) -> Result<Option<Device>> {
+    pub async fn get_device(&self) -> Result<Device> {
         let device = sqlx::query_as::<_, Device>("SELECT * FROM device")
             .fetch_optional(&self.pool)
             .await?;
         if let Some(device) = device {
-            return Ok(Some(device));
+            return Ok(device);
         } else {
             let device = Device::new();
             self.create_device(&device).await?;
-            return Ok(Some(device));
+            return Ok(device);
         }
     }
 
@@ -45,15 +45,21 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn test_get_device() -> Result<()> {
+    async fn test_get_device_returns_new_device_if_none_exists() -> Result<()> {
         let pool = db_manager::create_test_db().await;
-        let repo = DeviceProfileRepo::new(pool);
+        let repo = DeviceRepo::new(pool);
         let device = repo.get_device().await?;
-        if let Some(device) = device {
-            assert!(device.id.len() == 36);
-        } else {
-            panic!("Device not found");
-        }
+        assert!(device.id.len() == 36);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_get_device_returns_existing_device() -> Result<()> {
+        let pool = db_manager::create_test_db().await;
+        let repo = DeviceRepo::new(pool);
+        let device_1 = repo.get_device().await?;
+        let device_2 = repo.get_device().await?;
+        assert_eq!(device_1.id, device_2.id);
         Ok(())
     }
 }

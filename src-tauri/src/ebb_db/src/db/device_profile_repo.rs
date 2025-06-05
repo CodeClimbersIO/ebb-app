@@ -63,54 +63,6 @@ impl DeviceProfileRepo {
 
         Ok(())
     }
-
-    pub async fn update_preferences(&self, id: &str, preferences: &DevicePreference) -> Result<()> {
-        let preferences_json = serde_json::to_string(preferences)?;
-        let now = OffsetDateTime::now_utc();
-
-        sqlx::query("UPDATE device_profile SET preferences = ?1, updated_at = ?2 WHERE id = ?3")
-            .bind(&preferences_json)
-            .bind(&now)
-            .bind(id)
-            .execute(&self.pool)
-            .await?;
-
-        Ok(())
-    }
-
-    pub async fn get_preference<T: serde::de::DeserializeOwned>(
-        &self,
-        key: &str,
-        device_id: &str,
-    ) -> Result<Option<T>> {
-        if let Some(profile) = self.get_device_profile(device_id).await? {
-            return Ok(profile.preferences.get_preference(key));
-        }
-        Ok(None)
-    }
-
-    pub async fn set_preference<T: serde::Serialize>(
-        &self,
-        key: &str,
-        value: T,
-        device_id: &str,
-    ) -> Result<()> {
-        if let Some(mut profile) = self.get_device_profile(device_id).await? {
-            profile.preferences.set_preference(key, value)?;
-            profile.updated_at = OffsetDateTime::now_utc();
-            self.update_device_profile_preferences(device_id, &profile.preferences)
-                .await?;
-        } else {
-            // Create new profile if it doesn't exist
-            let mut preferences = DevicePreference::new();
-            preferences.set_preference(key, value)?;
-
-            let profile = DeviceProfile::new_with_preferences(preferences);
-
-            self.create_device_profile(&profile).await?;
-        }
-        Ok(())
-    }
 }
 
 #[cfg(test)]
@@ -124,7 +76,7 @@ mod tests {
         let pool = db_manager::create_test_db().await;
         let repo = DeviceProfileRepo::new(pool);
 
-        let profile = DeviceProfile::new();
+        let profile = DeviceProfile::new("test_device_id".to_string());
 
         if let Err(e) = repo.create_device_profile(&profile).await {
             panic!("Failed to create device profile: {:?}", e);
@@ -139,36 +91,6 @@ mod tests {
             }
             Ok(None) => return Err("Profile not found".into()),
             Err(e) => return Err(e.into()),
-        }
-
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn set_preference() -> Result<()> {
-        let pool = db_manager::create_test_db().await;
-        let repo = DeviceProfileRepo::new(pool);
-
-        let profile = DeviceProfile::new();
-
-        if let Err(e) = repo.create_device_profile(&profile).await {
-            panic!("Failed to create device profile: {:?}", e);
-        };
-
-        if let Err(e) = repo
-            .set_preference("test_key", "test_value", "test_device_id")
-            .await
-        {
-            panic!("Failed to set preference: {:?}", e);
-        };
-
-        if let Ok(Some(preference)) = repo
-            .get_preference::<String>("test_key", "test_device_id")
-            .await
-        {
-            assert_eq!(preference, "test_value");
-        } else {
-            panic!("Preference not found");
         }
 
         Ok(())

@@ -1,21 +1,12 @@
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
 use sqlx::{Decode, Encode, FromRow, Type};
-use std::collections::HashMap;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct DevicePreference {
-    // Define common preference fields with defaults
-    #[serde(default)]
-    pub global_focus_shortcut: Option<String>,
-
-    #[serde(default)]
-    pub autostart_enabled: Option<bool>,
-
-    #[serde(default)]
-    pub idle_sensitivity: Option<i32>,
-
     // Catch-all for other preferences stored as JSON
     #[serde(flatten)]
     pub additional: HashMap<String, serde_json::Value>,
@@ -80,21 +71,21 @@ pub struct DeviceProfile {
 }
 
 impl DeviceProfile {
-    pub fn new() -> Self {
+    pub fn new(device_id: String) -> Self {
         Self {
             id: Uuid::new_v4().to_string(),
             user_id: None,
-            device_id: Uuid::new_v4().to_string(),
+            device_id,
             preferences: DevicePreference::new(),
             created_at: OffsetDateTime::now_utc(),
             updated_at: OffsetDateTime::now_utc(),
         }
     }
-    pub fn new_with_preferences(preferences: DevicePreference) -> Self {
+    pub fn new_with_preferences(preferences: DevicePreference, device_id: String) -> Self {
         Self {
             id: Uuid::new_v4().to_string(),
             user_id: None,
-            device_id: Uuid::new_v4().to_string(),
+            device_id,
             preferences,
             created_at: OffsetDateTime::now_utc(),
             updated_at: OffsetDateTime::now_utc(),
@@ -207,5 +198,14 @@ mod tests {
         prefs.set_preference("idle_sensitivity", 30i32).unwrap();
         let idle_sensitivity: Option<i32> = prefs.get_preference("idle_sensitivity");
         assert_eq!(idle_sensitivity, Some(30));
+    }
+
+    #[test]
+    fn test_duplicate_preference_key() {
+        let mut prefs = DevicePreference::new();
+        prefs.set_preference("idle_sensitivity", 30i32).unwrap();
+        prefs.set_preference("idle_sensitivity", 40i32).unwrap();
+        let idle_sensitivity: Option<i32> = prefs.get_preference("idle_sensitivity");
+        assert_eq!(idle_sensitivity, Some(40));
     }
 }
