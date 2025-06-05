@@ -1,20 +1,18 @@
 use serde_json;
 use sqlx::{Pool, Sqlite};
-use std::sync::Arc;
 use time::OffsetDateTime;
-use uuid::Uuid;
 
 use crate::db::models::device_profile::{DevicePreference, DeviceProfile};
 
 pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
 pub struct DeviceProfileRepo {
-    db: Arc<Pool<Sqlite>>,
+    pool: Pool<Sqlite>,
 }
 
 impl DeviceProfileRepo {
-    pub fn new(db: Arc<Pool<Sqlite>>) -> Self {
-        Self { db }
+    pub fn new(pool: Pool<Sqlite>) -> Self {
+        Self { pool }
     }
 
     pub async fn get_device_profile(&self, device_id: &str) -> Result<Option<DeviceProfile>> {
@@ -22,7 +20,7 @@ impl DeviceProfileRepo {
             "SELECT id, user_id, device_id, preferences, created_at, updated_at FROM device_profile WHERE device_id = ?1",
         )
         .bind(device_id)
-        .fetch_optional(&*self.db)
+        .fetch_optional(&self.pool)
         .await?;
 
         Ok(result)
@@ -32,34 +30,35 @@ impl DeviceProfileRepo {
         let preferences_json = serde_json::to_string(&profile.preferences)?;
 
         sqlx::query(
-            "INSERT INTO device_profile (id, user_id, preferences, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5)"
+            "INSERT INTO device_profile (id, user_id, device_id, preferences, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)"
         )
         .bind(&profile.id)
         .bind(&profile.user_id)
+        .bind(&profile.device_id)
         .bind(&preferences_json)
         .bind(&profile.created_at)
         .bind(&profile.updated_at)
-        .execute(&*self.db)
+        .execute(&self.pool)
         .await?;
 
         Ok(())
     }
 
-    pub async fn update_device_profile(
+    pub async fn update_device_profile_preferences(
         &self,
         device_id: &str,
-        profile: &DeviceProfile,
+        preferences: &DevicePreference,
     ) -> Result<()> {
-        let preferences_json = serde_json::to_string(&profile.preferences)?;
+        let preferences_json = serde_json::to_string(preferences)?;
 
+        let now = OffsetDateTime::now_utc();
         sqlx::query(
-            "UPDATE device_profile SET user_id = ?1, device_id = ?2, preferences = ?3, updated_at = ?4 WHERE device_id = ?5",
+            "UPDATE device_profile SET preferences = ?1, updated_at = ?2 WHERE device_id = ?3",
         )
-        .bind(&profile.user_id)
-        .bind(&profile.device_id)
         .bind(&preferences_json)
-        .bind(&profile.updated_at)
-        .execute(&*self.db)
+        .bind(&now)
+        .bind(device_id)
+        .execute(&self.pool)
         .await?;
 
         Ok(())
@@ -73,7 +72,7 @@ impl DeviceProfileRepo {
             .bind(&preferences_json)
             .bind(&now)
             .bind(id)
-            .execute(&*self.db)
+            .execute(&self.pool)
             .await?;
 
         Ok(())
@@ -99,23 +98,79 @@ impl DeviceProfileRepo {
         if let Some(mut profile) = self.get_device_profile(device_id).await? {
             profile.preferences.set_preference(key, value)?;
             profile.updated_at = OffsetDateTime::now_utc();
-            self.update_device_profile(device_id, &profile).await?;
+            self.update_device_profile_preferences(device_id, &profile.preferences)
+                .await?;
         } else {
             // Create new profile if it doesn't exist
             let mut preferences = DevicePreference::new();
             preferences.set_preference(key, value)?;
 
-            let profile = DeviceProfile {
-                id: Uuid::new_v4().to_string(),
-                user_id: None,
-                device_id: Some(device_id.to_string()),
-                preferences,
-                created_at: OffsetDateTime::now_utc(),
-                updated_at: OffsetDateTime::now_utc(),
-            };
+            let profile = DeviceProfile::new_with_preferences(preferences);
 
             self.create_device_profile(&profile).await?;
         }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::db_manager;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn create_and_get_device_profile() -> Result<()> {
+        let pool = db_manager::create_test_db().await;
+        let repo = DeviceProfileRepo::new(pool);
+
+        let profile = DeviceProfile::new();
+
+        if let Err(e) = repo.create_device_profile(&profile).await {
+            panic!("Failed to create device profile: {:?}", e);
+        };
+
+        match repo.get_device_profile("test_device_id").await {
+            Ok(Some(profile)) => {
+                assert_eq!(profile.device_id, "test_device_id".to_string());
+                assert_eq!(profile.user_id, None);
+                // Note: Don't assert exact time equality as it may differ by microseconds
+                assert!(profile.created_at <= OffsetDateTime::now_utc());
+            }
+            Ok(None) => return Err("Profile not found".into()),
+            Err(e) => return Err(e.into()),
+        }
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn set_preference() -> Result<()> {
+        let pool = db_manager::create_test_db().await;
+        let repo = DeviceProfileRepo::new(pool);
+
+        let profile = DeviceProfile::new();
+
+        if let Err(e) = repo.create_device_profile(&profile).await {
+            panic!("Failed to create device profile: {:?}", e);
+        };
+
+        if let Err(e) = repo
+            .set_preference("test_key", "test_value", "test_device_id")
+            .await
+        {
+            panic!("Failed to set preference: {:?}", e);
+        };
+
+        if let Ok(Some(preference)) = repo
+            .get_preference::<String>("test_key", "test_device_id")
+            .await
+        {
+            assert_eq!(preference, "test_value");
+        } else {
+            panic!("Preference not found");
+        }
+
         Ok(())
     }
 }

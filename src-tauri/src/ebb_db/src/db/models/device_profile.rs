@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::{Decode, Encode, FromRow, Type};
 use std::collections::HashMap;
 use time::OffsetDateTime;
+use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct DevicePreference {
@@ -72,10 +73,33 @@ impl<'q> Encode<'q, sqlx::Sqlite> for DevicePreference {
 pub struct DeviceProfile {
     pub id: String,
     pub user_id: Option<String>,
-    pub device_id: Option<String>,
+    pub device_id: String,
     pub preferences: DevicePreference,
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
+}
+
+impl DeviceProfile {
+    pub fn new() -> Self {
+        Self {
+            id: Uuid::new_v4().to_string(),
+            user_id: None,
+            device_id: Uuid::new_v4().to_string(),
+            preferences: DevicePreference::new(),
+            created_at: OffsetDateTime::now_utc(),
+            updated_at: OffsetDateTime::now_utc(),
+        }
+    }
+    pub fn new_with_preferences(preferences: DevicePreference) -> Self {
+        Self {
+            id: Uuid::new_v4().to_string(),
+            user_id: None,
+            device_id: Uuid::new_v4().to_string(),
+            preferences,
+            created_at: OffsetDateTime::now_utc(),
+            updated_at: OffsetDateTime::now_utc(),
+        }
+    }
 }
 
 #[cfg(test)]

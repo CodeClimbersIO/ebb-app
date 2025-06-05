@@ -51,7 +51,7 @@ pub async fn create_test_db() -> SqlitePool {
         .unwrap();
 
     set_wal_mode(&pool).await.unwrap();
-    // sqlx::migrate!().run(&pool).await.unwrap();
+    crate::migrations::run_test_migrations(&pool).await;
 
     pool
 }
