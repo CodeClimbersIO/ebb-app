@@ -79,6 +79,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             commands::reset_app_data_for_testing,
             commands::restore_app_data_from_backup,
             commands::detect_spotify,
+            commands::get_idle_sensitivity,
+            commands::set_idle_sensitivity,
             change_autostart,
             tray_icon_gen::generate_timer_icon,
         ])
