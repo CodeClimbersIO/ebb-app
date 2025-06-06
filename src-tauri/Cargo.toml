@@ -18,20 +18,21 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [ "protocol-asset", "macos-private-api", "tray-icon", "image-png"] }
+tauri = { version = "2", features = [ "protocol-asset", "macos-private-api", "tray-icon", "image-png", "devtools"] }
 tauri-plugin-shell = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tokio = { version = "1.42.0", features = ["full"] }
 os-monitor-service = { version = "0.5.0" }
 os-monitor = { version = "0.4.9" }
+ebb-db = { path = "./src/ebb_db" }
 tauri-plugin-sql = { version = "2", features = ["sqlite"] }
 dirs = "6.0.0"
 tauri-plugin-log = "2.2.1"
 log = "0.4.25"
 tauri-plugin-deep-link = "2"
 chrono = "0.4"
-sentry = "0.37.0"
+sentry = "0.38.1"
 tauri-plugin-updater = "2"
 tauri-plugin-process = "2"
 tauri-plugin-os = "2"

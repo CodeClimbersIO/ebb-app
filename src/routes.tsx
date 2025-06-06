@@ -38,8 +38,6 @@ const ProtectedRoute = () => {
     } else {
       fetchLicense(null)
     }
-    return () => {
-    }
   }, [user, fetchLicense])
 
   if (authLoading) {

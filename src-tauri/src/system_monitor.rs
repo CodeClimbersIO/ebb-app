@@ -1,3 +1,4 @@
+use ebb_db::{db_manager, services::device_service::DeviceService};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
@@ -17,14 +18,14 @@ pub fn is_monitoring_running() -> bool {
     MONITOR_RUNNING.load(Ordering::SeqCst)
 }
 
-pub fn get_default_db_path() -> String {
-    let home_dir = dirs::home_dir().expect("Could not find home directory");
-    home_dir
-        .join(".codeclimbers")
-        .join("codeclimbers-desktop.sqlite")
-        .to_str()
-        .expect("Invalid path")
-        .to_string()
+async fn get_idle_sensitivity() -> Result<i32, Box<dyn std::error::Error>> {
+    let ebb_db_path = db_manager::get_default_ebb_db_path();
+    let db_manager = db_manager::DbManager::new(&ebb_db_path).await?;
+    let device_service = DeviceService::new_with_pool(db_manager.pool);
+    match device_service.get_idle_sensitivity().await {
+        Ok(idle_sensitivity) => Ok(idle_sensitivity),
+        Err(e) => Err(format!("error getting idle sensitivity: {}", e).into()),
+    }
 }
 
 fn on_app_blocked(app_handle: tauri::AppHandle, event: BlockedAppEvent) {
@@ -56,15 +57,17 @@ pub fn start_monitoring(app_handle: AppHandle) {
 
     async_runtime::spawn(async move {
         log::info!("Initializing monitor in async runtime...");
-        let db_path = get_default_db_path();
+        let db_path = db_manager::get_default_codeclimbers_db_path();
 
         let monitor = Monitor::new();
         let mut app_receiver = monitor.subscribe();
         let register_blocked_handle_clone = app_handle.clone();
 
+        let idle_sensitivity = get_idle_sensitivity().await.unwrap_or(60);
+
         // Initialize monitoring service first
         MonitoringConfig::new(Arc::new(monitor), db_path)
-            .with_interval(Duration::from_secs(60))
+            .with_interval(Duration::from_secs(idle_sensitivity as u64))
             .initialize()
             .await;
         log::info!("Monitor initialized");

@@ -1,17 +1,8 @@
+#[cfg(test)]
+use sqlx::{Pool, Sqlite};
 use tauri_plugin_sql::{Migration, MigrationKind};
 
-pub fn get_db_path() -> String {
-    let home_dir = dirs::home_dir().expect("Could not find home directory");
-    home_dir
-        .join(".ebb")
-        .join("ebb-desktop.sqlite")
-        .to_str()
-        .expect("Invalid path")
-        .to_string()
-}
-
 pub fn get_migrations() -> Vec<Migration> {
-    log::info!("get_migrations");
     vec![
         Migration {
             version: 1,
@@ -197,5 +188,81 @@ pub fn get_migrations() -> Vec<Migration> {
             ON blocking_preference(workflow_id, app_id);"#,
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 14,
+            description: "rename_user_profile_to_device_profile_and_add_device_id",
+            sql: r#"
+            ALTER TABLE user_profile RENAME TO device_profile;
+            ALTER TABLE device_profile ADD COLUMN device_id TEXT;
+            CREATE UNIQUE INDEX idx_device_profile_device_id_unique ON device_profile(device_id);
+
+            CREATE TABLE IF NOT EXISTS device (
+                id TEXT PRIMARY KEY NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+            "#,
+            kind: MigrationKind::Up,
+        },
     ]
+}
+
+#[cfg(test)]
+pub async fn run_test_migrations(pool: &Pool<Sqlite>) {
+    let migrations = get_migrations();
+    for migration in migrations {
+        sqlx::query(&migration.sql).execute(pool).await.unwrap();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::db_manager;
+
+    use super::*;
+
+    #[test]
+    fn test_get_migrations() {
+        let migrations = get_migrations();
+        assert!(!migrations.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_run_test_migrations() {
+        let pool = db_manager::create_test_db().await;
+
+        // Test that key tables exist
+        let tables_to_check = vec![
+            "flow_session",
+            "flow_period",
+            "blocking_preference",
+            "workflow",
+            "device_profile", // renamed from user_profile in migration 14
+            "user_notification",
+        ];
+
+        for table_name in tables_to_check {
+            let result: (i64,) =
+                sqlx::query_as("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name=?1")
+                    .bind(table_name)
+                    .fetch_one(&pool)
+                    .await
+                    .unwrap();
+
+            assert_eq!(result.0, 1, "Table '{}' should exist", table_name);
+        }
+
+        // Test that device_profile has device_id column with unique constraint
+        let device_id_constraint: (i64,) = sqlx::query_as(
+            "SELECT COUNT(*) FROM sqlite_master WHERE type='index' AND name='idx_device_profile_device_id_unique'"
+        )
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+
+        assert_eq!(
+            device_id_constraint.0, 1,
+            "device_id unique constraint should exist"
+        );
+    }
 }

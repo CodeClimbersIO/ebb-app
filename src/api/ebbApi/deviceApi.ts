@@ -1,6 +1,7 @@
 import { logAndToastError } from '@/lib/utils/ebbError.util'
 import { deviceRepo } from '@/db/supabase/deviceRepo'
 import { hostname } from '@tauri-apps/plugin-os'
+import { invoke } from '@tauri-apps/api/core'
 
 
 export interface Device {
@@ -29,12 +30,7 @@ const cleanupHostname = (name: string): string => {
 
 // gets the device id from local storage  
 const getCurrentDeviceId = async (): Promise<string> => {
-  const deviceId = await localStorage.getItem('deviceId')
-  if (!deviceId) {
-    const newDeviceId = crypto.randomUUID()
-    localStorage.setItem('deviceId', newDeviceId)
-    return newDeviceId
-  }
+  const deviceId = await invoke<string>('get_device_id')
   return deviceId
 }
 

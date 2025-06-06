@@ -13,6 +13,13 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useNavigate } from 'react-router-dom'
 import { SpotifyApiService } from '@/lib/integrations/spotify/spotifyApi'
 import { SpotifyAuthService } from '@/lib/integrations/spotify/spotifyAuth'
@@ -37,6 +44,8 @@ export function SettingsPage() {
   const [serviceToUnlink, setServiceToUnlink] = useState<'spotify' | 'apple' | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [autostartEnabled, setAutostartEnabled] = useState(false)
+  const [idleSensitivity, setIdleSensitivity] = useState<number>(60)
+  const [idleSensitivityChanged, setIdleSensitivityChanged] = useState(false)
   const [spotifyProfile, setSpotifyProfile] = useState<{
     email: string;
     display_name: string | null;
@@ -48,6 +57,12 @@ export function SettingsPage() {
   const { user } = useAuth()
   const { maxDevices } = usePermissions()
 
+  const idleOptions = [
+    { value: 30, label: '30 seconds' },
+    { value: 60, label: '1 minute' },
+    { value: 120, label: '2 minutes' },
+    { value: 180, label: '3 minutes' },
+  ]
 
   useEffect(() => {
     const initializeSettings = async () => {
@@ -92,6 +107,18 @@ export function SettingsPage() {
       setAutostartEnabled(enabled)
     }
     checkAutostart()
+  }, [])
+
+  useEffect(() => {
+    const loadIdleSensitivity = async () => {
+      try {
+        const sensitivity = await invoke<number>('get_idle_sensitivity')
+        setIdleSensitivity(sensitivity)
+      } catch (error) {
+        logAndToastError(`Error loading idle sensitivity: ${error}`, error)
+      }
+    }
+    loadIdleSensitivity()
   }, [])
 
   const handleUnlink = (service: 'spotify' | 'apple') => {
@@ -141,6 +168,17 @@ export function SettingsPage() {
     }
   }
 
+  const handleIdleSensitivityChange = async (value: string) => {
+    const newSensitivity = parseInt(value)
+    try {
+      await invoke('set_idle_sensitivity', { sensitivity: newSensitivity })
+      setIdleSensitivity(newSensitivity)
+      setIdleSensitivityChanged(true)
+    } catch (error) {
+      logAndToastError(`Error setting idle sensitivity: ${error}`, error)
+    }
+  }
+
   return (
     <Layout>
       <TooltipProvider>
@@ -179,6 +217,29 @@ export function SettingsPage() {
                     </div>
                   </div>
                   <ShortcutInput popoverAlign="end" />
+                </div>
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <div className="font-medium">Idle Sensitivity</div>
+                    <div className={`text-sm ${idleSensitivityChanged ? 'text-red-500' : 'text-muted-foreground'}`}>
+                      {idleSensitivityChanged 
+                        ? 'Please restart Ebb to apply changes'
+                        : 'Changes how long you have to be inactive for to be considered "idle"'
+                      }
+                    </div>
+                  </div>
+                  <Select value={idleSensitivity.toString()} onValueChange={handleIdleSensitivityChange}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {idleOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value.toString()}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="flex items-center justify-between">
                   <div>
