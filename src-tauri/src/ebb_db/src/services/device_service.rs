@@ -91,6 +91,23 @@ impl DeviceService {
             .await?;
         Ok(())
     }
+
+    pub async fn get_device_profile(&self) -> Result<DeviceProfile> {
+        let device = self.device_repo.get_device().await?;
+        let profile = self
+            .device_profile_repo
+            .get_device_profile(&device.id)
+            .await?;
+        if let Some(profile) = profile {
+            Ok(profile)
+        } else {
+            let profile = DeviceProfile::new(device.id);
+            self.device_profile_repo
+                .create_device_profile(&profile)
+                .await?;
+            Ok(profile)
+        }
+    }
 }
 
 #[cfg(test)]
@@ -138,6 +155,25 @@ mod tests {
             panic!("Idle sensitivity not found");
         }
 
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn get_device_profile() -> Result<()> {
+        let pool = db_manager::create_test_db().await;
+        let service = DeviceService::new_with_pool(pool);
+        let profile = service.get_device_profile().await?;
+        assert_eq!(profile.id.len(), 36);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn get_device_profile_gets_the_same_profile_every_time() -> Result<()> {
+        let pool = db_manager::create_test_db().await;
+        let service = DeviceService::new_with_pool(pool);
+        let profile = service.get_device_profile().await?;
+        let profile2 = service.get_device_profile().await?;
+        assert_eq!(profile.id, profile2.id);
         Ok(())
     }
 }

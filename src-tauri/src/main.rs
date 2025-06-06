@@ -81,6 +81,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             commands::detect_spotify,
             commands::get_idle_sensitivity,
             commands::set_idle_sensitivity,
+            commands::get_device_id,
             change_autostart,
             tray_icon_gen::generate_timer_icon,
         ])

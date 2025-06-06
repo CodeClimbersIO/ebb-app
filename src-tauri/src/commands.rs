@@ -296,3 +296,14 @@ pub async fn set_idle_sensitivity(sensitivity: i32) -> Result<(), String> {
         Err(e) => Err(format!("error setting idle sensitivity: {}", e).into()),
     }
 }
+
+#[command]
+pub async fn get_device_id() -> Result<String, String> {
+    let db_manager = get_ebb_db_manager().await?;
+    let device_service = DeviceService::new_with_pool(db_manager.pool);
+    let device_profile = device_service.get_device_profile().await;
+    match device_profile {
+        Ok(device_profile) => Ok(device_profile.device_id),
+        Err(e) => Err(format!("error getting device id: {}", e).into()),
+    }
+}
