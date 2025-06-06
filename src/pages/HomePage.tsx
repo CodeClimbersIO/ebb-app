@@ -20,6 +20,7 @@ import { RangeModeSelector } from '@/components/RangeModeSelector'
 export const HomePage = () => {
   const { user } = useAuth()
   const navigate = useNavigate()
+
   const firstName = user?.user_metadata?.full_name?.split(' ')[0] ||
     user?.user_metadata?.name?.split(' ')[0] ||
     user?.email?.split('@')[0]

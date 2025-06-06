@@ -224,7 +224,7 @@ export function SettingsPage() {
                     <div className={`text-sm ${idleSensitivityChanged ? 'text-red-500' : 'text-muted-foreground'}`}>
                       {idleSensitivityChanged 
                         ? 'Please restart Ebb to apply changes'
-                        : 'Changes how long you have to be inactive for to be considered "idle"'
+                        : 'Changes how long you have to be inactive to be considered "idle"'
                       }
                     </div>
                   </div>

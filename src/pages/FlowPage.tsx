@@ -23,7 +23,7 @@ import { SpotifyAuthService } from '@/lib/integrations/spotify/spotifyAuth'
 import { invoke } from '@tauri-apps/api/core'
 import NotificationManager from '@/lib/notificationManager'
 import { listen } from '@tauri-apps/api/event'
-import { useRustEvents } from '@/hooks/useRustEvents'
+import { useBlockedEvents } from '@/hooks/useBlockedEvents'
 import { useFlowTimer } from '../lib/stores/flowTimer'
 import { stopFlowTimer } from '../lib/tray'
 import { DifficultyButton } from '@/components/DifficultyButton'
@@ -181,7 +181,7 @@ type CurrentTrack = {
 }
 
 export const FlowPage = () => {
-  useRustEvents()
+  useBlockedEvents()
   const navigate = useNavigate()
   const [flowSession, setFlowSession] = useState<FlowSession | null>(null)
   const [isEndingSession, setIsEndingSession] = useState(false)

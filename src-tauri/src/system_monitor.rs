@@ -41,6 +41,16 @@ fn on_app_blocked(app_handle: tauri::AppHandle, event: BlockedAppEvent) {
         });
 }
 
+async fn thirty_second_loop(app_handle: tauri::AppHandle) {
+    loop {
+        log::info!("Thirty second loop");
+        app_handle.emit("online-ping", ()).unwrap_or_else(|e| {
+            log::error!("Failed to emit on-thirty-second-loop event: {}", e);
+        });
+        sleep(Duration::from_secs(30)).await;
+    }
+}
+
 pub fn start_monitoring(app_handle: AppHandle) {
     log::info!("Starting monitoring service...");
     *MONITOR_APP_HANDLE.lock().unwrap() = Some(app_handle.clone());
@@ -71,6 +81,8 @@ pub fn start_monitoring(app_handle: AppHandle) {
             .initialize()
             .await;
         log::info!("Monitor initialized");
+
+        async_runtime::spawn(thirty_second_loop(app_handle.clone()));
 
         std::thread::spawn(move || {
             println!("Event listener thread started");

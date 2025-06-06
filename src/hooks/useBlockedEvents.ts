@@ -5,7 +5,7 @@ import { useLocation } from 'react-router-dom'
 
 const notificationManager = NotificationManager.getInstance()
 
-export function useRustEvents() {
+export function useBlockedEvents() {
   const location = useLocation()
   const difficulty = location.state?.difficulty || 'medium'
 

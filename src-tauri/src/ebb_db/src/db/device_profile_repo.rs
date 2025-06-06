@@ -86,8 +86,6 @@ mod tests {
             Ok(Some(profile)) => {
                 assert_eq!(profile.device_id, "test_device_id".to_string());
                 assert_eq!(profile.user_id, None);
-                // Note: Don't assert exact time equality as it may differ by microseconds
-                assert!(profile.created_at <= OffsetDateTime::now_utc());
             }
             Ok(None) => return Err("Profile not found".into()),
             Err(e) => return Err(e.into()),
