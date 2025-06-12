@@ -5,6 +5,7 @@ import { SettingsGearIcon } from '@/components/icons/GearIcon'
 import { HomeIcon } from '@/components/icons/HomeIcon'
 import { UsersIcon } from '@/components/icons/UsersIcon'
 import { KeyIcon } from '@/components/icons/KeyIcon'
+import { ChartIcon } from '@/components/icons/ChartIcon'
 import { PaywallDialog } from '@/components/PaywallDialog'
 import { usePermissions } from '@/hooks/usePermissions'
 
@@ -31,6 +32,22 @@ export function Sidebar() {
               </Button>
             </TooltipTrigger>
             <TooltipContent side="right" sideOffset={10}>Today</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                iconSize={5}
+                className={`w-9 h-9 p-2 ${location.pathname === '/flow-score' ? 'text-foreground [&>svg]:text-foreground' : 'text-muted-foreground [&>svg]:text-muted-foreground'}`}
+                asChild
+              >
+                <Link to="/analytics">
+                  <ChartIcon size={20} />
+                </Link>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right" sideOffset={10}>Flow Score</TooltipContent>
           </Tooltip>
 
           <Tooltip>
