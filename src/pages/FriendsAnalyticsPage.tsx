@@ -6,6 +6,7 @@ import { formatTime } from '@/components/UsageSummary'
 import { Trophy, TrendingUp, Users, Clock } from 'lucide-react'
 import { cn } from '@/lib/utils/tailwind.util'
 import { FriendsComparisonCard, InviteState } from '@/components/FriendsComparisonCard'
+import { useFriends } from '@/api/hooks/useFriends'
 
 // Mock data structure - in real app this would come from API
 interface CreatingStats {
@@ -21,26 +22,17 @@ interface CreatingStats {
   myTotal: number
 }
 
-// Mock friends data
-const mockFriends = [
-  { id: '1', name: 'Alex Chen', creatingTime: 180 }, // 3h
-  { id: '2', name: 'Sarah Kim', creatingTime: 240 }, // 4h
-  { id: '3', name: 'Mike Johnson', creatingTime: 120 }, // 2h
-  { id: '4', name: 'Emma Wilson', creatingTime: 300 }, // 5h
-  { id: '5', name: 'David Rodriguez', creatingTime: 90 }, // 1.5h
-]
-
 // Generate mock stats based on range mode
-const generateMockStats = (rangeMode: RangeMode, hasFriends: boolean = true): CreatingStats => {
+const generateMockStats = (rangeMode: RangeMode, friends: Array<{ id: string; name: string; avatar?: string; creatingTime: number }>): CreatingStats => {
   const multiplier = rangeMode === 'day' ? 1 : rangeMode === 'week' ? 7 : 30
   
   return {
     myAverage: 165 * multiplier, // ~2.75h per day
     myTotal: 165 * multiplier,
-    friends: hasFriends ? mockFriends.map(friend => ({
+    friends: friends.map(friend => ({
       ...friend,
       creatingTime: friend.creatingTime * multiplier
-    })) : [],
+    })),
     communityAverage: 135 * multiplier, // ~2.25h per day
     communityTotal: 135 * multiplier * 100, // Mock total for 10k users
   }
@@ -69,34 +61,27 @@ const StatCard = ({ title, icon, children, className }: StatCardProps) => (
 
 export const FriendsAnalyticsPage = () => {
   const [rangeMode, setRangeMode] = useState<RangeMode>('day')
-  const [inviteState] = useState<InviteState>({
-    hasFriends: true, // Set to true to show friends + invite management
-    pendingInvitesSent: 2, // Show 2 pending invites sent
-    pendingInvitesReceived: 1 // Show 1 pending invite received
-  })
-  const [stats, setStats] = useState<CreatingStats>(generateMockStats('day', inviteState.hasFriends))
+  const { 
+    friends = [], 
+    sentRequests = [], 
+    receivedRequests = [], 
+    isLoading,
+    handleInviteFriend,
+    handleAcceptInvite,
+    handleDeclineInvite 
+  } = useFriends()
+
+  const inviteState: InviteState = {
+    hasFriends: friends.length > 0,
+    pendingInvitesSent: sentRequests.length,
+    pendingInvitesReceived: receivedRequests.length
+  }
+
+  const [stats, setStats] = useState<CreatingStats>(generateMockStats('day', friends))
 
   useEffect(() => {
-    setStats(generateMockStats(rangeMode, inviteState.hasFriends))
-  }, [rangeMode, inviteState.hasFriends])
-
-  const handleInviteFriends = () => {
-    // Placeholder for invite functionality
-    console.log('Invite friends clicked')
-    // In real implementation, this would open an invite modal or navigate to invite flow
-  }
-
-  const handleAcceptInvite = (inviteId: string) => {
-    // Placeholder for accept invite functionality
-    console.log('Accept invite:', inviteId)
-    // In real implementation, this would call an API to accept the invite
-  }
-
-  const handleDeclineInvite = (inviteId: string) => {
-    // Placeholder for decline invite functionality
-    console.log('Decline invite:', inviteId)
-    // In real implementation, this would call an API to decline the invite
-  }
+    setStats(generateMockStats(rangeMode, friends))
+  }, [rangeMode, friends])
 
   const getRangeModeText = () => {
     switch (rangeMode) {
@@ -144,6 +129,20 @@ export const FriendsAnalyticsPage = () => {
   }
 
   const { curvePoints, userPosition } = generateBellCurve(300, 80, myPercentile)
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="p-8">
+          <div className="max-w-5xl mx-auto">
+            <div className="flex items-center justify-center h-64">
+              <p className="text-muted-foreground">Loading friends data...</p>
+            </div>
+          </div>
+        </div>
+      </Layout>
+    )
+  }
 
   return (
     <Layout>
@@ -221,7 +220,7 @@ export const FriendsAnalyticsPage = () => {
               myTime={stats.myTotal}
               rangeMode={rangeMode}
               inviteState={inviteState}
-              onInviteFriends={handleInviteFriends}
+              onInviteFriends={handleInviteFriend}
               onAcceptInvite={handleAcceptInvite}
               onDeclineInvite={handleDeclineInvite}
               getRangeModeText={getRangeModeText}
@@ -239,11 +238,7 @@ export const FriendsAnalyticsPage = () => {
                 </p>
               </CardHeader>
               <CardContent className="space-y-6">
-
-
                 <div>
-                  
-                  
                   {/* Bell curve distribution */}
                   <div className="mt-4">
                     <div className="flex justify-center mb-2">
@@ -324,45 +319,6 @@ export const FriendsAnalyticsPage = () => {
               </CardContent>
             </Card>
           </div>
-
-          {/* Additional Insights */}
-          {/* <Card>
-            <CardHeader>
-              <CardTitle>Personal Insights</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Track your progress over time
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="text-center p-4 rounded-lg bg-muted/50">
-                  <div className="text-lg font-bold text-primary mb-1">
-                    {formatTime(stats.myAverage)}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    Your average {getRangeModeText()}
-                  </div>
-                </div>
-                <div className="text-center p-4 rounded-lg bg-muted/50">
-                  <div className="text-lg font-bold mb-1">
-                    {stats.myAverage > stats.communityAverage ? '+' : ''}
-                    {Math.round(((stats.myAverage - stats.communityAverage) / stats.communityAverage) * 100)}%
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    vs community average
-                  </div>
-                </div>
-                <div className="text-center p-4 rounded-lg bg-muted/50">
-                  <div className="text-lg font-bold text-green-600 mb-1">
-                    #{myRank}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    among your friends
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card> */}
         </div>
       </div>
     </Layout>

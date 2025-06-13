@@ -6,6 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Users, UserPlus, Mail, Send, Check, X } from 'lucide-react'
 import { formatTime } from '@/components/UsageSummary'
 import { RangeMode } from '@/components/RangeModeSelector'
+import { useState } from 'react'
+import { useFriends, FriendRequest } from '@/api/hooks/useFriends'
 
 export interface InviteState {
   hasFriends: boolean
@@ -18,14 +20,6 @@ interface Friend {
   name: string
   avatar?: string
   creatingTime: number
-}
-
-interface PendingInvite {
-  id: string
-  name: string
-  email?: string
-  type: 'sent' | 'received'
-  avatar?: string
 }
 
 interface FriendComparisonProps {
@@ -104,52 +98,35 @@ const FriendComparison = ({ friends, myTime }: FriendComparisonProps) => {
 }
 
 interface PendingInvitesTabProps {
-  pendingInvitesSent: number
-  pendingInvitesReceived: number
   onAcceptInvite: (inviteId: string) => void
   onDeclineInvite: (inviteId: string) => void
 }
 
 const PendingInvitesTab = ({ 
-  pendingInvitesSent, 
-  pendingInvitesReceived,
   onAcceptInvite,
   onDeclineInvite 
 }: PendingInvitesTabProps) => {
-  // Mock pending invites data
-  const mockSentInvites: PendingInvite[] = Array.from({ length: pendingInvitesSent }, (_, i) => ({
-    id: `sent-${i}`,
-    name: ['John Doe', 'Jane Smith'][i] || `User ${i + 1}`,
-    email: ['john@example.com', 'jane@example.com'][i] || `user${i + 1}@example.com`,
-    type: 'sent'
-  }))
-
-  const mockReceivedInvites: PendingInvite[] = Array.from({ length: pendingInvitesReceived }, (_, i) => ({
-    id: `received-${i}`,
-    name: ['Mike Chen', 'Lisa Wang'][i] || `Friend ${i + 1}`,
-    email: ['mike@example.com', 'lisa@example.com'][i] || `friend${i + 1}@example.com`,
-    type: 'received'
-  }))
+  const { sentRequests, receivedRequests } = useFriends()
 
   return (
     <div className="space-y-6">
       {/* Received Invites */}
-      {mockReceivedInvites.length > 0 && (
+      {receivedRequests && receivedRequests.length > 0 && (
         <div>
           <h4 className="text-sm font-medium mb-3 text-primary">
-            Received Invites ({mockReceivedInvites.length})
+            Received Invites ({receivedRequests.length})
           </h4>
           <div className="space-y-3">
-            {mockReceivedInvites.map((invite) => (
+            {receivedRequests.map((invite: FriendRequest) => (
               <div key={invite.id} className="flex items-center gap-4 p-3 bg-primary/10 rounded-lg border border-primary/20">
                 <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
                   <span className="text-xs font-bold text-primary">
-                    {invite.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                    {invite.senderId.slice(0, 2).toUpperCase()}
                   </span>
                 </div>
                 <div className="flex-1">
-                  <div className="font-medium">{invite.name}</div>
-                  <div className="text-xs text-muted-foreground">{invite.email}</div>
+                  <div className="font-medium">Friend Request</div>
+                  <div className="text-xs text-muted-foreground">From user {invite.senderId}</div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
@@ -177,19 +154,19 @@ const PendingInvitesTab = ({
       )}
 
       {/* Sent Invites */}
-      {mockSentInvites.length > 0 && (
+      {sentRequests && sentRequests.length > 0 && (
         <div>
           <h4 className="text-sm font-medium mb-3 text-muted-foreground">
-            Sent Invites ({mockSentInvites.length})
+            Sent Invites ({sentRequests.length})
           </h4>
           <div className="space-y-3">
-            {mockSentInvites.map((invite) => (
+            {sentRequests.map((invite: FriendRequest) => (
               <div key={invite.id} className="flex items-center gap-4 p-3 bg-muted/30 rounded-lg border border-muted">
                 <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
                   <Send className="h-4 w-4 text-primary" />
                 </div>
                 <div className="flex-1">
-                  <div className="font-medium">{invite.email}</div>
+                  <div className="font-medium">To user {invite.receiverId}</div>
                   <div className="text-xs text-muted-foreground">Awaiting response</div>
                 </div>
               </div>
@@ -199,7 +176,7 @@ const PendingInvitesTab = ({
       )}
 
       {/* Empty state */}
-      {mockSentInvites.length === 0 && mockReceivedInvites.length === 0 && (
+      {(!sentRequests || sentRequests.length === 0) && (!receivedRequests || receivedRequests.length === 0) && (
         <div className="text-center py-8">
           <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-3">
             <Mail className="h-6 w-6 text-muted-foreground" />
@@ -212,33 +189,57 @@ const PendingInvitesTab = ({
 }
 
 interface EmptyFriendsStateProps {
-  onInviteFriends: () => void
+  onInviteFriends: (email: string) => void
 }
 
-const EmptyFriendsState = ({ onInviteFriends }: EmptyFriendsStateProps) => (
-  <div className="text-center py-12 px-6">
-    <div className="flex justify-center mb-6">
-      <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
-        <Users className="h-10 w-10 text-primary" />
+const EmptyFriendsState = ({ onInviteFriends }: EmptyFriendsStateProps) => {
+  const [email, setEmail] = useState('')
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (email) {
+      onInviteFriends(email)
+      setEmail('')
+    }
+  }
+
+  return (
+    <div className="text-center py-12 px-6">
+      <div className="flex justify-center mb-6">
+        <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
+          <Users className="h-10 w-10 text-primary" />
+        </div>
       </div>
+      <h3 className="text-xl font-semibold mb-3">Start Your Creating Journey Together</h3>
+      <p className="text-muted-foreground mb-8 max-w-md mx-auto">
+        Invite friends to see how your creating time compares and motivate each other to build more meaningful digital habits.
+      </p>
+      <form onSubmit={handleSubmit} className="w-full max-w-sm mx-auto">
+        <div className="flex gap-2">
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Enter friend's email"
+            className="flex-1 px-3 py-2 rounded-md border border-input bg-background text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            required
+          />
+          <Button type="submit" size="lg" className="flex items-center gap-2">
+            <Send className="h-5 w-5" />
+            Invite
+          </Button>
+        </div>
+      </form>
     </div>
-    <h3 className="text-xl font-semibold mb-3">Start Your Creating Journey Together</h3>
-    <p className="text-muted-foreground mb-8 max-w-md mx-auto">
-      Invite friends to see how your creating time compares and motivate each other to build more meaningful digital habits.
-    </p>
-    <Button onClick={onInviteFriends} size="lg" className="w-full max-w-sm mx-auto flex items-center gap-2">
-      <Send className="h-5 w-5" />
-      Invite Friends to Compare
-    </Button>
-  </div>
-)
+  )
+}
 
 interface FriendsComparisonCardProps {
   friends: Friend[]
   myTime: number
   rangeMode: RangeMode
   inviteState: InviteState
-  onInviteFriends: () => void
+  onInviteFriends: (email: string) => void
   onAcceptInvite?: (inviteId: string) => void
   onDeclineInvite?: (inviteId: string) => void
   getRangeModeText: () => string
@@ -254,6 +255,22 @@ export const FriendsComparisonCard = ({
   onDeclineInvite = () => {},
   getRangeModeText 
 }: FriendsComparisonCardProps) => {
+  const [showInviteModal, setShowInviteModal] = useState(false)
+  const [email, setEmail] = useState('')
+
+  const handleInviteClick = () => {
+    setShowInviteModal(true)
+  }
+
+  const handleInviteSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (email) {
+      onInviteFriends(email)
+      setEmail('')
+      setShowInviteModal(false)
+    }
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -270,7 +287,7 @@ export const FriendsComparisonCard = ({
               }
             </p>
           </div>
-          <Button variant="outline" size="sm" className="flex items-center gap-1" onClick={onInviteFriends}>
+          <Button variant="outline" size="sm" className="flex items-center gap-1" onClick={handleInviteClick}>
             <UserPlus className="h-4 w-4" />
             Invite Friends
           </Button>
@@ -299,8 +316,6 @@ export const FriendsComparisonCard = ({
             </TabsContent>
             <TabsContent value="pending" className="mt-6">
               <PendingInvitesTab 
-                pendingInvitesSent={inviteState.pendingInvitesSent}
-                pendingInvitesReceived={inviteState.pendingInvitesReceived}
                 onAcceptInvite={onAcceptInvite}
                 onDeclineInvite={onDeclineInvite}
               />
@@ -310,6 +325,45 @@ export const FriendsComparisonCard = ({
           <EmptyFriendsState onInviteFriends={onInviteFriends} />
         )}
       </CardContent>
+
+      {/* Invite Modal */}
+      {showInviteModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-background p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold mb-4">Invite a Friend</h3>
+            <form onSubmit={handleInviteSubmit}>
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium mb-1">
+                    Friend's Email
+                  </label>
+                  <input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter friend's email"
+                    className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    required
+                  />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowInviteModal(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit">
+                    Send Invite
+                  </Button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </Card>
   )
 } 
