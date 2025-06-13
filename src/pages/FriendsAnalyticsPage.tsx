@@ -1,12 +1,12 @@
 import { Layout } from '@/components/Layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { RangeModeSelector, RangeMode } from '@/components/RangeModeSelector'
-import { useState, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { formatTime } from '@/components/UsageSummary'
 import { Trophy, TrendingUp, Users, Clock } from 'lucide-react'
 import { cn } from '@/lib/utils/tailwind.util'
 import { FriendsComparisonCard, InviteState } from '@/components/FriendsComparisonCard'
-import { useFriends } from '@/api/hooks/useFriends'
+import { useFriendsWithInsights } from '@/api/hooks/useFriends'
 
 // Mock data structure - in real app this would come from API
 interface CreatingStats {
@@ -61,29 +61,54 @@ const StatCard = ({ title, icon, children, className }: StatCardProps) => (
 
 export const FriendsAnalyticsPage = () => {
   const [rangeMode, setRangeMode] = useState<RangeMode>('day')
+  
+  // Format date for API call based on range mode
+  const apiDate = useMemo(() => {
+    const today = new Date()
+    
+    // For now, we'll use today's date regardless of range mode
+    // In the future, you might want to adjust this based on your API's capabilities
+    // For example, if the API supports week/month aggregation, you could pass different dates
+    return today.toISOString().split('T')[0] // Format as YYYY-MM-DD
+  }, [rangeMode])
+  
   const { 
     friends = [], 
     sentRequests = [], 
     receivedRequests = [], 
+    dashboardInsights,
     isLoading,
     handleInviteFriend,
     handleAcceptInvite,
     handleDeclineInvite 
-  } = useFriends()
+  } = useFriendsWithInsights(apiDate)
 
   const inviteState: InviteState = {
     hasFriends: friends.length > 0,
     pendingInvitesSent: sentRequests.length,
     pendingInvitesReceived: receivedRequests.length
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [stats, setStats] = useState<CreatingStats>(generateMockStats('day', friends as any))
 
-  useEffect(() => {
-
+  // Use real data when available, fallback to mock data
+  const stats = useMemo(() => {
+    if (dashboardInsights) {
+      return {
+        myAverage: dashboardInsights.userActivity.totalMinutes,
+        myTotal: dashboardInsights.userActivity.totalMinutes,
+        friends: friends.map(friend => ({
+          id: friend.id,
+          name: friend.friend_email, // Use email as name for now
+          avatar: undefined,
+          creatingTime: 0 // TODO: Add individual friend creating time from API
+        })),
+        communityAverage: dashboardInsights.communityComparison.communityAverage,
+        communityTotal: dashboardInsights.communityStats.totalCommunityMinutes,
+      }
+    }
+    // Fallback to mock data
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    setStats(generateMockStats(rangeMode, friends as any))
-  }, [rangeMode, friends])
+    return generateMockStats(rangeMode, friends as any)
+  }, [dashboardInsights, friends, rangeMode])
 
   const getRangeModeText = () => {
     switch (rangeMode) {
@@ -92,10 +117,14 @@ export const FriendsAnalyticsPage = () => {
     case 'month': return 'this month'
     }
   }
+  console.log('dashboardInsights', dashboardInsights)
 
-  const topFriend = stats.friends.length > 0 ? stats.friends.reduce((prev, current) => 
-    (prev.creatingTime > current.creatingTime) ? prev : current
-  ) : null
+  const topFriend = dashboardInsights?.topFriend.hasFriends 
+    ? {
+      name: dashboardInsights.topFriend.name || 'Friend',
+      creatingTime: dashboardInsights.topFriend.totalMinutes || 0
+    }
+    : null
 
   // Calculate percentile based on creating time vs community average
   const calculatePercentile = (myTime: number, communityAvg: number) => {
@@ -107,7 +136,9 @@ export const FriendsAnalyticsPage = () => {
     return Math.round(percentile)
   }
 
-  const myPercentile = calculatePercentile(stats.myAverage, stats.communityAverage)
+  // Use real percentile data when available
+  const myPercentile = dashboardInsights?.userPercentile.percentile || 
+    calculatePercentile(stats.myAverage, stats.communityAverage)
 
   // Generate points for a bell curve
   const generateBellCurve = (width: number, height: number, userPercentile: number) => {
@@ -169,7 +200,7 @@ export const FriendsAnalyticsPage = () => {
               className="md:col-span-1"
             >
               <div className="text-2xl font-bold text-primary">
-                {formatTime(stats.myAverage)}
+                {dashboardInsights?.userActivity.minutesFormatted || formatTime(stats.myAverage)}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 Your time creating {getRangeModeText()}
@@ -181,10 +212,13 @@ export const FriendsAnalyticsPage = () => {
               icon={<Trophy className="h-4 w-4" />}
             >
               <div className="text-2xl font-bold">
-                {topFriend?.name.split(' ')[0] || 'No Friends'}
+                {topFriend?.name?.split(' ')[0] || 'No Friends'}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                {topFriend ? `${formatTime(topFriend.creatingTime)} ${getRangeModeText()}` : 'Invite friends to compare'}
+                {topFriend 
+                  ? `${dashboardInsights?.topFriend.minutesFormatted || formatTime(topFriend.creatingTime)} ${getRangeModeText()}` 
+                  : 'Invite friends to compare'
+                }
               </p>
             </StatCard>
 
@@ -205,11 +239,13 @@ export const FriendsAnalyticsPage = () => {
               icon={<Users className="h-4 w-4" />}
             >
               <div className="text-2xl font-bold">
-                {stats.myAverage > stats.communityAverage ? '+' : ''}
-                {formatTime(Math.abs(stats.myAverage - stats.communityAverage))}
+                {dashboardInsights?.communityComparison.isAboveAverage ? '+' : ''}
+                {dashboardInsights?.communityComparison.differenceFormatted || 
+                  formatTime(Math.abs(stats.myAverage - stats.communityAverage))}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                {stats.myAverage > stats.communityAverage ? 'above' : 'below'} community average
+                {dashboardInsights?.communityComparison.isAboveAverage ?? (stats.myAverage > stats.communityAverage) 
+                  ? 'above' : 'below'} community average
               </p>
             </StatCard>
           </div>
@@ -299,22 +335,22 @@ export const FriendsAnalyticsPage = () => {
                   <div className="flex items-center justify-between mb-2 mt-4">
                     <span className="text-sm font-medium">Your Creating Time</span>
                     <span className="text-sm font-bold text-primary">
-                      {formatTime(stats.myAverage)}
+                      {dashboardInsights?.communityComparison.userFormatted || formatTime(stats.myAverage)}
                     </span>
                   </div>
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-sm font-medium">Community Average</span>
                     <span className="text-sm text-muted-foreground">
-                      {formatTime(stats.communityAverage)}
+                      {dashboardInsights?.communityComparison.communityAverageFormatted || formatTime(stats.communityAverage)}
                     </span>
                   </div>
                 </div>
-                {/* Friends total creating time */}
+                {/* Community total creating time */}
                 <div className="p-3 bg-muted/50 rounded-lg border">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-muted-foreground">Total Community Creating Time</span>
                     <span className="text-sm font-bold">
-                      {formatTime(stats.communityTotal)}
+                      {dashboardInsights?.communityStats.totalCommunityFormatted || formatTime(stats.communityTotal)}
                     </span>
                   </div>
                 </div>

@@ -42,11 +42,45 @@ export interface FriendWithDetails {
   updated_at: string
 }
 
+// Dashboard insights types
+export interface DashboardInsightsResponse {
+  userActivity: {
+    totalMinutes: number
+    minutesFormatted: string
+  }
+  topFriend: {
+    hasFriends: boolean
+    name?: string
+    email?: string
+    totalMinutes?: number
+    minutesFormatted?: string
+  }
+  userPercentile: {
+    percentile: number
+    betterThanPercent: number
+  }
+  communityComparison: {
+    userMinutes: number
+    userFormatted: string
+    communityAverage: number
+    communityAverageFormatted: string
+    differenceMinutes: number
+    differenceFormatted: string
+    isAboveAverage: boolean
+  }
+  communityStats: {
+    totalCommunityMinutes: number
+    totalCommunityFormatted: string
+    activeUsers: number
+  }
+}
+
 const friendKeys = {
   all: ['friends'] as const,
   list: () => [...friendKeys.all, 'list'] as const,
   sentRequests: () => [...friendKeys.all, 'sent'] as const,
   receivedRequests: () => [...friendKeys.all, 'received'] as const,
+  dashboardInsights: (date: string) => [...friendKeys.all, 'dashboardInsights', date] as const,
 }
 
 const getFriends = async () => {
@@ -71,6 +105,14 @@ const getPendingRequestsReceived = async () => {
     method: 'GET',
   })
   return data as FriendRequest[]
+}
+
+const getDashboardInsights = async (date: string) => {
+  const data = await platformApiRequest({
+    url: `/api/friends/dashboard-insights?date=${date}`,
+    method: 'GET',
+  })
+  return data as DashboardInsightsResponse
 }
 
 const inviteFriend = async (email: string) => {
@@ -109,6 +151,14 @@ export function useGetPendingRequestsReceived() {
   return useQuery({
     queryKey: friendKeys.receivedRequests(),
     queryFn: getPendingRequestsReceived,
+  })
+}
+
+export function useGetDashboardInsights(date: string) {
+  return useQuery({
+    queryKey: friendKeys.dashboardInsights(date),
+    queryFn: () => getDashboardInsights(date),
+    enabled: !!date,
   })
 }
 
@@ -192,5 +242,17 @@ export const useFriends = () => {
     handleInviteFriend,
     handleAcceptInvite,
     handleDeclineInvite,
+  }
+}
+
+// Enhanced hook with dashboard insights
+export const useFriendsWithInsights = (date: string) => {
+  const friendsData = useFriends()
+  const { data: dashboardInsights, isLoading: isLoadingInsights } = useGetDashboardInsights(date)
+
+  return {
+    ...friendsData,
+    dashboardInsights,
+    isLoading: friendsData.isLoading || isLoadingInsights,
   }
 }
