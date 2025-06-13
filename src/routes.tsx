@@ -1,10 +1,9 @@
 import { HashRouter, Route, Routes, Navigate, useNavigate, Outlet, useLocation } from 'react-router-dom'
 import { HomePage } from '@/pages/HomePage'
 import { LoginPage } from '@/pages/LoginPage'
-import { FriendsPage } from '@/pages/FriendsPage'
+import { CommunityPage } from '@/pages/CommunityPage'
 import { FriendsPage as OldFriendsPage } from '@/pages/OldFriendsPage'
 import { SettingsPage } from '@/pages/SettingsPage'
-import { StartFlowPage } from './pages/StartFlowPage'
 import { useAuth } from './hooks/useAuth'
 import { FlowPage } from './pages/FlowPage'
 import { BreathingExercisePage } from './pages/BreathingExercisePage'
@@ -24,6 +23,8 @@ import FeedbackPage from './pages/FeedbackPage'
 import { toastStore } from './lib/stores/toastStore'
 import { useStore } from 'zustand'
 import { canaryUsers } from './lib/utils/environment.util'
+import { StartFlowPage } from './pages/StartFlowPage'
+import { FriendsAnalyticsPage } from './pages/FriendsAnalyticsPage'
 
 
 const ProtectedRoute = () => {
@@ -110,8 +111,9 @@ const Router = () => {
       {/* Protected routes group */}
       <Route element={<ProtectedRoute />}>
         <Route path="/" element={<HomePage />} />
-        <Route path="/friends" element={canSeeNewFriendsPage ? <FriendsPage /> : <OldFriendsPage />} />
+        <Route path="/community" element={canSeeNewFriendsPage ? <CommunityPage /> : <OldFriendsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/friends-analytics" element={<FriendsAnalyticsPage />} />
         <Route path="/start-flow" element={<StartFlowPage />} />
         <Route path="/breathing-exercise" element={<BreathingExercisePage />} />
         <Route path="/flow" element={<FlowPage />} />

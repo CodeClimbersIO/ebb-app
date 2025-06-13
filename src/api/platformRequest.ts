@@ -77,8 +77,8 @@ const requestFn = () => {
             responseObject = await response.text()
           }
           
-          // Provide a better fallback message when responseObject?.message is undefined
-          let errorMessage = responseObject?.message
+          // Provide a better fallback error when responseObject?.error is undefined
+          let errorMessage = responseObject?.error
           if (!errorMessage) {
             if (typeof responseObject === 'string') {
               errorMessage = responseObject

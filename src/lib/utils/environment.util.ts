@@ -6,4 +6,4 @@ export const isDev = () => {
   return import.meta.env.DEV
 }
 
-export const canaryUsers = ['rphovley@gmail.com', 'paul@ebb.cool']
+export const canaryUsers = ['rphovley@gmail.com', 'paul@ebb.cool', 'djl.hovley@gmail.com']

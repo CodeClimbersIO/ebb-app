@@ -335,6 +335,7 @@ const getLatestActivity = async (): Promise<Activity | undefined> => {
 }
 
 
+
 export const MonitorApi = {
   getApps,
   getTagsByType,
