@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Users, UserPlus, Mail, Send, Check, X } from 'lucide-react'
 import { formatTime } from '@/components/UsageSummary'
 import { RangeMode } from '@/components/RangeModeSelector'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useFriends, FriendRequest } from '@/api/hooks/useFriends'
 
 export interface InviteState {
@@ -107,6 +107,16 @@ const PendingInvitesTab = ({
   onDeclineInvite 
 }: PendingInvitesTabProps) => {
   const { sentRequests, receivedRequests } = useFriends()
+  const [visibleReceived, setVisibleReceived] = useState(5)
+  const [visibleSent, setVisibleSent] = useState(5)
+
+  const handleLoadMoreReceived = () => {
+    setVisibleReceived(prev => prev + 5)
+  }
+
+  const handleLoadMoreSent = () => {
+    setVisibleSent(prev => prev + 5)
+  }
 
   return (
     <div className="space-y-6">
@@ -117,16 +127,18 @@ const PendingInvitesTab = ({
             Received Invites ({receivedRequests.length})
           </h4>
           <div className="space-y-3">
-            {receivedRequests.map((invite: FriendRequest) => (
+            {receivedRequests.slice(0, visibleReceived).map((invite: FriendRequest) => (
               <div key={invite.id} className="flex items-center gap-4 p-3 bg-primary/10 rounded-lg border border-primary/20">
                 <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
                   <span className="text-xs font-bold text-primary">
-                    {invite.from_user_id.slice(0, 2).toUpperCase()}
+                    {invite.from_auth_user_email?.slice(0, 2).toUpperCase()}
                   </span>
                 </div>
                 <div className="flex-1">
                   <div className="font-medium">Friend Request</div>
-                  <div className="text-xs text-muted-foreground">From user {invite.from_user_id}</div>
+                  {invite.from_auth_user_email === 'rphovley@gmail.com' && (
+                    <div className="text-xs text-muted-foreground">Paul Hovley (Ebb Founder)</div>
+                  )}
                   <div className="text-xs text-muted-foreground">Email: {invite.from_auth_user_email || invite.to_email}</div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -151,6 +163,18 @@ const PendingInvitesTab = ({
               </div>
             ))}
           </div>
+          {receivedRequests.length > visibleReceived && (
+            <div className="text-center mt-4">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleLoadMoreReceived}
+                className="text-xs"
+              >
+                Load More ({receivedRequests.length - visibleReceived} remaining)
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
@@ -161,7 +185,7 @@ const PendingInvitesTab = ({
             Sent Invites ({sentRequests.length})
           </h4>
           <div className="space-y-3">
-            {sentRequests.map((invite: FriendRequest) => (
+            {sentRequests.slice(0, visibleSent).map((invite: FriendRequest) => (
               <div key={invite.id} className="flex items-center gap-4 p-3 bg-muted/30 rounded-lg border border-muted">
                 <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
                   <Send className="h-4 w-4 text-primary" />
@@ -173,6 +197,18 @@ const PendingInvitesTab = ({
               </div>
             ))}
           </div>
+          {sentRequests.length > visibleSent && (
+            <div className="text-center mt-4">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleLoadMoreSent}
+                className="text-xs"
+              >
+                Load More ({sentRequests.length - visibleSent} remaining)
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
@@ -260,13 +296,20 @@ export const FriendsComparisonCard = ({
   const [email, setEmail] = useState('')
   const { sentRequests, receivedRequests } = useFriends()
 
-  // Default to 'pending' tab if there are any pending invites
+  // Check if there are any pending invites
   const hasPending = (sentRequests && sentRequests.length > 0) || (receivedRequests && receivedRequests.length > 0)
-  const [defaultTab, setDefaultTab] = useState<string>(hasPending ? 'pending' : 'friends')
+  
+  // Show tabs if there are friends OR pending invites
+  const shouldShowTabs = inviteState.hasFriends || hasPending
+  
+  // Default to 'pending' tab if there are no friends but pending invites, otherwise 'friends'
+  const defaultTab = !inviteState.hasFriends && hasPending ? 'pending' : 'friends'
 
-  useEffect(() => {
-    setDefaultTab(hasPending ? 'pending' : 'friends')
-  }, [hasPending])
+  console.log('sentRequests', sentRequests)
+  console.log('receivedRequests', receivedRequests)
+  console.log('hasPending', hasPending)
+  console.log('shouldShowTabs', shouldShowTabs)
+  console.log('defaultTab', defaultTab)
 
   const handleInviteClick = () => {
     setShowInviteModal(true)
@@ -304,7 +347,7 @@ export const FriendsComparisonCard = ({
         </div>
       </CardHeader>
       <CardContent>
-        {inviteState.hasFriends ? (
+        {shouldShowTabs ? (
           <Tabs defaultValue={defaultTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="friends">Friends ({friends.length})</TabsTrigger>
@@ -318,11 +361,23 @@ export const FriendsComparisonCard = ({
               </TabsTrigger>
             </TabsList>
             <TabsContent value="friends" className="mt-6">
-              <FriendComparison 
-                friends={friends}
-                myTime={myTime}
-                rangeMode={rangeMode}
-              />
+              {inviteState.hasFriends ? (
+                <FriendComparison 
+                  friends={friends}
+                  myTime={myTime}
+                  rangeMode={rangeMode}
+                />
+              ) : (
+                <div className="text-center py-8">
+                  <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-3">
+                    <Users className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm text-muted-foreground">No friends yet</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Accept friend requests to start comparing!
+                  </p>
+                </div>
+              )}
             </TabsContent>
             <TabsContent value="pending" className="mt-6">
               <PendingInvitesTab 

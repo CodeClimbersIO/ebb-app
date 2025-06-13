@@ -124,11 +124,11 @@ const inviteFriend = async (email: string) => {
   return data
 }
 
-const respondToFriendRequest = async ({ requestId, accept }: { requestId: string; accept: boolean }) => {
+const respondToFriendRequest = async ({ requestId, action }: { requestId: string; action: 'accept' | 'reject' }) => {
   const data = await platformApiRequest({
     url: `/api/friends/requests/${requestId}/respond`,
     method: 'POST',
-    body: { accept },
+    body: { action },
   })
   return data
 }
@@ -225,11 +225,11 @@ export const useFriends = () => {
   }
 
   const handleAcceptInvite = (requestId: string) => {
-    respondToRequest({ requestId, accept: true })
+    respondToRequest({ requestId, action: 'accept' })
   }
 
   const handleDeclineInvite = (requestId: string) => {
-    respondToRequest({ requestId, accept: false })
+    respondToRequest({ requestId, action: 'reject' })
   }
 
   return {

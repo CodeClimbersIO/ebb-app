@@ -1,6 +1,7 @@
 import supabase from '@/lib/integrations/supabase'
 
-const BASE_URL = 'https://api.ebb.cool'
+// const BASE_URL = 'https://api.ebb.cool'
+const BASE_URL = 'http://localhost:8001'
 
 export class ApiError extends Error {
   statusCode: number
