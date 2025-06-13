@@ -1,7 +1,7 @@
 import { HashRouter, Route, Routes, Navigate, useNavigate, Outlet, useLocation } from 'react-router-dom'
 import { HomePage } from '@/pages/HomePage'
 import { LoginPage } from '@/pages/LoginPage'
-import { FriendsPage } from '@/pages/FriendsPage'
+import { CommunityPage } from '@/pages/CommunityPage'
 import { FriendsPage as OldFriendsPage } from '@/pages/OldFriendsPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 import { useAuth } from './hooks/useAuth'
@@ -111,7 +111,7 @@ const Router = () => {
       {/* Protected routes group */}
       <Route element={<ProtectedRoute />}>
         <Route path="/" element={<HomePage />} />
-        <Route path="/friends" element={canSeeNewFriendsPage ? <FriendsPage /> : <OldFriendsPage />} />
+        <Route path="/community" element={canSeeNewFriendsPage ? <CommunityPage /> : <OldFriendsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/friends-analytics" element={<FriendsAnalyticsPage />} />
         <Route path="/start-flow" element={<StartFlowPage />} />

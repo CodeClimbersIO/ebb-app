@@ -57,7 +57,7 @@ const CommunityStatusCard = ({ locations, title, onLocationHover }: CommunitySta
   )
 }
 
-export const FriendsPage = () => {
+export const CommunityPage = () => {
   const { data: userLocations } = useUserLocations()
 
   const { connected } = useConnectedStore()

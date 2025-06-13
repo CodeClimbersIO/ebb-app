@@ -8,7 +8,6 @@ import { cn } from '@/lib/utils/tailwind.util'
 import { FriendsComparisonCard, InviteState } from '@/components/FriendsComparisonCard'
 import { useFriendsWithInsights } from '@/api/hooks/useFriends'
 
-// Mock data structure - in real app this would come from API
 interface CreatingStats {
   myAverage: number
   friends: Array<{
@@ -117,7 +116,6 @@ export const FriendsAnalyticsPage = () => {
     case 'month': return 'this month'
     }
   }
-  console.log('dashboardInsights', dashboardInsights)
 
   const topFriend = dashboardInsights?.topFriend.hasFriends 
     ? {

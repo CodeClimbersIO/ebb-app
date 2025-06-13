@@ -181,9 +181,7 @@ export function useInviteFriend() {
     },
     onError: (error: ApiErrorType) => {
       // Try to extract the error message from the API response
-      console.log('error', error)
       const apiMessage = error?.error || error?.message || error?.data?.error || error?.data?.message
-      console.log('apiMessage', apiMessage)
       if (apiMessage === 'You cannot send a friend request to yourself') {
         logAndToastError('You cannot invite yourself as a friend.', error)
       } else if (apiMessage === 'Friend request already sent to this email') {

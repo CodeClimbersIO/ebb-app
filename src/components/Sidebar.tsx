@@ -8,10 +8,15 @@ import { KeyIcon } from '@/components/icons/KeyIcon'
 import { ChartIcon } from '@/components/icons/ChartIcon'
 import { PaywallDialog } from '@/components/PaywallDialog'
 import { usePermissions } from '@/hooks/usePermissions'
+import { canaryUsers } from '../lib/utils/environment.util'
+import { useAuth } from '../hooks/useAuth'
 
 export function Sidebar() {
   const location = useLocation()
   const { hasProAccess } = usePermissions()
+  const { user } = useAuth()
+
+  const canSeeNewFriendsPage = canaryUsers.includes(user?.email || '')
 
   return (
     
@@ -34,31 +39,33 @@ export function Sidebar() {
             <TooltipContent side="right" sideOffset={10}>Today</TooltipContent>
           </Tooltip>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                iconSize={5}
-                className={`w-9 h-9 p-2 ${location.pathname === '/friends-analytics' ? 'text-foreground [&>svg]:text-foreground' : 'text-muted-foreground [&>svg]:text-muted-foreground'}`}
-                asChild
-              >
-                <Link to="/friends-analytics">
-                  <ChartIcon size={20} />
-                </Link>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="right" sideOffset={10}>Friends</TooltipContent>
-          </Tooltip>
+          {canSeeNewFriendsPage && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  iconSize={5}
+                  className={`w-9 h-9 p-2 ${location.pathname === '/friends-analytics' ? 'text-foreground [&>svg]:text-foreground' : 'text-muted-foreground [&>svg]:text-muted-foreground'}`}
+                  asChild
+                >
+                  <Link to="/friends-analytics">
+                    <ChartIcon size={20} />
+                  </Link>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right" sideOffset={10}>Friends</TooltipContent>
+            </Tooltip>
+          )}
 
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 variant="ghost"
                 iconSize={5}
-                className={`w-9 h-9 p-2 ${location.pathname === '/friends' ? 'text-foreground [&>svg]:text-foreground' : 'text-muted-foreground [&>svg]:text-muted-foreground'}`}
+                className={`w-9 h-9 p-2 ${location.pathname === '/community' ? 'text-foreground [&>svg]:text-foreground' : 'text-muted-foreground [&>svg]:text-muted-foreground'}`}
                 asChild
               >
-                <Link to="/friends">
+                <Link to="/community">
                   <UsersIcon size={20} />
                 </Link>
               </Button>
