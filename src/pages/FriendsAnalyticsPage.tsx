@@ -76,11 +76,13 @@ export const FriendsAnalyticsPage = () => {
     pendingInvitesSent: sentRequests.length,
     pendingInvitesReceived: receivedRequests.length
   }
-
-  const [stats, setStats] = useState<CreatingStats>(generateMockStats('day', friends))
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [stats, setStats] = useState<CreatingStats>(generateMockStats('day', friends as any))
 
   useEffect(() => {
-    setStats(generateMockStats(rangeMode, friends))
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    setStats(generateMockStats(rangeMode, friends as any))
   }, [rangeMode, friends])
 
   const getRangeModeText = () => {
