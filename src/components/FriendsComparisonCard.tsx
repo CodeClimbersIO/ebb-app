@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Users, UserPlus, Mail, Send, Check, X } from 'lucide-react'
 import { formatTime } from '@/components/UsageSummary'
 import { RangeMode } from '@/components/RangeModeSelector'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useFriends, FriendRequest } from '@/api/hooks/useFriends'
 
 export interface InviteState {
@@ -121,12 +121,13 @@ const PendingInvitesTab = ({
               <div key={invite.id} className="flex items-center gap-4 p-3 bg-primary/10 rounded-lg border border-primary/20">
                 <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
                   <span className="text-xs font-bold text-primary">
-                    {invite.senderId.slice(0, 2).toUpperCase()}
+                    {invite.from_user_id.slice(0, 2).toUpperCase()}
                   </span>
                 </div>
                 <div className="flex-1">
                   <div className="font-medium">Friend Request</div>
-                  <div className="text-xs text-muted-foreground">From user {invite.senderId}</div>
+                  <div className="text-xs text-muted-foreground">From user {invite.from_user_id}</div>
+                  <div className="text-xs text-muted-foreground">Email: {invite.from_auth_user_email || invite.to_email}</div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
@@ -166,8 +167,8 @@ const PendingInvitesTab = ({
                   <Send className="h-4 w-4 text-primary" />
                 </div>
                 <div className="flex-1">
-                  <div className="font-medium">To user {invite.receiverId}</div>
-                  <div className="text-xs text-muted-foreground">Awaiting response</div>
+                  <div className="font-medium">To: {invite.to_email}</div>
+                  <div className="text-xs text-muted-foreground">Status: {invite.status}</div>
                 </div>
               </div>
             ))}
@@ -257,6 +258,15 @@ export const FriendsComparisonCard = ({
 }: FriendsComparisonCardProps) => {
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [email, setEmail] = useState('')
+  const { sentRequests, receivedRequests } = useFriends()
+
+  // Default to 'pending' tab if there are any pending invites
+  const hasPending = (sentRequests && sentRequests.length > 0) || (receivedRequests && receivedRequests.length > 0)
+  const [defaultTab, setDefaultTab] = useState<string>(hasPending ? 'pending' : 'friends')
+
+  useEffect(() => {
+    setDefaultTab(hasPending ? 'pending' : 'friends')
+  }, [hasPending])
 
   const handleInviteClick = () => {
     setShowInviteModal(true)
@@ -295,7 +305,7 @@ export const FriendsComparisonCard = ({
       </CardHeader>
       <CardContent>
         {inviteState.hasFriends ? (
-          <Tabs defaultValue="friends" className="w-full">
+          <Tabs defaultValue={defaultTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="friends">Friends ({friends.length})</TabsTrigger>
               <TabsTrigger value="pending" className="relative">

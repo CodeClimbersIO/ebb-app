@@ -2,6 +2,46 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { platformApiRequest } from '../platformRequest'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
 
+// --- Backend types ---
+export type FriendRequestStatus = 'pending' | 'accepted' | 'rejected' | 'cancelled'
+export type FriendStatus = 'active' | 'blocked'
+
+export interface FriendRequest {
+  id: string
+  from_user_id: string
+  to_email: string
+  status: FriendRequestStatus
+  created_at: string
+  updated_at: string
+  message?: string | null
+  expires_at?: string | null
+  from_auth_user_email?: string | null
+  to_auth_user_email?: string | null
+}
+
+export interface Friend {
+  id: string
+  user_id_1: string
+  user_id_2: string
+  status: FriendStatus
+  created_at: string
+  updated_at: string
+  creating_time: number
+}
+
+export interface FriendRequestWithUser extends FriendRequest {
+  from_auth_user_email?: string
+  to_auth_user_email?: string
+}
+
+export interface FriendWithDetails {
+  id: string
+  friend_id: string
+  friend_email: string
+  created_at: string
+  updated_at: string
+}
+
 const friendKeys = {
   all: ['friends'] as const,
   list: () => [...friendKeys.all, 'list'] as const,
@@ -9,28 +49,12 @@ const friendKeys = {
   receivedRequests: () => [...friendKeys.all, 'received'] as const,
 }
 
-export type Friend = {
-  id: string
-  name: string
-  avatar?: string
-  creatingTime: number
-}
-
-export type FriendRequest = {
-  id: string
-  senderId: string
-  receiverId: string
-  status: 'pending' | 'accepted' | 'declined'
-  createdAt: string
-  updatedAt: string
-}
-
 const getFriends = async () => {
   const data = await platformApiRequest({
     url: '/api/friends/list',
     method: 'GET',
   })
-  return data as Friend[]
+  return data as FriendWithDetails[]
 }
 
 const getPendingRequestsSent = async () => {
@@ -53,7 +77,7 @@ const inviteFriend = async (email: string) => {
   const data = await platformApiRequest({
     url: '/api/friends/invite',
     method: 'POST',
-    body: { email },
+    body: { to_email: email },
   })
   return data
 }
@@ -88,6 +112,15 @@ export function useGetPendingRequestsReceived() {
   })
 }
 
+type ApiErrorType = {
+  error?: string;
+  message?: string;
+  data?: {
+    error?: string;
+    message?: string;
+  };
+};
+
 export function useInviteFriend() {
   const queryClient = useQueryClient()
   
@@ -96,8 +129,22 @@ export function useInviteFriend() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: friendKeys.sentRequests() })
     },
-    onError: (error) => {
-      logAndToastError('Failed to send friend request', error)
+    onError: (error: ApiErrorType) => {
+      // Try to extract the error message from the API response
+      console.log('error', error)
+      const apiMessage = error?.error || error?.message || error?.data?.error || error?.data?.message
+      console.log('apiMessage', apiMessage)
+      if (apiMessage === 'You cannot send a friend request to yourself') {
+        logAndToastError('You cannot invite yourself as a friend.', error)
+      } else if (apiMessage === 'Friend request already sent to this email') {
+        logAndToastError('You have already sent a friend request to this email.', error)
+      } else if (apiMessage === 'You are already friends with this user') {
+        logAndToastError('You are already friends with this user.', error)
+      } else if (apiMessage === 'Valid email address is required') {
+        logAndToastError('Please enter a valid email address.', error)
+      } else {
+        logAndToastError('Failed to send friend request', error)
+      }
     },
   })
 }

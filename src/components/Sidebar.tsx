@@ -39,15 +39,15 @@ export function Sidebar() {
               <Button
                 variant="ghost"
                 iconSize={5}
-                className={`w-9 h-9 p-2 ${location.pathname === '/flow-score' ? 'text-foreground [&>svg]:text-foreground' : 'text-muted-foreground [&>svg]:text-muted-foreground'}`}
+                className={`w-9 h-9 p-2 ${location.pathname === '/friends-analytics' ? 'text-foreground [&>svg]:text-foreground' : 'text-muted-foreground [&>svg]:text-muted-foreground'}`}
                 asChild
               >
-                <Link to="/analytics">
+                <Link to="/friends-analytics">
                   <ChartIcon size={20} />
                 </Link>
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="right" sideOffset={10}>Flow Score</TooltipContent>
+            <TooltipContent side="right" sideOffset={10}>Friends</TooltipContent>
           </Tooltip>
 
           <Tooltip>
