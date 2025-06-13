@@ -119,8 +119,8 @@ export const FriendsAnalyticsPage = () => {
 
   const topFriend = dashboardInsights?.topFriend.hasFriends 
     ? {
-      name: dashboardInsights.topFriend.name || 'Friend',
-      creatingTime: dashboardInsights.topFriend.totalMinutes || 0
+      email: dashboardInsights.topFriend.topFriendEmail || 'Friend',
+      creatingTime: dashboardInsights.topFriend.topFriendMinutes || 0
     }
     : null
 
@@ -210,11 +210,11 @@ export const FriendsAnalyticsPage = () => {
               icon={<Trophy className="h-4 w-4" />}
             >
               <div className="text-2xl font-bold">
-                {topFriend?.name?.split(' ')[0] || 'No Friends'}
+                {topFriend?.email || 'No Friends'}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 {topFriend 
-                  ? `${dashboardInsights?.topFriend.minutesFormatted || formatTime(topFriend.creatingTime)} ${getRangeModeText()}` 
+                  ? `${dashboardInsights?.topFriend.topFriendFormatted || formatTime(topFriend.creatingTime)} ${getRangeModeText()}` 
                   : 'Invite friends to compare'
                 }
               </p>
@@ -237,7 +237,6 @@ export const FriendsAnalyticsPage = () => {
               icon={<Users className="h-4 w-4" />}
             >
               <div className="text-2xl font-bold">
-                {dashboardInsights?.communityComparison.isAboveAverage ? '+' : ''}
                 {dashboardInsights?.communityComparison.differenceFormatted || 
                   formatTime(Math.abs(stats.myAverage - stats.communityAverage))}
               </div>

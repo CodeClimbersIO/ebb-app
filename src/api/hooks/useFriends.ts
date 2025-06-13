@@ -50,10 +50,9 @@ export interface DashboardInsightsResponse {
   }
   topFriend: {
     hasFriends: boolean
-    name?: string
-    email?: string
-    totalMinutes?: number
-    minutesFormatted?: string
+    topFriendEmail?: string
+    topFriendMinutes?: number
+    topFriendFormatted?: string
   }
   userPercentile: {
     percentile: number

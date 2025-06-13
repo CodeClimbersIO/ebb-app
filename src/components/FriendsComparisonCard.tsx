@@ -305,12 +305,6 @@ export const FriendsComparisonCard = ({
   // Default to 'pending' tab if there are no friends but pending invites, otherwise 'friends'
   const defaultTab = !inviteState.hasFriends && hasPending ? 'pending' : 'friends'
 
-  console.log('sentRequests', sentRequests)
-  console.log('receivedRequests', receivedRequests)
-  console.log('hasPending', hasPending)
-  console.log('shouldShowTabs', shouldShowTabs)
-  console.log('defaultTab', defaultTab)
-
   const handleInviteClick = () => {
     setShowInviteModal(true)
   }
