@@ -176,7 +176,7 @@ export function useInviteFriend() {
   return useMutation({
     mutationFn: inviteFriend,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: friendKeys.sentRequests() })
+      queryClient.invalidateQueries({ queryKey: friendKeys.all })
     },
     onError: (error: ApiErrorType) => {
       // Try to extract the error message from the API response
@@ -214,8 +214,8 @@ export const useFriends = () => {
   const { data: friends, isLoading: isLoadingFriends } = useGetFriends()
   const { data: sentRequests, isLoading: isLoadingSentRequests } = useGetPendingRequestsSent()
   const { data: receivedRequests, isLoading: isLoadingReceivedRequests } = useGetPendingRequestsReceived()
-  const { mutate: inviteFriend } = useInviteFriend()
-  const { mutate: respondToRequest } = useRespondToFriendRequest()
+  const { mutate: inviteFriend, isPending: isInviting } = useInviteFriend()
+  const { mutate: respondToRequest, isPending: isResponding } = useRespondToFriendRequest()
 
   const isLoading = isLoadingFriends || isLoadingSentRequests || isLoadingReceivedRequests
 
@@ -236,6 +236,8 @@ export const useFriends = () => {
     sentRequests,
     receivedRequests,
     isLoading,
+    isInviting,
+    isResponding,
     handleInviteFriend,
     handleAcceptInvite,
     handleDeclineInvite,
@@ -243,13 +245,23 @@ export const useFriends = () => {
 }
 
 // Enhanced hook with dashboard insights
-export const useFriendsWithInsights = (date: string) => {
+export const useFriendsWithInsights = () => {
+  const today = new Date()
+  const date = today.toISOString().split('T')[0]
+  
   const friendsData = useFriends()
   const { data: dashboardInsights, isLoading: isLoadingInsights } = useGetDashboardInsights(date)
 
+  const pendingInvitesReceivedCount = friendsData.receivedRequests && friendsData.receivedRequests.length > 0 ? friendsData.receivedRequests.length : 0
+  const hasPendingInvitesReceived = pendingInvitesReceivedCount > 0
+  
+  const hasFriends = friendsData.friends && friendsData.friends.length > 0
   return {
     ...friendsData,
     dashboardInsights,
     isLoading: friendsData.isLoading || isLoadingInsights,
+    hasPendingInvitesReceived,
+    hasFriends,
+    pendingInvitesReceivedCount
   }
 }

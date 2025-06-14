@@ -6,14 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Users, UserPlus, Mail, Send, Check, X } from 'lucide-react'
 import { formatTime } from '@/components/UsageSummary'
 import { RangeMode } from '@/components/RangeModeSelector'
-import { useState } from 'react'
-import { useFriends, FriendRequest } from '@/api/hooks/useFriends'
-
-export interface InviteState {
-  hasFriends: boolean
-  pendingInvitesSent: number
-  pendingInvitesReceived: number
-}
+import { useState, useEffect } from 'react'
+import { useFriends, FriendRequest, useFriendsWithInsights } from '@/api/hooks/useFriends'
 
 interface Friend {
   id: string
@@ -97,18 +91,12 @@ const FriendComparison = ({ friends, myTime }: FriendComparisonProps) => {
   )
 }
 
-interface PendingInvitesTabProps {
-  onAcceptInvite: (inviteId: string) => void
-  onDeclineInvite: (inviteId: string) => void
-}
 
-const PendingInvitesTab = ({ 
-  onAcceptInvite,
-  onDeclineInvite 
-}: PendingInvitesTabProps) => {
-  const { sentRequests, receivedRequests } = useFriends()
+const PendingInvitesTab = () => {
+  const { sentRequests, receivedRequests, isResponding, handleAcceptInvite, handleDeclineInvite } = useFriendsWithInsights()
   const [visibleReceived, setVisibleReceived] = useState(5)
   const [visibleSent, setVisibleSent] = useState(5)
+  const [processingRequest, setProcessingRequest] = useState<{ requestId: string; action: 'accept' | 'decline' } | null>(null)
 
   const handleLoadMoreReceived = () => {
     setVisibleReceived(prev => prev + 5)
@@ -117,6 +105,23 @@ const PendingInvitesTab = ({
   const handleLoadMoreSent = () => {
     setVisibleSent(prev => prev + 5)
   }
+
+  const handleAcceptInviteWithLoading = (requestId: string) => {
+    setProcessingRequest({ requestId, action: 'accept' })
+    handleAcceptInvite(requestId)
+  }
+
+  const handleDeclineInviteWithLoading = (requestId: string) => {
+    setProcessingRequest({ requestId, action: 'decline' })
+    handleDeclineInvite(requestId)
+  }
+
+  // Reset processing state when isResponding becomes false
+  useEffect(() => {
+    if (!isResponding && processingRequest) {
+      setProcessingRequest(null)
+    }
+  }, [isResponding, processingRequest])
 
   return (
     <div className="space-y-6">
@@ -144,19 +149,21 @@ const PendingInvitesTab = ({
                 <div className="flex items-center gap-2">
                   <Button
                     size="sm"
-                    onClick={() => onAcceptInvite(invite.id)}
+                    onClick={() => handleAcceptInviteWithLoading(invite.id)}
                     className="h-8 px-3"
+                    loading={isResponding && processingRequest?.requestId === invite.id && processingRequest?.action === 'accept'}
+                    icon={<Check className="h-3 w-3" />}
                   >
-                    <Check className="h-3 w-3 mr-1" />
                     Accept
                   </Button>
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => onDeclineInvite(invite.id)}
+                    onClick={() => handleDeclineInviteWithLoading(invite.id)}
                     className="h-8 px-3"
+                    loading={isResponding && processingRequest?.requestId === invite.id && processingRequest?.action === 'decline'}
+                    icon={<X className="h-3 w-3" />}
                   >
-                    <X className="h-3 w-3 mr-1" />
                     Decline
                   </Button>
                 </div>
@@ -225,17 +232,17 @@ const PendingInvitesTab = ({
   )
 }
 
-interface EmptyFriendsStateProps {
-  onInviteFriends: (email: string) => void
-}
-
-const EmptyFriendsState = ({ onInviteFriends }: EmptyFriendsStateProps) => {
+const EmptyFriendsState = () => {
+  const { 
+    handleInviteFriend,
+  } = useFriendsWithInsights()
   const [email, setEmail] = useState('')
+  const { isInviting } = useFriends()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (email) {
-      onInviteFriends(email)
+    if (email && !isInviting) {
+      await handleInviteFriend(email)
       setEmail('')
     }
   }
@@ -260,9 +267,9 @@ const EmptyFriendsState = ({ onInviteFriends }: EmptyFriendsStateProps) => {
             placeholder="Enter friend's email"
             className="flex-1 px-3 py-2 rounded-md border border-input bg-background text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             required
+            disabled={isInviting}
           />
-          <Button type="submit" size="lg" className="flex items-center gap-2">
-            <Send className="h-5 w-5" />
+          <Button type="submit" size="lg" className="flex items-center gap-2" loading={isInviting} icon={<Send className="h-5 w-5" />}>
             Invite
           </Button>
         </div>
@@ -275,10 +282,6 @@ interface FriendsComparisonCardProps {
   friends: Friend[]
   myTime: number
   rangeMode: RangeMode
-  inviteState: InviteState
-  onInviteFriends: (email: string) => void
-  onAcceptInvite?: (inviteId: string) => void
-  onDeclineInvite?: (inviteId: string) => void
   getRangeModeText: () => string
 }
 
@@ -286,33 +289,28 @@ export const FriendsComparisonCard = ({
   friends, 
   myTime, 
   rangeMode, 
-  inviteState, 
-  onInviteFriends,
-  onAcceptInvite = () => {},
-  onDeclineInvite = () => {},
   getRangeModeText 
 }: FriendsComparisonCardProps) => {
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [email, setEmail] = useState('')
-  const { sentRequests, receivedRequests } = useFriends()
+  const { hasFriends, hasPendingInvitesReceived, pendingInvitesReceivedCount, isInviting, handleInviteFriend } = useFriendsWithInsights()
 
   // Check if there are any pending invites
-  const hasPending = (sentRequests && sentRequests.length > 0) || (receivedRequests && receivedRequests.length > 0)
   
   // Show tabs if there are friends OR pending invites
-  const shouldShowTabs = inviteState.hasFriends || hasPending
+  const shouldShowTabs = hasFriends
   
   // Default to 'pending' tab if there are no friends but pending invites, otherwise 'friends'
-  const defaultTab = !inviteState.hasFriends && hasPending ? 'pending' : 'friends'
+  const defaultTab = hasPendingInvitesReceived ? 'pending' : 'friends'
 
   const handleInviteClick = () => {
     setShowInviteModal(true)
   }
 
-  const handleInviteSubmit = (e: React.FormEvent) => {
+  const handleInviteSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (email) {
-      onInviteFriends(email)
+    if (email && !isInviting) {
+      await handleInviteFriend(email)
       setEmail('')
       setShowInviteModal(false)
     }
@@ -328,7 +326,7 @@ export const FriendsComparisonCard = ({
               Friends Comparison
             </CardTitle>
             <p className="text-sm text-muted-foreground">
-              {inviteState.hasFriends 
+              {hasFriends 
                 ? `How you compare to your friends ${getRangeModeText()}`
                 : 'Start comparing with friends'
               }
@@ -341,21 +339,21 @@ export const FriendsComparisonCard = ({
         </div>
       </CardHeader>
       <CardContent>
-        {shouldShowTabs ? (
+        {shouldShowTabs || hasPendingInvitesReceived ? (
           <Tabs defaultValue={defaultTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="friends">Friends ({friends.length})</TabsTrigger>
               <TabsTrigger value="pending" className="relative">
                 Pending
-                {inviteState.pendingInvitesReceived > 0 && (
+                {pendingInvitesReceivedCount > 0 && (
                   <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs bg-red-500 text-white hover:bg-red-600">
-                    {inviteState.pendingInvitesReceived}
+                    {pendingInvitesReceivedCount}
                   </Badge>
                 )}
               </TabsTrigger>
             </TabsList>
             <TabsContent value="friends" className="mt-6">
-              {inviteState.hasFriends ? (
+              {hasFriends ? (
                 <FriendComparison 
                   friends={friends}
                   myTime={myTime}
@@ -368,20 +366,17 @@ export const FriendsComparisonCard = ({
                   </div>
                   <p className="text-sm text-muted-foreground">No friends yet</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Accept friend requests to start comparing!
+                    Invite a friend to start challenging each other to create more!
                   </p>
                 </div>
               )}
             </TabsContent>
             <TabsContent value="pending" className="mt-6">
-              <PendingInvitesTab 
-                onAcceptInvite={onAcceptInvite}
-                onDeclineInvite={onDeclineInvite}
-              />
+              <PendingInvitesTab />
             </TabsContent>
           </Tabs>
         ) : (
-          <EmptyFriendsState onInviteFriends={onInviteFriends} />
+          <EmptyFriendsState />
         )}
       </CardContent>
 
@@ -404,6 +399,7 @@ export const FriendsComparisonCard = ({
                     placeholder="Enter friend's email"
                     className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     required
+                    disabled={isInviting}
                   />
                 </div>
                 <div className="flex justify-end gap-2">
@@ -411,10 +407,11 @@ export const FriendsComparisonCard = ({
                     type="button"
                     variant="outline"
                     onClick={() => setShowInviteModal(false)}
+                    disabled={isInviting}
                   >
                     Cancel
                   </Button>
-                  <Button type="submit">
+                  <Button type="submit" loading={isInviting} icon={<Send className="h-5 w-5" />}>
                     Send Invite
                   </Button>
                 </div>

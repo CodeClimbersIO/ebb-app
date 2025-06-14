@@ -1,12 +1,13 @@
 import { Layout } from '@/components/Layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { RangeModeSelector, RangeMode } from '@/components/RangeModeSelector'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { formatTime } from '@/components/UsageSummary'
 import { Trophy, TrendingUp, Users, Clock } from 'lucide-react'
 import { cn } from '@/lib/utils/tailwind.util'
-import { FriendsComparisonCard, InviteState } from '@/components/FriendsComparisonCard'
+import { FriendsComparisonCard } from '@/components/FriendsComparisonCard'
 import { useFriendsWithInsights } from '@/api/hooks/useFriends'
+import { DateTime } from 'luxon'
 
 interface CreatingStats {
   myAverage: number
@@ -60,33 +61,29 @@ const StatCard = ({ title, icon, children, className }: StatCardProps) => (
 
 export const FriendsAnalyticsPage = () => {
   const [rangeMode, setRangeMode] = useState<RangeMode>('day')
-  
-  // Format date for API call based on range mode
-  const apiDate = useMemo(() => {
-    const today = new Date()
-    
-    // For now, we'll use today's date regardless of range mode
-    // In the future, you might want to adjust this based on your API's capabilities
-    // For example, if the API supports week/month aggregation, you could pass different dates
-    return today.toISOString().split('T')[0] // Format as YYYY-MM-DD
-  }, [rangeMode])
+  const [timeUntilUTCMidnight, setTimeUntilUTCMidnight] = useState('')
   
   const { 
     friends = [], 
-    sentRequests = [], 
-    receivedRequests = [], 
     dashboardInsights,
     isLoading,
-    handleInviteFriend,
-    handleAcceptInvite,
-    handleDeclineInvite 
-  } = useFriendsWithInsights(apiDate)
+  } = useFriendsWithInsights()
 
-  const inviteState: InviteState = {
-    hasFriends: friends.length > 0,
-    pendingInvitesSent: sentRequests.length,
-    pendingInvitesReceived: receivedRequests.length
-  }
+  // Countdown timer to UTC midnight
+  useEffect(() => {
+    const updateCountdown = () => {
+      const now = DateTime.now()
+      const nextMidnight = DateTime.now().toUTC().endOf('day')
+      const timeUntilNextMidnight = nextMidnight.diff(now)
+
+      setTimeUntilUTCMidnight(timeUntilNextMidnight.toFormat('hh:mm:ss'))
+    }
+
+    updateCountdown()
+    const interval = setInterval(updateCountdown, 1000)
+
+    return () => clearInterval(interval)
+  }, [])
 
   // Use real data when available, fallback to mock data
   const stats = useMemo(() => {
@@ -186,6 +183,16 @@ export const FriendsAnalyticsPage = () => {
               <p className="text-muted-foreground">
                 See how your creating time compares to your friends and the community
               </p>
+              {/* UTC Day Countdown */}
+              <div className="relative group">
+                <div className="flex items-center gap-2 mt-3 text-sm text-muted-foreground">
+                  <Clock className="h-4 w-4" />
+                  <span>Day ends in {timeUntilUTCMidnight}</span>
+                  <div className="absolute bottom-6 left-0 hidden group-hover:block z-10 w-64 p-2 bg-black text-white text-xs rounded shadow-lg">
+                    {'Everyone\'s day ends at 12am Greenwich Time'}
+                  </div>
+                </div>
+              </div>
             </div>
             <RangeModeSelector value={rangeMode} onChange={setRangeMode} />
           </div>
@@ -210,7 +217,10 @@ export const FriendsAnalyticsPage = () => {
               icon={<Trophy className="h-4 w-4" />}
             >
               <div className="text-2xl font-bold">
-                {topFriend?.email || 'No Friends'}
+                {topFriend?.email ? 
+                  `${topFriend.email.slice(0, 12)}...` : 
+                  'No Friends'
+                }
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 {topFriend 
@@ -254,10 +264,6 @@ export const FriendsAnalyticsPage = () => {
               friends={stats.friends}
               myTime={stats.myTotal}
               rangeMode={rangeMode}
-              inviteState={inviteState}
-              onInviteFriends={handleInviteFriend}
-              onAcceptInvite={handleAcceptInvite}
-              onDeclineInvite={handleDeclineInvite}
               getRangeModeText={getRangeModeText}
             />
 
