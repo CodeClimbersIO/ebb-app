@@ -2,13 +2,11 @@ import { error as tauriErrorLogger } from '@tauri-apps/plugin-log'
 import { toastError } from '@/components/ui/sonner'
 
 export const logAndToastError = (errorMessage: string, error: unknown) => {
-  if(errorMessage.includes('TypeError: Load failed')){ // supabase calls return this when offline without any other annotation
-    tauriErrorLogger(errorMessage)
-    return 
-  }
-
-  tauriErrorLogger(errorMessage)
   if(isError(error)) {
+    if(error.message.includes('TypeError: Load failed')){ // supabase calls return this when offline without any other annotation
+      tauriErrorLogger(errorMessage)
+      return 
+    }
     toastError(error)
     tauriErrorLogger(error.message)
   } else {
