@@ -18,28 +18,20 @@ import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useEffect } from 'react'
 import { useGlobalShortcut } from './hooks/useGlobalShortcut'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
-import { useLicenseStore } from './lib/stores/licenseStore'
 import FeedbackPage from './pages/FeedbackPage'
 import { toastStore } from './lib/stores/toastStore'
 import { useStore } from 'zustand'
 import { canaryUsers } from './lib/utils/environment.util'
 import { StartFlowPage } from './pages/StartFlowPage'
 import { FriendsAnalyticsPage } from './pages/FriendsAnalyticsPage'
+import { useLicenseWithDevices } from './api/hooks/useLicense'
 
 
 const ProtectedRoute = () => {
   const { user, loading: authLoading } = useAuth()
   // const { deviceInfo } = useLicenseStore()
   const location = useLocation()
-  const { fetchLicense } = useLicenseStore()
-  
-  useEffect(() => {
-    if (user) {
-      fetchLicense(user.id)
-    } else {
-      fetchLicense(null)
-    }
-  }, [user, fetchLicense])
+  useLicenseWithDevices(user?.id || null)
 
   if (authLoading) {
     return <LoadingScreen />
