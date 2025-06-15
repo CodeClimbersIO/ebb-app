@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils/tailwind.util'
 import { useTheme } from '@/components/ThemeProvider'
 import { useUpdateProfileLocation , useProfile } from '../api/hooks/useProfile'
 import { useConnectedStore } from '../lib/stores/connectedStore'
+import { useNetworkStore } from '../lib/stores/networkStore'
 import { logAndToastError } from '../lib/utils/ebbError.util'
 import { ConnectIcon } from './icons/ConnectIcon'
 import { Button } from './ui/button'
@@ -34,6 +35,7 @@ export const FriendsPreview = () => {
   const [selectedFriend, setSelectedFriend] = useState<[number, number]>([0, 0])
   const { theme } = useTheme()
   const { connected, setConnected } = useConnectedStore()
+  const { isOffline } = useNetworkStore()
   const { mutateAsync: updateProfileLocation, isPending: isUpdatingProfileLocation } = useUpdateProfileLocation()
   const { profile, isLoading: isLoadingProfile } = useProfile()
 
@@ -127,19 +129,39 @@ export const FriendsPreview = () => {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.3 }}
             >
-              <h2 className="text-xl font-semibold mb-3">Connect to See Your Friends</h2>
-              <p className="text-muted-foreground mb-6">
-                Connect to with the community for a live look at all the creating going on in the world!
-              </p>
-              <Button 
-                onClick={handleConnect}
-                disabled={isUpdatingProfileLocation}
-                className="gap-2 w-full"
-                size="lg"
-              >
-                {isUpdatingProfileLocation ? 'Connecting...' : 'Connect'}
-                <ConnectIcon size={20} />
-              </Button>
+              {isOffline ? (
+                <>
+                  <h2 className="text-xl font-semibold mb-3">You're Offline</h2>
+                  <p className="text-muted-foreground mb-6">
+                    Check your internet connection to connect with friends and see what's happening around the world.
+                  </p>
+                  <Button 
+                    disabled
+                    className="gap-2 w-full"
+                    size="lg"
+                    variant="secondary"
+                  >
+                    Offline
+                    <div className="h-2 w-2 rounded-full bg-red-500" />
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <h2 className="text-xl font-semibold mb-3">Connect to See Your Friends</h2>
+                  <p className="text-muted-foreground mb-6">
+                    Connect to with the community for a live look at all the creating going on in the world!
+                  </p>
+                  <Button 
+                    onClick={handleConnect}
+                    disabled={isUpdatingProfileLocation}
+                    className="gap-2 w-full"
+                    size="lg"
+                  >
+                    {isUpdatingProfileLocation ? 'Connecting...' : 'Connect'}
+                    <ConnectIcon size={20} />
+                  </Button>
+                </>
+              )}
             </motion.div>
           </div>
         )}
