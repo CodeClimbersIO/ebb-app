@@ -9,7 +9,6 @@ import { User } from '@supabase/supabase-js'
 import supabase from '@/lib/integrations/supabase'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
 import { useAuth } from '@/hooks/useAuth'
-import { useNavigate } from 'react-router-dom'
 import { usePermissions } from '@/hooks/usePermissions'
 import { useLicenseWithDevices } from '@/api/hooks/useLicense'
 
@@ -23,7 +22,6 @@ export function UserProfileSettings({ user }: UserProfileSettingsProps) {
   const license = licenseData?.license
 
   const { logout } = useAuth()
-  const navigate = useNavigate()
 
   const handleLogout = async () => {
     const { error } = await logout()
@@ -31,7 +29,7 @@ export function UserProfileSettings({ user }: UserProfileSettingsProps) {
       logAndToastError(`Error logging out: ${error.message}`, error)
     }
 
-    navigate('/login')
+    window.location.reload()
   }
 
   const handleManageSubscription = async () => {

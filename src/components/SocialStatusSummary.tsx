@@ -102,7 +102,7 @@ export function SocialStatusSummary() {
   }
 
   const handleStatusClick = () => {
-    navigate('/friends')
+    navigate('/community')
   }
 
   if (isLoading) {
