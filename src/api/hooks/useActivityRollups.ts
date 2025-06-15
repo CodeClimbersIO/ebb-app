@@ -59,12 +59,12 @@ export function useUpdateActivity() {
 export const useUpdateRollupForUser = () => {
   const { mutate: updateActivity } = useUpdateActivity()
   const updateRollupForUser = async () => {
-    const timeBlocksToday = await MonitorApi.getTimeCreatingByDay(DateTime.now().startOf('day'), DateTime.now().endOf('day'))
+    const timeBlocksToday = await MonitorApi.getTimeCreatingByDay(DateTime.now().toUTC().startOf('day'), DateTime.now().toUTC().endOf('day'))
             
     const totalCreatingTimeToday = timeBlocksToday.reduce((acc, block) => acc + block.creating, 0)
     
     if (totalCreatingTimeToday > 0) {
-      const todayDate = DateTime.now().toFormat('yyyy-MM-dd')
+      const todayDate = DateTime.now().toUTC().toFormat('yyyy-MM-dd')
       updateActivity({
         tag_name: 'creating',
         duration_minutes: totalCreatingTimeToday,
