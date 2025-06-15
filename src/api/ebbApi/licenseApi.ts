@@ -1,6 +1,6 @@
 import { PostgrestError } from '@supabase/supabase-js'
 import { licenseRepo } from '../../db/supabase/licenseRepo'
-import { deviceApi, DeviceInfo } from './deviceApi'
+import { DeviceInfo } from '../hooks/useDevice'
 
 export type LicenseStatus = 'active' | 'expired'
 export type LicenseType = 'perpetual' | 'subscription'
@@ -103,7 +103,12 @@ const getLicenseInfo = async (userId: string): Promise<{data: LicenseInfo, error
   const {data, error} = await licenseRepo.getLicense(userId)
   const license = transformLicense(data)
   const permissions = calculatePermissions(license) || defaultPermissions
-  const deviceInfo = await deviceApi.registerDevice(userId, permissions.maxDevices)
+  const deviceInfo: DeviceInfo = {
+    devices: [],
+    maxDevices: permissions.maxDevices,
+    isDeviceLimitReached: false,
+  }
+  
   return {data: {license, permissions, deviceInfo }, error}
 }
 

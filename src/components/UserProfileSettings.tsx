@@ -11,8 +11,7 @@ import { logAndToastError } from '@/lib/utils/ebbError.util'
 import { useAuth } from '@/hooks/useAuth'
 import { useNavigate } from 'react-router-dom'
 import { usePermissions } from '@/hooks/usePermissions'
-import { useLicenseStore } from '@/lib/stores/licenseStore'
-
+import { useLicenseWithDevices } from '@/api/hooks/useLicense'
 
 interface UserProfileSettingsProps {
   user: User | null
@@ -20,7 +19,8 @@ interface UserProfileSettingsProps {
 
 export function UserProfileSettings({ user }: UserProfileSettingsProps) {
   const { hasProAccess } = usePermissions()
-  const { isLoading, license } = useLicenseStore()
+  const { data: licenseData, isLoading } = useLicenseWithDevices(user?.id || null)
+  const license = licenseData?.license
 
   const { logout } = useAuth()
   const navigate = useNavigate()

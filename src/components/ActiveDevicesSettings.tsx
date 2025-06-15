@@ -6,8 +6,7 @@ import { User } from '@supabase/supabase-js'
 import { Laptop2 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { Skeleton } from '@/components/ui/skeleton'
-import { error } from '@tauri-apps/plugin-log'
-import { deviceApi } from '../api/ebbApi/deviceApi'
+import { useGetCurrentDeviceId, useGetUserDevices, useLogoutDevice } from '../api/hooks/useDevice'
 
 interface Device {
   id: string
@@ -30,23 +29,13 @@ const cleanupHostname = (name: string): string => {
 export function ActiveDevicesSettings({ user, maxDevices }: ActiveDevicesSettingsProps) {
   const [devices, setDevices] = useState<Device[]>([])
   const [isLoadingDevices, setIsLoadingDevices] = useState(true)
-  const [currentDeviceId, setCurrentDeviceId] = useState<string | null>(null)
 
-  useEffect(() => {
-    const getCurrentDeviceId = async () => {
-      try {
-        const deviceId = await deviceApi.getCurrentDeviceId()
-        setCurrentDeviceId(deviceId)
-      } catch (err) {
-        error(`Error getting MAC address: ${err}`)
-        setCurrentDeviceId(null)
-      }
-    }
-    getCurrentDeviceId()
-  }, [])
+  const { data: currentDeviceId } = useGetCurrentDeviceId()
+  const { data: userDevicesData, isLoading: devicesLoading, refetch: refetchDevices } = useGetUserDevices(user?.id || '')
+  const { mutate: logoutDeviceMutation } = useLogoutDevice()
 
   const fetchDevices = async () => {
-    if (!user) {
+    if (!user || !userDevicesData || userDevicesData.length === 0) {
       setIsLoadingDevices(false)
       setDevices([])
       return
@@ -61,18 +50,11 @@ export function ActiveDevicesSettings({ user, maxDevices }: ActiveDevicesSetting
         const rawHostname = await hostname()
         currentDeviceName = rawHostname ? cleanupHostname(rawHostname) : 'This Device'
       } catch (hostnameErr) {
-        error(`Error getting hostname: ${hostnameErr}`)
+        console.error(`Error getting hostname: ${hostnameErr}`)
         currentDeviceName = 'This Device'
       }
       
-      const { data: devicesData, error: fetchError } = await deviceApi.getUserDevices(user.id)
-
-      if (fetchError) {
-        error(`Supabase error fetching devices: ${fetchError}`)
-        throw fetchError
-      }
-
-      const allDevices = devicesData.map(d => ({
+      const allDevices = userDevicesData.map((d) => ({
         id: d.device_id,
         name: d.device_name,
         created_at: d.created_at,
@@ -87,7 +69,7 @@ export function ActiveDevicesSettings({ user, maxDevices }: ActiveDevicesSetting
 
       setDevices(sortedDevices)
     } catch (err) {
-      error(`Error in fetchDevices: ${err}`)
+      console.error(`Error in fetchDevices: ${err}`)
       if (currentDeviceId) {
         setDevices([{
           id: currentDeviceId,
@@ -105,26 +87,31 @@ export function ActiveDevicesSettings({ user, maxDevices }: ActiveDevicesSetting
 
   useEffect(() => {
     fetchDevices()
-  }, [user?.id, currentDeviceId])
+  }, [user?.id, currentDeviceId, userDevicesData])
 
   const handleDeviceLogout = async (logoutDeviceId: string) => {
     try {
       if (logoutDeviceId === currentDeviceId) return
       if (!user) throw new Error('No user found')
 
-      const { error: deleteError } = await deviceApi.logoutDevice(user.id, logoutDeviceId)
-
-      if (deleteError) {
-        error(`[Settings] Failed to delete device: ${deleteError}`)
-        throw deleteError
-      }
-
-      window.location.reload()
+      logoutDeviceMutation({
+        userId: user.id,
+        deviceId: logoutDeviceId
+      }, {
+        onSuccess: () => {
+          refetchDevices()
+        },
+        onError: (err) => {
+          console.error(`[Settings] Failed to delete device: ${err}`)
+        }
+      })
 
     } catch (err) {
-      error(`[Settings] Error logging out device: ${err}`)
+      console.error(`[Settings] Error logging out device: ${err}`)
     }
   }
+
+  const isLoading = devicesLoading || isLoadingDevices
 
   return (
     <div>
@@ -134,7 +121,7 @@ export function ActiveDevicesSettings({ user, maxDevices }: ActiveDevicesSetting
           {devices.length} of {maxDevices} device{maxDevices !== 1 ? 's' : ''}
         </div>
       </div>
-      {isLoadingDevices ? (
+      {isLoading ? (
         <Skeleton className="h-14 w-full rounded-lg" />
       ) : (
         <div className="space-y-3">

@@ -2,14 +2,14 @@ import { useEffect } from 'react'
 import supabase from '@/lib/integrations/supabase'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
 import { userApi } from '@/api/ebbApi/userApi'
-import { deviceApi } from '@/api/ebbApi/deviceApi'
+import { useGetCurrentDeviceId } from '@/api/hooks/useDevice'
 import { useAuthStore } from '@/lib/stores/authStore'
 
 export const useAuth = () => {
   const { user, setUser, session, setSession, loading, setLoading } = useAuthStore()
+  const { data: deviceId } = useGetCurrentDeviceId()
 
   const logout = async () => {
-    const deviceId = await deviceApi.getCurrentDeviceId()
     if (!deviceId || !user) {
       return { error: new Error('Device ID or user is not set') }
     }

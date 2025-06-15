@@ -3,7 +3,7 @@ import { subscribeWithSelector } from 'zustand/middleware'
 import { RealtimeChannel } from '@supabase/supabase-js'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
 import { defaultPermissions, License, licenseApi, LicensePermissions } from '@/api/ebbApi/licenseApi'
-import { DeviceInfo, defaultDeviceInfo } from '@/api/ebbApi/deviceApi'
+import { DeviceInfo, defaultDeviceInfo } from '@/api/hooks/useDevice'
 
 interface LicenseStoreState {
   license: License | null
