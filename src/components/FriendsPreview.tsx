@@ -129,7 +129,7 @@ export const FriendsPreview = () => {
             >
               <h2 className="text-xl font-semibold mb-3">Connect to See Your Friends</h2>
               <p className="text-muted-foreground mb-6">
-                Connect to the community to see where your friends are and their current focus status.
+                Connect to with the community for a live look at all the creating going on in the world!
               </p>
               <Button 
                 onClick={handleConnect}

@@ -1,4 +1,5 @@
 import supabase from '@/lib/integrations/supabase'
+import { useNetworkStore } from '../lib/stores/networkStore'
 
 const BASE_URL = 'https://api.ebb.cool'
 // const BASE_URL = 'http://localhost:8001'
@@ -114,7 +115,13 @@ const requestFn = () => {
       })
       .catch((err) => {
         console.error(err)
-        throw err
+        // Check if it's a network error indicating we're offline
+        const errorString = String(err)
+        if(errorString.includes('Load failed') || err?.message?.includes('Load failed')){
+          useNetworkStore.getState().setOffline(true)
+        }else {
+          throw err
+        }
       })
   }
 }
