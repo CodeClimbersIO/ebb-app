@@ -1,6 +1,5 @@
 import { Layout } from '@/components/Layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { RangeModeSelector, RangeMode } from '@/components/RangeModeSelector'
 import { useState, useMemo, useEffect } from 'react'
 import { formatTime } from '@/components/UsageSummary'
 import { Trophy, TrendingUp, Users, Clock } from 'lucide-react'
@@ -23,7 +22,7 @@ interface CreatingStats {
 }
 
 // Generate mock stats based on range mode
-const generateMockStats = (rangeMode: RangeMode, friends: Array<{ id: string; name: string; avatar?: string; creatingTime: number }>): CreatingStats => {
+const generateMockStats = (rangeMode: 'day' | 'week' | 'month', friends: Array<{ id: string; name: string; avatar?: string; creatingTime: number }>): CreatingStats => {
   const multiplier = rangeMode === 'day' ? 1 : rangeMode === 'week' ? 7 : 30
   
   return {
@@ -58,9 +57,12 @@ const StatCard = ({ title, icon, children, className }: StatCardProps) => (
     </CardContent>
   </Card>
 )
+      
+const utcMidnight = DateTime.now().toUTC().endOf('day')
+const localEndDateTime = utcMidnight.toLocal()
 
 export const FriendsAnalyticsPage = () => {
-  const [rangeMode, setRangeMode] = useState<RangeMode>('day')
+  // const [rangeMode, setRangeMode] = useState<RangeMode>('day')
   const [timeUntilUTCMidnight, setTimeUntilUTCMidnight] = useState('')
   
   const { 
@@ -69,7 +71,7 @@ export const FriendsAnalyticsPage = () => {
     isLoading,
   } = useFriendsWithInsights()
 
-  // Countdown timer to UTC midnight
+  // Countdown timer to UTC midnight and calculate local end time
   useEffect(() => {
     const updateCountdown = () => {
       const now = DateTime.now()
@@ -103,15 +105,16 @@ export const FriendsAnalyticsPage = () => {
     }
     // Fallback to mock data
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return generateMockStats(rangeMode, friends as any)
-  }, [dashboardInsights, friends, rangeMode])
+    return generateMockStats('day', friends as any)
+  }, [dashboardInsights, friends])
 
   const getRangeModeText = () => {
-    switch (rangeMode) {
-    case 'day': return 'today'
-    case 'week': return 'this week'  
-    case 'month': return 'this month'
-    }
+    return 'today'
+    // switch (rangeMode) {
+    // case 'day': return 'today'
+    // case 'week': return 'this week'  
+    // case 'month': return 'this month'
+    // }
   }
 
   const topFriend = dashboardInsights?.topFriend.hasFriends 
@@ -189,12 +192,12 @@ export const FriendsAnalyticsPage = () => {
                   <Clock className="h-4 w-4" />
                   <span>Day ends in {timeUntilUTCMidnight}</span>
                   <div className="absolute bottom-6 left-0 hidden group-hover:block z-10 w-64 p-2 bg-black text-white text-xs rounded shadow-lg">
-                    {'Everyone\'s day ends at 12am Greenwich Time'}
+                    To align everyone's timezones, the competition ends daily at {localEndDateTime.toFormat('h:mm a ZZZZ')}
                   </div>
                 </div>
               </div>
             </div>
-            <RangeModeSelector value={rangeMode} onChange={setRangeMode} />
+            {/* <RangeModeSelector value={rangeMode} onChange={setRangeMode} /> */}
           </div>
 
           {/* Personal Stats */}
@@ -263,7 +266,7 @@ export const FriendsAnalyticsPage = () => {
             <FriendsComparisonCard 
               friends={stats.friends}
               myTime={stats.myTotal}
-              rangeMode={rangeMode}
+              rangeMode={'day'}
               getRangeModeText={getRangeModeText}
             />
 
