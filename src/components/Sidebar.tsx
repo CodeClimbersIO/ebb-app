@@ -70,7 +70,7 @@ export function Sidebar() {
                 </Link>
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="right" sideOffset={10}>Friends</TooltipContent>
+            <TooltipContent side="right" sideOffset={10}>Community</TooltipContent>
           </Tooltip>
         </nav>
 
