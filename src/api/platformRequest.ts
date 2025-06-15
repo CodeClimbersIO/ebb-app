@@ -70,6 +70,7 @@ const requestFn = () => {
       ...(body && { body: JSON.stringify(body || {}) }),
     })
       .then(async (response) => {
+        useNetworkStore.getState().setOffline(false)
         if (!response.ok) {
           let responseObject
           const responseClone = response.clone()
