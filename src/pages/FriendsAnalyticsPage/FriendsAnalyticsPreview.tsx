@@ -3,7 +3,6 @@ import { useState, useMemo, useEffect } from 'react'
 import { formatTime } from '@/components/UsageSummary'
 import { Trophy, TrendingUp, Users, Clock } from 'lucide-react'
 import { cn } from '@/lib/utils/tailwind.util'
-import { FriendsComparisonCard } from '@/components/FriendsComparisonCard'
 import { useConnectedStore } from '@/lib/stores/connectedStore'
 import { useNetworkStore } from '@/lib/stores/networkStore'
 import { useUpdateProfileLocation, useProfile } from '@/api/hooks/useProfile'
@@ -76,7 +75,7 @@ const localEndDateTime = utcMidnight.toLocal()
 export const FriendsAnalyticsPreview = () => {
   const [timeUntilUTCMidnight, setTimeUntilUTCMidnight] = useState('')
   
-  const { connected, setConnected } = useConnectedStore()
+  const { setConnected } = useConnectedStore()
   const { isOffline } = useNetworkStore()
   const { mutateAsync: updateProfileLocation, isPending: isUpdatingProfileLocation } = useUpdateProfileLocation()
   const { profile, isLoading: isLoadingProfile } = useProfile()
@@ -157,14 +156,10 @@ export const FriendsAnalyticsPreview = () => {
 
   const { curvePoints, userPosition } = generateBellCurve(300, 80, myPercentile)
 
-  if (connected) {
-    return <></>
-  }
-
   return (
     <>
       {/* Header */}
-      <div className="mb-8 flex items-center justify-between">
+      <div className="blur-sm mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold mb-2">Friends</h1>
           <p className="text-muted-foreground">
@@ -245,15 +240,6 @@ export const FriendsAnalyticsPreview = () => {
 
         {/* Detailed Comparisons */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* Friends Comparison */}
-          <FriendsComparisonCard 
-            friends={mockFriends}
-            myTime={stats.myTotal}
-            rangeMode={'day'}
-            getRangeModeText={getRangeModeText}
-          />
-
-          {/* Community Stats */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">

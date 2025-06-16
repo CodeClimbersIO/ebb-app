@@ -5,7 +5,7 @@ type OnboardingStep = 'accessibility' | 'shortcut-tutorial' | 'login'
 export const OnboardingUtils = {
   getOnboardingStep: (): OnboardingStep => {
     const step = localStorage.getItem(ONBOARDING_STEP_KEY)
-    return step as OnboardingStep | 'login'
+    return step as OnboardingStep || 'login'
   },
 
   setOnboardingStep: (step: OnboardingStep): void => {

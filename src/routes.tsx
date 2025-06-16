@@ -19,9 +19,9 @@ import { logAndToastError } from '@/lib/utils/ebbError.util'
 import FeedbackPage from './pages/FeedbackPage'
 import { toastStore } from './lib/stores/toastStore'
 import { useStore } from 'zustand'
-import { canaryUsers } from './lib/utils/environment.util'
 import { StartFlowPage } from './pages/StartFlowPage'
-import { FriendsAnalyticsPage } from './pages/FriendsAnalyticsPage'
+import { FriendsAnalyticsPage } from './pages/FriendsAnalyticsPage/FriendsAnalyticsPage'
+import { canSeeNewFriendsPage } from './lib/utils/environment.util'
 import { useLicenseWithDevices } from './api/hooks/useLicense'
 import { useOnboarding } from './hooks/useOnboarding'
 
@@ -65,15 +65,14 @@ const Router = () => {
     }
   }, [navigate])
 
-  const canSeeNewFriendsPage = canaryUsers.includes(user?.email || '')
-
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/onboarding/login" element={<LoginPage />} />
 
       {/* Protected routes group */}
       <Route path="/" element={<HomePage />} />
-      <Route path="/community" element={canSeeNewFriendsPage ? <CommunityPage /> : <OldFriendsPage />} />
+      <Route path="/community" element={canSeeNewFriendsPage(user?.email) ? <CommunityPage /> : <OldFriendsPage />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/friends-analytics" element={<FriendsAnalyticsPage />} />
       <Route path="/start-flow" element={<StartFlowPage />} />

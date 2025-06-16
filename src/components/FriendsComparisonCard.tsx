@@ -7,26 +7,20 @@ import { Users, UserPlus, Mail, Send, Check, X } from 'lucide-react'
 import { formatTime } from '@/components/UsageSummary'
 import { RangeMode } from '@/components/RangeModeSelector'
 import { useState, useEffect } from 'react'
-import { useFriends, FriendRequest, useFriendsWithInsights } from '@/api/hooks/useFriends'
+import { useFriends, FriendRequest, useFriendsWithInsights, FriendWithDetails } from '@/api/hooks/useFriends'
 
-interface Friend {
-  id: string
-  name: string
-  avatar?: string
-  creatingTime: number
-}
 
 interface FriendComparisonProps {
-  friends: Friend[]
+  friends: FriendWithDetails[]
   myTime: number
   rangeMode: RangeMode
 }
 
 const FriendComparison = ({ friends, myTime }: FriendComparisonProps) => {
   // Sort friends by creating time (descending)
-  const sortedFriends = [...friends].sort((a, b) => b.creatingTime - a.creatingTime)
-  const maxTime = Math.max(myTime, ...friends.map(f => f.creatingTime))
-  const totalFriendsTime = friends.reduce((sum, friend) => sum + friend.creatingTime, 0)
+  const sortedFriends = [...friends].sort((a, b) => b.creating_time - a.creating_time)
+  const maxTime = Math.max(myTime, ...friends.map(f => f.creating_time))
+  const totalFriendsTime = friends.reduce((sum, friend) => sum + friend.creating_time, 0) + myTime
   
   return (
     <div className="space-y-4">
@@ -54,25 +48,25 @@ const FriendComparison = ({ friends, myTime }: FriendComparisonProps) => {
         <div key={friend.id} className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors">
           <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
             <span className="text-xs font-bold text-muted-foreground">
-              {friend.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+              {friend.friend_email.split(' ').map(n => n[0]).join('').toUpperCase()}
             </span>
           </div>
           <div className="flex-1">
             <div className="flex items-center justify-between mb-1">
-              <span className="font-medium">{friend.name}</span>
+              <span className="font-medium">{friend.friend_email}</span>
               <div className="flex items-center gap-2">
-                {friend.creatingTime > myTime && (
+                {friend.creating_time > myTime && (
                   <Badge variant="secondary" className="text-xs">
-                    +{formatTime(friend.creatingTime - myTime)}
+                    +{formatTime(friend.creating_time - myTime)}
                   </Badge>
                 )}
                 <span className="text-sm text-muted-foreground">
-                  {formatTime(friend.creatingTime)}
+                  {formatTime(friend.creating_time)}
                 </span>
               </div>
             </div>
             <Progress
-              value={(friend.creatingTime / maxTime) * 100}
+              value={(friend.creating_time / maxTime) * 100}
               className="h-2"
             />
           </div>
@@ -279,21 +273,19 @@ const EmptyFriendsState = () => {
 }
 
 interface FriendsComparisonCardProps {
-  friends: Friend[]
-  myTime: number
   rangeMode: RangeMode
   getRangeModeText: () => string
 }
 
 export const FriendsComparisonCard = ({ 
-  friends, 
-  myTime, 
   rangeMode, 
   getRangeModeText 
 }: FriendsComparisonCardProps) => {
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [email, setEmail] = useState('')
-  const { hasFriends, hasPendingInvitesReceived, pendingInvitesReceivedCount, isInviting, handleInviteFriend } = useFriendsWithInsights()
+  
+  const { friends = [], dashboardInsights, hasFriends, hasPendingInvitesReceived, pendingInvitesReceivedCount, isInviting, handleInviteFriend } = useFriendsWithInsights()
+  const myTime = dashboardInsights?.userActivity.totalMinutes || 0
 
   // Check if there are any pending invites
   
