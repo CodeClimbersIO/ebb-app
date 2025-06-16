@@ -31,7 +31,7 @@ const friends = [
   }, // Tokyo
 ]
 
-export const FriendsPreview = () => {
+export const CommunityPreview = () => {
   const [selectedFriend, setSelectedFriend] = useState<[number, number]>([0, 0])
   const { theme } = useTheme()
   const { connected, setConnected } = useConnectedStore()

@@ -6,36 +6,9 @@ import { Trophy, TrendingUp, Users, Clock } from 'lucide-react'
 import { cn } from '@/lib/utils/tailwind.util'
 import { FriendsComparisonCard } from '@/components/FriendsComparisonCard'
 import { useFriendsWithInsights } from '@/api/hooks/useFriends'
+import { useConnectedStore } from '@/lib/stores/connectedStore'
+import { FriendsAnalyticsPreview } from '@/components/FriendsAnalyticsPreview'
 import { DateTime } from 'luxon'
-
-interface CreatingStats {
-  myAverage: number
-  friends: Array<{
-    id: string
-    name: string
-    avatar?: string
-    creatingTime: number
-  }>
-  communityAverage: number
-  communityTotal: number
-  myTotal: number
-}
-
-// Generate mock stats based on range mode
-const generateMockStats = (rangeMode: 'day' | 'week' | 'month', friends: Array<{ id: string; name: string; avatar?: string; creatingTime: number }>): CreatingStats => {
-  const multiplier = rangeMode === 'day' ? 1 : rangeMode === 'week' ? 7 : 30
-  
-  return {
-    myAverage: 165 * multiplier, // ~2.75h per day
-    myTotal: 165 * multiplier,
-    friends: friends.map(friend => ({
-      ...friend,
-      creatingTime: friend.creatingTime * multiplier
-    })),
-    communityAverage: 135 * multiplier, // ~2.25h per day
-    communityTotal: 135 * multiplier * 100, // Mock total for 10k users
-  }
-}
 
 interface StatCardProps {
   title: string
@@ -62,8 +35,9 @@ const utcMidnight = DateTime.now().toUTC().endOf('day')
 const localEndDateTime = utcMidnight.toLocal()
 
 export const FriendsAnalyticsPage = () => {
-  // const [rangeMode, setRangeMode] = useState<RangeMode>('day')
   const [timeUntilUTCMidnight, setTimeUntilUTCMidnight] = useState('')
+  
+  const { connected } = useConnectedStore()
   
   const { 
     friends = [], 
@@ -87,7 +61,7 @@ export const FriendsAnalyticsPage = () => {
     return () => clearInterval(interval)
   }, [])
 
-  // Use real data when available, fallback to mock data
+  // Use real data when connected
   const stats = useMemo(() => {
     if (dashboardInsights) {
       return {
@@ -103,18 +77,11 @@ export const FriendsAnalyticsPage = () => {
         communityTotal: dashboardInsights.communityStats.totalCommunityMinutes,
       }
     }
-    // Fallback to mock data
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return generateMockStats('day', friends as any)
+    return null
   }, [dashboardInsights, friends])
 
   const getRangeModeText = () => {
     return 'today'
-    // switch (rangeMode) {
-    // case 'day': return 'today'
-    // case 'week': return 'this week'  
-    // case 'month': return 'this month'
-    // }
   }
 
   const topFriend = dashboardInsights?.topFriend.hasFriends 
@@ -136,7 +103,7 @@ export const FriendsAnalyticsPage = () => {
 
   // Use real percentile data when available
   const myPercentile = dashboardInsights?.userPercentile.percentile || 
-    calculatePercentile(stats.myAverage, stats.communityAverage)
+    (stats ? calculatePercentile(stats.myAverage, stats.communityAverage) : 50)
 
   // Generate points for a bell curve
   const generateBellCurve = (width: number, height: number, userPercentile: number) => {
@@ -161,7 +128,7 @@ export const FriendsAnalyticsPage = () => {
 
   const { curvePoints, userPosition } = generateBellCurve(300, 80, myPercentile)
 
-  if (isLoading) {
+  if (isLoading && connected) {
     return (
       <Layout>
         <div className="p-8">
@@ -177,192 +144,196 @@ export const FriendsAnalyticsPage = () => {
 
   return (
     <Layout>
-      <div className="p-8">
+      <div className="p-8 relative">
         <div className="max-w-5xl mx-auto">
-          {/* Header */}
-          <div className="mb-8 flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold mb-2">Friends</h1>
-              <p className="text-muted-foreground">
-                See how your creating time compares to your friends and the community
-              </p>
-              {/* UTC Day Countdown */}
-              <div className="relative group">
-                <div className="flex items-center gap-2 mt-3 text-sm text-muted-foreground">
-                  <Clock className="h-4 w-4" />
-                  <span>Day ends in {timeUntilUTCMidnight}</span>
-                  <div className="absolute bottom-6 left-0 hidden group-hover:block z-10 w-64 p-2 bg-black text-white text-xs rounded shadow-lg">
-                    To align everyone's timezones, the competition ends daily at {localEndDateTime.toFormat('h:mm a ZZZZ')}
-                  </div>
-                </div>
-              </div>
-            </div>
-            {/* <RangeModeSelector value={rangeMode} onChange={setRangeMode} /> */}
-          </div>
-
-          {/* Personal Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <StatCard
-              title="My Creating Time"
-              icon={<Clock className="h-4 w-4" />}
-              className="md:col-span-1"
-            >
-              <div className="text-2xl font-bold text-primary">
-                {dashboardInsights?.userActivity.minutesFormatted || formatTime(stats.myAverage)}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Your time creating {getRangeModeText()}
-              </p>
-            </StatCard>
-
-            <StatCard
-              title="Top Friend"
-              icon={<Trophy className="h-4 w-4" />}
-            >
-              <div className="text-2xl font-bold">
-                {topFriend?.email ? 
-                  `${topFriend.email.slice(0, 12)}...` : 
-                  'No Friends'
-                }
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {topFriend 
-                  ? `${dashboardInsights?.topFriend.topFriendFormatted || formatTime(topFriend.creatingTime)} ${getRangeModeText()}` 
-                  : 'Invite friends to compare'
-                }
-              </p>
-            </StatCard>
-
-            <StatCard
-              title="My Percentile"
-              icon={<TrendingUp className="h-4 w-4" />}
-            >
-              <div className="text-2xl font-bold text-primary">
-                {myPercentile}%
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                You create more than {myPercentile}% of users
-              </p>
-            </StatCard>
-
-            <StatCard
-              title="vs Community Avg"
-              icon={<Users className="h-4 w-4" />}
-            >
-              <div className="text-2xl font-bold">
-                {dashboardInsights?.communityComparison.differenceFormatted || 
-                  formatTime(Math.abs(stats.myAverage - stats.communityAverage))}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {dashboardInsights?.communityComparison.isAboveAverage ?? (stats.myAverage > stats.communityAverage) 
-                  ? 'above' : 'below'} community average
-              </p>
-            </StatCard>
-          </div>
-
-          {/* Detailed Comparisons */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            {/* Friends Comparison */}
-            <FriendsComparisonCard 
-              friends={stats.friends}
-              myTime={stats.myTotal}
-              rangeMode={'day'}
-              getRangeModeText={getRangeModeText}
-            />
-
-            {/* Community Stats */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  Community Insights
-                </CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Your position in the broader community
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-6">
+          {!connected && <FriendsAnalyticsPreview />}
+          {connected && stats && (
+            <>
+              {/* Header */}
+              <div className="mb-8 flex items-center justify-between">
                 <div>
-                  {/* Bell curve distribution */}
-                  <div className="mt-4">
-                    <div className="flex justify-center mb-2">
-                      <svg width="300" height="100" className="overflow-visible">
-                        {/* Bell curve */}
-                        <polyline
-                          points={curvePoints}
-                          fill="none"
-                          stroke="hsl(var(--muted-foreground))"
-                          strokeWidth="2"
-                          opacity="0.6"
-                        />
-                        {/* Fill under curve */}
-                        <polygon
-                          points={`0,80 ${curvePoints} 300,80`}
-                          fill="hsl(var(--muted-foreground))"
-                          opacity="0.1"
-                        />
-                        {/* User position marker */}
-                        <circle
-                          cx={userPosition.x}
-                          cy={userPosition.y}
-                          r="4"
-                          fill="hsl(var(--primary))"
-                          stroke="white"
-                          strokeWidth="2"
-                        />
-                        {/* User position line */}
-                        <line
-                          x1={userPosition.x}
-                          y1={userPosition.y}
-                          x2={userPosition.x}
-                          y2="80"
-                          stroke="hsl(var(--primary))"
-                          strokeWidth="2"
-                          strokeDasharray="3,3"
-                        />
-                        {/* Labels */}
-                        <text x="0" y="95" fontSize="10" fill="hsl(var(--muted-foreground))" textAnchor="start">
-                          Low
-                        </text>
-                        <text x="150" y="95" fontSize="10" fill="hsl(var(--muted-foreground))" textAnchor="middle">
-                          Average
-                        </text>
-                        <text x="300" y="95" fontSize="10" fill="hsl(var(--muted-foreground))" textAnchor="end">
-                          High
-                        </text>
-                      </svg>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-sm text-muted-foreground">
-                        You created more than <span className="font-bold text-primary">{myPercentile}%</span> of people {getRangeModeText()}
-                      </p>
+                  <h1 className="text-2xl font-semibold mb-2">Friends</h1>
+                  <p className="text-muted-foreground">
+                    See how your creating time compares to your friends and the community
+                  </p>
+                  {/* UTC Day Countdown */}
+                  <div className="relative group">
+                    <div className="flex items-center gap-2 mt-3 text-sm text-muted-foreground">
+                      <Clock className="h-4 w-4" />
+                      <span>Day ends in {timeUntilUTCMidnight}</span>
+                      <div className="absolute bottom-6 left-0 hidden group-hover:block z-10 w-64 p-2 bg-black text-white text-xs rounded shadow-lg">
+                        To align everyone's timezones, the competition ends daily at {localEndDateTime.toFormat('h:mm a ZZZZ')}
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between mb-2 mt-4">
-                    <span className="text-sm font-medium">Your Creating Time</span>
-                    <span className="text-sm font-bold text-primary">
-                      {dashboardInsights?.communityComparison.userFormatted || formatTime(stats.myAverage)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-medium">Community Average</span>
-                    <span className="text-sm text-muted-foreground">
-                      {dashboardInsights?.communityComparison.communityAverageFormatted || formatTime(stats.communityAverage)}
-                    </span>
-                  </div>
                 </div>
-                {/* Community total creating time */}
-                <div className="p-3 bg-muted/50 rounded-lg border">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-muted-foreground">Total Community Creating Time</span>
-                    <span className="text-sm font-bold">
-                      {dashboardInsights?.communityStats.totalCommunityFormatted || formatTime(stats.communityTotal)}
-                    </span>
+              </div>
+
+              {/* Personal Stats */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <StatCard
+                  title="My Creating Time"
+                  icon={<Clock className="h-4 w-4" />}
+                  className="md:col-span-1"
+                >
+                  <div className="text-2xl font-bold text-primary">
+                    {dashboardInsights?.userActivity.minutesFormatted || formatTime(stats.myAverage)}
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Your time creating {getRangeModeText()}
+                  </p>
+                </StatCard>
+
+                <StatCard
+                  title="Top Friend"
+                  icon={<Trophy className="h-4 w-4" />}
+                >
+                  <div className="text-2xl font-bold">
+                    {topFriend?.email ? 
+                      `${topFriend.email.slice(0, 12)}...` : 
+                      'No Friends'
+                    }
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {topFriend 
+                      ? `${dashboardInsights?.topFriend.topFriendFormatted || formatTime(topFriend.creatingTime)} ${getRangeModeText()}` 
+                      : 'Invite friends to compare'
+                    }
+                  </p>
+                </StatCard>
+
+                <StatCard
+                  title="My Percentile"
+                  icon={<TrendingUp className="h-4 w-4" />}
+                >
+                  <div className="text-2xl font-bold text-primary">
+                    {myPercentile}%
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    You create more than {myPercentile}% of users
+                  </p>
+                </StatCard>
+
+                <StatCard
+                  title="vs Community Avg"
+                  icon={<Users className="h-4 w-4" />}
+                >
+                  <div className="text-2xl font-bold">
+                    {dashboardInsights?.communityComparison.differenceFormatted || 
+                      formatTime(Math.abs(stats.myAverage - stats.communityAverage))}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {dashboardInsights?.communityComparison.isAboveAverage ?? (stats.myAverage > stats.communityAverage) 
+                      ? 'above' : 'below'} community average
+                  </p>
+                </StatCard>
+              </div>
+
+              {/* Detailed Comparisons */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                {/* Friends Comparison */}
+                <FriendsComparisonCard 
+                  friends={stats.friends}
+                  myTime={stats.myTotal}
+                  rangeMode={'day'}
+                  getRangeModeText={getRangeModeText}
+                />
+
+                {/* Community Stats */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <TrendingUp className="h-5 w-5" />
+                      Community Insights
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Your position in the broader community
+                    </p>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div>
+                      {/* Bell curve distribution */}
+                      <div className="mt-4">
+                        <div className="flex justify-center mb-2">
+                          <svg width="300" height="100" className="overflow-visible">
+                            {/* Bell curve */}
+                            <polyline
+                              points={curvePoints}
+                              fill="none"
+                              stroke="hsl(var(--muted-foreground))"
+                              strokeWidth="2"
+                              opacity="0.6"
+                            />
+                            {/* Fill under curve */}
+                            <polygon
+                              points={`0,80 ${curvePoints} 300,80`}
+                              fill="hsl(var(--muted-foreground))"
+                              opacity="0.1"
+                            />
+                            {/* User position marker */}
+                            <circle
+                              cx={userPosition.x}
+                              cy={userPosition.y}
+                              r="4"
+                              fill="hsl(var(--primary))"
+                              stroke="white"
+                              strokeWidth="2"
+                            />
+                            {/* User position line */}
+                            <line
+                              x1={userPosition.x}
+                              y1={userPosition.y}
+                              x2={userPosition.x}
+                              y2="80"
+                              stroke="hsl(var(--primary))"
+                              strokeWidth="2"
+                              strokeDasharray="3,3"
+                            />
+                            {/* Labels */}
+                            <text x="0" y="95" fontSize="10" fill="hsl(var(--muted-foreground))" textAnchor="start">
+                              Low
+                            </text>
+                            <text x="150" y="95" fontSize="10" fill="hsl(var(--muted-foreground))" textAnchor="middle">
+                              Average
+                            </text>
+                            <text x="300" y="95" fontSize="10" fill="hsl(var(--muted-foreground))" textAnchor="end">
+                              High
+                            </text>
+                          </svg>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-sm text-muted-foreground">
+                            You created more than <span className="font-bold text-primary">{myPercentile}%</span> of people {getRangeModeText()}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between mb-2 mt-4">
+                        <span className="text-sm font-medium">Your Creating Time</span>
+                        <span className="text-sm font-bold text-primary">
+                          {dashboardInsights?.communityComparison.userFormatted || formatTime(stats.myAverage)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-sm font-medium">Community Average</span>
+                        <span className="text-sm text-muted-foreground">
+                          {dashboardInsights?.communityComparison.communityAverageFormatted || formatTime(stats.communityAverage)}
+                        </span>
+                      </div>
+                    </div>
+                    {/* Community total creating time */}
+                    <div className="p-3 bg-muted/50 rounded-lg border">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-muted-foreground">Total Community Creating Time</span>
+                        <span className="text-sm font-bold">
+                          {dashboardInsights?.communityStats.totalCommunityFormatted || formatTime(stats.communityTotal)}
+                        </span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </Layout>

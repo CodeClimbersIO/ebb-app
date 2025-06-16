@@ -1,5 +1,5 @@
 import { Layout } from '@/components/Layout'
-import { FriendsPreview } from '@/components/FriendsPreview'
+import { CommunityPreview } from '@/components/CommunityPreview'
 import { useConnectedStore } from '../lib/stores/connectedStore'
 import { Globe } from '@/components/ui/globe'
 import { useTheme } from '@/components/ThemeProvider'
@@ -86,7 +86,7 @@ export const CommunityPage = () => {
     <Layout>
       <div className="p-8 relative">
         <div className="max-w-5xl mx-auto">
-          {!connected && <FriendsPreview />}
+          {!connected && <CommunityPreview />}
           {connected && (
             <div className="grid grid-cols-1 md:grid-cols-[1fr_250px] items-center">
               <div className="relative w-full aspect-square max-w-[500px] justify-self-center">
