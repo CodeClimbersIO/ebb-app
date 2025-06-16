@@ -6,7 +6,7 @@ export const isDev = () => {
   return import.meta.env.DEV
 }
 
-export const canaryUsers = ['rphovley@gmail.com', 'paul@ebb.cool', 'djl.hovley@gmail.com']
+export const canaryUsers = ['rphovley@gmail.com', 'paul@ebb.cool', 'djl.hovley@gmail.com', 'tanner@scaddenfamily.com', 'nathancovey23@gmail.com', 'chriszeuch.cz@gmail.com']
 
 export const isCanaryUser = (email?: string) => {
   return canaryUsers.includes(email || '')
