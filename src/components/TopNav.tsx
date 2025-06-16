@@ -9,7 +9,7 @@ import { CircleHelpIcon } from './icons/CircleHelpIcon'
 import { Tooltip, TooltipContent , TooltipTrigger } from './ui/tooltip'
 import { SocialStatusSummary } from './SocialStatusSummary'
 import { useAuthStore } from '../lib/stores/authStore'
-import { canaryUsers } from '../lib/utils/environment.util'
+import { hasAccessToSocial } from '../lib/utils/environment.util'
 
 interface TopNavProps {
   variant?: 'default' | 'modal'
@@ -28,8 +28,6 @@ export function TopNav({ variant = 'default' }: TopNavProps) {
     navigate('/start-flow')
   }
 
-  const hasAccessToSocial = canaryUsers.includes(user?.email || '')
-
   return (
     <div className="flex">
       <div className="w-16 shrink-0">
@@ -44,7 +42,7 @@ export function TopNav({ variant = 'default' }: TopNavProps) {
       </div>
       <div className="-ml-16 flex-1">
         <div className="h-14 border-b w-full flex items-center pl-16 pr-4">
-          {hasAccessToSocial && <SocialStatusSummary />}
+          {hasAccessToSocial(user?.email) && <SocialStatusSummary />}
           <div className="flex-1" />
           <div className="flex items-center gap-2">
             <Tooltip>

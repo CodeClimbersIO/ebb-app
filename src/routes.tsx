@@ -1,4 +1,4 @@
-import { HashRouter, Route, Routes, Navigate, useNavigate, Outlet, useLocation } from 'react-router-dom'
+import { HashRouter, Route, Routes, Navigate, useNavigate} from 'react-router-dom'
 import { HomePage } from '@/pages/HomePage'
 import { LoginPage } from '@/pages/LoginPage'
 import { CommunityPage } from '@/pages/CommunityPage'
@@ -8,11 +8,9 @@ import { useAuth } from './hooks/useAuth'
 import { FlowPage } from './pages/FlowPage'
 import { BreathingExercisePage } from './pages/BreathingExercisePage'
 import { FlowRecapPage } from '@/pages/FlowRecapPage'
-import { LoadingScreen } from '@/components/LoadingScreen'
 import { AccessibilityPage } from './pages/AccessibilityPage'
 import { ShortcutTutorialPage } from '@/pages/ShortcutTutorialPage'
 // import { DeviceLimitPage } from './pages/DeviceLimitPage'
-import { OnboardingUtils } from '@/lib/utils/onboarding.util'
 import { useDeepLinkAuth } from './hooks/useDeepLinkAuth'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useEffect } from 'react'
@@ -21,48 +19,21 @@ import { logAndToastError } from '@/lib/utils/ebbError.util'
 import FeedbackPage from './pages/FeedbackPage'
 import { toastStore } from './lib/stores/toastStore'
 import { useStore } from 'zustand'
-import { canaryUsers } from './lib/utils/environment.util'
 import { StartFlowPage } from './pages/StartFlowPage'
-import { FriendsAnalyticsPage } from './pages/FriendsAnalyticsPage'
+import { FriendsAnalyticsPage } from './pages/FriendsAnalyticsPage/FriendsAnalyticsPage'
+import { canSeeNewFriendsPage } from './lib/utils/environment.util'
 import { useLicenseWithDevices } from './api/hooks/useLicense'
+import { useOnboarding } from './hooks/useOnboarding'
 
-
-const ProtectedRoute = () => {
-  const { user, loading: authLoading } = useAuth()
-  // const { deviceInfo } = useLicenseStore()
-  const location = useLocation()
-  useLicenseWithDevices(user?.id || null)
-
-  if (authLoading) {
-    return <LoadingScreen />
-  }
-
-  if (!user) {
-    return <Navigate to="/login" replace />
-  }
-
-  // if (deviceInfo.isDeviceLimitReached) {
-  //   return <DeviceLimitPage />
-  // }
-
-  if (location.pathname === '/onboarding/accessibility' ||
-    location.pathname === '/onboarding/shortcut-tutorial') {
-    return <Outlet />
-  }
-
-  if (!OnboardingUtils.isOnboardingCompleted()) {
-    return <Navigate to="/onboarding/accessibility" replace />
-  }
-
-  return <Outlet />
-}
 
 const Router = () => {
   useDeepLinkAuth()
-  const navigate = useNavigate()
   useGlobalShortcut()
-  const { error } = useStore(toastStore)
+  const navigate = useNavigate()
   const { user } = useAuth()
+  useLicenseWithDevices(user?.id || null)
+  useOnboarding()
+  const { error } = useStore(toastStore)
 
   useEffect(() => {
     if (error) {
@@ -94,26 +65,23 @@ const Router = () => {
     }
   }, [navigate])
 
-  const canSeeNewFriendsPage = canaryUsers.includes(user?.email || '')
-
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/onboarding/login" element={<LoginPage />} />
 
       {/* Protected routes group */}
-      <Route element={<ProtectedRoute />}>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/community" element={canSeeNewFriendsPage ? <CommunityPage /> : <OldFriendsPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/friends-analytics" element={<FriendsAnalyticsPage />} />
-        <Route path="/start-flow" element={<StartFlowPage />} />
-        <Route path="/breathing-exercise" element={<BreathingExercisePage />} />
-        <Route path="/flow" element={<FlowPage />} />
-        <Route path="/flow-recap" element={<FlowRecapPage />} />
-        <Route path="/feedback" element={<FeedbackPage />} />
-        <Route path="/onboarding/accessibility" element={<AccessibilityPage />} />
-        <Route path="/onboarding/shortcut-tutorial" element={<ShortcutTutorialPage />} />
-      </Route>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/community" element={canSeeNewFriendsPage(user?.email) ? <CommunityPage /> : <OldFriendsPage />} />
+      <Route path="/settings" element={<SettingsPage />} />
+      <Route path="/friends-analytics" element={<FriendsAnalyticsPage />} />
+      <Route path="/start-flow" element={<StartFlowPage />} />
+      <Route path="/breathing-exercise" element={<BreathingExercisePage />} />
+      <Route path="/flow" element={<FlowPage />} />
+      <Route path="/flow-recap" element={<FlowRecapPage />} />
+      <Route path="/feedback" element={<FeedbackPage />} />
+      <Route path="/onboarding/accessibility" element={<AccessibilityPage />} />
+      <Route path="/onboarding/shortcut-tutorial" element={<ShortcutTutorialPage />} />
 
       {/* 404 catch-all */}
       <Route path="*" element={<Navigate to="/" replace />} />

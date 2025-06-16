@@ -6,6 +6,7 @@ import { invoke } from '@tauri-apps/api/core'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { open } from '@tauri-apps/plugin-shell'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
+import { OnboardingUtils } from '../lib/utils/onboarding.util'
 
 export const AccessibilityPage = () => {
   const navigate = useNavigate()
@@ -65,6 +66,11 @@ export const AccessibilityPage = () => {
     } catch (error) {
       logAndToastError(`Failed to request permissions: ${error}`, error)
     }
+  }
+
+  const handleComplete = () => {
+    OnboardingUtils.setOnboardingStep('shortcut-tutorial')
+    navigate('/onboarding/shortcut-tutorial')
   }
 
   return (
@@ -135,7 +141,7 @@ export const AccessibilityPage = () => {
         <Button
           size="lg"
           onClick={permissionStatus === 'granted' ?
-            () => navigate('/onboarding/shortcut-tutorial') :
+            handleComplete :
             handleRequestPermissions}
           className="mb-4"
         >

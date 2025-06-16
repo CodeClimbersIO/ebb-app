@@ -40,6 +40,7 @@ export interface FriendWithDetails {
   friend_email: string
   created_at: string
   updated_at: string
+  creating_time: number
 }
 
 // Dashboard insights types
@@ -256,12 +257,13 @@ export const useFriendsWithInsights = () => {
   const hasPendingInvitesReceived = pendingInvitesReceivedCount > 0
   
   const hasFriends = friendsData.friends && friendsData.friends.length > 0
+  
   return {
     ...friendsData,
     dashboardInsights,
     isLoading: friendsData.isLoading || isLoadingInsights,
     hasPendingInvitesReceived,
     hasFriends,
-    pendingInvitesReceivedCount
+    pendingInvitesReceivedCount,
   }
 }

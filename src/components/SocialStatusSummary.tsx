@@ -8,6 +8,7 @@ import { UserStatusCounts, useUserStatusCounts } from '@/api/hooks/useUsers'
 import { useProfile, useUpdateProfileLocation } from '@/api/hooks/useProfile'
 import { useAuth } from '@/hooks/useAuth'
 import { logAndToastError } from '../lib/utils/ebbError.util'
+import { useNetworkStore } from '../lib/stores/networkStore'
 
 interface StatusBadgeProps {
   color: 'green' | 'purple'
@@ -54,12 +55,54 @@ const getStatusCounts = (userStatusCounts?: UserStatusCounts) => {
   }
 }
 
-export function SocialStatusSummary() {
-  const { connected, setConnected } = useConnectedStore()
-  const { data: communityStatuses, isLoading: isLoadingStatuses, refetch: refetchStatusCounts } = useUserStatusCounts()
-  const { mutateAsync: updateProfileLocation, isPending: isUpdatingProfileLocation } = useUpdateProfileLocation()
-  const { profile, isLoading: isLoadingProfile } = useProfile()
+const StatusButton = ()=> {
   const { user } = useAuth()
+  const navigate = useNavigate()
+
+  const { connected, setConnected } = useConnectedStore()
+  const { profile } = useProfile()
+  const isOffline = useNetworkStore().isOffline
+  const { mutateAsync: updateProfileLocation, isPending: isUpdatingProfileLocation } = useUpdateProfileLocation()
+
+  const handleClick = async () => {
+    if (!user) {
+      navigate('/login')
+    }
+    if (!profile?.latitude || !profile?.longitude) {
+      try {
+        await updateProfileLocation()
+        setConnected(true)
+      } catch (error) {
+        logAndToastError('Failed to update profile location', error)
+      }
+    }
+  }
+
+  if(!connected) {
+    return (
+      <div className="relative">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleClick} 
+          disabled={isUpdatingProfileLocation || isOffline}
+          className="gap-2 border-primary text-white hover:bg-primary hover:text-primary-foreground relative z-10"
+        >
+          {isOffline ? 'Offline' : 'Connect '}
+          <ConnectIcon size={20} />
+        </Button>
+        <div className="absolute inset-0 border border-primary/50 rounded-md animate-ping opacity-75" style={{animationDuration: '3s'}}></div>
+      </div>
+    )
+  }
+
+  return <></>
+}
+
+export function SocialStatusSummary() {
+  const { connected } = useConnectedStore()
+  const { data: communityStatuses, isLoading: isLoadingStatuses, refetch: refetchStatusCounts } = useUserStatusCounts()
+  const { isLoading: isLoadingProfile } = useProfile()
 
   const navigate = useNavigate()
   const [statusCounts, setStatusCounts] = useState(getStatusCounts(communityStatuses))
@@ -87,22 +130,10 @@ export function SocialStatusSummary() {
     }
   }, [refetchStatusCounts, connected])
 
-  const handleConnect = async () => {
-    if (!user) {
-      navigate('/login')
-    }
-    if (!profile?.latitude || !profile?.longitude) {
-      try {
-        await updateProfileLocation()
-        setConnected(true)
-      } catch (error) {
-        logAndToastError('Failed to update profile location', error)
-      }
-    }
-  }
+
 
   const handleStatusClick = () => {
-    navigate('/friends')
+    navigate('/community')
   }
 
   if (isLoading) {
@@ -118,21 +149,7 @@ export function SocialStatusSummary() {
 
   return (
     <div className="flex items-center gap-4 pl-6">
-      {!connected && (
-        <div className="relative">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleConnect} 
-            disabled={isUpdatingProfileLocation}
-            className="gap-2 border-primary text-white hover:bg-primary hover:text-primary-foreground relative z-10"
-          >
-            Connect
-            <ConnectIcon size={20} />
-          </Button>
-          <div className="absolute inset-0 border border-primary/50 rounded-md animate-ping opacity-75" style={{animationDuration: '3s'}}></div>
-        </div>
-      )}
+      <StatusButton />
       <div 
         onClick={connected ? handleStatusClick : undefined}
         className={`flex items-center gap-2 ${connected ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}

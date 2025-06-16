@@ -8,15 +8,14 @@ import { KeyIcon } from '@/components/icons/KeyIcon'
 import { ChartIcon } from '@/components/icons/ChartIcon'
 import { PaywallDialog } from '@/components/PaywallDialog'
 import { usePermissions } from '@/hooks/usePermissions'
-import { canaryUsers } from '../lib/utils/environment.util'
 import { useAuth } from '../hooks/useAuth'
+import { canSeeNewFriendsPage } from '../lib/utils/environment.util'
 
 export function Sidebar() {
   const location = useLocation()
   const { hasProAccess } = usePermissions()
   const { user } = useAuth()
 
-  const canSeeNewFriendsPage = canaryUsers.includes(user?.email || '')
 
   return (
     
@@ -39,7 +38,7 @@ export function Sidebar() {
             <TooltipContent side="right" sideOffset={10}>Today</TooltipContent>
           </Tooltip>
 
-          {canSeeNewFriendsPage && (
+          {canSeeNewFriendsPage(user?.email) && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -70,7 +69,7 @@ export function Sidebar() {
                 </Link>
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="right" sideOffset={10}>Friends</TooltipContent>
+            <TooltipContent side="right" sideOffset={10}>Community</TooltipContent>
           </Tooltip>
         </nav>
 
