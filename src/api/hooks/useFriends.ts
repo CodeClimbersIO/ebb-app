@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useEffect, useRef } from 'react'
 import { platformApiRequest } from '../platformRequest'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
 
@@ -249,6 +250,8 @@ export const useFriends = () => {
 export const useFriendsWithInsights = () => {
   const today = new Date()
   const date = today.toISOString().split('T')[0]
+  const queryClient = useQueryClient()
+  const refreshIntervalRef = useRef<number | null>(null)
   
   const friendsData = useFriends()
   const { data: dashboardInsights, isLoading: isLoadingInsights } = useGetDashboardInsights(date)
@@ -257,6 +260,27 @@ export const useFriendsWithInsights = () => {
   const hasPendingInvitesReceived = pendingInvitesReceivedCount > 0
   
   const hasFriends = friendsData.friends && friendsData.friends.length > 0
+
+  useEffect(() => {
+    const refreshData = () => {
+      queryClient.invalidateQueries({ queryKey: friendKeys.all })
+    }
+
+    refreshIntervalRef.current = window.setInterval(refreshData, 5 * 60 * 1000) // 5 minutes
+
+    const handleFocus = () => {
+      console.log('handleFocus')
+      refreshData()
+    }
+    window.addEventListener('focus', handleFocus)
+
+    return () => {
+      if (refreshIntervalRef.current !== null) {
+        clearInterval(refreshIntervalRef.current)
+      }
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [queryClient])
   
   return {
     ...friendsData,

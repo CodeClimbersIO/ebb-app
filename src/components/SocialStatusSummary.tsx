@@ -163,7 +163,7 @@ export function SocialStatusSummary() {
         <StatusBadge 
           color="purple" 
           count={connected ? statusCounts.flowing : ''} 
-          statusName="Flowing" 
+          statusName="In Focus"
           disabled={!connected}
         />
       </div>

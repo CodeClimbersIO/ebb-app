@@ -5,16 +5,18 @@ import { SettingsGearIcon } from '@/components/icons/GearIcon'
 import { HomeIcon } from '@/components/icons/HomeIcon'
 import { UsersIcon } from '@/components/icons/UsersIcon'
 import { KeyIcon } from '@/components/icons/KeyIcon'
-import { ChartIcon } from '@/components/icons/ChartIcon'
+import { GlobeIcon } from '@/components/icons/GlobeIcon'
 import { PaywallDialog } from '@/components/PaywallDialog'
 import { usePermissions } from '@/hooks/usePermissions'
 import { useAuth } from '../hooks/useAuth'
 import { canSeeNewFriendsPage } from '../lib/utils/environment.util'
+import { useFriendsWithInsights } from '@/api/hooks/useFriends'
 
 export function Sidebar() {
   const location = useLocation()
   const { hasProAccess } = usePermissions()
   const { user } = useAuth()
+  const { hasPendingInvitesReceived } = useFriendsWithInsights()
 
 
   return (
@@ -44,11 +46,14 @@ export function Sidebar() {
                 <Button
                   variant="ghost"
                   iconSize={5}
-                  className={`w-9 h-9 p-2 ${location.pathname === '/friends-analytics' ? 'text-foreground [&>svg]:text-foreground' : 'text-muted-foreground [&>svg]:text-muted-foreground'}`}
+                  className={`w-9 h-9 p-2 relative ${location.pathname === '/friends-analytics' ? 'text-foreground [&>svg]:text-foreground' : 'text-muted-foreground [&>svg]:text-muted-foreground'}`}
                   asChild
                 >
                   <Link to="/friends-analytics">
-                    <ChartIcon size={20} />
+                    <UsersIcon size={20} />
+                    {hasPendingInvitesReceived && (
+                      <div className="absolute w-3 h-3 bg-red-500 rounded-full border border-background" style={{ top: '4px', right: '4px' }}/>
+                    )}
                   </Link>
                 </Button>
               </TooltipTrigger>
@@ -65,7 +70,7 @@ export function Sidebar() {
                 asChild
               >
                 <Link to="/community">
-                  <UsersIcon size={20} />
+                  <GlobeIcon size={20} />
                 </Link>
               </Button>
             </TooltipTrigger>
