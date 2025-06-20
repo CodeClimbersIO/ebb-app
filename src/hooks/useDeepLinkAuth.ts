@@ -8,6 +8,7 @@ import { useLicenseStore } from '@/lib/stores/licenseStore'
 import { useAuth } from './useAuth'
 import { logAndToastError } from '../lib/utils/ebbError.util'
 import { useUpdateProfileLocation } from '../api/hooks/useProfile'
+import { OnboardingUtils } from '../lib/utils/onboarding.util'
 
 const processedUrls = new Set<string>()
 
@@ -69,6 +70,7 @@ export const useDeepLinkAuth = () => {
         const code = searchParams.get('code')
         if (code) {
           const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+          OnboardingUtils.setOnboardingStep('accessibility')
           if (error) throw error
           if (data.session) navigate('/')
           return
