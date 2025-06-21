@@ -8,14 +8,11 @@ import { KeyIcon } from '@/components/icons/KeyIcon'
 import { GlobeIcon } from '@/components/icons/GlobeIcon'
 import { PaywallDialog } from '@/components/PaywallDialog'
 import { usePermissions } from '@/hooks/usePermissions'
-import { useAuth } from '../hooks/useAuth'
-import { canSeeNewFriendsPage } from '../lib/utils/environment.util'
 import { useFriendsWithInsights } from '@/api/hooks/useFriends'
 
 export function Sidebar() {
   const location = useLocation()
   const { hasProAccess } = usePermissions()
-  const { user } = useAuth()
   const { hasPendingInvitesReceived } = useFriendsWithInsights()
 
 
@@ -40,26 +37,24 @@ export function Sidebar() {
             <TooltipContent side="right" sideOffset={10}>Today</TooltipContent>
           </Tooltip>
 
-          {canSeeNewFriendsPage(user?.email) && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  iconSize={5}
-                  className={`w-9 h-9 p-2 relative ${location.pathname === '/friends-analytics' ? 'text-foreground [&>svg]:text-foreground' : 'text-muted-foreground [&>svg]:text-muted-foreground'}`}
-                  asChild
-                >
-                  <Link to="/friends-analytics">
-                    <UsersIcon size={20} />
-                    {hasPendingInvitesReceived && (
-                      <div className="absolute w-3 h-3 bg-red-500 rounded-full border border-background" style={{ top: '4px', right: '4px' }}/>
-                    )}
-                  </Link>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right" sideOffset={10}>Friends</TooltipContent>
-            </Tooltip>
-          )}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                iconSize={5}
+                className={`w-9 h-9 p-2 relative ${location.pathname === '/friends-analytics' ? 'text-foreground [&>svg]:text-foreground' : 'text-muted-foreground [&>svg]:text-muted-foreground'}`}
+                asChild
+              >
+                <Link to="/friends-analytics">
+                  <UsersIcon size={20} />
+                  {hasPendingInvitesReceived && (
+                    <div className="absolute w-3 h-3 bg-red-500 rounded-full border border-background" style={{ top: '4px', right: '4px' }}/>
+                  )}
+                </Link>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right" sideOffset={10}>Friends</TooltipContent>
+          </Tooltip>
 
           <Tooltip>
             <TooltipTrigger asChild>

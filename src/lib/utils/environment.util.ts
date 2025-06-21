@@ -11,11 +11,3 @@ export const canaryUsers = ['rphovley@gmail.com', 'paul@ebb.cool', 'djl.hovley@g
 export const isCanaryUser = (email?: string) => {
   return canaryUsers.includes(email || '')
 }
-
-export const hasAccessToSocial = (email?: string) => {
-  return isCanaryUser(email)
-}
-
-export const canSeeNewFriendsPage = (email?: string) => {
-  return isCanaryUser(email)
-}

@@ -8,8 +8,6 @@ import { useShortcutStore } from '@/lib/stores/shortcutStore'
 import { CircleHelpIcon } from './icons/CircleHelpIcon'
 import { Tooltip, TooltipContent , TooltipTrigger } from './ui/tooltip'
 import { SocialStatusSummary } from './SocialStatusSummary'
-import { useAuthStore } from '../lib/stores/authStore'
-import { hasAccessToSocial } from '../lib/utils/environment.util'
 
 interface TopNavProps {
   variant?: 'default' | 'modal'
@@ -17,7 +15,6 @@ interface TopNavProps {
 
 export function TopNav({ variant = 'default' }: TopNavProps) {
   const navigate = useNavigate()
-  const { user } = useAuthStore()
   const { shortcutParts, loadShortcutFromStorage } = useShortcutStore()
 
   useEffect(() => {
@@ -42,7 +39,7 @@ export function TopNav({ variant = 'default' }: TopNavProps) {
       </div>
       <div className="-ml-16 flex-1">
         <div className="h-14 border-b w-full flex items-center pl-16 pr-4">
-          {hasAccessToSocial(user?.email) && <SocialStatusSummary />}
+          <SocialStatusSummary />
           <div className="flex-1" />
           <div className="flex items-center gap-2">
             <Tooltip>

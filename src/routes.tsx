@@ -2,7 +2,6 @@ import { HashRouter, Route, Routes, Navigate, useNavigate} from 'react-router-do
 import { HomePage } from '@/pages/HomePage'
 import { LoginPage } from '@/pages/LoginPage'
 import { CommunityPage } from '@/pages/CommunityPage'
-import { FriendsPage as OldFriendsPage } from '@/pages/OldFriendsPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 import { useAuth } from '@/hooks/useAuth'
 import { FlowPage } from '@/pages/FlowPage'
@@ -21,7 +20,6 @@ import { toastStore } from '@/lib/stores/toastStore'
 import { useStore } from 'zustand'
 import { StartFlowPage } from '@/pages/StartFlowPage'
 import { FriendsAnalyticsPage } from '@/pages/FriendsAnalyticsPage/FriendsAnalyticsPage'
-import { canSeeNewFriendsPage } from '@/lib/utils/environment.util'
 import { useLicenseWithDevices } from '@/api/hooks/useLicense'
 import { useOnboarding } from '@/hooks/useOnboarding'
 import { useCheckout } from '@/hooks/useCheckout'
@@ -74,7 +72,7 @@ const Router = () => {
 
       {/* Protected routes group */}
       <Route path="/" element={<HomePage />} />
-      <Route path="/community" element={canSeeNewFriendsPage(user?.email) ? <CommunityPage /> : <OldFriendsPage />} />
+      <Route path="/community" element={<CommunityPage />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/friends-analytics" element={<FriendsAnalyticsPage />} />
       <Route path="/start-flow" element={<StartFlowPage />} />
