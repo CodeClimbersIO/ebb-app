@@ -11,7 +11,7 @@ import { FlowRecapPage } from '@/pages/FlowRecapPage'
 import { AccessibilityPage } from '@/pages/AccessibilityPage'
 import { ShortcutTutorialPage } from '@/pages/ShortcutTutorialPage'
 // import { DeviceLimitPage } from './pages/DeviceLimitPage'
-import { useDeepLinkAuth } from '@/hooks/useDeepLinkAuth'
+import { useDeepLink } from '@/hooks/useDeepLink'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useEffect } from 'react'
 import { useGlobalShortcut } from '@/hooks/useGlobalShortcut'
@@ -28,7 +28,7 @@ import { useCheckout } from '@/hooks/useCheckout'
 
 
 const Router = () => {
-  useDeepLinkAuth()
+  useDeepLink()
   useCheckout()
   useGlobalShortcut()
   const navigate = useNavigate()

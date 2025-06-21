@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef } from 'react'
-import { platformApiRequest } from '../platformRequest'
+import { ApiError, platformApiRequest } from '../platformRequest'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
+import { toast } from 'sonner'
 
 // --- Backend types ---
 export type FriendRequestStatus = 'pending' | 'accepted' | 'rejected' | 'cancelled'
@@ -207,7 +208,11 @@ export function useRespondToFriendRequest() {
       queryClient.invalidateQueries({ queryKey: friendKeys.all })
     },
     onError: (error) => {
-      logAndToastError('Failed to respond to friend request', error)
+      if (error instanceof ApiError && error.statusCode === 403) {
+        toast.error('Sorry, looks like you may not be logged into the correct account for this invite.')
+      } else {
+        logAndToastError('Failed to respond to friend request', error)
+      }
     },
   })
 }
@@ -216,8 +221,8 @@ export const useFriends = () => {
   const { data: friends, isLoading: isLoadingFriends } = useGetFriends()
   const { data: sentRequests, isLoading: isLoadingSentRequests } = useGetPendingRequestsSent()
   const { data: receivedRequests, isLoading: isLoadingReceivedRequests } = useGetPendingRequestsReceived()
-  const { mutate: inviteFriend, isPending: isInviting } = useInviteFriend()
-  const { mutate: respondToRequest, isPending: isResponding } = useRespondToFriendRequest()
+  const { mutateAsync: inviteFriend, isPending: isInviting } = useInviteFriend()
+  const { mutateAsync: respondToRequest, isPending: isResponding } = useRespondToFriendRequest()
 
   const isLoading = isLoadingFriends || isLoadingSentRequests || isLoadingReceivedRequests
 
@@ -225,12 +230,12 @@ export const useFriends = () => {
     inviteFriend(email)
   }
 
-  const handleAcceptInvite = (requestId: string) => {
-    respondToRequest({ requestId, action: 'accept' })
+  const handleAcceptInvite = async (requestId: string) => {
+    await respondToRequest({ requestId, action: 'accept' })
   }
 
-  const handleDeclineInvite = (requestId: string) => {
-    respondToRequest({ requestId, action: 'reject' })
+  const handleDeclineInvite = async (requestId: string) => {
+    await respondToRequest({ requestId, action: 'reject' })
   }
 
   return {

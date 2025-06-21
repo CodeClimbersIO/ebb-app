@@ -13,9 +13,9 @@ import { OnboardingUtils } from '../lib/utils/onboarding.util'
 const processedUrls = new Set<string>()
 
     
-export const useDeepLinkAuth = () => {
+export const useDeepLink = () => {
   const navigate = useNavigate()
-  const [isHandlingAuth, setIsHandlingAuth] = useState(false)
+  const [isHandlingDeepLink, setIsHandlingDeepLink] = useState(false)
   const { user } = useAuth()
   const fetchLicense = useLicenseStore((state) => state.fetchLicense)
   const { mutate: updateProfileLocation } = useUpdateProfileLocation()
@@ -26,7 +26,7 @@ export const useDeepLinkAuth = () => {
     const code = searchParams.get('code')
 
     if (code) {
-      setIsHandlingAuth(true)
+      setIsHandlingDeepLink(true)
     }
 
 
@@ -38,10 +38,9 @@ export const useDeepLinkAuth = () => {
         if (processedUrls.has(url)) {
           return
         }
-        
         processedUrls.add(url)
         
-        setIsHandlingAuth(true)
+        setIsHandlingDeepLink(true)
         const urlObj = new URL(url)
         const searchParams = new URLSearchParams(urlObj.search.substring(1))
 
@@ -51,6 +50,16 @@ export const useDeepLinkAuth = () => {
             await fetchLicense(user.id)
           }
           navigate('/')
+          return
+        }
+
+        if(url.includes('friends')) {
+          const requestId = searchParams.get('request_id')
+          if(requestId) {
+            navigate(`/friends-analytics?request_id=${requestId}`)
+          } else {
+            navigate('/friends-analytics')
+          }
           return
         }
 
@@ -83,12 +92,12 @@ export const useDeepLinkAuth = () => {
         logAndToastError(`Error handling deep link: ${err}`, error)
         error(`Error handling deep link: ${err}`)
       } finally {
-        setIsHandlingAuth(false)
+        setIsHandlingDeepLink(false)
       }
     }
 
     onOpenUrl(handleUrl)
   }, [navigate, user, fetchLicense])
 
-  return isHandlingAuth
+  return isHandlingDeepLink
 }

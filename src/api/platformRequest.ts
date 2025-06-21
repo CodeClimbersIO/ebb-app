@@ -89,7 +89,6 @@ const requestFn = () => {
               errorMessage = `API request ${url} failed with status ${response.status}`
             }
           }
-          
           throw new ApiError(errorMessage, response.status)
         }
         switch (responseType) {

@@ -32,7 +32,6 @@ const localEndDateTime = utcMidnight.toLocal()
 
 export const FriendsAnalytics = () => {
   const [timeUntilUTCMidnight, setTimeUntilUTCMidnight] = useState('')
-  
   const { 
     dashboardInsights,
   } = useFriendsWithInsights()
@@ -51,6 +50,7 @@ export const FriendsAnalytics = () => {
 
     return () => clearInterval(interval)
   }, [])
+
 
   const myPercentile = dashboardInsights?.userPercentile.percentile || 50
 
@@ -132,9 +132,9 @@ export const FriendsAnalytics = () => {
           title="Top Friend"
           icon={<Trophy className="h-4 w-4" />}
         >
-          <div className="text-2xl font-bold">
+          <div className="text-lg font-bold truncate">
             {topFriend?.email ? 
-              `${topFriend.email.slice(0, 12)}...` : 
+              topFriend.email : 
               'Friend'
             }
           </div>

@@ -8,6 +8,9 @@ import { formatTime } from '@/components/UsageSummary'
 import { RangeMode } from '@/components/RangeModeSelector'
 import { useState, useEffect } from 'react'
 import { useFriends, FriendRequest, useFriendsWithInsights, FriendWithDetails } from '@/api/hooks/useFriends'
+import { useSearchParams } from 'react-router-dom'
+import { toast } from 'sonner'
+import { triggerConfetti } from '@/lib/utils/confetti.util'
 
 
 interface FriendComparisonProps {
@@ -87,6 +90,8 @@ const FriendComparison = ({ friends, myTime }: FriendComparisonProps) => {
 
 
 const PendingInvitesTab = () => {
+  const [searchParams] = useSearchParams()
+  
   const { sentRequests, receivedRequests, isResponding, handleAcceptInvite, handleDeclineInvite } = useFriendsWithInsights()
   const [visibleReceived, setVisibleReceived] = useState(5)
   const [visibleSent, setVisibleSent] = useState(5)
@@ -100,14 +105,33 @@ const PendingInvitesTab = () => {
     setVisibleSent(prev => prev + 5)
   }
 
-  const handleAcceptInviteWithLoading = (requestId: string) => {
+
+  const handleAcceptInviteWithLoading = async (requestId: string) => {
+    const request = receivedRequests?.find(req => req.id === requestId)
+    const email = request?.from_auth_user_email || request?.to_email || 'Unknown'
+    
     setProcessingRequest({ requestId, action: 'accept' })
-    handleAcceptInvite(requestId)
+    try {
+      await handleAcceptInvite(requestId)
+      toast.success(`Congrats! You are now friends with ${email}!`)
+      triggerConfetti('friendAccepted')
+    } catch (error) {
+      console.error('error from handleAcceptInviteWithLoading', error)
+    }
   }
 
-  const handleDeclineInviteWithLoading = (requestId: string) => {
+  const handleDeclineInviteWithLoading = async (requestId: string) => {
+    // Find the request to get the email
+    const request = receivedRequests?.find(req => req.id === requestId)
+    const email = request?.from_auth_user_email || request?.to_email || 'Unknown'
+    
     setProcessingRequest({ requestId, action: 'decline' })
-    handleDeclineInvite(requestId)
+    try {
+      await handleDeclineInvite(requestId)
+      toast.success(`Friend request declined: ${email}`)
+    } catch (error) {
+      toast.error(`Failed to decline friend request: ${error}`)
+    }
   }
 
   // Reset processing state when isResponding becomes false
@@ -116,6 +140,14 @@ const PendingInvitesTab = () => {
       setProcessingRequest(null)
     }
   }, [isResponding, processingRequest])
+
+  useEffect(() => {
+    const request_id = searchParams.get('request_id')
+    if(request_id) {
+      handleAcceptInviteWithLoading(request_id)
+    }
+  }, [searchParams])
+
 
   return (
     <div className="space-y-6">
@@ -281,6 +313,7 @@ export const FriendsComparisonCard = ({
   rangeMode, 
   getRangeModeText 
 }: FriendsComparisonCardProps) => {
+
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [email, setEmail] = useState('')
   
@@ -303,6 +336,7 @@ export const FriendsComparisonCard = ({
     e.preventDefault()
     if (email && !isInviting) {
       await handleInviteFriend(email)
+      toast.success(`Invite sent to ${email}!`)
       setEmail('')
       setShowInviteModal(false)
     }
