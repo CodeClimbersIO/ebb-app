@@ -15,6 +15,13 @@ Ebb uses your window, mouse and keyboard activity to track your workflow habits.
 - We do not share this data with third parties
 - We give you full control to remove your profile from our system at anytime
 
+## Getting Started
+- [Install Rust](https://www.rust-lang.org/tools/install)
+- From root of project run `npm install`
+- Get a copy of `.env`
+- Start with `npm run tauri dev`
+
+
 ## Open Source
 
 - The tracking engine that powers Ebb is an Open Source project we maintain called CodeClimbers. We believe there are improvements that need to be made to the technology that supports tracking and we are pushing those developments as open source and local first.

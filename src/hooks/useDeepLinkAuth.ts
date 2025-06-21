@@ -70,7 +70,10 @@ export const useDeepLinkAuth = () => {
         const code = searchParams.get('code')
         if (code) {
           const { data, error } = await supabase.auth.exchangeCodeForSession(code)
-          OnboardingUtils.setOnboardingStep('accessibility')
+          if(!OnboardingUtils.isOnboardingCompleted()) {
+            OnboardingUtils.setOnboardingStep('accessibility')
+          }
+
           if (error) throw error
           if (data.session) navigate('/')
           return

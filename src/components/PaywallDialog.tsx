@@ -13,6 +13,10 @@ import { KeyRound } from 'lucide-react'
 import { RainbowButton } from '@/components/ui/rainbow-button'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
 import { StripeApi } from '@/lib/integrations/stripe/stripeApi'
+import { useAuth } from '@/hooks/useAuth'
+import { isDev } from '../lib/utils/environment.util'
+import supabase from '../lib/integrations/supabase'
+import { invoke } from '@tauri-apps/api/core'
 
 interface PaywallDialogProps {
   children: React.ReactNode
@@ -29,11 +33,51 @@ const users = [
 export function PaywallDialog({ children }: PaywallDialogProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { user } = useAuth()
+
+  const handleGoogleLogin = async () => {
+    try {
+      // Store checkout intent in localStorage before auth
+      localStorage.setItem('ebb_checkout_intent', 'true')
+      setIsLoading(true)
+      const redirectUrl = isDev()
+        ? 'http://localhost:1420/auth-success'
+        : 'https://ebb.cool/auth-success'
+      
+      const { data } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          skipBrowserRedirect: true,
+          redirectTo: redirectUrl,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent'
+          }
+        }
+      })
+
+      if (!data?.url) throw new Error('No auth URL returned')
+      
+      if (isDev()) {
+        window.location.href = data.url
+      } else {
+        await invoke('plugin:shell|open', { path: data.url })
+      }
+    } catch (err) {
+      setError('Failed to login with Google.')
+      logAndToastError(`${err}`, error)
+    }
+    setIsLoading(false)
+  }
 
   const handleCheckout = async () => {
     setIsLoading(true)
     setError(null)
     try {
+      if (!user) {
+        await handleGoogleLogin()
+        return
+      }
       await StripeApi.startCheckout('perpetual')
     } catch (error) {
       const message = error instanceof Error ? error.message : 'An unexpected error occurred'
