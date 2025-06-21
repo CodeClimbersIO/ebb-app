@@ -64,7 +64,7 @@ export const CommunityPage = () => {
   const { theme } = useTheme()
   const [location, setLocation] = useState<[number, number]>()
 
-  const onlineLocations = userLocations?.filter(location => location.online_status === 'active' || location.online_status === 'flowing' || location.online_status === 'online') || []
+  const onlineLocations = userLocations?.filter(location => location.online_status === 'active' || location.online_status === 'online') || []
   const flowingLocations = userLocations?.filter(location => location.online_status === 'flowing') || []
 
   const handleLocationHover = (newLocation: EbbLocation) => {

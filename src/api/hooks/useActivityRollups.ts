@@ -56,20 +56,47 @@ export function useUpdateActivity() {
   })
 }
 
-export const useUpdateRollupForUser = () => {
-  const { mutate: updateActivity } = useUpdateActivity()
-  const updateRollupForUser = async () => {
-    const timeBlocksToday = await MonitorApi.getTimeCreatingByDay(DateTime.now().toUTC().startOf('day'), DateTime.now().toUTC().endOf('day'))
+const hasSyncedRollupFromStart = () => {
+  const hasSynced = localStorage.getItem('hasSyncedRollupFromStart')
+  return hasSynced === 'true'
+}
+
+const setHasSyncedRollupFromStart = () => {
+  localStorage.setItem('hasSyncedRollupFromStart', 'true')
+}
+
+const syncRollup = async (updateActivity: (update: ActivityUpdate) => Promise<ActivityUpdateResponse>,date?: DateTime) => {
+
+  const startDate = date ? date.toUTC().startOf('day') : DateTime.now().toUTC().startOf('day')
+  const endDate = date ? date.toUTC().endOf('day') : DateTime.now().toUTC().endOf('day')
+  const timeBlocksToday = await MonitorApi.getTimeCreatingByDay(startDate, endDate)
             
-    const totalCreatingTimeToday = timeBlocksToday.reduce((acc, block) => acc + block.creating, 0)
-    
-    if (totalCreatingTimeToday > 0) {
-      const todayDate = DateTime.now().toUTC().toFormat('yyyy-MM-dd')
-      updateActivity({
-        tag_name: 'creating',
-        duration_minutes: totalCreatingTimeToday,
-        date: todayDate
-      })
+  const totalTimeCreating = timeBlocksToday.reduce((acc, block) => acc + block.creating, 0)
+  if (totalTimeCreating > 0) {
+    const syncDate = startDate.toUTC().toFormat('yyyy-MM-dd')
+    updateActivity({
+      tag_name: 'creating',
+      duration_minutes: totalTimeCreating,
+      date: syncDate
+    })
+  }
+}
+
+const syncRollupFromStart = async (updateActivity: (update: ActivityUpdate) => Promise<ActivityUpdateResponse>) => {
+  for (let i = 0; i < 90; i++) {
+    const date = DateTime.now().minus({ days: i })
+    await syncRollup(updateActivity, date)
+  }
+  setHasSyncedRollupFromStart()
+}
+
+export const useUpdateRollupForUser = () => {
+  
+  const updateRollupForUser = async () => {
+    if (!hasSyncedRollupFromStart()) {
+      syncRollupFromStart(updateActivity)
+    } else {
+      syncRollup(updateActivity)
     }
   }
 
