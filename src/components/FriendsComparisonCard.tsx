@@ -167,7 +167,7 @@ const PendingInvitesTab = () => {
                 </div>
                 <div className="flex-1">
                   <div className="font-medium">Friend Request</div>
-                  {invite.from_auth_user_email === 'rphovley@gmail.com' && (
+                  {invite.from_auth_user_email === 'rphovley@gmail.com' || invite.from_auth_user_email === 'paul@ebb.cool' && (
                     <div className="text-xs text-muted-foreground">Paul Hovley (Ebb Founder)</div>
                   )}
                   <div className="text-xs text-muted-foreground">Email: {invite.from_auth_user_email || invite.to_email}</div>
