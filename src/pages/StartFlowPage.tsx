@@ -21,6 +21,7 @@ import { logAndToastError } from '@/lib/utils/ebbError.util'
 import { error as logError } from '@tauri-apps/plugin-log'
 import { BlockingPreferenceApi } from '@/api/ebbApi/blockingPreferenceApi'
 import { usePostHog } from 'posthog-js/react'
+import { Input } from '../components/ui/input'
 
 export const StartFlowPage = () => {
   const { duration, setDuration } = useFlowTimer()
@@ -28,6 +29,7 @@ export const StartFlowPage = () => {
   const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(null)
   const [selectedPlaylist, setSelectedPlaylist] = useState<string | null>(null)
   const [selectedApps, setSelectedApps] = useState<SearchOption[]>([])
+  const [objective, setObjective] = useState<string>('')
   const [isAllowList, setIsAllowList] = useState(false)
   const [hasBreathing, setHasBreathing] = useState(true)
   const [workflows, setWorkflows] = useState<Workflow[]>([])
@@ -245,7 +247,7 @@ export const StartFlowPage = () => {
       const isBlockList = !isAllowList
 
       const sessionId = await FlowSessionApi.startFlowSession(
-        workflowName,
+        objective || workflowName,
         duration ? duration.as('minutes') : undefined
       )
       
@@ -363,6 +365,19 @@ export const StartFlowPage = () => {
                 />
               </div>
             )}
+
+            <div className="flex items-center gap-4">
+              <div className="flex-1">
+                <Input
+                  placeholder="What will you focus on?"
+                  value={objective}
+                  onChange={(e) => setObjective(e.target.value)}
+                  maxLength={50}
+                  className="w-full"
+                  autoFocus
+                />
+              </div>
+            </div>
 
 
             <Button
