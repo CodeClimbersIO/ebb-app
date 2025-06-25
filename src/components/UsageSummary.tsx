@@ -131,6 +131,7 @@ export const UsageSummary = ({
   const sortedAppUsage = [...appUsage].sort((a, b) => b.duration - a.duration)
   const appUsageRef = useRef<HTMLDivElement>(null)
 
+  const totalAppUsage = appUsage.reduce((acc, app) => acc + app.duration, 0)
   useEffect(() => {
     const hasFirefox = appUsage.some(app => app.app_external_id === 'org.mozilla.firefox')
     if (user?.id && hasFirefox) {
@@ -447,7 +448,7 @@ export const UsageSummary = ({
                         </span>
                       </div>
                       <Progress
-                        value={(app.duration / (6 * 60)) * 100}
+                        value={(app.duration / totalAppUsage) * 100}
                         className={
                           app.rating >= 4
                             ? 'bg-[rgb(124,58,237)]/20 [&>div]:bg-[rgb(124,58,237)]' :
