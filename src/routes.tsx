@@ -23,6 +23,7 @@ import { FriendsAnalyticsPage } from '@/pages/FriendsAnalyticsPage/FriendsAnalyt
 import { useLicenseWithDevices } from '@/api/hooks/useLicense'
 import { useOnboarding } from '@/hooks/useOnboarding'
 import { useCheckout } from '@/hooks/useCheckout'
+import { FlowSessionApi } from './api/ebbApi/flowSessionApi'
 
 
 const Router = () => {
@@ -55,8 +56,14 @@ const Router = () => {
         logAndToastError(`(Router) Failed to set up tray navigation: ${error}`, error)
       }
     }
-
-    void setup()
+    const init = async () => {
+      const flowSession = await FlowSessionApi.getInProgressFlowSession()
+      if (flowSession) {
+        navigate('/flow')
+      }
+    }
+    init()
+    setup()
 
     return () => {
       if (unlistenNavigate) {

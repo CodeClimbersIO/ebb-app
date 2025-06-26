@@ -4,14 +4,11 @@ import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { TopNav } from '@/components/TopNav'
-import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
 import { TimeSelector } from '@/components/TimeSelector'
 import { WorkflowSelector } from '@/components/WorkflowSelector'
 import { WorkflowApi, type Workflow } from '@/api/ebbApi/workflowApi'
-import { invoke } from '@tauri-apps/api/core'
-import { DateTime, Duration } from 'luxon'
-import { startFlowTimer } from '../lib/tray'
-import { useFlowTimer, getDurationFromDefault } from '../lib/stores/flowTimer'
+import { Duration } from 'luxon'
+import { getDurationFromDefault } from '../lib/stores/flowTimer'
 import { MusicSelector } from '@/components/MusicSelector'
 import { AppSelector, type SearchOption } from '@/components/AppSelector'
 import { AlertCircle } from 'lucide-react'
@@ -22,9 +19,10 @@ import { error as logError } from '@tauri-apps/plugin-log'
 import { BlockingPreferenceApi } from '@/api/ebbApi/blockingPreferenceApi'
 import { usePostHog } from 'posthog-js/react'
 import { Input } from '../components/ui/input'
+import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
 
 export const StartFlowPage = () => {
-  const { duration, setDuration } = useFlowTimer()
+  const [duration, setDuration] = useState<Duration | null>(null)
   const [selectedWorkflowId, setSelectedWorkflowId] = useState<string | null>(null)
   const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(null)
   const [selectedPlaylist, setSelectedPlaylist] = useState<string | null>(null)
@@ -69,7 +67,7 @@ export const StartFlowPage = () => {
           setSelectedWorkflowId(mostRecentWorkflow.id || null)
           setSelectedWorkflow(mostRecentWorkflow)
           setDuration(getDurationFromDefault(mostRecentWorkflow.settings.defaultDuration))
-          setSelectedPlaylist(mostRecentWorkflow.selectedPlaylist || null)
+          setSelectedPlaylist(mostRecentWorkflow.settings.selectedPlaylist || null)
           setSelectedApps(mostRecentWorkflow.selectedApps || [])
           setIsAllowList(mostRecentWorkflow.settings.isAllowList || false)
           setHasBreathing(mostRecentWorkflow.settings.hasBreathing ?? true)
@@ -104,10 +102,10 @@ export const StartFlowPage = () => {
     const updatedWorkflow: Workflow = {
       ...selectedWorkflow,
       selectedApps,
-      selectedPlaylist,
-      selectedPlaylistName: selectedWorkflow.selectedPlaylistName,
       settings: {
         ...selectedWorkflow.settings,
+        selectedPlaylist,
+        selectedPlaylistName: selectedWorkflow.settings.selectedPlaylistName,
         defaultDuration: duration?.as('minutes') ?? null,
         isAllowList,
         hasBreathing,
@@ -140,7 +138,7 @@ export const StartFlowPage = () => {
       if (workflow) {
         setSelectedWorkflow(workflow)
         setDuration(getDurationFromDefault(workflow.settings.defaultDuration))
-        setSelectedPlaylist(workflow.selectedPlaylist || null)
+        setSelectedPlaylist(workflow.settings.selectedPlaylist || null)
         setSelectedApps(workflow.selectedApps || [])
         setIsAllowList(workflow.settings.isAllowList || false)
         setHasBreathing(workflow.settings.hasBreathing ?? true)
@@ -175,11 +173,11 @@ export const StartFlowPage = () => {
     }
   }
 
+
   const handleBegin = async () => {
     try {
       let workflowId = selectedWorkflowId
       let currentWorkflow = selectedWorkflow
-      const workflowName = currentWorkflow?.name || 'Focus Session'
 
       // Track flow session start with PostHog
       posthog.capture('flow_session_started', {
@@ -214,17 +212,18 @@ export const StartFlowPage = () => {
         const newWorkflow: Workflow = {
           name: 'New Profile',
           selectedApps,
-          selectedPlaylist,
-          selectedPlaylistName: currentWorkflow?.selectedPlaylistName,
           lastSelected: Date.now(),
           settings: {
+            selectedPlaylist,
+            selectedPlaylistName: currentWorkflow?.settings.selectedPlaylistName,
             defaultDuration: duration?.as('minutes') ?? null,
             isAllowList,
             hasBreathing,
             hasMusic,
             typewriterMode: false,
             difficulty,
-          }
+          },
+          is_smart_default: true,
         }
 
         try {
@@ -239,47 +238,19 @@ export const StartFlowPage = () => {
           return
         }
       } else if (workflowId) {
-
         await WorkflowApi.updateLastSelected(workflowId)
       }
 
-      const blockingApps = workflowId ? await BlockingPreferenceApi.getWorkflowBlockedApps(workflowId) : []
-      const isBlockList = !isAllowList
-
-      const sessionId = await FlowSessionApi.startFlowSession(
-        objective || workflowName,
-        duration ? duration.as('minutes') : undefined
-      )
-      
-      const totalDurationForStore = duration ? Duration.fromObject({ minutes: duration.as('minutes') }) : null
-      useFlowTimer.getState().setTotalDuration(totalDurationForStore)
-      useFlowTimer.getState().setDuration(null)
-
-      if (!sessionId) {
-        throw new Error('No session ID returned from API')
+      if (!workflowId || !currentWorkflow) {
+        throw new Error('No workflow found')
       }
 
-      await startFlowTimer(DateTime.now())
-
-      const sessionState = {
-        startTime: Date.now(),
-        objective: workflowName,
-        sessionId,
-        duration: duration ? duration.as('minutes') : undefined,
-        workflowId, 
-        hasBreathing,
-        hasMusic,
-        selectedPlaylist,
-        selectedPlaylistName: currentWorkflow?.selectedPlaylistName, 
-        difficulty
-      }
-
-      await invoke('start_blocking', { blockingApps, isBlockList })
+      await FlowSessionApi.startFlowSession(objective, currentWorkflow)
 
       if (!hasBreathing) {
-        navigate('/flow', { state: sessionState })
+        navigate('/flow')
       } else {
-        navigate('/breathing-exercise', { state: sessionState })
+        navigate('/breathing-exercise')
       }
     } catch (error) {
       logAndToastError(`Failed to start flow session: ${error}`, error)

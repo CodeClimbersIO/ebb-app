@@ -43,7 +43,7 @@ export const getTagsByType = async (type: TagType): Promise<Tag[]> => {
   return tags
 }
 
-export const getActivityStatesByTagsAndTimePeriod = async (tagIds: string[], start: DateTime, end: DateTime) => {
+const getActivityStatesByTagsAndTimePeriod = async (tagIds: string[], start: DateTime, end: DateTime) => {
   const activityStates = await ActivityStateRepo.getActivityStatesByTagsAndTimePeriod(tagIds, start, end)
   return activityStates
 }
@@ -250,6 +250,16 @@ function aggregateTimeBlocks(
     })
 }
 
+const getTimeCreatingByTimePeriod = async (start: DateTime, end: DateTime): Promise<ActivityState[]> => {
+  const tags = await TagRepo.getTagsByType('default')
+  const activityStatesDB = await getActivityStatesByTagsAndTimePeriod(tags.map(tag => tag.id), start, end)
+  const activityStates: ActivityState[] = activityStatesDB.map(state => ({
+    ...state,
+    tags_json: state.tags ? JSON.parse(state.tags) : []
+  }))
+  return activityStates
+}
+
 export const getTimeCreatingByHour = async (start: DateTime, end: DateTime): Promise<GraphableTimeByHourBlock[]> => {
   const tags = await TagRepo.getTagsByType('default')
   const activityStatesDB = await getActivityStatesByTagsAndTimePeriod(tags.map(tag => tag.id), start, end)
@@ -346,4 +356,5 @@ export const MonitorApi = {
   setAppDefaultTag,
   createApp,
   getLatestActivity,
+  getTimeCreatingByTimePeriod,
 }

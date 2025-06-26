@@ -1,9 +1,6 @@
 import { Layout } from '@/components/Layout'
-import { useNavigate } from 'react-router-dom'
-import { useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { ChevronDown } from 'lucide-react'
-import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
 import { DateTime } from 'luxon'
 import {
   Popover,
@@ -19,7 +16,6 @@ import { RangeModeSelector } from '@/components/RangeModeSelector'
 
 export const HomePage = () => {
   const { user } = useAuth()
-  const navigate = useNavigate()
 
   const firstName = user?.user_metadata?.full_name?.split(' ')[0] ||
     user?.user_metadata?.name?.split(' ')[0] ||
@@ -43,16 +39,6 @@ export const HomePage = () => {
     totalTimeTooltip,
     totalTimeLabel,
   } = useUsageSummary()
-
-  useEffect(() => {
-    const init = async () => {
-      const flowSession = await FlowSessionApi.getInProgressFlowSession()
-      if (flowSession) {
-        navigate('/flow')
-      }
-    }
-    init()
-  }, [navigate])
 
   return (
     <Layout>

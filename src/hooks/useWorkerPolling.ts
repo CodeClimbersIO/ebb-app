@@ -5,7 +5,7 @@ import { DateTime } from 'luxon'
 import { listen } from '@tauri-apps/api/event'
 import { useUpdateRollupForUser } from '../api/hooks/useActivityRollups'
 
-export const useEbbStatus = () => {
+export const useWorkerPolling = () => {
   const { profile, isLoading, refetch } = useProfile()
   const { mutate: updateProfile } = useUpdateProfile()
   const { updateRollupForUser } = useUpdateRollupForUser()

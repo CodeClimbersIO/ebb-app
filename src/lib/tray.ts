@@ -17,8 +17,6 @@ async function showAndFocusWindow() {
   return mainWindow
 }
 
-let timerInterval: NodeJS.Timeout | null = null
-
 const getIconPath = async () => {
   const resolvedIconPath = await resolveResource('icons/tray.png')
   return isDev() ? 'icons/tray.png' : resolvedIconPath
@@ -34,15 +32,45 @@ function getRemainingDuration(startTime: DateTime, totalDuration: Duration): Dur
   return remainingDuration
 }
 
+const addInterval = (interval: NodeJS.Timeout) => {
+  const intervals = localStorage.getItem('intervals')
+  if (intervals) {
+    const parsedIntervals = JSON.parse(intervals)
+    parsedIntervals.push(interval)
+    localStorage.setItem('intervals', JSON.stringify(parsedIntervals))
+  } else {
+    localStorage.setItem('intervals', JSON.stringify([interval]))
+  }
+}
+
+const removeInterval = (interval: NodeJS.Timeout) => {
+  const intervals = localStorage.getItem('intervals')
+  if (intervals) {
+    const parsedIntervals = JSON.parse(intervals)
+    parsedIntervals.splice(parsedIntervals.indexOf(interval), 1)
+    localStorage.setItem('intervals', JSON.stringify(parsedIntervals))
+  }
+}
+
+const clearIntervals = () => {
+  const intervals = localStorage.getItem('intervals')
+  if (intervals) {
+    const parsedIntervals = JSON.parse(intervals)
+    parsedIntervals.forEach((interval: NodeJS.Timeout) => {
+      removeInterval(interval)
+      clearInterval(interval)
+    })
+  }
+}
+
+let timerInterval: NodeJS.Timeout | null = null
+
 export const startFlowTimer = async (startTime: DateTime) => {
   const tray = await TrayIcon.getById('main-tray')
-  if (timerInterval) {
-    clearInterval(timerInterval)
-  }
 
   if (!tray) return
   await tray.setTitle('')
-  
+
   timerInterval = setInterval(async () => {
     const currentTotalDuration = useFlowTimer.getState().totalDuration
 
@@ -59,11 +87,8 @@ export const startFlowTimer = async (startTime: DateTime) => {
       totalMs = currentTotalDuration.as('milliseconds')
       
       if (remainingDuration.as('milliseconds') <= 0) {
-        if (timerInterval) {
-          clearInterval(timerInterval)
-          timerInterval = null
-        }
-        await stopFlowTimer()
+        clearIntervals()
+        await clearFlowTimer()
         return
       }
     } else {
@@ -85,26 +110,22 @@ export const startFlowTimer = async (startTime: DateTime) => {
       logAndToastError(`Error generating/setting timer icon: ${error}`, error)
     }
   }, 1000)
-
-  const originalClearInterval = window.clearInterval
-  window.clearInterval = (id: string | number | NodeJS.Timeout | undefined) => {
-    return originalClearInterval(id)
-  }
+  addInterval(timerInterval)
 }
 
-export const stopFlowTimer = async () => {
+export const clearFlowTimer = async () => {
   const tray = await TrayIcon.getById('main-tray')
   if (!tray) return
-
-  if (timerInterval) {
-    clearInterval(timerInterval)
-    timerInterval = null
-  }
 
   const iconPath = await getIconPath()
   await tray.setIcon(iconPath)
   await tray.setIconAsTemplate(true)
   await tray.setTitle('')
+}
+
+export const stopFlowTimer = async () => {
+  clearIntervals()
+  await clearFlowTimer()
 }
 
 export async function setupTray() {

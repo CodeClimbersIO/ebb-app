@@ -9,11 +9,11 @@ import { usePostHog } from 'posthog-js/react'
 import { useShortcutStore } from '@/lib/stores/shortcutStore'
 import { useConnectedStore } from '@/lib/stores/connectedStore'
 import { useProfile } from '@/api/hooks/useProfile'
-import { useEbbStatus } from '@/hooks/useEbbStatus'
+import { useWorkerPolling } from '@/hooks/useWorkerPolling'
 
 export const useInitializeAppState = () => {  
   useProfile()
-  useEbbStatus()
+  useWorkerPolling()
   
   const posthog = usePostHog()
   const { beginCheckForUpdates } = useUpdate()

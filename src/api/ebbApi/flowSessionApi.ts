@@ -1,24 +1,33 @@
 import { QueryResult } from '@tauri-apps/plugin-sql'
 import { FlowSession, FlowSessionRepo, FlowSessionSchema } from '@/db/ebb/flowSessionRepo'
+import { Workflow, WorkflowApi } from './workflowApi'
+
 
 const startFlowSession = async (
   objective: string, 
-  duration?: number,
+  workflow?: Workflow | null,
 ): Promise<string> => {
+  const inProgressFlowSession = await FlowSessionRepo.getInProgressFlowSession()
+  
+  if (inProgressFlowSession) throw new Error('Flow session already in progress')
+
+  let workflowToUse = workflow
+  if (!workflow) {
+    workflowToUse = await WorkflowApi.getSmartDefaultWorkflow()
+  }
+  if (!workflowToUse) throw new Error('No workflow found')
+
   const flowSession: FlowSessionSchema = {
     id: self.crypto.randomUUID(),
     start: new Date().toISOString(),
+    workflow_id: workflowToUse.id,
     objective,
     self_score: 0,
-    duration: duration ? duration * 60 : undefined,
-  }
-  
-  if (await FlowSessionRepo.getInProgressFlowSession()) {
-    throw new Error('Flow session already in progress')
+    duration: workflowToUse.settings.defaultDuration ? workflowToUse.settings.defaultDuration * 60 : undefined,
   }
   
   await FlowSessionRepo.createFlowSession(flowSession)
-  
+
   return flowSession.id
 }
 

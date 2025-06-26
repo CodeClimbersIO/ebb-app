@@ -7,6 +7,7 @@ export interface WorkflowDb {
   last_selected: string | null
   created_at: string
   updated_at: string
+  is_smart_default: boolean
 }
 
 export interface WorkflowSettings {
@@ -102,11 +103,21 @@ const updateWorkflowName = async (id: string, name: string): Promise<void> => {
   )
 }
 
+const getSmartDefaultWorkflow = async (): Promise<WorkflowDb | null> => {
+  const ebbDb = await getEbbDb()
+  const [workflow] = await ebbDb.select<WorkflowDb[]>(
+    'SELECT * FROM workflow WHERE is_smart_default = 1',
+    []
+  )
+  return workflow
+}
+
 export const WorkflowRepo = {
   getWorkflows,
   getWorkflowById,
   saveWorkflow,
   deleteWorkflow,
   updateLastSelected,
-  updateWorkflowName
+  updateWorkflowName,
+  getSmartDefaultWorkflow
 }

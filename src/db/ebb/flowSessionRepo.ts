@@ -11,6 +11,7 @@ export interface FlowSessionSchema {
   stats?: string
   flow_periods?: string
   duration?: number
+  workflow_id?: string
 }
 
 export type FlowSession = FlowSessionSchema & {
