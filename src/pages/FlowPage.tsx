@@ -226,11 +226,13 @@ export const FlowPage = () => {
         navigate('/start-flow')
         return
       }
+      
       const workflow = await WorkflowApi.getWorkflowById(flowSession.workflow_id)
       if(!workflow) {
         navigate('/start-flow')
         return
       }
+
       setSelectedPlaylistId(workflow.settings.selectedPlaylist || '')
       setWorkflow(workflow) // this is the workflow that we are using for the flow
       setFlowSession(flowSession || null)
@@ -408,7 +410,7 @@ export const FlowPage = () => {
 
     await invoke('stop_blocking')
     await stopFlowTimer()
-    await FlowSessionApi.endFlowSession(flowSession.id)
+    await FlowSessionApi.endFlowSession()
 
     navigate('/flow-recap', {
       state: {

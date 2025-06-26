@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -38,7 +37,6 @@ export const StartFlowPage = () => {
     display_name: string | null
     product?: string
   } | null>(null)
-  const navigate = useNavigate()
   const posthog = usePostHog()
 
   useEffect(() => {
@@ -245,13 +243,8 @@ export const StartFlowPage = () => {
         throw new Error('No workflow found')
       }
 
-      await FlowSessionApi.startFlowSession(objective, currentWorkflow)
+      await FlowSessionApi.startFlowSession(objective || currentWorkflow.name, currentWorkflow)
 
-      if (!hasBreathing) {
-        navigate('/flow')
-      } else {
-        navigate('/breathing-exercise')
-      }
     } catch (error) {
       logAndToastError(`Failed to start flow session: ${error}`, error)
     }

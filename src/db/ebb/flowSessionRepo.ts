@@ -26,10 +26,11 @@ const createFlowSession = async (
 }
 
 const updateFlowSession = async (
-  flowSession: Partial<FlowSession> & { id: string },
+  id: string,
+  flowSession: Partial<FlowSessionSchema>,
 ): Promise<QueryResult> => {
   const ebbDb = await getEbbDb()
-  return update(ebbDb, 'flow_session', flowSession, flowSession.id)
+  return update(ebbDb, 'flow_session', flowSession, id)
 }
 
 const getFlowSessions = async (limit = 10): Promise<FlowSession[]> => {
@@ -109,6 +110,13 @@ const getInProgressFlowSession = async (): Promise<FlowSession | undefined> => {
   return flowSession
 }
 
+const getMostRecentFlowSession = async (): Promise<FlowSession | undefined> => {
+  const ebbDb = await getEbbDb()
+  const [flowSession] = await ebbDb.select<FlowSession[]>(
+    'SELECT * FROM flow_session ORDER BY start DESC LIMIT 1',
+  )
+  return flowSession
+}
 
 export const FlowSessionRepo = {
   createFlowSession,
@@ -116,4 +124,5 @@ export const FlowSessionRepo = {
   getFlowSessions,
   getFlowSessionById,
   getInProgressFlowSession,
+  getMostRecentFlowSession,
 }
