@@ -43,9 +43,8 @@ fn on_app_blocked(app_handle: tauri::AppHandle, event: BlockedAppEvent) {
 
 async fn thirty_second_loop(app_handle: tauri::AppHandle) {
     loop {
-        log::info!("Thirty second loop");
         app_handle.emit("online-ping", ()).unwrap_or_else(|e| {
-            log::error!("Failed to emit on-thirty-second-loop event: {}", e);
+            log::error!("Failed to emit online-ping event: {}", e);
         });
         sleep(Duration::from_secs(30)).await;
     }

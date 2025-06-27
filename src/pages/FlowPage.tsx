@@ -22,10 +22,10 @@ import { getSpotifyIdFromUri, openSpotifyLink, PlaybackState, SpotifyApiService 
 import { SpotifyAuthService } from '@/lib/integrations/spotify/spotifyAuth'
 import { invoke } from '@tauri-apps/api/core'
 import NotificationManager from '@/lib/notificationManager'
-import { listen } from '@tauri-apps/api/event'
+import { listen, UnlistenFn } from '@tauri-apps/api/event'
 import { useBlockedEvents } from '@/hooks/useBlockedEvents'
 import { useFlowTimer } from '../lib/stores/flowTimer'
-import { startFlowTimer, stopFlowTimer } from '../lib/tray'
+import { stopFlowTimer } from '../lib/tray'
 import { DifficultyButton } from '@/components/DifficultyButton'
 import { useSpotifyInstallation } from '@/hooks/useSpotifyInstallation'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
@@ -115,20 +115,20 @@ const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
   }, [flowSession, hasShownWarning])
 
   useEffect(() => {
+    let unlistenAddTime: UnlistenFn | undefined
+
     const setupListener = async () => {
-      const unlisten = await listen<{ action: string, minutes: number }>('add-time-event', (event) => {
+      unlistenAddTime = await listen<{ action: string, minutes: number }>('add-time-event', (event) => {
         if (event.payload.action === 'add-time') {
           handleAddTime()
         }
       })
-
-      return unlisten
     }
 
-    const unlistenPromise = setupListener()
+    void setupListener()
 
     return () => {
-      unlistenPromise.then(unlisten => unlisten())
+      unlistenAddTime?.()
     }
   }, [handleAddTime])
 
@@ -185,7 +185,6 @@ type CurrentTrack = {
 const startTimer = async (flowSession: FlowSession, workflow: Workflow  ) => {
   const duration = workflow.settings.defaultDuration || 0
   useFlowTimer.getState().setTotalDuration(Duration.fromObject({ minutes: duration }))
-  await startFlowTimer(DateTime.fromISO(flowSession?.start || ''))
 } 
 
 const startBlocking = async (workflow: Workflow) => {
