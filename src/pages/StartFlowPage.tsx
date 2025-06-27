@@ -242,7 +242,7 @@ export const StartFlowPage = () => {
         throw new Error('No workflow found')
       }
 
-      await FlowSessionApi.startFlowSession(objective || currentWorkflow.name, currentWorkflow)
+      await FlowSessionApi.startFlowSession(objective || currentWorkflow.name, 'manual', currentWorkflow)
 
     } catch (error) {
       logAndToastError(`Failed to start flow session: ${error}`, error)

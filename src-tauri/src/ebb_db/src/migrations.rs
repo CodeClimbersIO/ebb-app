@@ -209,6 +209,7 @@ pub fn get_migrations() -> Vec<Migration> {
             description: "add_workflow_id_to_flow_session_and_set_default_workflow_in_device_profile",
             sql: r#"
             ALTER TABLE flow_session ADD COLUMN workflow_id TEXT;
+            ALTER TABLE flow_session ADD COLUMN type TEXT;
             
             -- Set the most recently used workflow as the default workflow in device_profile preferences
             UPDATE device_profile 

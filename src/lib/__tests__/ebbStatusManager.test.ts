@@ -17,6 +17,7 @@ describe('ebbStatusManager', () => {
         start: new Date().toISOString(),
         end: new Date().toISOString(),
         self_score: 1,
+        type: 'manual',
       })
       const status = await calculateCurrentStatus()
       expect(status).toBe('flowing')

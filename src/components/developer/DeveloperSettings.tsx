@@ -4,7 +4,7 @@ import NotificationManager from '../../lib/notificationManager'
 import { Button } from '../ui/button'
 const notificationManager = NotificationManager.getInstance()
 export function DeveloperSettings() {
-  const handleTestNotification = (type: 'session-start' | 'session-end' | 'session-warning' | 'blocked-app', difficulty: 'easy' | 'medium' | 'hard') => {
+  const handleTestNotification = (type: 'session-start-smart' |  'session-start' | 'session-end' | 'session-warning' | 'blocked-app', difficulty: 'easy' | 'medium' | 'hard') => {
     notificationManager.show({
       type,
       difficulty

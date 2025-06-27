@@ -241,9 +241,15 @@ export const FlowPage = () => {
       await startBlocking(workflow)
       await startTimer(flowSession, workflow)
 
-      NotificationManager.getInstance().show({
-        type: 'session-start'
-      })
+      if (flowSession.type === 'smart') {
+        NotificationManager.getInstance().show({
+          type: 'session-start-smart'
+        })
+      } else {
+        NotificationManager.getInstance().show({
+          type: 'session-start'
+        })
+      }
 
 
     }

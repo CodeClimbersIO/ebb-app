@@ -40,7 +40,7 @@ export const SmartSessionApi = {
       return
     }
 
-    const newSession = await FlowSessionApi.startFlowSession('Smart Flow')
+    const newSession = await FlowSessionApi.startFlowSession('Smart Flow', 'smart')
     
     return newSession
   },

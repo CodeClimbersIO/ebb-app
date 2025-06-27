@@ -12,6 +12,7 @@ export interface FlowSessionSchema {
   flow_periods?: string
   duration?: number
   workflow_id?: string
+  type: 'smart' | 'manual'
 }
 
 export type FlowSession = FlowSessionSchema & {

@@ -5,6 +5,7 @@ import { Workflow, WorkflowApi } from './workflowApi'
 
 const startFlowSession = async (
   objective: string, 
+  type: 'smart' | 'manual',
   workflow?: Workflow | null,
 ): Promise<string> => {
   const inProgressFlowSession = await FlowSessionRepo.getInProgressFlowSession()
@@ -24,10 +25,11 @@ const startFlowSession = async (
     objective: objective || workflowToUse.name,
     self_score: 0,
     duration: workflowToUse.settings.defaultDuration ? workflowToUse.settings.defaultDuration * 60 : undefined,
+    type
   }
   
   await FlowSessionRepo.createFlowSession(flowSession)
-  window.dispatchEvent(new CustomEvent('flow-session-started', { detail: flowSession.id }))
+  window.dispatchEvent(new CustomEvent('flow-session-started', { detail: { id: flowSession.id } }))
 
   return flowSession.id
 }
