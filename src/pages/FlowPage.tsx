@@ -182,7 +182,7 @@ type CurrentTrack = {
   position_ms: number
 }
 
-const startTimer = async (flowSession: FlowSession, workflow: Workflow  ) => {
+const startTimer = async (workflow: Workflow) => {
   const duration = workflow.settings.defaultDuration || 0
   useFlowTimer.getState().setTotalDuration(Duration.fromObject({ minutes: duration }))
 } 
@@ -238,7 +238,7 @@ export const FlowPage = () => {
       setDifficulty(workflow?.settings.difficulty || 'medium')
 
       await startBlocking(workflow)
-      await startTimer(flowSession, workflow)
+      await startTimer(workflow)
 
       if (flowSession.type === 'smart') {
         NotificationManager.getInstance().show({
