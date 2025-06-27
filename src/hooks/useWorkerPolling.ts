@@ -4,7 +4,6 @@ import { calculateCurrentStatus } from '../lib/ebbStatusManager'
 import { DateTime } from 'luxon'
 import { listen, UnlistenFn } from '@tauri-apps/api/event'
 import { useUpdateRollupForUser } from '../api/hooks/useActivityRollups'
-import { SmartSessionApi } from '../api/ebbApi/smartSessionApi'
 
 export const useWorkerPolling = () => {
   const { profile, isLoading, refetch } = useProfile()
@@ -30,7 +29,7 @@ export const useWorkerPolling = () => {
             refetch()
           }
         })
-        SmartSessionApi.startSmartSession()
+        // SmartSessionApi.startSmartSession()
       })
     }
     setupListener()
