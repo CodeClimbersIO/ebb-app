@@ -38,14 +38,11 @@ impl DeviceService {
         key: &str,
     ) -> Result<Option<T>> {
         let device = self.device_repo.get_device().await?;
-        println!("device: {:?}", device);
         if let Some(profile) = self
             .device_profile_repo
             .get_device_profile(&device.id)
             .await?
         {
-            println!("profile: {:?}", profile);
-            println!("preferences: {:?}", profile.preferences);
             return Ok(profile.preferences.get_preference(key));
         } else {
             let profile = DeviceProfile::new(device.id.clone());
@@ -111,7 +108,6 @@ impl DeviceService {
         let settings = self
             .get_current_device_preference::<SmartFocusSettings>("smart_focus_settings")
             .await?;
-        println!("settings: {:?}", settings);
         Ok(settings)
     }
 
