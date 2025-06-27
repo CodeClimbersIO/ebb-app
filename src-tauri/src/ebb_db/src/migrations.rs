@@ -204,6 +204,15 @@ pub fn get_migrations() -> Vec<Migration> {
             "#,
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 15,
+            description: "add_workflow_id_to_flow_session_and_set_default_workflow_in_device_profile",
+            sql: r#"
+            ALTER TABLE flow_session ADD COLUMN workflow_id TEXT;
+            ALTER TABLE flow_session ADD COLUMN type TEXT;
+            "#,
+            kind: MigrationKind::Up,
+        },
     ]
 }
 

@@ -7,6 +7,7 @@ export interface WorkflowDb {
   last_selected: string | null
   created_at: string
   updated_at: string
+  is_smart_default: boolean
 }
 
 export interface WorkflowSettings {
@@ -38,6 +39,15 @@ const getWorkflowById = async (id: string): Promise<WorkflowDb | null> => {
   )
   
   return workflows.length > 0 ? workflows[0] : null
+}
+
+const getLatestWorkflow = async (): Promise<WorkflowDb | null> => {
+  const ebbDb = await getEbbDb()
+  const [workflow] = await ebbDb.select<WorkflowDb[]>(
+    'SELECT * FROM workflow ORDER BY last_selected DESC LIMIT 1',
+    []
+  )
+  return workflow
 }
 
 const saveWorkflow = async (workflow: Partial<WorkflowDb>): Promise<string> => {
@@ -102,11 +112,26 @@ const updateWorkflowName = async (id: string, name: string): Promise<void> => {
   )
 }
 
+const getSmartDefaultWorkflow = async (device_id: string): Promise<WorkflowDb | null> => {
+  const ebbDb = await getEbbDb()
+  const [workflow] = await ebbDb.select<WorkflowDb[]>(
+    `SELECT w.* FROM workflow w
+      LEFT JOIN device_profile dp
+        ON w.id = dp.preferences->>'$.smart_focus_settings.workflow_id'
+    WHERE dp.device_id = ?
+    `,
+    [device_id]
+  )
+  return workflow
+}
+
 export const WorkflowRepo = {
   getWorkflows,
   getWorkflowById,
   saveWorkflow,
   deleteWorkflow,
   updateLastSelected,
-  updateWorkflowName
+  updateWorkflowName,
+  getSmartDefaultWorkflow,
+  getLatestWorkflow
 }

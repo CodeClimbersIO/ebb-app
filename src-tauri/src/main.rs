@@ -82,6 +82,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             commands::get_idle_sensitivity,
             commands::set_idle_sensitivity,
             commands::get_device_id,
+            commands::get_smart_focus_settings,
+            commands::update_smart_focus_settings,
             change_autostart,
             tray_icon_gen::generate_timer_icon,
         ])

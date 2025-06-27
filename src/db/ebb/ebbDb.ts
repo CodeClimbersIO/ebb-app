@@ -2,15 +2,28 @@ import Database from '@tauri-apps/plugin-sql'
 import { homeDir, join } from '@tauri-apps/api/path'
 
 let ebbDb: Database | null = null
+let ebbDbPromise: Promise<Database> | null = null
 
 export const getEbbDb = async () => {
   if (ebbDb) {
     return ebbDb
   }
-  const homeDirectory = await homeDir()
-  const ebbDbPath = await join(homeDirectory, '.ebb', 'ebb-desktop.sqlite')
-  ebbDb = await Database.load(`sqlite:${ebbDbPath}`)
-  return ebbDb
+  
+  // If we're already in the process of loading, return that promise
+  if (ebbDbPromise) {
+    return ebbDbPromise
+  }
+  
+  ebbDbPromise = (async () => {
+    const homeDirectory = await homeDir()
+    const ebbDbPath = await join(homeDirectory, '.ebb', 'ebb-desktop.sqlite')
+    const db = await Database.load(`sqlite:${ebbDbPath}`)
+    ebbDb = db
+    ebbDbPromise = null
+    return db
+  })()
+  
+  return ebbDbPromise
 }
 
 type DbOperation<T> = () => Promise<T>

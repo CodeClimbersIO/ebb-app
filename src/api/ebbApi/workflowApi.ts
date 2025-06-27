@@ -3,14 +3,13 @@ import { WorkflowDb, WorkflowRepo, WorkflowSettings } from '@/db/ebb/workflowRep
 import { getEbbDb } from '@/db/ebb/ebbDb'
 import { BlockingPreferenceApi } from './blockingPreferenceApi'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
+import { DeviceProfileApi } from './deviceProfileApi'
 
 export interface Workflow {
   id?: string
   name: string
-  selectedApps: SearchOption[]
-  selectedPlaylist?: string | null
-  selectedPlaylistName?: string | null
   lastSelected?: number
+  selectedApps: SearchOption[]
   settings: WorkflowSettings
 }
 
@@ -25,20 +24,10 @@ const fromDbWorkflow = async (dbWorkflow: WorkflowDb): Promise<Workflow> => {
   }
   
   return {
-    id: dbWorkflow.id,
-    name: dbWorkflow.name,
-    selectedApps: selectedApps,
-    selectedPlaylist: settings.selectedPlaylist,
-    selectedPlaylistName: settings.selectedPlaylistName,
+    ...dbWorkflow,
     lastSelected: dbWorkflow.last_selected ? new Date(dbWorkflow.last_selected).getTime() : undefined,
-    settings: {
-      typewriterMode: settings.typewriterMode,
-      hasBreathing: settings.hasBreathing,
-      hasMusic: settings.hasMusic,
-      isAllowList: settings.isAllowList || false,
-      defaultDuration: settings.defaultDuration,
-      difficulty: settings.difficulty,
-    }
+    selectedApps: selectedApps,
+    settings
   }
 }
 
@@ -49,8 +38,8 @@ const toDbWorkflow = (workflow: Workflow): Partial<WorkflowDb> => {
     hasMusic: workflow.settings.hasMusic,
     isAllowList: workflow.settings.isAllowList,
     defaultDuration: workflow.settings.defaultDuration,
-    selectedPlaylist: workflow.selectedPlaylist,
-    selectedPlaylistName: workflow.selectedPlaylistName,
+    selectedPlaylist: workflow.settings.selectedPlaylist,
+    selectedPlaylistName: workflow.settings.selectedPlaylistName,
     difficulty: workflow.settings.difficulty,
   }
   
@@ -117,11 +106,19 @@ const renameWorkflow = async (id: string, newName: string): Promise<void> => {
   await WorkflowRepo.updateWorkflowName(id, newName)
 }
 
+const getSmartDefaultWorkflow = async (): Promise<Workflow | null> => {
+  const device_id = await DeviceProfileApi.getDeviceId()
+  const workflow = await WorkflowRepo.getSmartDefaultWorkflow(device_id)
+  if (!workflow) return null
+  return await fromDbWorkflow(workflow)
+}
+
 export const WorkflowApi = {
   getWorkflows,
   getWorkflowById,
   saveWorkflow,
   deleteWorkflow,
   updateLastSelected,
-  renameWorkflow
+  renameWorkflow,
+  getSmartDefaultWorkflow
 } 

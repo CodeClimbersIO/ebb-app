@@ -1,4 +1,7 @@
-use ebb_db::{db_manager, services::device_service::DeviceService};
+use ebb_db::{
+    db_manager,
+    services::device_service::{DeviceService, SmartFocusSettings},
+};
 use os_monitor::{
     get_application_icon_data, has_accessibility_permissions, request_accessibility_permissions,
     start_blocking as os_start_blocking, stop_blocking as os_stop_blocking, BlockableItem,
@@ -284,6 +287,7 @@ pub async fn get_idle_sensitivity() -> Result<i32, String> {
     let db_manager = get_ebb_db_manager().await?;
     let device_service = DeviceService::new_with_pool(db_manager.pool);
     let idle_sensitivity = device_service.get_idle_sensitivity().await.unwrap_or(60);
+    println!("idle_sensitivity: {:?}", idle_sensitivity);
     Ok(idle_sensitivity)
 }
 
@@ -306,4 +310,27 @@ pub async fn get_device_id() -> Result<String, String> {
         Ok(device_profile) => Ok(device_profile.device_id),
         Err(e) => Err(format!("error getting device id: {}", e).into()),
     }
+}
+
+#[command]
+pub async fn get_smart_focus_settings() -> Result<Option<SmartFocusSettings>, String> {
+    let db_manager = get_ebb_db_manager().await?;
+    let device_service = DeviceService::new_with_pool(db_manager.pool);
+    let settings = device_service
+        .get_smart_focus_settings()
+        .await
+        .map_err(|e| format!("error getting smart focus settings: {}", e))?;
+    println!("settings: {:?}", settings);
+    Ok(settings)
+}
+
+#[command]
+pub async fn update_smart_focus_settings(settings: SmartFocusSettings) -> Result<(), String> {
+    let db_manager = get_ebb_db_manager().await?;
+    let device_service = DeviceService::new_with_pool(db_manager.pool);
+    device_service
+        .set_smart_focus_settings(settings)
+        .await
+        .map_err(|e| format!("error updating smart focus settings: {}", e))?;
+    Ok(())
 }

@@ -37,6 +37,8 @@ import { userApi } from '@/api/ebbApi/userApi'
 import { usePermissions } from '@/hooks/usePermissions'
 import { DeveloperSettings } from '../components/developer/DeveloperSettings'
 import { CommunityCard } from '../components/CommunityCard'
+import { SmartFocusSettings } from '@/components/SmartFocusSettings'
+import { DeviceProfileApi } from '@/api/ebbApi/deviceProfileApi'
 
 export function SettingsPage() {
   const [showUnlinkDialog, setShowUnlinkDialog] = useState(false)
@@ -112,7 +114,7 @@ export function SettingsPage() {
   useEffect(() => {
     const loadIdleSensitivity = async () => {
       try {
-        const sensitivity = await invoke<number>('get_idle_sensitivity')
+        const sensitivity = await DeviceProfileApi.getIdleSensitivity()
         setIdleSensitivity(sensitivity)
       } catch (error) {
         logAndToastError(`Error loading idle sensitivity: ${error}`, error)
@@ -171,7 +173,7 @@ export function SettingsPage() {
   const handleIdleSensitivityChange = async (value: string) => {
     const newSensitivity = parseInt(value)
     try {
-      await invoke('set_idle_sensitivity', { sensitivity: newSensitivity })
+      await DeviceProfileApi.setIdleSensitivity(newSensitivity)
       setIdleSensitivity(newSensitivity)
       setIdleSensitivityChanged(true)
     } catch (error) {
@@ -195,6 +197,8 @@ export function SettingsPage() {
                   maxDevices={maxDevices} 
                 />
               </div>
+
+              <SmartFocusSettings />
 
               <div className="border rounded-lg p-6">
                 <h2 className="text-lg font-semibold mb-4">System</h2>

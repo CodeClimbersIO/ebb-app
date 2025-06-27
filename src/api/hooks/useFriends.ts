@@ -274,7 +274,6 @@ export const useFriendsWithInsights = () => {
     refreshIntervalRef.current = window.setInterval(refreshData, 5 * 60 * 1000) // 5 minutes
 
     const handleFocus = () => {
-      console.log('handleFocus')
       refreshData()
     }
     window.addEventListener('focus', handleFocus)

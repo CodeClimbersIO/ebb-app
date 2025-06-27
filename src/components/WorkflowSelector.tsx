@@ -377,7 +377,6 @@ export function WorkflowSelector({ selectedId, onSelect, onSettingsChange }: Wor
       const newWorkflow: Workflow = {
         name: 'New Profile',
         selectedApps: [],
-        selectedPlaylist: null,
         lastSelected: Date.now(),
         settings: {
           typewriterMode: false,
@@ -386,7 +385,7 @@ export function WorkflowSelector({ selectedId, onSelect, onSettingsChange }: Wor
           isAllowList: false,
           defaultDuration: null,
           difficulty: 'medium',
-        }
+        },
       }
       
       try {

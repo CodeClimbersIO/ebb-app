@@ -25,10 +25,12 @@ import NotificationManager from '@/lib/notificationManager'
 import { listen } from '@tauri-apps/api/event'
 import { useBlockedEvents } from '@/hooks/useBlockedEvents'
 import { useFlowTimer } from '../lib/stores/flowTimer'
-import { stopFlowTimer } from '../lib/tray'
+import { startFlowTimer, stopFlowTimer } from '../lib/tray'
 import { DifficultyButton } from '@/components/DifficultyButton'
 import { useSpotifyInstallation } from '@/hooks/useSpotifyInstallation'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
+import { Workflow, WorkflowApi } from '../api/ebbApi/workflowApi'
+import { BlockingPreferenceApi } from '../api/ebbApi/blockingPreferenceApi'
 
 const getDurationFormatFromSeconds = (seconds: number) => {
   const duration = Duration.fromMillis(seconds * 1000)
@@ -180,21 +182,31 @@ type CurrentTrack = {
   position_ms: number
 }
 
+const startTimer = async (flowSession: FlowSession, workflow: Workflow  ) => {
+  const duration = workflow.settings.defaultDuration || 0
+  useFlowTimer.getState().setTotalDuration(Duration.fromObject({ minutes: duration }))
+  await startFlowTimer(DateTime.fromISO(flowSession?.start || ''))
+} 
+
+const startBlocking = async (workflow: Workflow) => {
+  const blockingApps = workflow.id ? await BlockingPreferenceApi.getWorkflowBlockedApps(workflow.id) : []
+  // start blocking
+  const isBlockList = !workflow.settings.isAllowList
+  await invoke('start_blocking', { blockingApps, isBlockList })
+}
+
 export const FlowPage = () => {
   useBlockedEvents()
   const navigate = useNavigate()
   const [flowSession, setFlowSession] = useState<FlowSession | null>(null)
+  const [workflow, setWorkflow] = useState<Workflow | null>(null)
   const [isEndingSession, setIsEndingSession] = useState(false)
   const [difficulty, setDifficulty] = useState<Difficulty>()
   const [player, setPlayer] = useState<Spotify.Player | null>(null)
   const [spotifyDeviceId, setSpotifyDeviceId] = useState<string>('')
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTrack, setCurrentTrack] = useState<CurrentTrack | null>(null)
-  const [selectedPlaylistId, setSelectedPlaylistId] = useState<string>(() => {
-    const state = window.history.state?.usr
-    // Try getting from session state first, then fall back to localStorage for non-workflow sessions
-    return state?.selectedPlaylist || localStorage.getItem('lastPlaylist') || ''
-  })
+  const [selectedPlaylistId, setSelectedPlaylistId] = useState<string>('')
   const [isSpotifyAuthenticated, setIsSpotifyAuthenticated] = useState(false)
   const [playlistData, setPlaylistData] = useState<{
     playlists: { id: string; name: string }[]
@@ -207,20 +219,39 @@ export const FlowPage = () => {
   const [clickedButton, setClickedButton] = useState<'prev' | 'play' | 'next' | null>(null)
 
   useEffect(() => {
-    NotificationManager.getInstance().show({
-      type: 'session-start'
-    })
-  }, [])
-
-  useEffect(() => {
     const init = async () => {
       const flowSession = await FlowSessionApi.getInProgressFlowSession()
-      if (!flowSession) {
+
+      if (!flowSession || !flowSession.workflow_id) {
         navigate('/start-flow')
+        return
       }
+      
+      const workflow = await WorkflowApi.getWorkflowById(flowSession.workflow_id)
+      if(!workflow) {
+        navigate('/start-flow')
+        return
+      }
+
+      setSelectedPlaylistId(workflow.settings.selectedPlaylist || '')
+      setWorkflow(workflow) // this is the workflow that we are using for the flow
       setFlowSession(flowSession || null)
-      const state = window.history.state?.usr
-      setDifficulty(state?.difficulty || 'medium')
+      setDifficulty(workflow?.settings.difficulty || 'medium')
+
+      await startBlocking(workflow)
+      await startTimer(flowSession, workflow)
+
+      if (flowSession.type === 'smart') {
+        NotificationManager.getInstance().show({
+          type: 'session-start-smart'
+        })
+      } else {
+        NotificationManager.getInstance().show({
+          type: 'session-start'
+        })
+      }
+
+
     }
     init()
   }, [])
@@ -235,7 +266,6 @@ export const FlowPage = () => {
         setCurrentTrack(null)
         setSelectedPlaylistId('')
       }
-      await stopFlowTimer()
       handleEndSession()
     }
     window.addEventListener('flowSessionComplete', handleSessionComplete)
@@ -257,11 +287,9 @@ export const FlowPage = () => {
         const newPlayer = await SpotifyApiService.createPlayer()
 
         newPlayer.addListener('ready', ({ device_id }: { device_id: string }) => {
-          setSpotifyDeviceId(device_id)
-          const state = window.history.state?.usr
-          const playlistToUse = state?.selectedPlaylist || localStorage.getItem('lastPlaylist')
-          if (playlistToUse) {
-            SpotifyApiService.startPlayback(playlistToUse, device_id)
+          setSpotifyDeviceId(device_id) 
+          if (selectedPlaylistId) {
+            SpotifyApiService.startPlayback(selectedPlaylistId, device_id)
           }
         })
 
@@ -309,8 +337,7 @@ export const FlowPage = () => {
       }
     }
 
-    const state = window.history.state?.usr
-    const hasMusic = state?.hasMusic ?? true
+    const hasMusic = workflow?.settings.hasMusic
     if (hasMusic) {
       initSpotify()
     }
@@ -318,7 +345,7 @@ export const FlowPage = () => {
     return () => {
       player?.disconnect()
     }
-  }, [])
+  }, [workflow])
 
   useEffect(() => {
     const loadPlaylistData = async () => {
@@ -389,7 +416,7 @@ export const FlowPage = () => {
 
     await invoke('stop_blocking')
     await stopFlowTimer()
-    await FlowSessionApi.endFlowSession(flowSession.id)
+    await FlowSessionApi.endFlowSession()
 
     navigate('/flow-recap', {
       state: {
@@ -543,7 +570,7 @@ export const FlowPage = () => {
 
       <div className="flex-1 flex flex-col items-center justify-center">
         <Timer flowSession={flowSession} />
-        {(window.history.state?.usr?.hasMusic ?? true) && isSpotifyAuthenticated && (
+        {workflow?.settings.hasMusic && isSpotifyAuthenticated && (
           <div className="w-full max-w-lg mx-auto px-4 mb-4 mt-12">
             <Card className="p-6">
               <CardContent className="space-y-12">

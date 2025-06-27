@@ -7,6 +7,18 @@ use crate::db::{
     models::device_profile::{DevicePreference, DeviceProfile},
 };
 
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+pub struct SmartFocusSettings {
+    pub enabled: bool,
+    #[serde(default = "default_trigger_duration")]
+    pub trigger_duration_minutes: i32,
+    pub workflow_id: Option<String>,
+}
+
+fn default_trigger_duration() -> i32 {
+    10 // Default to 10 minutes
+}
+
 pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
 pub struct DeviceService {
     device_repo: DeviceRepo,
@@ -26,11 +38,14 @@ impl DeviceService {
         key: &str,
     ) -> Result<Option<T>> {
         let device = self.device_repo.get_device().await?;
+        println!("device: {:?}", device);
         if let Some(profile) = self
             .device_profile_repo
             .get_device_profile(&device.id)
             .await?
         {
+            println!("profile: {:?}", profile);
+            println!("preferences: {:?}", profile.preferences);
             return Ok(profile.preferences.get_preference(key));
         } else {
             let profile = DeviceProfile::new(device.id.clone());
@@ -88,6 +103,20 @@ impl DeviceService {
 
     pub async fn set_idle_sensitivity(&self, sensitivity: i32) -> Result<()> {
         self.set_current_device_preference("idle_sensitivity", sensitivity)
+            .await?;
+        Ok(())
+    }
+
+    pub async fn get_smart_focus_settings(&self) -> Result<Option<SmartFocusSettings>> {
+        let settings = self
+            .get_current_device_preference::<SmartFocusSettings>("smart_focus_settings")
+            .await?;
+        println!("settings: {:?}", settings);
+        Ok(settings)
+    }
+
+    pub async fn set_smart_focus_settings(&self, settings: SmartFocusSettings) -> Result<()> {
+        self.set_current_device_preference("smart_focus_settings", settings)
             .await?;
         Ok(())
     }
@@ -174,6 +203,35 @@ mod tests {
         let profile = service.get_device_profile().await?;
         let profile2 = service.get_device_profile().await?;
         assert_eq!(profile.id, profile2.id);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn set_get_smart_focus_settings() -> Result<()> {
+        let pool = db_manager::create_test_db().await;
+        let service = DeviceService::new_with_pool(pool);
+
+        let settings = SmartFocusSettings {
+            enabled: true,
+            trigger_duration_minutes: 15,
+            workflow_id: Some("test-workflow-id".to_string()),
+        };
+
+        if let Err(e) = service.set_smart_focus_settings(settings.clone()).await {
+            panic!("Failed to set smart focus settings: {:?}", e);
+        }
+
+        if let Ok(Some(retrieved_settings)) = service.get_smart_focus_settings().await {
+            assert_eq!(retrieved_settings.enabled, settings.enabled);
+            assert_eq!(
+                retrieved_settings.trigger_duration_minutes,
+                settings.trigger_duration_minutes
+            );
+            assert_eq!(retrieved_settings.workflow_id, settings.workflow_id);
+        } else {
+            panic!("Smart focus settings not found");
+        }
+
         Ok(())
     }
 }

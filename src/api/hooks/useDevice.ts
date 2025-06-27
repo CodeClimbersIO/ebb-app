@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
 import { deviceRepo } from '@/db/supabase/deviceRepo'
 import { hostname } from '@tauri-apps/plugin-os'
-import { invoke } from '@tauri-apps/api/core'
+import { DeviceProfileApi } from '../ebbApi/deviceProfileApi'
 
 export interface Device {
   device_id: string
@@ -39,7 +39,7 @@ const cleanupHostname = (name: string): string => {
 
 // Core device functions
 const getCurrentDeviceId = async (): Promise<string> => {
-  const deviceId = await invoke<string>('get_device_id')
+  const deviceId = await DeviceProfileApi.getDeviceId()
   return deviceId
 }
 
