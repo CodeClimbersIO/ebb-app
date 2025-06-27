@@ -41,6 +41,15 @@ const getWorkflowById = async (id: string): Promise<WorkflowDb | null> => {
   return workflows.length > 0 ? workflows[0] : null
 }
 
+const getLatestWorkflow = async (): Promise<WorkflowDb | null> => {
+  const ebbDb = await getEbbDb()
+  const [workflow] = await ebbDb.select<WorkflowDb[]>(
+    'SELECT * FROM workflow ORDER BY last_selected DESC LIMIT 1',
+    []
+  )
+  return workflow
+}
+
 const saveWorkflow = async (workflow: Partial<WorkflowDb>): Promise<string> => {
   const ebbDb = await getEbbDb()
   const now = new Date().toISOString()
@@ -123,5 +132,6 @@ export const WorkflowRepo = {
   deleteWorkflow,
   updateLastSelected,
   updateWorkflowName,
-  getSmartDefaultWorkflow
+  getSmartDefaultWorkflow,
+  getLatestWorkflow
 }

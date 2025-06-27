@@ -210,27 +210,6 @@ pub fn get_migrations() -> Vec<Migration> {
             sql: r#"
             ALTER TABLE flow_session ADD COLUMN workflow_id TEXT;
             ALTER TABLE flow_session ADD COLUMN type TEXT;
-            
-            -- Set the most recently used workflow as the default workflow in device_profile preferences
-            UPDATE device_profile 
-            SET preferences = json_set(
-                json_set(
-                    preferences, 
-                    '$.smart_focus_settings.workflow_id', 
-                    (
-                        SELECT id 
-                        FROM workflow 
-                        WHERE last_selected IS NOT NULL 
-                        ORDER BY last_selected DESC 
-                        LIMIT 1
-                    )
-                ),
-                '$.smart_focus_settings.enabled',
-                json('true')
-            )
-            WHERE EXISTS (
-                SELECT 1 FROM workflow WHERE last_selected IS NOT NULL
-            );
             "#,
             kind: MigrationKind::Up,
         },

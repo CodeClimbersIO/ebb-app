@@ -1,5 +1,6 @@
 import { invoke } from '@tauri-apps/api/core'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
+import { WorkflowRepo } from '../../db/ebb/workflowRepo'
 
 export interface SmartFocusSettings {
   enabled: boolean
@@ -17,6 +18,16 @@ const DEFAULT_SMART_FOCUS_SETTINGS: SmartFocusSettings = {
 const getSmartFocusSettings = async (): Promise<SmartFocusSettings> => {
   try {
     const settings = await invoke<SmartFocusSettings | null>('get_smart_focus_settings')
+    if(!settings?.workflow_id) { // set smart focus workflow id if not set
+      const latestWorkflow = await WorkflowRepo.getLatestWorkflow()
+      if(latestWorkflow) {
+        await updateSmartFocusSettings({
+          enabled: true,
+          trigger_duration_minutes: DEFAULT_SMART_FOCUS_SETTINGS.trigger_duration_minutes,
+          workflow_id: latestWorkflow.id
+        })
+      }
+    }
     return settings || DEFAULT_SMART_FOCUS_SETTINGS
   } catch (error) {
     logAndToastError(`Failed to get smart focus settings: ${error}`, error)
