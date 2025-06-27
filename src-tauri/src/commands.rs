@@ -287,7 +287,6 @@ pub async fn get_idle_sensitivity() -> Result<i32, String> {
     let db_manager = get_ebb_db_manager().await?;
     let device_service = DeviceService::new_with_pool(db_manager.pool);
     let idle_sensitivity = device_service.get_idle_sensitivity().await.unwrap_or(60);
-    println!("idle_sensitivity: {:?}", idle_sensitivity);
     Ok(idle_sensitivity)
 }
 
@@ -320,7 +319,6 @@ pub async fn get_smart_focus_settings() -> Result<Option<SmartFocusSettings>, St
         .get_smart_focus_settings()
         .await
         .map_err(|e| format!("error getting smart focus settings: {}", e))?;
-    println!("settings: {:?}", settings);
     Ok(settings)
 }
 
