@@ -221,7 +221,6 @@ export const StartFlowPage = () => {
             typewriterMode: false,
             difficulty,
           },
-          is_smart_default: true,
         }
 
         try {

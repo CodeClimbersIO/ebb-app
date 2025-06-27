@@ -1,6 +1,7 @@
 import { DateTime } from 'luxon'
 import { MonitorApi } from '../monitorApi/monitorApi'
 import { FlowSessionApi } from './flowSessionApi'
+import { DeviceProfileApi } from './deviceProfileApi'
 
 const isCreatingFromTimePeriod = async (start: DateTime, end: DateTime): Promise<boolean> => {
   const activityStates = await MonitorApi.getTimeCreatingByTimePeriod(start, end)
@@ -20,15 +21,21 @@ export const SmartSessionApi = {
     if (inProgressSession) {
       return inProgressSession
     }
-
     const mostRecentSession = await FlowSessionApi.getMostRecentFlowSession()
     // allow for a cooldown period between sessions of 30 minutes
     const timeSinceLastSession = DateTime.fromISO(mostRecentSession?.start || '').diffNow('minutes').minutes
     if (mostRecentSession && timeSinceLastSession > -30) {
       return
     }
+    const smartFocusSettings = await DeviceProfileApi.getSmartFocusSettings()
 
-    const isCreating = await isCreatingFromTimePeriod(DateTime.now().toUTC().minus({ minutes: 10 }), DateTime.now().toUTC())
+    if (!smartFocusSettings.enabled) {
+      return
+    }
+
+    const triggerDuration = smartFocusSettings.trigger_duration_minutes || 10
+
+    const isCreating = await isCreatingFromTimePeriod(DateTime.now().toUTC().minus({ minutes: triggerDuration }), DateTime.now().toUTC())
     if (!isCreating) {
       return
     }

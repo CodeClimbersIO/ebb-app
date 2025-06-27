@@ -386,7 +386,6 @@ export function WorkflowSelector({ selectedId, onSelect, onSettingsChange }: Wor
           defaultDuration: null,
           difficulty: 'medium',
         },
-        is_smart_default: false,
       }
       
       try {

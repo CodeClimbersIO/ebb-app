@@ -206,23 +206,29 @@ pub fn get_migrations() -> Vec<Migration> {
         },
         Migration {
             version: 15,
-            description: "add_is_smart_default_to_workflow_and_workflow_id_to_flow_session",
+            description: "add_workflow_id_to_flow_session_and_set_default_workflow_in_device_profile",
             sql: r#"
-            -- Add is_smart_default column to workflow with default value of 0 (false)
-            ALTER TABLE workflow ADD COLUMN is_smart_default INTEGER NOT NULL DEFAULT 0;
-            
-            -- Add workflow_id foreign key column to flow_session (nullable)
             ALTER TABLE flow_session ADD COLUMN workflow_id TEXT;
             
-            -- Set the workflow with the most recent last_selected as the smart default
-            UPDATE workflow 
-            SET is_smart_default = 1 
-            WHERE id = (
-                SELECT id 
-                FROM workflow 
-                WHERE last_selected IS NOT NULL 
-                ORDER BY last_selected DESC 
-                LIMIT 1
+            -- Set the most recently used workflow as the default workflow in device_profile preferences
+            UPDATE device_profile 
+            SET preferences = json_set(
+                json_set(
+                    preferences, 
+                    '$.smart_focus_settings.workflow_id', 
+                    (
+                        SELECT id 
+                        FROM workflow 
+                        WHERE last_selected IS NOT NULL 
+                        ORDER BY last_selected DESC 
+                        LIMIT 1
+                    )
+                ),
+                '$.smart_focus_settings.enabled',
+                json('true')
+            )
+            WHERE EXISTS (
+                SELECT 1 FROM workflow WHERE last_selected IS NOT NULL
             );
             "#,
             kind: MigrationKind::Up,

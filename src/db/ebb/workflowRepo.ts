@@ -103,11 +103,15 @@ const updateWorkflowName = async (id: string, name: string): Promise<void> => {
   )
 }
 
-const getSmartDefaultWorkflow = async (): Promise<WorkflowDb | null> => {
+const getSmartDefaultWorkflow = async (device_id: string): Promise<WorkflowDb | null> => {
   const ebbDb = await getEbbDb()
   const [workflow] = await ebbDb.select<WorkflowDb[]>(
-    'SELECT * FROM workflow WHERE is_smart_default = 1',
-    []
+    `SELECT w.* FROM workflow w
+      LEFT JOIN device_profile dp
+        ON w.id = dp.preferences->>'$.smart_focus_settings.workflow_id'
+    WHERE dp.device_id = ?
+    `,
+    [device_id]
   )
   return workflow
 }

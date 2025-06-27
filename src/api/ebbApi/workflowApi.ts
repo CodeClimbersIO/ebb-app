@@ -3,6 +3,7 @@ import { WorkflowDb, WorkflowRepo, WorkflowSettings } from '@/db/ebb/workflowRep
 import { getEbbDb } from '@/db/ebb/ebbDb'
 import { BlockingPreferenceApi } from './blockingPreferenceApi'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
+import { DeviceProfileApi } from './deviceProfileApi'
 
 export interface Workflow {
   id?: string
@@ -10,7 +11,6 @@ export interface Workflow {
   lastSelected?: number
   selectedApps: SearchOption[]
   settings: WorkflowSettings
-  is_smart_default: boolean
 }
 
 const fromDbWorkflow = async (dbWorkflow: WorkflowDb): Promise<Workflow> => {
@@ -107,7 +107,8 @@ const renameWorkflow = async (id: string, newName: string): Promise<void> => {
 }
 
 const getSmartDefaultWorkflow = async (): Promise<Workflow | null> => {
-  const workflow = await WorkflowRepo.getSmartDefaultWorkflow()
+  const device_id = await DeviceProfileApi.getDeviceId()
+  const workflow = await WorkflowRepo.getSmartDefaultWorkflow(device_id)
   if (!workflow) return null
   return await fromDbWorkflow(workflow)
 }
