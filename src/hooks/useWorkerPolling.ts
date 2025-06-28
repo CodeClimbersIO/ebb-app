@@ -7,6 +7,9 @@ import { useUpdateRollupForUser } from '../api/hooks/useActivityRollups'
 import { useDeviceProfile } from '../api/hooks/useDeviceProfile'
 import { Worker } from '../lib/worker'
 import { invoke } from '@tauri-apps/api/core'
+import { canUseSmartFocus } from '../lib/utils/environment.util'
+import { SmartSessionApi } from '../api/ebbApi/smartSessionApi'
+import { useAuth } from './useAuth'
 
 type OnlinePingEvent = {
   event: string
@@ -15,6 +18,7 @@ type OnlinePingEvent = {
 }
 
 export const useWorkerPolling = () => {
+  const { user } = useAuth()
   const { profile, isLoading, refetch } = useProfile()
   const { deviceId } = useDeviceProfile()
   const { mutate: updateProfile } = useUpdateProfile()
@@ -40,8 +44,8 @@ export const useWorkerPolling = () => {
             updateProfile({ id: profile.id, last_check_in: last_check_in.toISO(), version })
             refetch()
           }
-          if(deviceId) {
-            // await SmartSessionApi.startSmartSession(deviceId)
+          if(deviceId && canUseSmartFocus(user?.email)) {
+            await SmartSessionApi.startSmartSession(deviceId)
           }
         }
         Worker.work(event.payload, run) // used to make sure we don't run the same work multiple times
@@ -53,6 +57,6 @@ export const useWorkerPolling = () => {
     return () => {
       unlisten?.()
     }
-  }, [profile, isLoading, updateRollupForUser, deviceId]) 
+  }, [profile, isLoading, updateRollupForUser, deviceId, user]) 
 
 }

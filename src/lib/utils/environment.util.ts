@@ -11,3 +11,7 @@ export const canaryUsers = ['rphovley@gmail.com', 'paul@ebb.cool', 'djl.hovley@g
 export const isCanaryUser = (email?: string) => {
   return canaryUsers.includes(email || '')
 }
+
+export const canUseSmartFocus = (email?: string) => {
+  return isCanaryUser(email)
+}
