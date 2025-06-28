@@ -112,18 +112,6 @@ export function SettingsPage() {
     checkAutostart()
   }, [])
 
-  // useEffect(() => {
-  //   const loadIdleSensitivity = async () => {
-  //     try {
-  //       const sensitivity = await DeviceProfileApi.getIdleSensitivity()
-  //       setIdleSensitivity(sensitivity)
-  //     } catch (error) {
-  //       logAndToastError(`Error loading idle sensitivity: ${error}`, error)
-  //     }
-  //   }
-  //   loadIdleSensitivity()
-  // }, [])
-
   const handleUnlink = (service: 'spotify' | 'apple') => {
     setServiceToUnlink(service)
     setShowUnlinkDialog(true)
