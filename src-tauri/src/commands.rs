@@ -270,3 +270,8 @@ pub fn detect_spotify() -> bool {
             .unwrap_or(false)
     }
 }
+
+#[command]
+pub fn get_app_version(app_handle: tauri::AppHandle) -> String {
+    app_handle.package_info().version.to_string()
+}

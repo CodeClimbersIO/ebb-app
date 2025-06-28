@@ -22,6 +22,7 @@ export type UserProfile = {
   preferences: Record<string, string | number | boolean>
   created_at: string
   updated_at: string
+  version: string
 }
 
 interface CreateProfile {

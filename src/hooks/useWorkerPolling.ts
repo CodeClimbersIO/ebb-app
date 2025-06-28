@@ -6,6 +6,7 @@ import { listen, UnlistenFn } from '@tauri-apps/api/event'
 import { useUpdateRollupForUser } from '../api/hooks/useActivityRollups'
 import { useDeviceProfile } from '../api/hooks/useDeviceProfile'
 import { Worker } from '../lib/worker'
+import { invoke } from '@tauri-apps/api/core'
 
 type OnlinePingEvent = {
   event: string
@@ -27,15 +28,16 @@ export const useWorkerPolling = () => {
         const run = async ()=> {
           const status = await calculateCurrentStatus()
           const last_check_in = DateTime.now()
+          const version = await invoke<string>('get_app_version')
           if(profile?.online_status !== status) {
-            updateProfile({ id: profile.id, online_status: status, last_check_in: last_check_in.toISO() })
+            updateProfile({ id: profile.id, online_status: status, last_check_in: last_check_in.toISO(), version })
             refetch()
           }
           // if time since last check in is greater than 5 minutes, update the last check in
           const timeSinceLastCheckIn = DateTime.fromISO(profile?.last_check_in).diffNow('minutes').minutes
           if(timeSinceLastCheckIn < -5) {
             updateRollupForUser()
-            updateProfile({ id: profile.id, last_check_in: last_check_in.toISO() })
+            updateProfile({ id: profile.id, last_check_in: last_check_in.toISO(), version })
             refetch()
           }
           if(deviceId) {
