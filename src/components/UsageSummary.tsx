@@ -72,6 +72,16 @@ export const formatTime = (minutes: number) => {
   return `${hours}h ${remainingMinutes}m`
 }
 
+// Tooltip Helper function to format time in hours/minutes for tooltip
+export const formatTimeToDecimalHours = (minutes: number) => {
+  if (minutes >= 60) {
+    const hours = Math.round((minutes / 60) * 10)/ 10
+    return `${hours}h`
+  }
+  return `${minutes}m`
+}
+
+
 export interface UsageSummaryProps {
   totalTimeLabel?: string;
   totalTimeTooltip?: string;
@@ -308,11 +318,11 @@ export const UsageSummary = ({
                         <div className="rounded-lg border bg-background p-2 shadow-md">
                           <div className="mb-2 font-medium">{data.timeRange}</div>
                           <div className="space-y-1">
-                            <div className="text-[rgb(124,58,237)]">Creating: {data.creating} min</div>
-                            <div className="text-gray-500">Neutral: {data.neutral} min</div>
-                            <div className="text-[rgb(239,68,68)]">Consuming: {data.consuming} min</div>
-                            <div className="text-[rgb(156,163,175)]">Idle: {data.idle} min</div>
-                            <div className="text-gray-600">Offline: {data.offline} min</div>
+                            <div className="text-[rgb(124,58,237)]">Creating: {formatTimeToDecimalHours(data.creating)}</div>
+                            <div className="text-gray-500">Neutral: {formatTimeToDecimalHours(data.neutral)}</div>
+                            <div className="text-[rgb(239,68,68)]">Consuming: {formatTimeToDecimalHours(data.consuming)}</div>
+                            <div className="text-[rgb(156,163,175)]">Idle: {formatTimeToDecimalHours(data.idle)}</div>
+                            <div className="text-gray-600">Offline: {formatTimeToDecimalHours(data.offline)}</div>
                           </div>
                         </div>
                       )
