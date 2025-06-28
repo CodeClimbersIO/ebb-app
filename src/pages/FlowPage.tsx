@@ -31,6 +31,7 @@ import { useSpotifyInstallation } from '@/hooks/useSpotifyInstallation'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
 import { Workflow, WorkflowApi } from '../api/ebbApi/workflowApi'
 import { BlockingPreferenceApi } from '../api/ebbApi/blockingPreferenceApi'
+import { EbbWorker } from '../lib/ebbWorker'
 
 const getDurationFormatFromSeconds = (seconds: number) => {
   const duration = Duration.fromMillis(seconds * 1000)
@@ -338,7 +339,7 @@ export const FlowPage = () => {
 
     const hasMusic = workflow?.settings.hasMusic
     if (hasMusic) {
-      initSpotify()
+      EbbWorker.debounceWork(initSpotify, 'init_spotify')
     }
 
     return () => {
@@ -377,7 +378,7 @@ export const FlowPage = () => {
       }
     }
 
-    loadPlaylistData()
+    EbbWorker.debounceWork(loadPlaylistData, 'load_playlist_data')
   }, [isSpotifyAuthenticated])
 
   useEffect(() => {

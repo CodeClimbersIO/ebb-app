@@ -5,7 +5,7 @@ import { DateTime } from 'luxon'
 import { listen, UnlistenFn } from '@tauri-apps/api/event'
 import { useUpdateRollupForUser } from '../api/hooks/useActivityRollups'
 import { useDeviceProfile } from '../api/hooks/useDeviceProfile'
-import { Worker } from '../lib/worker'
+import { EbbWorker } from '../lib/ebbWorker'
 import { invoke } from '@tauri-apps/api/core'
 import { canUseSmartFocus } from '../lib/utils/environment.util'
 import { SmartSessionApi } from '../api/ebbApi/smartSessionApi'
@@ -48,7 +48,7 @@ export const useWorkerPolling = () => {
             await SmartSessionApi.startSmartSession(deviceId)
           }
         }
-        Worker.work(event.payload, run) // used to make sure we don't run the same work multiple times
+        EbbWorker.work(event.payload, run) // used to make sure we don't run the same work multiple times
 
       })
     }

@@ -3,6 +3,7 @@ import { convertFileSrc, invoke } from '@tauri-apps/api/core'
 import { resolveResource } from '@tauri-apps/api/path'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { isDev } from './utils/environment.util'
+import { EbbWorker } from './ebbWorker'
 
 interface NotificationOptions {
   duration?: number
@@ -101,112 +102,115 @@ class NotificationManager {
 
   public async show(options: NotificationOptions): Promise<void> {
     try {
-      info(`Showing notification: ${JSON.stringify(options)}`)
+      const run = async () => {
+        info(`Showing notification: ${JSON.stringify(options)}`)
       
-      let duration = 5000
-      switch (options.type) {
-      case 'session-warning':
-        duration = 12000
-        break
-      case 'session-end':
-        duration = 8000
-        break
-      case 'session-start':
-        duration = 5000
-        break
-      case 'blocked-app':
-        duration = 12000
-        break
-      }
-
-      if (options.duration !== undefined) {
-        duration = options.duration
-      }
-
-      const { type } = options
-      const ANIMATION_DURATION = 500
-
-      const label = type
-      info(`Creating notification window: ${label}`)
-
-      const notificationUrl = await this.getNotificationUrl(type, duration, ANIMATION_DURATION, options.difficulty)
-      info(`Using notification URL: ${notificationUrl}`)
-
-      const webviewWindow = new WebviewWindow(label, {
-        url: notificationUrl,
-        width: this.NOTIFICATION_WIDTH,
-        height: this.NOTIFICATION_HEIGHT,
-        x: Math.round((screen.width - this.NOTIFICATION_WIDTH) / 2),
-        y: 20,
-        decorations: false,
-        alwaysOnTop: true,
-        focus: true,
-        resizable: false,
-        maximizable: false,
-        minimizable: false,
-        closable: false,
-        skipTaskbar: true,
-        titleBarStyle: 'transparent',
-        hiddenTitle: true,
-        transparent: true
-      })
-
-      webviewWindow.once('tauri://load-start', () => {
-        info('Webview started loading')
-      })
-
-      webviewWindow.once('tauri://load-end', () => {
-        info('Webview finished loading')
-      })
-
-      webviewWindow.once('tauri://error', (e) => {
-        error(`Webview error: ${JSON.stringify(e)}`)
-      })
-
-      await new Promise<void>((resolve, reject) => {
-        webviewWindow.once('tauri://created', () => {
-          info('Notification webview created successfully')
-          this.notifications.push(webviewWindow)
-          resolve()
-        })
-        
-        webviewWindow.once('tauri://error', (event) => {
-          error(`Error creating notification webview: ${JSON.stringify(event)}`)
-          reject(new Error('Failed to create notification webview'))
-        })
-      })
-
-      const closeWindow = async () => {
-        const index = this.notifications.indexOf(webviewWindow)
-        if (index > -1) {
-          this.notifications.splice(index, 1)
+        let duration = 5000
+        switch (options.type) {
+        case 'session-warning':
+          duration = 12000
+          break
+        case 'session-end':
+          duration = 8000
+          break
+        case 'session-start':
+          duration = 5000
+          break
+        case 'blocked-app':
+          duration = 12000
+          break
         }
-        await webviewWindow.destroy()
-        info('Notification window destroyed early via event')
-      }
 
-      webviewWindow.listen('notification-close', closeWindow)
-        .then(unlisten => {
-          webviewWindow.once('tauri://destroyed', () => {
-            unlisten()
+        if (options.duration !== undefined) {
+          duration = options.duration
+        }
+
+        const { type } = options
+        const ANIMATION_DURATION = 500
+
+        const label = type
+        info(`Creating notification window: ${label}`)
+
+        const notificationUrl = await this.getNotificationUrl(type, duration, ANIMATION_DURATION, options.difficulty)
+        info(`Using notification URL: ${notificationUrl}`)
+
+        const webviewWindow = new WebviewWindow(label, {
+          url: notificationUrl,
+          width: this.NOTIFICATION_WIDTH,
+          height: this.NOTIFICATION_HEIGHT,
+          x: Math.round((screen.width - this.NOTIFICATION_WIDTH) / 2),
+          y: 20,
+          decorations: false,
+          alwaysOnTop: true,
+          focus: true,
+          resizable: false,
+          maximizable: false,
+          minimizable: false,
+          closable: false,
+          skipTaskbar: true,
+          titleBarStyle: 'transparent',
+          hiddenTitle: true,
+          transparent: true
+        })
+
+        webviewWindow.once('tauri://load-start', () => {
+          info('Webview started loading')
+        })
+
+        webviewWindow.once('tauri://load-end', () => {
+          info('Webview finished loading')
+        })
+
+        webviewWindow.once('tauri://error', (e) => {
+          error(`Webview error: ${JSON.stringify(e)}`)
+        })
+
+        await new Promise<void>((resolve, reject) => {
+          webviewWindow.once('tauri://created', () => {
+            info('Notification webview created successfully')
+            this.notifications.push(webviewWindow)
+            resolve()
+          })
+        
+          webviewWindow.once('tauri://error', (event) => {
+            error(`Error creating notification webview: ${JSON.stringify(event)}`)
+            reject(new Error('Failed to create notification webview'))
           })
         })
 
-      webviewWindow.listen('snooze_blocking', async (event: { payload: { duration: number } }) => {
-        await invoke('snooze_blocking', {
-          duration: event.payload.duration
+        const closeWindow = async () => {
+          const index = this.notifications.indexOf(webviewWindow)
+          if (index > -1) {
+            this.notifications.splice(index, 1)
+          }
+          await webviewWindow.destroy()
+          info('Notification window destroyed early via event')
+        }
+
+        webviewWindow.listen('notification-close', closeWindow)
+          .then(unlisten => {
+            webviewWindow.once('tauri://destroyed', () => {
+              unlisten()
+            })
+          })
+
+        webviewWindow.listen('snooze_blocking', async (event: { payload: { duration: number } }) => {
+          await invoke('snooze_blocking', {
+            duration: event.payload.duration
+          })
         })
-      })
       
-        .then(unlisten => {
-          webviewWindow.once('tauri://destroyed', () => {
-            unlisten()
+          .then(unlisten => {
+            webviewWindow.once('tauri://destroyed', () => {
+              unlisten()
+            })
           })
-        })
 
-      setTimeout(closeWindow, duration + ANIMATION_DURATION)
+        setTimeout(closeWindow, duration + ANIMATION_DURATION)
 
-      info('Notification complete')
+        info('Notification complete')
+      }
+      EbbWorker.debounceWork(run, 'notification')
     } catch (err) {
       error(`Error showing notification: ${err}`)
       throw err
