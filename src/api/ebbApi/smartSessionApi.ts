@@ -16,7 +16,7 @@ const isCreatingFromTimePeriod = async (start: DateTime, end: DateTime): Promise
 }
 
 export const SmartSessionApi = {
-  startSmartSession: async () => {
+  startSmartSession: async (deviceId: string) => {
     const inProgressSession = await FlowSessionApi.getInProgressFlowSession()
     if (inProgressSession) {
       return inProgressSession
@@ -27,9 +27,10 @@ export const SmartSessionApi = {
     if (mostRecentSession && timeSinceLastSession > -30) {
       return
     }
-    const smartFocusSettings = await DeviceProfileApi.getSmartFocusSettings()
+    const deviceProfile = await DeviceProfileApi.getDeviceProfile(deviceId)
+    const smartFocusSettings = deviceProfile.preferences_json?.smart_focus_settings
 
-    if (!smartFocusSettings.enabled) {
+    if (!smartFocusSettings || !smartFocusSettings.enabled) {
       return
     }
 
