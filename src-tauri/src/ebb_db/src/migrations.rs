@@ -213,6 +213,28 @@ pub fn get_migrations() -> Vec<Migration> {
             "#,
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 16,
+            description: "ensure_single_active_flow_session",
+            sql: r#"
+            -- Delete duplicate active flow sessions, keeping only the most recent one
+            DELETE FROM flow_session 
+            WHERE end IS NULL 
+            AND id NOT IN (
+                SELECT id 
+                FROM flow_session 
+                WHERE end IS NULL 
+                ORDER BY start DESC 
+                LIMIT 1
+            );
+
+            -- Create a unique constraint to ensure only one active session can exist
+            CREATE UNIQUE INDEX idx_single_active_session 
+            ON flow_session(1) 
+            WHERE end IS NULL;
+            "#,
+            kind: MigrationKind::Up,
+        },
     ]
 }
 
