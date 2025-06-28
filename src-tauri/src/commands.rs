@@ -283,35 +283,6 @@ async fn get_ebb_db_manager() -> Result<db_manager::DbManager, String> {
 }
 
 #[command]
-pub async fn get_idle_sensitivity() -> Result<i32, String> {
-    let db_manager = get_ebb_db_manager().await?;
-    let device_service = DeviceService::new_with_pool(db_manager.pool);
-    let idle_sensitivity = device_service.get_idle_sensitivity().await.unwrap_or(60);
-    Ok(idle_sensitivity)
-}
-
-#[command]
-pub async fn set_idle_sensitivity(sensitivity: i32) -> Result<(), String> {
-    let db_manager = get_ebb_db_manager().await?;
-    let device_service = DeviceService::new_with_pool(db_manager.pool);
-    match device_service.set_idle_sensitivity(sensitivity).await {
-        Ok(_) => Ok(()),
-        Err(e) => Err(format!("error setting idle sensitivity: {}", e).into()),
-    }
-}
-
-#[command]
-pub async fn get_device_id() -> Result<String, String> {
-    let db_manager = get_ebb_db_manager().await?;
-    let device_service = DeviceService::new_with_pool(db_manager.pool);
-    let device_profile = device_service.get_device_profile().await;
-    match device_profile {
-        Ok(device_profile) => Ok(device_profile.device_id),
-        Err(e) => Err(format!("error getting device id: {}", e).into()),
-    }
-}
-
-#[command]
 pub async fn get_smart_focus_settings() -> Result<Option<SmartFocusSettings>, String> {
     let db_manager = get_ebb_db_manager().await?;
     let device_service = DeviceService::new_with_pool(db_manager.pool);

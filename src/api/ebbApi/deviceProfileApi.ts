@@ -1,17 +1,17 @@
 import { invoke } from '@tauri-apps/api/core'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
 import { WorkflowRepo } from '../../db/ebb/workflowRepo'
+import { DevicePreference, DeviceProfileDb, DeviceProfileRepo, SmartFocusSettings } from '../../db/ebb/deviceProfileRepo'
 
-export interface SmartFocusSettings {
-  enabled: boolean
-  trigger_duration_minutes: number // 10, 15, 20, 25, 30 (increments of 5)
-  workflow_id: string | null
-}
 
 const DEFAULT_SMART_FOCUS_SETTINGS: SmartFocusSettings = {
   enabled: false,
   trigger_duration_minutes: 10,
   workflow_id: null
+}
+
+export type DeviceProfile = DeviceProfileDb & {
+  preferences_json: DevicePreference
 }
 
 // Smart Focus Settings
@@ -44,32 +44,21 @@ const updateSmartFocusSettings = async (settings: SmartFocusSettings): Promise<v
   }
 }
 
-// Idle Sensitivity (moved from SettingsPage for consistency)
-const getIdleSensitivity = async (): Promise<number> => {
-  try {
-    return await invoke<number>('get_idle_sensitivity')
-  } catch (error) {
-    logAndToastError(`Failed to get idle sensitivity: ${error}`, error)
-    return 60 // Default fallback
+
+const getDeviceProfile = async (deviceId: string): Promise<DeviceProfile> => {
+  const deviceProfile = await DeviceProfileRepo.getDeviceProfile(deviceId)
+  return {
+    ...deviceProfile,
+    preferences_json: JSON.parse(deviceProfile.preferences)
   }
 }
 
-const setIdleSensitivity = async (sensitivity: number): Promise<void> => {
-  try {
-    await invoke('set_idle_sensitivity', { sensitivity })
-  } catch (error) {
-    logAndToastError(`Failed to set idle sensitivity: ${error}`, error)
-    throw error
-  }
+const updateDeviceProfilePreferences = async (deviceId: string, preferences: DevicePreference): Promise<void> => {
+  return DeviceProfileRepo.updateDeviceProfilePreferences(deviceId, preferences)
 }
 
 const getDeviceId = async (): Promise<string> => {
-  try {
-    return await invoke<string>('get_device_id')
-  } catch (error) {
-    logAndToastError(`Failed to get device id: ${error}`, error)
-    return ''
-  }
+  return DeviceProfileRepo.getDeviceId()
 }
 
 export const DeviceProfileApi = {
@@ -77,7 +66,7 @@ export const DeviceProfileApi = {
   getSmartFocusSettings,
   updateSmartFocusSettings,
   // Idle Sensitivity
-  getIdleSensitivity,
-  setIdleSensitivity,
+  getDeviceProfile,
+  updateDeviceProfilePreferences,
   getDeviceId
 }

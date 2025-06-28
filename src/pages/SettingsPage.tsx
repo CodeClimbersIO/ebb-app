@@ -38,7 +38,7 @@ import { usePermissions } from '@/hooks/usePermissions'
 import { DeveloperSettings } from '../components/developer/DeveloperSettings'
 import { CommunityCard } from '../components/CommunityCard'
 import { SmartFocusSettings } from '@/components/SmartFocusSettings'
-import { DeviceProfileApi } from '@/api/ebbApi/deviceProfileApi'
+import { useDeviceProfile, useUpdateDeviceProfilePreferences } from '../api/hooks/useDeviceProfile'
 
 export function SettingsPage() {
   const [showUnlinkDialog, setShowUnlinkDialog] = useState(false)
@@ -46,7 +46,6 @@ export function SettingsPage() {
   const [serviceToUnlink, setServiceToUnlink] = useState<'spotify' | 'apple' | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [autostartEnabled, setAutostartEnabled] = useState(false)
-  const [idleSensitivity, setIdleSensitivity] = useState<number>(60)
   const [idleSensitivityChanged, setIdleSensitivityChanged] = useState(false)
   const [spotifyProfile, setSpotifyProfile] = useState<{
     email: string;
@@ -58,6 +57,8 @@ export function SettingsPage() {
   const [isDeleting, setIsDeleting] = useState(false)
   const { user } = useAuth()
   const { maxDevices } = usePermissions()
+  const { deviceProfile } = useDeviceProfile()
+  const { mutate: updateDeviceProfilePreferences } = useUpdateDeviceProfilePreferences()
 
   const idleOptions = [
     { value: 30, label: '30 seconds' },
@@ -111,17 +112,17 @@ export function SettingsPage() {
     checkAutostart()
   }, [])
 
-  useEffect(() => {
-    const loadIdleSensitivity = async () => {
-      try {
-        const sensitivity = await DeviceProfileApi.getIdleSensitivity()
-        setIdleSensitivity(sensitivity)
-      } catch (error) {
-        logAndToastError(`Error loading idle sensitivity: ${error}`, error)
-      }
-    }
-    loadIdleSensitivity()
-  }, [])
+  // useEffect(() => {
+  //   const loadIdleSensitivity = async () => {
+  //     try {
+  //       const sensitivity = await DeviceProfileApi.getIdleSensitivity()
+  //       setIdleSensitivity(sensitivity)
+  //     } catch (error) {
+  //       logAndToastError(`Error loading idle sensitivity: ${error}`, error)
+  //     }
+  //   }
+  //   loadIdleSensitivity()
+  // }, [])
 
   const handleUnlink = (service: 'spotify' | 'apple') => {
     setServiceToUnlink(service)
@@ -173,13 +174,21 @@ export function SettingsPage() {
   const handleIdleSensitivityChange = async (value: string) => {
     const newSensitivity = parseInt(value)
     try {
-      await DeviceProfileApi.setIdleSensitivity(newSensitivity)
-      setIdleSensitivity(newSensitivity)
+      if (!deviceProfile || !deviceProfile.device_id) return
+      updateDeviceProfilePreferences({
+        deviceId: deviceProfile?.device_id,
+        preferences: {
+          ...deviceProfile.preferences_json,
+          idle_sensitivity: newSensitivity,
+        },
+      })
       setIdleSensitivityChanged(true)
     } catch (error) {
       logAndToastError(`Error setting idle sensitivity: ${error}`, error)
     }
   }
+  
+  const idleSensitivity = deviceProfile?.preferences_json?.idle_sensitivity || 60
 
   return (
     <Layout>
