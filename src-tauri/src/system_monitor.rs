@@ -1,6 +1,7 @@
 use ebb_db::{db_manager, services::device_service::DeviceService};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
+use uuid::Uuid;
 
 use os_monitor::{
     detect_changes, has_accessibility_permissions, AppEvent, BlockedAppEvent, Monitor,
@@ -43,7 +44,9 @@ fn on_app_blocked(app_handle: tauri::AppHandle, event: BlockedAppEvent) {
 
 async fn thirty_second_loop(app_handle: tauri::AppHandle) {
     loop {
-        app_handle.emit("online-ping", ()).unwrap_or_else(|e| {
+        //generate a new id
+        let id = Uuid::new_v4().to_string();
+        app_handle.emit("online-ping", id).unwrap_or_else(|e| {
             log::error!("Failed to emit online-ping event: {}", e);
         });
         sleep(Duration::from_secs(30)).await;

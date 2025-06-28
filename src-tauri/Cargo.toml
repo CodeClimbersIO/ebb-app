@@ -38,6 +38,7 @@ tauri-plugin-shell = "2.3.0"
 tauri-plugin-sql = { version = "2.3.0", features = ["sqlite"] }
 tauri-plugin-updater = "2.9.0"
 tokio = { version = "1.42.0", features = ["full"] }
+uuid = "1.17.0"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-autostart = "2.5.0"

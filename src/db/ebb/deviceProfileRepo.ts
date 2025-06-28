@@ -8,7 +8,7 @@ export interface SmartFocusSettings {
 
 export interface DevicePreference {
   idle_sensitivity: number
-  smart_focus: SmartFocusSettings
+  smart_focus_settings: SmartFocusSettings
 }
 
 export interface DeviceProfileDb {
@@ -43,7 +43,6 @@ const getDeviceProfile = async (deviceId: string): Promise<DeviceProfileDb> => {
 
 const updateDeviceProfilePreferences = async (deviceId: string, preferences: DevicePreference): Promise<void> => {
   const ebbDb = await getEbbDb()
-  console.log('updateDeviceProfilePreferences', deviceId, preferences)
   await ebbDb.execute(
     'UPDATE device_profile SET preferences = ? WHERE device_id = ?',
     [preferences, deviceId]

@@ -8,10 +8,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { DeviceProfileApi, SmartFocusSettings as SmartFocusSettingsType } from '@/api/ebbApi/deviceProfileApi'
 import { WorkflowApi, Workflow } from '@/api/ebbApi/workflowApi'
 import { useNavigate } from 'react-router-dom'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
+import { SmartFocusSettings as SmartFocusSettingsType } from '@/db/ebb/deviceProfileRepo'
+import { useDeviceProfile, useUpdateDeviceProfilePreferences } from '../api/hooks/useDeviceProfile'
 
 export function SmartFocusSettings() {
   const [settings, setSettings] = useState<SmartFocusSettingsType>({
@@ -19,6 +20,8 @@ export function SmartFocusSettings() {
     trigger_duration_minutes: 10,
     workflow_id: null
   })
+  const { deviceId, deviceProfile } = useDeviceProfile()
+  const { mutate: updateDeviceProfilePreferences } = useUpdateDeviceProfilePreferences()
   const [workflows, setWorkflows] = useState<Workflow[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -34,14 +37,12 @@ export function SmartFocusSettings() {
 
   useEffect(() => {
     const loadData = async () => {
+      if(!deviceProfile || !deviceProfile.preferences_json?.smart_focus_settings) return
+      const smartFocusSettings = deviceProfile.preferences_json.smart_focus_settings
       try {
-        const [smartFocusSettings, workflowList] = await Promise.all([
-          DeviceProfileApi.getSmartFocusSettings(),
-          WorkflowApi.getWorkflows()
-        ])
-        
+        const workflows = await WorkflowApi.getWorkflows()
+        setWorkflows(workflows)
         setSettings(smartFocusSettings)
-        setWorkflows(workflowList)
       } catch (error) {
         logAndToastError(`Failed to load smart focus settings: ${error}`, error)
       } finally {
@@ -49,30 +50,51 @@ export function SmartFocusSettings() {
       }
     }
     loadData()
-  }, [])
+  }, [deviceProfile])
 
   const handleToggleEnabled = async (enabled: boolean) => {
+    if(!deviceId || !deviceProfile) return
     setIsSaving(true)
     const newSettings = { ...settings, enabled }
-    await DeviceProfileApi.updateSmartFocusSettings(newSettings)
+    await updateDeviceProfilePreferences({
+      deviceId,
+      preferences: {
+        ...deviceProfile.preferences_json,
+        smart_focus_settings: newSettings
+      }
+    })
     setSettings(newSettings)
     setIsSaving(false)
   }
 
   const handleDurationChange = async (value: string) => {
+    if(!deviceId || !deviceProfile) return
     setIsSaving(true)
     const trigger_duration_minutes = parseInt(value)
     const newSettings = { ...settings, trigger_duration_minutes }
-    await DeviceProfileApi.updateSmartFocusSettings(newSettings)
+    await updateDeviceProfilePreferences({
+      deviceId,
+      preferences: {
+        ...deviceProfile.preferences_json,
+        smart_focus_settings: newSettings
+      }
+    })
     setSettings(newSettings)
     setIsSaving(false)
   }
 
   const handleWorkflowChange = async (workflowId: string) => {
+    if(!deviceId || !deviceProfile) return
     setIsSaving(true)
     const workflow_id = workflowId === 'none' ? null : workflowId
     const newSettings = { ...settings, workflow_id }
-    await DeviceProfileApi.updateSmartFocusSettings(newSettings)
+    await updateDeviceProfilePreferences({
+      deviceId,
+      preferences: {
+        ...deviceProfile.preferences_json,
+        smart_focus_settings: newSettings
+      }
+    })
     setSettings(newSettings)
     setIsSaving(false)
   }

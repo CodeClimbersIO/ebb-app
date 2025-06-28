@@ -1,7 +1,3 @@
-use ebb_db::{
-    db_manager,
-    services::device_service::{DeviceService, SmartFocusSettings},
-};
 use os_monitor::{
     get_application_icon_data, has_accessibility_permissions, request_accessibility_permissions,
     start_blocking as os_start_blocking, stop_blocking as os_stop_blocking, BlockableItem,
@@ -273,33 +269,4 @@ pub fn detect_spotify() -> bool {
             .map(|output| output.status.success())
             .unwrap_or(false)
     }
-}
-
-async fn get_ebb_db_manager() -> Result<db_manager::DbManager, String> {
-    let db_path = db_manager::get_default_ebb_db_path();
-    db_manager::DbManager::new(&db_path)
-        .await
-        .map_err(|e| e.to_string())
-}
-
-#[command]
-pub async fn get_smart_focus_settings() -> Result<Option<SmartFocusSettings>, String> {
-    let db_manager = get_ebb_db_manager().await?;
-    let device_service = DeviceService::new_with_pool(db_manager.pool);
-    let settings = device_service
-        .get_smart_focus_settings()
-        .await
-        .map_err(|e| format!("error getting smart focus settings: {}", e))?;
-    Ok(settings)
-}
-
-#[command]
-pub async fn update_smart_focus_settings(settings: SmartFocusSettings) -> Result<(), String> {
-    let db_manager = get_ebb_db_manager().await?;
-    let device_service = DeviceService::new_with_pool(db_manager.pool);
-    device_service
-        .set_smart_focus_settings(settings)
-        .await
-        .map_err(|e| format!("error updating smart focus settings: {}", e))?;
-    Ok(())
 }

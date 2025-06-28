@@ -4,9 +4,18 @@ import { calculateCurrentStatus } from '../lib/ebbStatusManager'
 import { DateTime } from 'luxon'
 import { listen, UnlistenFn } from '@tauri-apps/api/event'
 import { useUpdateRollupForUser } from '../api/hooks/useActivityRollups'
+import { useDeviceProfile } from '../api/hooks/useDeviceProfile'
+import { Worker } from '../lib/worker'
+
+type OnlinePingEvent = {
+  event: string
+  id: number
+  payload: string
+}
 
 export const useWorkerPolling = () => {
   const { profile, isLoading, refetch } = useProfile()
+  const { deviceId } = useDeviceProfile()
   const { mutate: updateProfile } = useUpdateProfile()
   const { updateRollupForUser } = useUpdateRollupForUser()
 
@@ -14,8 +23,9 @@ export const useWorkerPolling = () => {
     if(isLoading || !profile) return
     let unlisten: UnlistenFn
     const setupListener = async () => {
-      unlisten = await listen('online-ping', () => {
-        calculateCurrentStatus().then(async (status) => {
+      unlisten = await listen('online-ping', (event: OnlinePingEvent) => {
+        const run = async ()=> {
+          const status = await calculateCurrentStatus()
           const last_check_in = DateTime.now()
           if(profile?.online_status !== status) {
             updateProfile({ id: profile.id, online_status: status, last_check_in: last_check_in.toISO() })
@@ -28,8 +38,12 @@ export const useWorkerPolling = () => {
             updateProfile({ id: profile.id, last_check_in: last_check_in.toISO() })
             refetch()
           }
-        })
-        // SmartSessionApi.startSmartSession()
+          if(deviceId) {
+            // await SmartSessionApi.startSmartSession(deviceId)
+          }
+        }
+        Worker.work(event.payload, run) // used to make sure we don't run the same work multiple times
+
       })
     }
     setupListener()
@@ -37,6 +51,6 @@ export const useWorkerPolling = () => {
     return () => {
       unlisten?.()
     }
-  }, [profile, isLoading, updateRollupForUser]) 
+  }, [profile, isLoading, updateRollupForUser, deviceId]) 
 
 }
