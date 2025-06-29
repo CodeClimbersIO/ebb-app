@@ -37,7 +37,6 @@ import { userApi } from '@/api/ebbApi/userApi'
 import { usePermissions } from '@/hooks/usePermissions'
 import { DeveloperSettings } from '../components/developer/DeveloperSettings'
 import { CommunityCard } from '../components/CommunityCard'
-import { SmartFocusSettings } from '@/components/SmartFocusSettings'
 import { useDeviceProfile, useUpdateDeviceProfilePreferences } from '../api/hooks/useDeviceProfile'
 
 export function SettingsPage() {
@@ -65,6 +64,8 @@ export function SettingsPage() {
     { value: 60, label: '1 minute' },
     { value: 120, label: '2 minutes' },
     { value: 180, label: '3 minutes' },
+    { value: 300, label: '5 minutes' },
+    { value: 600, label: '10 minutes' },
   ]
 
   useEffect(() => {
@@ -194,8 +195,6 @@ export function SettingsPage() {
                   maxDevices={maxDevices} 
                 />
               </div>
-
-              <SmartFocusSettings />
 
               <div className="border rounded-lg p-6">
                 <h2 className="text-lg font-semibold mb-4">System</h2>

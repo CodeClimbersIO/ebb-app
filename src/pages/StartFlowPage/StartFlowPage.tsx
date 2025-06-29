@@ -7,7 +7,7 @@ import { TimeSelector } from '@/components/TimeSelector'
 import { WorkflowSelector } from '@/components/WorkflowSelector'
 import { WorkflowApi, type Workflow } from '@/api/ebbApi/workflowApi'
 import { Duration } from 'luxon'
-import { getDurationFromDefault } from '../lib/stores/flowTimer'
+import { getDurationFromDefault } from '@/lib/stores/flowTimer'
 import { MusicSelector } from '@/components/MusicSelector'
 import { AppSelector, type SearchOption } from '@/components/AppSelector'
 import { AlertCircle } from 'lucide-react'
@@ -17,8 +17,9 @@ import { logAndToastError } from '@/lib/utils/ebbError.util'
 import { error as logError } from '@tauri-apps/plugin-log'
 import { BlockingPreferenceApi } from '@/api/ebbApi/blockingPreferenceApi'
 import { usePostHog } from 'posthog-js/react'
-import { Input } from '../components/ui/input'
-import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
+import { Input } from '@/components/ui/input'
+import { FlowSessionApi } from '@/api/ebbApi/flowSessionApi'
+import { SmartFocusSelector } from '@/pages/StartFlowPage/SmartFocusSelector'
 
 export const StartFlowPage = () => {
   const [duration, setDuration] = useState<Duration | null>(null)
@@ -79,6 +80,8 @@ export const StartFlowPage = () => {
 
     loadWorkflows()
   }, [setDuration])
+
+
 
   useEffect(() => {
     const checkSpotifyProfile = async () => {
@@ -170,6 +173,8 @@ export const StartFlowPage = () => {
       setHasBreathing(newSettings.hasBreathing ?? true)
     }
   }
+
+
 
 
   const handleBegin = async () => {
@@ -316,6 +321,9 @@ export const StartFlowPage = () => {
                   onChange={(value) => setDuration(value ? Duration.fromObject({ minutes: value }) : null)}
                 />
               </div>
+              {workflows.length > 0 && (
+                <SmartFocusSelector workflows={workflows} />
+              )}
             </div>
 
             {hasMusic && (
