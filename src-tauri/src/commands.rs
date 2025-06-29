@@ -1,3 +1,5 @@
+use crate::system_monitor;
+use crate::NOTIFICATION_WINDOW_LABEL;
 use os_monitor::{
     get_application_icon_data, has_accessibility_permissions, request_accessibility_permissions,
     start_blocking as os_start_blocking, stop_blocking as os_stop_blocking, BlockableItem,
@@ -6,10 +8,11 @@ use std::fs;
 use std::path::PathBuf;
 use std::sync::Mutex;
 use tauri::command;
+use tauri::{AppHandle, Manager};
+use tauri_nspanel::ManagerExt;
 use tokio::time::{sleep, Duration};
 
-use crate::system_monitor;
-
+use crate::window::WebviewWindowExt;
 // Store the current blocking state
 static BLOCKING_STATE: Mutex<Option<(Vec<BlockableItem>, bool)>> = Mutex::new(None);
 #[derive(Debug, serde::Deserialize)]
@@ -274,4 +277,32 @@ pub fn detect_spotify() -> bool {
 #[command]
 pub fn get_app_version(app_handle: tauri::AppHandle) -> String {
     app_handle.package_info().version.to_string()
+}
+
+#[tauri::command]
+pub fn show_notification(app_handle: AppHandle) {
+    let window = app_handle
+        .get_webview_window(NOTIFICATION_WINDOW_LABEL)
+        .unwrap();
+
+    // Position the window first
+    window.center_top_of_cursor_monitor().unwrap();
+
+    // Then get the panel and show it
+    let panel = app_handle
+        .get_webview_panel(NOTIFICATION_WINDOW_LABEL)
+        .unwrap();
+
+    panel.show();
+}
+
+#[tauri::command]
+pub fn hide_notification(app_handle: AppHandle) {
+    let panel = app_handle
+        .get_webview_panel(NOTIFICATION_WINDOW_LABEL)
+        .unwrap();
+
+    if panel.is_visible() {
+        panel.order_out(None);
+    }
 }
