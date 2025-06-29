@@ -18,7 +18,7 @@ const updateDeviceProfilePreferences = async (deviceId: string, preferences: Dev
 
 const getDeviceProfile = async (deviceId: string): Promise<DeviceProfile> => {
   const repoProfile = await DeviceProfileRepo.getDeviceProfile(deviceId)
-  const deviceProfile = {
+  let deviceProfile = {
     ...repoProfile,
     preferences_json: JSON.parse(repoProfile.preferences)
   }
@@ -33,6 +33,17 @@ const getDeviceProfile = async (deviceId: string): Promise<DeviceProfile> => {
           workflow_id: latestWorkflow.id
         }
       } as DevicePreference)
+      deviceProfile = {
+        ...repoProfile,
+        preferences_json: {
+          ...deviceProfile.preferences_json,
+          smart_focus_settings: {
+            enabled: true,
+            trigger_duration_minutes: DEFAULT_SMART_FOCUS_SETTINGS.trigger_duration_minutes,
+            workflow_id: latestWorkflow.id,
+          }
+        },
+      }
     }
   }
   return deviceProfile

@@ -1,4 +1,4 @@
-use ebb_db::{db_manager, migrations};
+use ebb_db::{db_manager, migrations, services::device_service::DeviceService};
 use tauri::Manager;
 use tokio;
 
@@ -8,6 +8,18 @@ mod system_monitor;
 mod tray_icon_gen;
 
 use autostart::{change_autostart, enable_autostart};
+
+async fn initialize_device_profile() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let ebb_db_path = db_manager::get_default_ebb_db_path();
+    let db_manager = db_manager::DbManager::new(&ebb_db_path).await?;
+    let device_service = DeviceService::new_with_pool(db_manager.pool);
+    let device_profile = device_service.get_device_profile().await;
+    match device_profile {
+        Ok(device_profile) => println!("device_profile: {:?}", device_profile),
+        Err(e) => println!("error getting device id: {}", e),
+    }
+    Ok(())
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -57,6 +69,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             app.handle()
                 .plugin(tauri_plugin_updater::Builder::new().build())?;
             enable_autostart(app);
+            tauri::async_runtime::spawn(async move { initialize_device_profile().await });
             Ok(())
         })
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())

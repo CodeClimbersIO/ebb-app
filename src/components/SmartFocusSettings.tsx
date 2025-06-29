@@ -20,7 +20,7 @@ export function SmartFocusSettings() {
     trigger_duration_minutes: 10,
     workflow_id: null
   })
-  const { deviceId, deviceProfile } = useDeviceProfile()
+  const { deviceId, deviceProfile, invalidateDeviceProfile } = useDeviceProfile()
   const { mutate: updateDeviceProfilePreferences } = useUpdateDeviceProfilePreferences()
   const [workflows, setWorkflows] = useState<Workflow[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -37,9 +37,9 @@ export function SmartFocusSettings() {
 
   useEffect(() => {
     const loadData = async () => {
-      if(!deviceProfile || !deviceProfile.preferences_json?.smart_focus_settings) return
-      const smartFocusSettings = deviceProfile.preferences_json.smart_focus_settings
+      if(!deviceProfile) return
       try {
+        const smartFocusSettings = deviceProfile.preferences_json.smart_focus_settings
         const workflows = await WorkflowApi.getWorkflows()
         setWorkflows(workflows)
         setSettings(smartFocusSettings)
@@ -100,6 +100,7 @@ export function SmartFocusSettings() {
   }
 
   const handleManageWorkflows = () => {
+    invalidateDeviceProfile()
     navigate('/start-flow')
   }
 
@@ -108,6 +109,22 @@ export function SmartFocusSettings() {
       <div className="border rounded-lg p-6">
         <h2 className="text-lg font-semibold mb-4">Smart Focus</h2>
         <div className="text-sm text-muted-foreground">Loading...</div>
+      </div>
+    )
+  }
+
+  if(!deviceProfile?.preferences_json?.smart_focus_settings?.workflow_id) {
+    return (
+      <div className="border rounded-lg p-6">
+        <h2 className="text-lg font-semibold mb-4">Smart Focus</h2>
+        <div className="space-y-4">
+          <div className="text-sm text-muted-foreground">
+            No existing focus settings found. Start your first focus session to get started with Smart Focus
+          </div>
+          <Button onClick={handleManageWorkflows} className="w-fit">
+            Start Focus Session
+          </Button>
+        </div>
       </div>
     )
   }

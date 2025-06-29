@@ -36,8 +36,13 @@ export const useUpdateDeviceProfilePreferences = () => {
 
 
 export const useDeviceProfile = () => {
+  const queryClient = useQueryClient()
   const { data: deviceId, isLoading: isLoadingDeviceId } = useGetDeviceId()
   const { data: deviceProfile, isLoading: isLoadingDeviceProfile } = useGetDeviceProfile(deviceId)
+
+  const invalidateDeviceProfile = () => {
+    queryClient.invalidateQueries({ queryKey: deviceProfileKeys.all })
+  }
 
   return {
     deviceId,
@@ -45,5 +50,6 @@ export const useDeviceProfile = () => {
     isLoading: isLoadingDeviceId || isLoadingDeviceProfile,
     isLoadingDeviceId,
     isLoadingDeviceProfile,
+    invalidateDeviceProfile
   }
 }
