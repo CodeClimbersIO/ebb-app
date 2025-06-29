@@ -1326,6 +1326,7 @@ dependencies = [
  "tauri-plugin-updater",
  "thiserror 2.0.12",
  "tokio",
+ "url",
  "uuid",
 ]
 
@@ -2940,7 +2941,7 @@ dependencies = [
 [[package]]
 name = "monitor"
 version = "0.1.0"
-source = "git+https://github.com/ahkohd/tauri-toolkit?branch=v2#c7f4c56936d60888250d84bd24169f11b7b9e97a"
+source = "git+https://github.com/ahkohd/tauri-toolkit?rev=c7f4c569#c7f4c56936d60888250d84bd24169f11b7b9e97a"
 dependencies = [
  "cocoa",
  "core-foundation 0.10.1",
@@ -5545,7 +5546,7 @@ dependencies = [
 [[package]]
 name = "tauri-nspanel"
 version = "2.0.1"
-source = "git+https://github.com/ahkohd/tauri-nspanel?branch=v2#18ffb9a201fbf6fedfaa382fd4b92315ea30ab1a"
+source = "git+https://github.com/ahkohd/tauri-nspanel?rev=18ffb9a2#18ffb9a201fbf6fedfaa382fd4b92315ea30ab1a"
 dependencies = [
  "bitflags 2.9.1",
  "block",

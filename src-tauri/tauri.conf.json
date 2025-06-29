@@ -73,7 +73,8 @@
       "frameworks": ["./target/libMacMonitor.dylib"],
       "dmg": {
         "background": "./images/dmg-background.png"
-      }
+      },
+      "minimumSystemVersion": "10.13"
     },
     "createUpdaterArtifacts": true,
     "publisher": "Ebb"

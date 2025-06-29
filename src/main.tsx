@@ -27,11 +27,6 @@ const WindowRouter = ()=>{
     const windowParam = urlParams.get('window') || hashParams.get('window') || 'main'
     setWindowType(windowParam)
     
-    // Set body background to transparent for notification windows
-    if (windowParam === 'notification') {
-      document.body.style.background = 'transparent'
-      document.documentElement.style.background = 'transparent'
-    }
   }, [])
   
   if (windowType === 'notification') {

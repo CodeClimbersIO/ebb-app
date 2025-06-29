@@ -94,9 +94,6 @@ impl<R: Runtime> WebviewWindowExt for WebviewWindow<R> {
 
         let window_frame: NSRect = unsafe { window_handle.frame() };
 
-        println!("monitor_position: {:?}", monitor_position);
-        println!("monitor_size: {:?}", monitor_size);
-
         let rect = NSRect {
             origin: NSPoint {
                 x: (monitor_position.x + (monitor_size.width / 2.0))

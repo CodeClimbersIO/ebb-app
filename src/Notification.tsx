@@ -1,39 +1,102 @@
 import { useEffect, useState, useRef } from 'react'
-import { CheckCircle, X } from 'lucide-react'
+import { CheckCircle, X, Shield, AlertTriangle, PartyPopper } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils/tailwind.util'
+import { invoke } from '@tauri-apps/api/core'
+import { info } from '@tauri-apps/plugin-log'
 
-interface NotificationProps {
-  duration?: number
-  soundUrl?: string
-  title?: string
-  onDismiss?: () => void
+type NotificationType = 'session-start' | 'session-start-smart' | 'blocked-app' | 'session-end' | 'session-warning'
+
+interface NotificationConfig {
+  title: string
+  icon: React.ComponentType<{ className?: string }>
+  iconColor: string
+  progressColor: string
+  defaultDuration: number
+  soundFile?: string
+  hasButton?: boolean
+  buttonText?: string
+  buttonAction?: () => void | Promise<void>
 }
 
-export const Notification = ({
-  duration = 100000,
-  soundUrl,
-  title = 'Smart Session Start',
-  onDismiss
-}: NotificationProps) => {
+
+const NOTIFICATION_CONFIGS: Record<NotificationType, NotificationConfig> = {
+  'session-start': {
+    title: 'Session Start',
+    icon: CheckCircle,
+    iconColor: 'text-primary',
+    progressColor: 'bg-primary',
+    defaultDuration: 5000,
+    soundFile: 'session_start.mp3'
+  },
+  'session-start-smart': {
+    title: 'Smart Session Start',
+    icon: CheckCircle,
+    iconColor: 'text-primary',
+    progressColor: 'bg-primary',
+    defaultDuration: 5000,
+    soundFile: 'session_start.mp3'
+  },
+  'blocked-app': {
+    title: 'App Blocked',
+    icon: Shield,
+    iconColor: 'text-red-500',
+    progressColor: 'bg-red-500',
+    defaultDuration: 5000,
+    soundFile: 'app_blocked.mp3',
+    hasButton: true,
+    buttonText: 'Snooze'
+  },
+  'session-end': {
+    title: 'Session Ended',
+    icon: PartyPopper,
+    iconColor: 'text-green-500',
+    progressColor: 'bg-green-500',
+    defaultDuration: 10000,
+    soundFile: 'session_end.mp3',
+    hasButton: true,
+    buttonText: 'View Recap'
+  },
+  'session-warning': {
+    title: 'Session Warning',
+    icon: AlertTriangle,
+    iconColor: 'text-amber-500',
+    progressColor: 'bg-amber-500',
+    defaultDuration: 15000,
+    soundFile: 'session_warning.mp3',
+    hasButton: true,
+    buttonText: 'Extend Session'
+  }
+}
+
+export const Notification = () => {
   const [isVisible, setIsVisible] = useState(true)
   const [isExiting, setIsExiting] = useState(false)
+  const [notificationType, setNotificationType] = useState<NotificationType | null>(null)
+  const [config, setConfig] = useState<NotificationConfig | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
+
+
+  const notificationDuration = config?.defaultDuration
+  const IconComponent = config?.icon
+
   useEffect(() => {
-    // Play sound if provided
-    if (soundUrl) {
-      audioRef.current = new Audio(soundUrl)
+    // Play sound if available
+    if (config?.soundFile) {
+      // Use relative path that Tauri can resolve
+      const soundPath = `sounds/${config?.soundFile}`
+      audioRef.current = new Audio(soundPath)
       audioRef.current.addEventListener('canplaythrough', () => {
-        audioRef.current?.play()
+        audioRef.current?.play().catch(console.error)
       })
     }
 
     // Auto-dismiss after duration
     const timer = setTimeout(() => {
       handleExit()
-    }, duration)
+    }, notificationDuration)
 
     return () => {
       clearTimeout(timer)
@@ -42,18 +105,57 @@ export const Notification = ({
         audioRef.current = null
       }
     }
-  }, [duration, soundUrl])
+  }, [notificationDuration, config?.soundFile])
+
+  useEffect(() => {
+    // Get the window type from URL parameters (dev) or hash (production)
+    info(`window.location: ${window.location}`)
+    const urlParams = new URLSearchParams(window.location.search)
+    const hashParams = new URLSearchParams(window.location.hash.substring(1))
+    info(`urlParams: ${urlParams}`)
+    info(`hashParams: ${hashParams}`)
+    const notificationType = urlParams.get('notification_type') || hashParams.get('notification_type')
+    info(`notificationType: ${notificationType}`)
+
+    if(!notificationType) return
+    setNotificationType(notificationType as NotificationType)
+    // Set body background to transparent for notification windows
+    document.body.style.background = 'transparent'
+    document.documentElement.style.background = 'transparent'
+    
+  }, [])
+  useEffect(() => {
+    if(!notificationType) return
+    const config = NOTIFICATION_CONFIGS[notificationType]
+    if(!config) {
+      info(`Unknown notification type: ${notificationType}`)
+      return
+    }
+    setConfig(config)
+  }, [notificationType, config])
 
   const handleExit = () => {
     setIsExiting(true)
     // Wait for exit animation to complete before calling onDismiss
+    info('handleExit')
+
     setTimeout(() => {
-      onDismiss?.()
+      info('hiding notification')
       setIsVisible(false)
+      invoke('hide_notification')
     }, 500)
   }
 
+  const handleButtonClick = async () => {
+    if (config?.buttonAction) {
+      await config.buttonAction()
+    }
+    handleExit()
+  }
+
   if (!isVisible) return null
+
+  if(!config) return null
 
   return (
     <div className="min-h-screen font-sans">
@@ -65,14 +167,26 @@ export const Notification = ({
         )}
       >
         {/* Icon */}
-        <CheckCircle className="h-6 w-6 text-primary shrink-0" />
+        {IconComponent && <IconComponent className={cn('h-6 w-6 shrink-0', config.iconColor)} />}
         
         {/* Content */}
         <div className="flex-1">
           <h3 className="text-card-foreground font-semibold text-base">
-            {title}
+            {config.title}
           </h3>
         </div>
+
+        {/* Action Button */}
+        {config.hasButton && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 px-3 text-xs hover:bg-accent hover:text-accent-foreground"
+            onClick={handleButtonClick}
+          >
+            {config.buttonText}
+          </Button>
+        )}
 
         {/* Dismiss Button */}
         <Button
@@ -93,9 +207,9 @@ export const Notification = ({
           className="absolute bottom-0 left-1 right-1 h-0.5 bg-primary/20 rounded-full"
         >
           <div 
-            className="h-full bg-primary rounded-full origin-left animate-pulse"
+            className={cn('h-full rounded-full origin-left', config.progressColor)}
             style={{ 
-              animation: `progress-shrink ${duration}ms linear forwards`,
+              animation: `progress-shrink ${notificationDuration}ms linear forwards`,
             }}
           />
         </div>

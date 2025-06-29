@@ -1,18 +1,15 @@
 use ebb_db::{db_manager, migrations, services::device_service::DeviceService};
-use tauri::{Listener, Manager};
+use tauri::Manager;
 use tokio;
 
 mod autostart;
 mod commands;
+mod notification;
 mod system_monitor;
 mod tray_icon_gen;
 mod window;
 
-use window::WebviewWindowExt;
-
 use autostart::{change_autostart, enable_autostart};
-
-pub const NOTIFICATION_WINDOW_LABEL: &str = "notification";
 
 async fn initialize_device_profile() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let ebb_db_path = db_manager::get_default_ebb_db_path();
@@ -76,58 +73,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .plugin(tauri_plugin_updater::Builder::new().build())?;
             enable_autostart(app);
             tauri::async_runtime::spawn(async move { initialize_device_profile().await });
-
-            let app_handle = app.app_handle();
-
-            // Create a notification window programmatically using WebviewWindowBuilder
-            let notification_url = if cfg!(dev) {
-                tauri::WebviewUrl::External(
-                    "http://localhost:1420?window=notification".parse().unwrap(),
-                )
-            } else {
-                tauri::WebviewUrl::App("index.html#window=notification".into())
-            };
-
-            let notification_window =
-                tauri::WebviewWindowBuilder::new(app_handle, "notification", notification_url)
-                    .title("Notification Window")
-                    .inner_size(376.0, 60.0)
-                    .position(0.0, 50.0)
-                    .transparent(true)
-                    .decorations(false)
-                    .shadow(false)
-                    .resizable(false)
-                    .visible(false) // Start hidden, show when needed
-                    .build();
-
-            // Handle the result properly following the user's preference to avoid unwrap()
-            match notification_window {
-                Ok(window) => {
-                    println!(
-                        "Successfully created notification window: {}",
-                        window.label()
-                    );
-                }
-                Err(err) => {
-                    eprintln!("Failed to create notification window: {}", err);
-                }
-            }
-
-            let notification_window = app_handle
-                .get_webview_window(NOTIFICATION_WINDOW_LABEL)
-                .unwrap();
-
-            // Convert the window to a spotlight panel
-            let panel = notification_window.to_spotlight_panel()?;
-
-            // app_handle.listen(
-            //     format!("{}_panel_did_resign_key", NOTIFICATION_WINDOW_LABEL),
-            //     move |_| {
-            //         // Hide the panel when it's no longer the key window
-            //         // This ensures the panel doesn't remain visible when it's not actively being used
-            //         // panel.order_out(None);
-            //     },
-            // );
 
             Ok(())
         })

@@ -63,6 +63,10 @@ fn main() {
 
                     // Tell Cargo to re-run this build script if the dylib changes
                     println!("cargo:rerun-if-changed={}", dylib_path.display());
+
+                    // Only rerun if specific files change, not on every source change
+                    println!("cargo:rerun-if-changed=build.rs");
+                    println!("cargo:rerun-if-changed=Cargo.toml");
                 } else {
                     panic!("Could not find libMacMonitor.dylib in the build directory");
                 }
@@ -73,6 +77,11 @@ fn main() {
             panic!("Build directory does not exist. Make sure to build the project first.");
         }
     }
+
+    // Add global rerun conditions to prevent unnecessary rebuilds
+    println!("cargo:rerun-if-changed=build.rs");
+    println!("cargo:rerun-if-changed=Cargo.toml");
+    println!("cargo:rerun-if-changed=tauri.conf.json");
+
     tauri_build::build();
-    // Tell Cargo that if the build script itself changes, it should be re-run
 }

@@ -1,5 +1,5 @@
 use crate::system_monitor;
-use crate::NOTIFICATION_WINDOW_LABEL;
+use log::info;
 use os_monitor::{
     get_application_icon_data, has_accessibility_permissions, request_accessibility_permissions,
     start_blocking as os_start_blocking, stop_blocking as os_stop_blocking, BlockableItem,
@@ -8,11 +8,10 @@ use std::fs;
 use std::path::PathBuf;
 use std::sync::Mutex;
 use tauri::command;
-use tauri::{AppHandle, Manager};
-use tauri_nspanel::ManagerExt;
+use tauri::AppHandle;
 use tokio::time::{sleep, Duration};
 
-use crate::window::WebviewWindowExt;
+use crate::notification::{create_notification_window, dismiss_notification_window};
 // Store the current blocking state
 static BLOCKING_STATE: Mutex<Option<(Vec<BlockableItem>, bool)>> = Mutex::new(None);
 #[derive(Debug, serde::Deserialize)]
@@ -280,29 +279,11 @@ pub fn get_app_version(app_handle: tauri::AppHandle) -> String {
 }
 
 #[tauri::command]
-pub fn show_notification(app_handle: AppHandle) {
-    let window = app_handle
-        .get_webview_window(NOTIFICATION_WINDOW_LABEL)
-        .unwrap();
-
-    // Position the window first
-    window.center_top_of_cursor_monitor().unwrap();
-
-    // Then get the panel and show it
-    let panel = app_handle
-        .get_webview_panel(NOTIFICATION_WINDOW_LABEL)
-        .unwrap();
-
-    panel.show();
+pub fn show_notification(app_handle: AppHandle, notification_type: String) -> Result<(), String> {
+    create_notification_window(&app_handle, &notification_type).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub fn hide_notification(app_handle: AppHandle) {
-    let panel = app_handle
-        .get_webview_panel(NOTIFICATION_WINDOW_LABEL)
-        .unwrap();
-
-    if panel.is_visible() {
-        panel.order_out(None);
-    }
+pub fn hide_notification(app_handle: AppHandle) -> Result<(), String> {
+    dismiss_notification_window(&app_handle).map_err(|e| e.to_string())
 }

@@ -245,7 +245,6 @@ export const FlowPage = () => {
       await startTimer(flowSession, workflow)
 
       if (flowSession.type === 'smart') {
-        invoke('show_notification')
         NotificationManager.getInstance().show({
           type: 'session-start-smart'
         })
