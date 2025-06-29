@@ -321,7 +321,9 @@ export const StartFlowPage = () => {
                   onChange={(value) => setDuration(value ? Duration.fromObject({ minutes: value }) : null)}
                 />
               </div>
-              <SmartFocusSelector workflows={workflows} />
+              {workflows.length > 0 && (
+                <SmartFocusSelector workflows={workflows} />
+              )}
             </div>
 
             {hasMusic && (

@@ -29,6 +29,7 @@ export function SmartFocusSelector({ workflows }: SmartFocusSelectorProps) {
   const [showDialog, setShowDialog] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [isAnimating, setIsAnimating] = useState(false)
   const [settings, setSettings] = useState<SmartFocusSettingsType>({
     enabled: false,
     trigger_duration_minutes: 10,
@@ -59,6 +60,15 @@ export function SmartFocusSelector({ workflows }: SmartFocusSelectorProps) {
     }
     loadSettings()
   }, [deviceProfile])
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIsAnimating(true)
+      setTimeout(() => setIsAnimating(false), 1000) // Animation lasts 0.5 seconds
+    }, 5000) // Trigger every 5 seconds
+
+    return () => clearInterval(interval)
+  }, [])
 
   const handleToggleEnabled = async (enabled: boolean) => {
     if (!deviceId || !deviceProfile) return
@@ -120,10 +130,14 @@ export function SmartFocusSelector({ workflows }: SmartFocusSelectorProps) {
                 className="h-9 w-9 rounded-md flex items-center justify-center hover:bg-accent cursor-pointer"
               >
                 <SmartFocusIcon 
-                  className={`h-5 w-5 ${
+                  className={`h-5 w-5 transition-all duration-500 ${
                     settings.enabled 
                       ? 'text-violet-500' 
                       : 'text-muted-foreground'
+                  } ${
+                    isAnimating && !settings.enabled
+                      ? 'animate-pulse drop-shadow-lg brightness-250' 
+                      : ''
                   }`}
                 />
               </div>
