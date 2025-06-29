@@ -1,4 +1,8 @@
 import { useEffect, useState, useRef } from 'react'
+import { CheckCircle, X } from 'lucide-react'
+import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils/tailwind.util'
 
 interface NotificationProps {
   duration?: number
@@ -51,88 +55,55 @@ export const Notification = ({
 
   if (!isVisible) return null
 
-  const notificationStyles: React.CSSProperties = {
-    position: 'relative',
-    display: 'flex',
-    alignItems: 'center',
-    padding: '16px',
-    gap: '12px',
-    background: 'hsl(224 71.4% 4.1% / 0.95)',
-    boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
-    margin: 0,
-    borderRadius: '8px',
-    animation: isExiting 
-      ? 'slideOut 0.5s ease-in forwards' 
-      : 'slideIn 0.3s ease-out forwards',
-    animationFillMode: 'forwards'
-  }
-
-  const progressBarStyles: React.CSSProperties = {
-    content: '""',
-    position: 'absolute',
-    bottom: 0,
-    left: '4px',
-    right: '4px',
-    height: '2px',
-    width: 'calc(100% - 8px)',
-    backgroundColor: '#7C3AED',
-    transformOrigin: 'left',
-    animation: `progress ${duration}ms linear forwards`
-  }
-
-  const iconStyles: React.CSSProperties = {
-    width: '24px',
-    height: '24px',
-    color: '#7C3AED'
-  }
-
-  const contentStyles: React.CSSProperties = {
-    flex: 1
-  }
-
-  const titleStyles: React.CSSProperties = {
-    color: '#f5f3ff',
-    fontWeight: 600,
-    margin: 0,
-    fontSize: '16px'
-  }
-
-  const dismissButtonStyles: React.CSSProperties = {
-    position: 'absolute',
-    top: '-8px',
-    left: '-8px',
-    width: '20px',
-    height: '20px',
-    borderRadius: '50%',
-    background: 'hsl(224 71.4% 4.1% / 0.95)',
-    border: 'none',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    color: '#9ca3af',
-    padding: 0,
-    zIndex: 10,
-    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
-  }
-
   return (
-    <>
+    <div className="min-h-screen font-sans">
+      <Card 
+        className={cn(
+          'group relative flex items-center gap-3 p-4 bg-card/95 backdrop-blur-sm shadow-lg border-border',
+          'animate-in slide-in-from-top-4 fade-in duration-300',
+          isExiting && 'animate-out slide-out-to-top-4 fade-out duration-500'
+        )}
+      >
+        {/* Icon */}
+        <CheckCircle className="h-6 w-6 text-primary shrink-0" />
+        
+        {/* Content */}
+        <div className="flex-1">
+          <h3 className="text-card-foreground font-semibold text-base">
+            {title}
+          </h3>
+        </div>
+
+        {/* Dismiss Button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn(
+            'h-5 w-5 absolute -top-2 -left-2 rounded-full bg-card shadow-sm',
+            'opacity-0 group-hover:opacity-100 hover:opacity-100 transition-opacity',
+            'hover:bg-accent hover:text-accent-foreground'
+          )}
+          onClick={handleExit}
+        >
+          <X className="h-3 w-3" />
+        </Button>
+
+        {/* Progress Bar */}
+        <div 
+          className="absolute bottom-0 left-1 right-1 h-0.5 bg-primary/20 rounded-full"
+        >
+          <div 
+            className="h-full bg-primary rounded-full origin-left animate-pulse"
+            style={{ 
+              animation: `progress-shrink ${duration}ms linear forwards`,
+            }}
+          />
+        </div>
+      </Card>
+
       <style>
         {`
-          * {
-            border: none !important;
-            outline: none !important;
-          }
-          
-          html, body {
-            border: none !important;
-            outline: none !important;
-            margin: 0 !important;
-            padding: 0 !important;
-          }
-          
-          @keyframes progress {
+          @keyframes progress-shrink {
             from {
               transform: scaleX(1);
             }
@@ -140,93 +111,8 @@ export const Notification = ({
               transform: scaleX(0);
             }
           }
-
-          @keyframes slideIn {
-            from {
-              opacity: 0;
-              transform: translateY(-20px);
-            }
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-
-          @keyframes slideOut {
-            from {
-              opacity: 1;
-              transform: translateY(0);
-            }
-            to {
-              opacity: 0;
-              transform: translateY(-20px);
-            }
-          }
-
-          .notification-container:hover .dismiss-button {
-            display: flex !important;
-          }
-
-          .dismiss-button:hover {
-            background: hsl(224 71.4% 8% / 0.95) !important;
-            color: #f5f3ff !important;
-          }
         `}
       </style>
-      <div 
-        className="notification-container"
-        style={{
-          margin: 0,
-          fontFamily: 'system-ui, -apple-system, sans-serif',
-          minHeight: '100vh',
-          boxSizing: 'border-box'
-        }}
-      >
-        <div style={notificationStyles}>
-          <svg 
-            style={iconStyles} 
-            xmlns="http://www.w3.org/2000/svg" 
-            fill="none" 
-            viewBox="0 0 24 24" 
-            strokeWidth="2" 
-            stroke="currentColor"
-          >
-            <path 
-              strokeLinecap="round" 
-              strokeLinejoin="round" 
-              d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
-            />
-          </svg>
-          <div style={contentStyles}>
-            <h3 style={titleStyles}>{title}</h3>
-          </div>
-          <button 
-            className="dismiss-button"
-            style={{
-              ...dismissButtonStyles,
-              display: 'none'
-            }}
-            onClick={handleExit}
-          >
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              width="12" 
-              height="12" 
-              fill="none" 
-              viewBox="0 0 24 24" 
-              stroke="currentColor"
-            >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth="2" 
-                d="M6 18L18 6M6 6l12 12" 
-              />
-            </svg>
-          </button>
-          <div style={progressBarStyles} />
-        </div>
-      </div>
-    </>
+    </div>
   )
 }
