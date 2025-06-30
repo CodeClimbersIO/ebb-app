@@ -25,7 +25,7 @@ import NotificationManager from '@/lib/notificationManager'
 import { listen, UnlistenFn } from '@tauri-apps/api/event'
 import { useBlockedEvents } from '@/hooks/useBlockedEvents'
 import { useFlowTimer } from '../lib/stores/flowTimer'
-import { stopFlowTimer } from '../lib/tray'
+import { startFlowTimer, stopFlowTimer } from '../lib/tray'
 import { DifficultyButton } from '@/components/DifficultyButton'
 import { useSpotifyInstallation } from '@/hooks/useSpotifyInstallation'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
@@ -183,9 +183,12 @@ type CurrentTrack = {
   position_ms: number
 }
 
-const startTimer = async (workflow: Workflow) => {
+const startTimer = async (flowSession: FlowSession, workflow: Workflow) => {
+  console.log('startTimer', workflow)
   const duration = workflow.settings.defaultDuration || 0
   useFlowTimer.getState().setTotalDuration(Duration.fromObject({ minutes: duration }))
+  const start = DateTime.fromISO(flowSession.start) || DateTime.now()
+  startFlowTimer(start)
 } 
 
 const startBlocking = async (workflow: Workflow) => {
@@ -239,7 +242,7 @@ export const FlowPage = () => {
       setDifficulty(workflow?.settings.difficulty || 'medium')
 
       await startBlocking(workflow)
-      await startTimer(workflow)
+      await startTimer(flowSession, workflow)
 
       if (flowSession.type === 'smart') {
         NotificationManager.getInstance().show({
