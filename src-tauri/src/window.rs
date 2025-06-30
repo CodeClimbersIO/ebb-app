@@ -1,3 +1,4 @@
+use log::info;
 use tauri::{Emitter, Manager, Runtime, WebviewWindow};
 use tauri_nspanel::{
     cocoa::{
@@ -67,10 +68,13 @@ impl<R: Runtime> WebviewWindowExt for WebviewWindow<R> {
         panel_delegate.set_listener(Box::new(move |delegate_name: String| {
             match delegate_name.as_str() {
                 "window_did_become_key" => {
+                    info!("window_did_become_key");
+                    info!("panel: {:?}", delegate_name);
                     let _ = app_handle.emit(format!("{}_panel_did_become_key", label).as_str(), ());
                 }
                 "window_did_resign_key" => {
-                    let _ = app_handle.emit(format!("{}_panel_did_resign_key", label).as_str(), ());
+                    info!("window_did_resign_key");
+                    // let _ = app_handle.emit(format!("{}_panel_did_resign_key", label).as_str(), ());
                 }
                 _ => (),
             }

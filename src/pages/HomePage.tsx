@@ -40,6 +40,7 @@ export const HomePage = () => {
     totalTimeLabel,
   } = useUsageSummary()
 
+
   return (
     <Layout>
       <div className="p-8">

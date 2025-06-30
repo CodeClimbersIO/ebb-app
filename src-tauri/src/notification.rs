@@ -1,5 +1,8 @@
+use std::{thread::sleep, time::Duration};
+
 use crate::window::WebviewWindowExt;
-use tauri::{AppHandle, Manager, Runtime};
+use log::info;
+use tauri::{AppHandle, Manager, Runtime, WebviewWindow};
 
 pub const NOTIFICATION_WINDOW_LABEL: &str = "notification";
 use tauri_nspanel::{
@@ -23,7 +26,8 @@ pub fn get_notification_url(notification_type: &str) -> Result<Url, ParseError> 
     }
 }
 
-pub fn show_notification_window(
+pub fn show_notification_window<R: Runtime>(
+    notification_window: WebviewWindow<R>,
     panel: Id<RawNSPanel, Shared>,
     notification_type: &str,
 ) -> tauri::Result<()> {
@@ -32,12 +36,35 @@ pub fn show_notification_window(
         return Err(tauri::Error::WindowNotFound);
     };
     println!("notification_url: {:?}", notification_url);
-    let Ok(_) = panel.navigate(notification_url) else {
+    let Ok(_) = notification_window.navigate(notification_url) else {
         log::error!("Failed to navigate to notification URL");
         return Err(tauri::Error::WindowNotFound);
     };
+
+    notification_window.center_top_of_cursor_monitor()?;
+
+    // Configure panel to not steal focus
+
+    // panel.set_becomes_key_only_if_needed(true);
+    // panel.set_hides_on_deactivate(false);
+
     panel.show();
     return Ok(());
+}
+
+pub fn get_notification_window_and_panel<R: Runtime>(
+    app: &AppHandle<R>,
+) -> tauri::Result<(WebviewWindow<R>, Id<RawNSPanel, Shared>)> {
+    let app_handle = app.app_handle();
+    let Some(notification_window) = app_handle.get_webview_window(NOTIFICATION_WINDOW_LABEL) else {
+        log::error!("No notification window found");
+        return Err(tauri::Error::WindowNotFound);
+    };
+    let Ok(panel) = app_handle.get_webview_panel(NOTIFICATION_WINDOW_LABEL) else {
+        log::error!("Failed to convert notification window to spotlight panel");
+        return Err(tauri::Error::WindowNotFound);
+    };
+    Ok((notification_window, panel))
 }
 
 pub fn create_notification_window<R: Runtime>(
@@ -46,8 +73,8 @@ pub fn create_notification_window<R: Runtime>(
 ) -> tauri::Result<()> {
     let app_handle = app.app_handle();
 
-    if let Ok(panel) = app_handle.get_webview_panel(NOTIFICATION_WINDOW_LABEL) {
-        show_notification_window(panel, notification_type)?;
+    if let Ok((notification_window, panel)) = get_notification_window_and_panel(app) {
+        show_notification_window(notification_window, panel, notification_type)?;
         return Ok(());
     }
 
@@ -55,6 +82,7 @@ pub fn create_notification_window<R: Runtime>(
         "?window=notification&notification_type={}",
         notification_type
     );
+
     // Create a notification window programmatically using WebviewWindowBuilder
     let notification_url = if cfg!(dev) {
         tauri::WebviewUrl::External(format!("http://localhost:1420{}", params).parse().unwrap())
@@ -65,13 +93,14 @@ pub fn create_notification_window<R: Runtime>(
     let notification_window =
         tauri::WebviewWindowBuilder::new(app_handle, "notification", notification_url)
             .title("Notification Window")
-            .inner_size(376.0, 60.0)
+            .inner_size(380.0, 65.0)
             .position(0.0, 50.0)
             .transparent(true)
             .decorations(false)
             .shadow(false)
             .resizable(false)
-            .visible(false) // Start hidden, show when needed
+            .visible(false)
+            // Start hidden, show when needed
             .build();
 
     // Handle the result properly following the user's preference to avoid unwrap()
@@ -95,19 +124,19 @@ pub fn create_notification_window<R: Runtime>(
     // Convert the window to a spotlight panel
     let panel = notification_window.to_spotlight_panel()?;
 
-    notification_window.center_top_of_cursor_monitor()?;
-    panel.show();
+    show_notification_window(notification_window, panel, notification_type)?;
 
     Ok(())
 }
 
 pub fn dismiss_notification_window<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
-    let app_handle = app.app_handle();
-    let notification_window = app_handle
-        .get_webview_window(NOTIFICATION_WINDOW_LABEL)
-        .unwrap();
-    // let panel = notification_window.to_spotlight_panel()?;
+    let Ok((_, panel)) = get_notification_window_and_panel(app) else {
+        log::error!("Failed to get notification window and panel");
+        return Err(tauri::Error::WindowNotFound);
+    };
+    panel.order_out(None);
     // panel.order_out(None);
+    println!("dismissing notification window");
     Ok(())
 }
 

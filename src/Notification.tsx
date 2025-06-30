@@ -83,10 +83,13 @@ export const Notification = () => {
   const IconComponent = config?.icon
 
   useEffect(() => {
+    // Only run if config is available
+    if (!config) return
+
     // Play sound if available
-    if (config?.soundFile) {
+    if (config.soundFile) {
       // Use relative path that Tauri can resolve
-      const soundPath = `sounds/${config?.soundFile}`
+      const soundPath = `sounds/${config.soundFile}`
       audioRef.current = new Audio(soundPath)
       audioRef.current.addEventListener('canplaythrough', () => {
         audioRef.current?.play().catch(console.error)
@@ -96,7 +99,7 @@ export const Notification = () => {
     // Auto-dismiss after duration
     const timer = setTimeout(() => {
       handleExit()
-    }, notificationDuration)
+    }, config.defaultDuration)
 
     return () => {
       clearTimeout(timer)
@@ -105,7 +108,7 @@ export const Notification = () => {
         audioRef.current = null
       }
     }
-  }, [notificationDuration, config?.soundFile])
+  }, [config])
 
   useEffect(() => {
     // Get the window type from URL parameters (dev) or hash (production)
@@ -126,13 +129,13 @@ export const Notification = () => {
   }, [])
   useEffect(() => {
     if(!notificationType) return
-    const config = NOTIFICATION_CONFIGS[notificationType]
-    if(!config) {
+    const notificationConfig = NOTIFICATION_CONFIGS[notificationType]
+    if(!notificationConfig) {
       info(`Unknown notification type: ${notificationType}`)
       return
     }
-    setConfig(config)
-  }, [notificationType, config])
+    setConfig(notificationConfig)
+  }, [notificationType])
 
   const handleExit = () => {
     setIsExiting(true)
@@ -158,7 +161,7 @@ export const Notification = () => {
   if(!config) return null
 
   return (
-    <div className="min-h-screen font-sans">
+    <div className="min-h-screen font-sans p-2">
       <Card 
         className={cn(
           'group relative flex items-center gap-3 p-4 bg-card/95 backdrop-blur-sm shadow-lg border-border',

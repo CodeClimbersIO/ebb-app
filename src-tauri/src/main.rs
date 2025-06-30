@@ -107,7 +107,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             |app: &tauri::AppHandle<tauri::Wry>, event: tauri::RunEvent| match event {
                 tauri::RunEvent::Reopen { .. } => {
                     if let Some(window) = app.get_webview_window("main") {
-                        window.show().unwrap();
+                        // window.show().unwrap();
                         // window.set_focus().unwrap();
                     }
                 }

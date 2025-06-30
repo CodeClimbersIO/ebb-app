@@ -1,3 +1,4 @@
+import { info } from '@tauri-apps/plugin-log'
 import { DateTime } from 'luxon'
 
 /**
@@ -17,6 +18,8 @@ const debounceWork = async (fn: ()=>Promise<void>, id='default', debounceTimeSec
 
   const lastRun = lastRunMap.get(id) || DateTime.now().minus({ seconds: 10 })
   const diffToNow = DateTime.now().diff(lastRun, 'seconds').seconds
+  info(`diffToNow: ${diffToNow}`)
+  info(`debounceTimeSec: ${debounceTimeSec}`)
   if(diffToNow < debounceTimeSec) return
   lastRunMap.set(id, DateTime.now())
   await fn()

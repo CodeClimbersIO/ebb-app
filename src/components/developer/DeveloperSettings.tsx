@@ -1,22 +1,27 @@
 import { isDev } from '../../lib/utils/environment.util'
 import { ResetAppData } from './ResetAppData'
-import NotificationManager from '../../lib/notificationManager'
+// import NotificationManager from '../../lib/notificationManager'
 import { Button } from '../ui/button'
-const notificationManager = NotificationManager.getInstance()
+import { invoke } from '@tauri-apps/api/core'
+import { info } from '@tauri-apps/plugin-log'
+// const notificationManager = NotificationManager.getInstance()
 export function DeveloperSettings() {
   const handleTestNotification = (type: 'session-start-smart' |  'session-start' | 'session-end' | 'session-warning' | 'blocked-app', difficulty: 'easy' | 'medium' | 'hard') => {
-    notificationManager.show({
-      type,
-      difficulty
-    })
-    notificationManager.show({
-      type,
-      difficulty
-    })
-    notificationManager.show({
-      type,
-      difficulty
-    })
+    info(`show_notification ${difficulty} ${type}`)
+    
+    invoke('show_notification', { notificationType: type })
+    // notificationManager.show({
+    //   type,
+    //   difficulty
+    // })
+    // notificationManager.show({
+    //   type,
+    //   difficulty
+    // })
+    // notificationManager.show({
+    //   type,
+    //   difficulty
+    // })
   }
   return (
     isDev() && (
