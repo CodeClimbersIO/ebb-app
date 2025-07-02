@@ -50,7 +50,7 @@ function StatusBadge({ color, count, statusName, disabled = false }: StatusBadge
 const getStatusCounts = (userStatusCounts?: UserStatusCounts) => {
   if (!userStatusCounts) return { online: 0, flowing: 0 }
   return {
-    online: userStatusCounts.online + userStatusCounts.active,
+    online: userStatusCounts.online + userStatusCounts.active + userStatusCounts.flowing,
     flowing: userStatusCounts.flowing,
   }
 }
