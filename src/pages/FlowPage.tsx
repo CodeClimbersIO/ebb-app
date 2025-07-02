@@ -21,7 +21,6 @@ import { SpotifyIcon } from '@/components/icons/SpotifyIcon'
 import { getSpotifyIdFromUri, openSpotifyLink, PlaybackState, SpotifyApiService } from '@/lib/integrations/spotify/spotifyApi'
 import { SpotifyAuthService } from '@/lib/integrations/spotify/spotifyAuth'
 import { invoke } from '@tauri-apps/api/core'
-import NotificationManager from '@/lib/notificationManager'
 import { listen, UnlistenFn } from '@tauri-apps/api/event'
 import { useBlockedEvents } from '@/hooks/useBlockedEvents'
 import { useFlowTimer } from '../lib/stores/flowTimer'
@@ -97,7 +96,9 @@ const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
         }
 
         if (remaining <= 60 && !hasShownWarning) {
-          NotificationManager.getInstance().show({ type: 'session-warning' })
+          invoke('show_notification', {
+            notificationType: 'session-warning',
+          })
           setHasShownWarning(true)
         }
 
@@ -184,7 +185,6 @@ type CurrentTrack = {
 }
 
 const startTimer = async (flowSession: FlowSession, workflow: Workflow) => {
-  console.log('startTimer', workflow)
   const duration = workflow.settings.defaultDuration || 0
   useFlowTimer.getState().setTotalDuration(Duration.fromObject({ minutes: duration }))
   const start = DateTime.fromISO(flowSession.start) || DateTime.now()
@@ -245,12 +245,12 @@ export const FlowPage = () => {
       await startTimer(flowSession, workflow)
 
       if (flowSession.type === 'smart') {
-        NotificationManager.getInstance().show({
-          type: 'session-start-smart'
+        invoke('show_notification', {
+          notificationType: 'session-start-smart',
         })
       } else {
-        NotificationManager.getInstance().show({
-          type: 'session-start'
+        invoke('show_notification', {
+          notificationType: 'session-start',
         })
       }
 

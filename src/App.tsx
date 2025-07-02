@@ -6,8 +6,6 @@ import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@radix-ui/react-tooltip'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useInitializeAppState } from './hooks/useInitializeAppState'
-import { invoke } from '@tauri-apps/api/core'
-import { useEffect } from 'react'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -25,14 +23,6 @@ const AppRouterWrapper = () => {
 }
 
 const App = () => {
-
-  useEffect(() => {
-    setTimeout(() => {
-      invoke('show_notification', {
-        notificationType: 'session-start-smart',
-      })
-    }, 5000)
-  }, [])
 
   return (
     <QueryClientProvider client={queryClient}>

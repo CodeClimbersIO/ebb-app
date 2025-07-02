@@ -93,7 +93,7 @@ pub fn create_notification_window<R: Runtime>(
     let notification_window =
         tauri::WebviewWindowBuilder::new(app_handle, "notification", notification_url)
             .title("Notification Window")
-            .inner_size(380.0, 65.0)
+            .inner_size(380.0, 100.0)
             .position(0.0, 50.0)
             .transparent(true)
             .decorations(false)

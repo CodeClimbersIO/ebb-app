@@ -6,7 +6,7 @@ import { TopNav } from '@/components/TopNav'
 import { Logo } from '@/components/ui/logo'
 import { MonitorApi, AppsWithTime, GraphableTimeByHourBlock } from '../api/monitorApi/monitorApi'
 import { UsageSummary } from '@/components/UsageSummary'
-import NotificationManager from '@/lib/notificationManager'
+import { invoke } from '@tauri-apps/api/core'
 
 interface LocationState {
   sessionId: string
@@ -17,8 +17,6 @@ interface LocationState {
   startTime: string
   endTime: string
 }
-
-const notificationManager = NotificationManager.getInstance()
 
 export const FlowRecapPage = () => {
   const location = useLocation()
@@ -34,8 +32,8 @@ export const FlowRecapPage = () => {
     if (effectRan.current) return
     effectRan.current = true
 
-    notificationManager.show({
-      type: 'session-end'
+    invoke('show_notification', {
+      notificationType: 'session-end'
     })
 
     const init = async () => {

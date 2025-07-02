@@ -8,20 +8,7 @@ import { info } from '@tauri-apps/plugin-log'
 export function DeveloperSettings() {
   const handleTestNotification = (type: 'session-start-smart' |  'session-start' | 'session-end' | 'session-warning' | 'blocked-app', difficulty: 'easy' | 'medium' | 'hard') => {
     info(`show_notification ${difficulty} ${type}`)
-    
     invoke('show_notification', { notificationType: type })
-    // notificationManager.show({
-    //   type,
-    //   difficulty
-    // })
-    // notificationManager.show({
-    //   type,
-    //   difficulty
-    // })
-    // notificationManager.show({
-    //   type,
-    //   difficulty
-    // })
   }
   return (
     isDev() && (
