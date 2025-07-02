@@ -75,7 +75,7 @@ export const FlowRecapPage = () => {
   return (
     <div className="flex flex-col h-screen">
       <div className="flex">
-        <div className="w-16 shrink-0">
+        <div className="w-16 shrink-0 mt-4">
           <div className="h-14 border-b flex items-center justify-center">
             <Logo width={32} height={32} />
           </div>
