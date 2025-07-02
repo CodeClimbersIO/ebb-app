@@ -3,8 +3,10 @@ import { CheckCircle, X, Shield, AlertTriangle, PartyPopper } from 'lucide-react
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils/tailwind.util'
-import { invoke } from '@tauri-apps/api/core'
-import { info } from '@tauri-apps/plugin-log'
+import { convertFileSrc, invoke } from '@tauri-apps/api/core'
+import { error, info } from '@tauri-apps/plugin-log'
+import { resolveResource } from '@tauri-apps/api/path'
+import { isDev } from './lib/utils/environment.util'
 
 type NotificationType = 'session-start' | 'session-start-smart' | 'blocked-app' | 'session-end' | 'session-warning'
 
@@ -70,6 +72,14 @@ const NOTIFICATION_CONFIGS: Record<NotificationType, NotificationConfig> = {
   }
 }
 
+const getSoundPath = async (soundFile: string) => {
+  if(isDev()) {
+    return `/src-tauri/notifications/sounds/${soundFile}`
+  }
+  const resourcePath = await resolveResource(`notifications/sounds/${soundFile}`)
+  return convertFileSrc(resourcePath)
+}
+
 export const Notification = () => {
   const [isVisible, setIsVisible] = useState(true)
   const [isExiting, setIsExiting] = useState(false)
@@ -86,15 +96,18 @@ export const Notification = () => {
     // Only run if config is available
     if (!config) return
 
-    // Play sound if available
-    if (config.soundFile) {
-      // Use relative path that Tauri can resolve
-      const soundPath = `sounds/${config.soundFile}`
-      audioRef.current = new Audio(soundPath)
-      audioRef.current.addEventListener('canplaythrough', () => {
-        audioRef.current?.play().catch(console.error)
-      })
+    const playSound = async () => {
+      if (config.soundFile) {
+        const soundPath = await getSoundPath(config.soundFile)
+        audioRef.current = new Audio(soundPath)
+        audioRef.current.addEventListener('canplaythrough', () => {
+          audioRef.current?.play().catch((err) => {
+            error(`error playing sound: ${err}`)
+          })
+        })
+      }
     }
+    playSound()
 
     // Auto-dismiss after duration
     const timer = setTimeout(() => {
@@ -108,7 +121,7 @@ export const Notification = () => {
         audioRef.current = null
       }
     }
-  }, [config])
+  }, [config, audioRef])
 
   useEffect(() => {
     // Get the window type from URL parameters (dev) or hash (production)
