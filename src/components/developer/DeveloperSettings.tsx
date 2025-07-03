@@ -17,9 +17,12 @@ export function DeveloperSettings() {
         <ResetAppData />
         <div className="border rounded-md p-4 mb-6">
           <h3 className="text-lg font-medium  mb-2">Test Notifications</h3>
-          <div className="flex space-x-4 flex-wrap">
+          <div className="flex space-x-4 flex-wrap gap-2">
             <Button onClick={() => handleTestNotification('session-start', 'easy')}>
             Test Session Start
+            </Button>
+            <Button onClick={() => handleTestNotification('session-start-smart', 'easy')}> 
+            Test Smart Session Start
             </Button>
             <Button onClick={() => handleTestNotification('session-end', 'easy')}>
             Test Session End

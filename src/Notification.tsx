@@ -7,21 +7,21 @@ import { convertFileSrc, invoke } from '@tauri-apps/api/core'
 import { error, info } from '@tauri-apps/plugin-log'
 import { resolveResource } from '@tauri-apps/api/path'
 import { isDev } from './lib/utils/environment.util'
+import { SmartSessionApi } from './api/ebbApi/smartSessionApi'
+import { DeviceProfileApi } from './api/ebbApi/deviceProfileApi'
 
 type NotificationType = 'session-start' | 'session-start-smart' | 'blocked-app' | 'session-end' | 'session-warning'
 
 interface NotificationConfig {
   title: string
-  icon: React.ComponentType<{ className?: string }>
+icon: React.ComponentType<{ className?: string }>
   iconColor: string
   progressColor: string
   defaultDuration: number
   soundFile?: string
-  hasButton?: boolean
   buttonText?: string
   buttonAction?: () => void | Promise<void>
 }
-
 
 const NOTIFICATION_CONFIGS: Record<NotificationType, NotificationConfig> = {
   'session-start': {
@@ -30,7 +30,7 @@ const NOTIFICATION_CONFIGS: Record<NotificationType, NotificationConfig> = {
     iconColor: 'text-primary',
     progressColor: 'bg-primary',
     defaultDuration: 5000,
-    soundFile: 'session_start.mp3'
+    soundFile: 'session_start.mp3',
   },
   'session-start-smart': {
     title: 'Smart Session Start',
@@ -38,16 +38,24 @@ const NOTIFICATION_CONFIGS: Record<NotificationType, NotificationConfig> = {
     iconColor: 'text-primary',
     progressColor: 'bg-primary',
     defaultDuration: 5000,
-    soundFile: 'session_start.mp3'
+    soundFile: 'session_start.mp3',
+    buttonText: 'Start Session',
+    // buttonAction: () => {
+    //   DeviceProfileApi.getDeviceId().then((deviceId) => {
+    //     info(`deviceId: ${deviceId}`)
+    //     SmartSessionApi.startSmartSession(deviceId).then((session) => {
+    //       info(`session: ${JSON.stringify(session)}`)
+    //     })
+    //   })
+    // }
   },
   'blocked-app': {
     title: 'App Blocked',
     icon: Shield,
     iconColor: 'text-red-500',
     progressColor: 'bg-red-500',
-    defaultDuration: 5000,
+    defaultDuration: 8000,
     soundFile: 'app_blocked.mp3',
-    hasButton: true,
     buttonText: 'Snooze'
   },
   'session-end': {
@@ -55,9 +63,8 @@ const NOTIFICATION_CONFIGS: Record<NotificationType, NotificationConfig> = {
     icon: PartyPopper,
     iconColor: 'text-green-500',
     progressColor: 'bg-green-500',
-    defaultDuration: 10000,
+    defaultDuration: 8000,
     soundFile: 'session_end.mp3',
-    hasButton: true,
     buttonText: 'View Recap'
   },
   'session-warning': {
@@ -65,9 +72,8 @@ const NOTIFICATION_CONFIGS: Record<NotificationType, NotificationConfig> = {
     icon: AlertTriangle,
     iconColor: 'text-amber-500',
     progressColor: 'bg-amber-500',
-    defaultDuration: 15000,
+    defaultDuration: 12000,
     soundFile: 'session_warning.mp3',
-    hasButton: true,
     buttonText: 'Extend Session'
   }
 }
@@ -81,7 +87,7 @@ const getSoundPath = async (soundFile: string) => {
 }
 
 export const Notification = () => {
-  const [isVisible, setIsVisible] = useState(true)
+  const [isVisible, setIsVisible] = useState(true) // Start hidden
   const [isExiting, setIsExiting] = useState(false)
   const [notificationType, setNotificationType] = useState<NotificationType | null>(null)
   const [config, setConfig] = useState<NotificationConfig | null>(null)
@@ -93,11 +99,9 @@ export const Notification = () => {
   const IconComponent = config?.icon
 
   useEffect(() => {
-    // Only run if config is available
     if (!config) return
-
     const playSound = async () => {
-      if (config.soundFile) {
+      if (config.soundFile && isVisible) {
         const soundPath = await getSoundPath(config.soundFile)
         audioRef.current = new Audio(soundPath)
         audioRef.current.addEventListener('canplaythrough', () => {
@@ -121,7 +125,7 @@ export const Notification = () => {
         audioRef.current = null
       }
     }
-  }, [config, audioRef])
+  }, [config, audioRef, isVisible])
 
   useEffect(() => {
     // Get the window type from URL parameters (dev) or hash (production)
@@ -193,7 +197,7 @@ export const Notification = () => {
         </div>
 
         {/* Action Button */}
-        {config.hasButton && (
+        {config.buttonText && (
           <Button
             variant="ghost"
             size="sm"

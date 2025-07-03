@@ -14,15 +14,12 @@ use tauri_nspanel::{
 use url::{ParseError, Url};
 
 pub fn get_notification_url(notification_type: &str) -> Result<Url, ParseError> {
-    let params = &[
-        ("window", "notification"),
-        ("notification_type", notification_type),
-    ];
+    let params = &[("notification_type", notification_type)];
     println!("params: {:?}", params);
     if cfg!(dev) {
-        Url::parse_with_params("http://localhost:1420", params)
+        Url::parse_with_params("http://localhost:1420/notification.html", params)
     } else {
-        Url::parse_with_params("tauri://localhost/index.html", params)
+        Url::parse_with_params("tauri://localhost/notification.html", params)
     }
 }
 
@@ -48,6 +45,7 @@ pub fn show_notification_window<R: Runtime>(
     // panel.set_becomes_key_only_if_needed(true);
     // panel.set_hides_on_deactivate(false);
 
+    // Don't show immediately - wait for notification_ready call
     panel.show();
     return Ok(());
 }
@@ -78,16 +76,17 @@ pub fn create_notification_window<R: Runtime>(
         return Ok(());
     }
 
-    let params = format!(
-        "?window=notification&notification_type={}",
-        notification_type
-    );
+    let params = format!("?notification_type={}", notification_type);
 
     // Create a notification window programmatically using WebviewWindowBuilder
     let notification_url = if cfg!(dev) {
-        tauri::WebviewUrl::External(format!("http://localhost:1420{}", params).parse().unwrap())
+        tauri::WebviewUrl::External(
+            format!("http://localhost:1420/notification.html{}", params)
+                .parse()
+                .unwrap(),
+        )
     } else {
-        tauri::WebviewUrl::App(format!("index.html#{}", params).into())
+        tauri::WebviewUrl::App(format!("notification.html#{}", params).into())
     };
 
     let notification_window =
@@ -149,7 +148,7 @@ mod tests {
         let url = get_notification_url("smart-session-start").unwrap();
         assert_eq!(
             url.to_string(),
-            "http://localhost:1420/?window=notification&notification_type=smart-session-start"
+            "http://localhost:1420/notification.html?notification_type=smart-session-start"
         );
     }
 }

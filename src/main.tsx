@@ -3,8 +3,6 @@ import * as ReactDOM from 'react-dom/client'
 import { PostHogProvider } from 'posthog-js/react'
 import App from './App'
 import { info as tauriInfoLogger } from '@tauri-apps/plugin-log'
-import { useEffect, useState } from 'react'
-import { Notification } from './Notification'
 
 tauriInfoLogger('Main.tsx intializing')
 
@@ -18,22 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
   dragRegionDiv.className = 'dragble-state'
   document.documentElement.insertBefore(dragRegionDiv, document.body)
 })
-const WindowRouter = ()=>{
-  const [windowType, setWindowType] = useState('main')
-  useEffect(() => {
-    // Get the window type from URL parameters (dev) or hash (production)
-    const urlParams = new URLSearchParams(window.location.search)
-    const hashParams = new URLSearchParams(window.location.hash.substring(1))
-    const windowParam = urlParams.get('window') || hashParams.get('window') || 'main'
-    setWindowType(windowParam)
-    
-  }, [])
-  
-  if (windowType === 'notification') {
-    return <Notification />
-  }
-  return <App />  
-}
+
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
@@ -41,7 +24,7 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
       apiKey={import.meta.env.VITE_PUBLIC_POSTHOG_KEY}
       options={options}
     >
-      <WindowRouter />
+      <App />
     </PostHogProvider>
   </React.StrictMode>,
 )
