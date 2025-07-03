@@ -36,6 +36,7 @@ const fetchCurrentProfile = async () => {
   const { data } = await supabase
     .from('user_profile')
     .select('*')
+    .order('created_at', { ascending: false })
     .limit(1)
 
   return data?.[0] as UserProfile
@@ -46,6 +47,7 @@ const createProfile = async (profile: CreateProfile) => {
     .from('user_profile')
     .insert(profile)
     .select()
+    .order('created_at', { ascending: false })
     .limit(1)
 
   if (error) throw error
@@ -60,6 +62,7 @@ const updateProfile = async (updates: Partial<UserProfile>) => {
     .update(profileUpdates)
     .eq('id', id)
     .select()
+    .order('created_at', { ascending: false })
     .limit(1)
 
   if (error) throw error
