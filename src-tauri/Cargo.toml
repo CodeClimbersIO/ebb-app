@@ -30,7 +30,7 @@ sentry = "0.41.0"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tauri = { version = "2", features = [ "protocol-asset", "macos-private-api", "tray-icon", "image-png" ] }
-tauri-nspanel = { git = "https://github.com/ahkohd/tauri-nspanel", rev = "18ffb9a2" }
+tauri-nspanel = { git = "https://github.com/ahkohd/tauri-nspanel", rev = "18ffb9a" }
 monitor = { git = "https://github.com/ahkohd/tauri-toolkit", rev = "c7f4c569" }
 tauri-plugin-deep-link = "2.4.0"
 tauri-plugin-log = "2.6.0"
@@ -43,6 +43,7 @@ thiserror = "2.0.12"
 tokio = { version = "1.42.0", features = ["full"] }
 uuid = "1.17.0"
 url = "2.5.4"
+objc2-app-kit = "0.3.1"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-autostart = "2.5.0"

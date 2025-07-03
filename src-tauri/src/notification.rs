@@ -1,7 +1,4 @@
-use std::{thread::sleep, time::Duration};
-
 use crate::window::WebviewWindowExt;
-use log::info;
 use tauri::{AppHandle, Manager, Runtime, WebviewWindow};
 
 pub const NOTIFICATION_WINDOW_LABEL: &str = "notification";

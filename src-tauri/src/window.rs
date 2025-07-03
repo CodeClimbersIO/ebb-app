@@ -1,8 +1,12 @@
+#![allow(unexpected_cfgs)]
+
 use log::info;
+use objc2_app_kit::NSMainMenuWindowLevel;
 use tauri::{Emitter, Manager, Runtime, WebviewWindow};
+#[allow(deprecated)]
 use tauri_nspanel::{
     cocoa::{
-        appkit::{NSMainMenuWindowLevel, NSView, NSWindowCollectionBehavior},
+        appkit::{NSView, NSWindowCollectionBehavior},
         base::{id, YES},
         foundation::{NSPoint, NSRect},
     },
@@ -34,9 +38,10 @@ impl<R: Runtime> WebviewWindowExt for WebviewWindow<R> {
             .map_err(|_| TauriError::Anyhow(Error::Panel.into()))?;
 
         // Set panel level
-        panel.set_level(NSMainMenuWindowLevel + 1);
+        panel.set_level((NSMainMenuWindowLevel + 1) as i32);
 
         // Allows the panel to display on the same space as the full screen window
+        #[allow(deprecated)]
         panel.set_collection_behaviour(
             NSWindowCollectionBehavior::NSWindowCollectionBehaviorFullScreenAuxiliary,
         );
@@ -55,7 +60,8 @@ impl<R: Runtime> WebviewWindowExt for WebviewWindow<R> {
         //
         // For each event, it emits a corresponding custom event to the app,
         // allowing other parts of the application to react to these panel state changes.
-
+        #[allow(unexpected_cfgs)]
+        #[allow(deprecated)]
         let panel_delegate = panel_delegate!(SpotlightPanelDelegate {
             window_did_resign_key,
             window_did_become_key
@@ -93,11 +99,11 @@ impl<R: Runtime> WebviewWindowExt for WebviewWindow<R> {
         let monitor_size = monitor.size().to_logical::<f64>(monitor_scale_factor);
 
         let monitor_position = monitor.position().to_logical::<f64>(monitor_scale_factor);
-
+        #[allow(deprecated)]
         let window_handle: id = self.ns_window().unwrap() as _;
-
+        #[allow(deprecated)]
         let window_frame: NSRect = unsafe { window_handle.frame() };
-
+        #[allow(deprecated)]
         let rect = NSRect {
             origin: NSPoint {
                 x: (monitor_position.x + (monitor_size.width / 2.0))
@@ -107,6 +113,7 @@ impl<R: Runtime> WebviewWindowExt for WebviewWindow<R> {
             size: window_frame.size,
         };
 
+        #[allow(deprecated)]
         let _: () = unsafe { msg_send![window_handle, setFrame: rect display: YES] };
 
         Ok(())

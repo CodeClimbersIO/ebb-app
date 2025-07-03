@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
-import { CheckCircle, X, Shield, AlertTriangle, PartyPopper, HelpCircle } from 'lucide-react'
+import { CheckCircle, Shield, AlertTriangle, PartyPopper, HelpCircle } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Hotkey } from '@/components/ui/hotkey'
@@ -127,10 +127,17 @@ export const Notification = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const [keysPressed, setKeysPressed] = useState(false)
   const [buttonState, setButtonState] = useState<'idle' | 'processing' | 'success'>('idle')
+  const [isFirstTimeDismiss, setIsFirstTimeDismiss] = useState(false)
   const { shortcutParts, loadShortcutFromStorage } = useShortcutStore()
 
   const notificationDuration = config?.defaultDuration
   const IconComponent = config?.icon
+
+  // Check if this is user's first time dismissing a notification
+  useEffect(() => {
+    const hasEverDismissed = localStorage.getItem('notification-ever-dismissed')
+    setIsFirstTimeDismiss(!hasEverDismissed)
+  }, [])
 
   // Map notification colors to hotkey colors
   const getHotkeyColor = (iconColor: string): string => {
@@ -142,6 +149,7 @@ export const Notification = () => {
   }
 
   const handleExit = useCallback(() => {
+    // Mark that user has dismissed a notification
     setIsExiting(true)
 
     setTimeout(() => {
@@ -149,7 +157,7 @@ export const Notification = () => {
       invoke('notify_app_notification_dismissed')
       invoke('hide_notification')
     }, config?.dismissImmediatelyOnAction ? 0 : 500)
-  }, [])
+  }, [isFirstTimeDismiss])
 
   const handleButtonClick = useCallback(async () => {
     if (buttonState !== 'idle') return // Prevent multiple clicks
@@ -182,8 +190,10 @@ export const Notification = () => {
 
   // Load user's configured shortcut
   useEffect(() => {
+
     loadShortcutFromStorage()
-  }, [loadShortcutFromStorage])
+    console.log('shortcutParts', shortcutParts)
+  }, [shortcutParts, loadShortcutFromStorage])
 
   // Listen to global shortcut events when notification has a button action
   useEffect(() => {
@@ -222,6 +232,10 @@ export const Notification = () => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         info('Escape key pressed, dismissing notification')
+        if (isFirstTimeDismiss) {
+          localStorage.setItem('notification-ever-dismissed', 'true')
+          setIsFirstTimeDismiss(false)
+        }
         handleExit()
       }
     }
@@ -356,19 +370,16 @@ export const Notification = () => {
           </Button>
         )}
 
-        {/* Dismiss Button */}
-        <Button
-          variant="outline"
-          size="icon"
+        {/* ESC Dismiss Indicator */}
+        <div 
           className={cn(
-            'h-5 w-5 absolute -top-2 -left-2 rounded-full bg-card shadow-sm',
-            'opacity-0 group-hover:opacity-100 hover:opacity-100 transition-opacity',
-            'hover:bg-accent hover:text-accent-foreground'
+            'absolute -top-2 -left-2 transition-opacity cursor-pointer',
+            isFirstTimeDismiss ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
           )}
           onClick={handleExit}
         >
-          <X className="h-3 w-3" />
-        </Button>
+          <Hotkey size="sm" color="default">ESC</Hotkey>
+        </div>
 
         {/* Progress Bar */}
         <div 
