@@ -36,9 +36,9 @@ const fetchCurrentProfile = async () => {
   const { data } = await supabase
     .from('user_profile')
     .select('*')
-    .single()
+    .limit(1)
 
-  return data as UserProfile
+  return data?.[0] as UserProfile
 }
 
 const createProfile = async (profile: CreateProfile) => {
@@ -46,10 +46,10 @@ const createProfile = async (profile: CreateProfile) => {
     .from('user_profile')
     .insert(profile)
     .select()
-    .single()
+    .limit(1)
 
   if (error) throw error
-  return data as UserProfile
+  return data?.[0] as UserProfile
 }
 
 const updateProfile = async (updates: Partial<UserProfile>) => {
@@ -60,10 +60,10 @@ const updateProfile = async (updates: Partial<UserProfile>) => {
     .update(profileUpdates)
     .eq('id', id)
     .select()
-    .single()
+    .limit(1)
 
   if (error) throw error
-  return data as UserProfile
+  return data?.[0] as UserProfile
 }
 
 const updateProfileLocation = async () => {
