@@ -119,7 +119,7 @@ const getSoundPath = async (soundFile: string) => {
   return convertFileSrc(resourcePath)
 }
 
-export const Notification = () => {
+export const NotificationPanel = () => {
   const [isVisible, setIsVisible] = useState(true) // Start hidden
   const [isExiting, setIsExiting] = useState(false)
   const [notificationType, setNotificationType] = useState<NotificationType | null>(null)

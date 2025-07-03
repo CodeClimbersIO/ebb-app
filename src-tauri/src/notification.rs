@@ -74,8 +74,9 @@ pub fn create_notification_window<R: Runtime>(
     }
 
     let params = format!("?notification_type={}", notification_type);
-
     // Create a notification window programmatically using WebviewWindowBuilder
+
+    // sometime the escape button works...
     let notification_url = if cfg!(dev) {
         tauri::WebviewUrl::External(
             format!("http://localhost:1420/notification.html{}", params)
@@ -83,7 +84,12 @@ pub fn create_notification_window<R: Runtime>(
                 .unwrap(),
         )
     } else {
-        tauri::WebviewUrl::App(format!("notification.html#{}", params).into())
+        // For release builds, use the same tauri:// protocol as in get_notification_url
+        tauri::WebviewUrl::External(
+            format!("tauri://localhost/notification.html{}", params)
+                .parse()
+                .unwrap(),
+        )
     };
 
     let notification_window =
@@ -128,10 +134,10 @@ pub fn create_notification_window<R: Runtime>(
 pub fn dismiss_notification_window<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
     let Ok((_, panel)) = get_notification_window_and_panel(app) else {
         log::error!("Failed to get notification window and panel");
+
         return Err(tauri::Error::WindowNotFound);
     };
     panel.order_out(None);
-    // panel.order_out(None);
     println!("dismissing notification window");
     Ok(())
 }

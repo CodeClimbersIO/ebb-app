@@ -9,6 +9,12 @@ const host = process.env.TAURI_DEV_HOST
 export default defineConfig(async () => ({
   build: {
     sourcemap: true,
+    rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, 'index.html'),
+        notification: path.resolve(__dirname, 'notification.html')
+      }
+    }
   },
   plugins: [
     react(),     
