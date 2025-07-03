@@ -33,13 +33,11 @@ interface CreateProfile {
 }
 
 const fetchCurrentProfile = async () => {
-  const { data } = await supabase
-    .from('user_profile')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(1)
-
-  return data?.[0] as UserProfile
+  const data = await platformApiRequest({
+    url: '/api/users/profile/me',
+    method: 'GET',
+  })
+  return data as UserProfile
 }
 
 const createProfile = async (profile: CreateProfile) => {
@@ -83,7 +81,6 @@ export function useGetCurrentProfile() {
     queryKey: profileKeys.current(),
     queryFn: fetchCurrentProfile,
     retry: false,
-    
   })
 }
 
