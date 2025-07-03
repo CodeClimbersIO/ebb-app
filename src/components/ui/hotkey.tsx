@@ -7,6 +7,8 @@ interface HotkeyProps {
   children: ReactNode
   size?: HotkeySize
   variant?: HotkeyVariant
+  pressed?: boolean
+  color?: string // Custom color class (e.g., 'bg-red-500', 'bg-primary')
 }
 
 const sizeClasses: Record<HotkeySize, string> = {
@@ -26,18 +28,57 @@ const variantClasses: Record<HotkeyVariant, string> = {
   unselected: 'bg-muted border-muted text-muted-foreground'
 }
 
+const pressedClasses: Record<HotkeyVariant, string> = {
+  selected: 'bg-violet-950 border-violet-950 shadow-inner',
+  unselected: 'bg-muted/80 border-muted/80 shadow-inner'
+}
+
+// Color mappings for different notification types
+const colorVariants = {
+  primary: {
+    base: 'bg-primary border-primary text-primary-foreground',
+    pressed: 'bg-primary/80 border-primary/80 text-primary-foreground'
+  },
+  red: {
+    base: 'bg-red-500 border-red-500 text-white',
+    pressed: 'bg-red-600 border-red-600 text-white'
+  },
+  green: {
+    base: 'bg-green-500 border-green-500 text-white',
+    pressed: 'bg-green-600 border-green-600 text-white'
+  },
+  amber: {
+    base: 'bg-amber-500 border-amber-500 text-white',
+    pressed: 'bg-amber-600 border-amber-600 text-white'
+  }
+}
+
 export function Hotkey({ 
   children, 
   size = 'md', 
-  variant = 'selected' 
+  variant = 'selected',
+  pressed = false,
+  color
 }: HotkeyProps) {
   const isModifier = ['⌘', '⌃', '⌥', '⇧'].includes(children as string)
   
+  // Use custom color if provided, otherwise fall back to variant classes
+  const getColorClasses = () => {
+    if (color && color in colorVariants) {
+      const colorVariant = colorVariants[color as keyof typeof colorVariants]
+      return pressed ? colorVariant.pressed : colorVariant.base
+    }
+    
+    return pressed ? pressedClasses[variant] : variantClasses[variant]
+  }
+  
   return (
     <kbd className={`
-      rounded border ${variantClasses[variant]}
-      ${sizeClasses[size]} 
-      font-mono inline-flex items-center
+      rounded border font-mono inline-flex items-center
+      transition-all duration-150 ease-in-out
+      ${getColorClasses()}
+      ${sizeClasses[size]}
+      ${pressed ? 'scale-95 shadow-inner' : 'shadow-sm'}
     `}>
       <span className={`${textSizeClasses(isModifier)[size]} font-bold`}>
         {children}

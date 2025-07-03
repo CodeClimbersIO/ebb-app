@@ -11,9 +11,10 @@ export const useFlowListener = () => {
   const navigate = useNavigate()
   useEffect(() => {
     let unlistenReloadState: UnlistenFn | undefined
+    let unlistenNavigate: UnlistenFn | undefined
 
     const setupListener = async () => {
-      unlistenReloadState = await listen('reload-state', async () => {
+      unlistenReloadState = await listen('notification-dismissed', async () => {
         info('App:relead state')
         queryClient.invalidateQueries()
         const flowSession = await FlowSessionApi.getInProgressFlowSession()
@@ -21,12 +22,17 @@ export const useFlowListener = () => {
           navigate('/flow')
         }
       })
+      unlistenNavigate = await listen('navigate-to-flow-recap', async () => {
+        info('App: navigating to flow recap')
+        navigate('/flow-recap')
+      })
     }
 
     void setupListener()
 
     return () => {
       unlistenReloadState?.()
+      unlistenNavigate?.()
     }
   }, []) 
   const init = async () => {

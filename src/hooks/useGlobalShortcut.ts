@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { getCurrentWindow } from '@tauri-apps/api/window'
-import { listen } from '@tauri-apps/api/event'
+import { listen, UnlistenFn } from '@tauri-apps/api/event'
 import { FlowSessionApi } from '@/api/ebbApi/flowSessionApi'
 import { OnboardingUtils } from '@/lib/utils/onboarding.util'
 import {
@@ -18,6 +18,8 @@ export function useGlobalShortcut() {
   useEffect(() => {
     let mounted = true
     let unlistenShortcut: (() => void) | undefined
+    let unlistenNotificationDismissed: UnlistenFn | undefined
+    let unlistenNotificationCreated: UnlistenFn | undefined
 
     const handleShortcut = async () => {
       if (!mounted) return
@@ -64,6 +66,13 @@ export function useGlobalShortcut() {
           unlistenShortcut = await listen(SHORTCUT_EVENT, () => {
             void handleShortcut()
           })
+          unlistenNotificationCreated = await listen('notification-created', async () => {
+            try {
+              await unlistenShortcut?.() // reinitialize the global shortcut when notifications is dismissed
+            } catch (error) {
+              logAndToastError(`(Shortcut) Error unlistening shortcut: ${error}`, error)
+            }
+          })
         }
       } catch (error) {
         // if database is locked, don't log and taost
@@ -74,15 +83,20 @@ export function useGlobalShortcut() {
 
         logAndToastError(`(Shortcut) Setup failed: ${error}`, error)
       }
+      unlistenNotificationDismissed = await listen('notification-dismissed', async () => {
+        unlistenShortcut = await listen(SHORTCUT_EVENT, () => {
+          void handleShortcut()
+        })
+      })
     }
-
+    
     void setup()
 
     return () => {
       mounted = false
-      if (unlistenShortcut) {
-        unlistenShortcut()
-      }
+      unlistenShortcut?.()
+      unlistenNotificationDismissed?.()
+      unlistenNotificationCreated?.()
     }
   }, [navigate, location.pathname])
 } 

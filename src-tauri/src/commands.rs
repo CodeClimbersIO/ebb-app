@@ -284,10 +284,18 @@ pub fn show_notification(app_handle: AppHandle, notification_type: String) -> Re
 }
 
 #[tauri::command]
-pub fn notify_app_to_reload_state(app_handle: AppHandle) -> Result<(), String> {
-    info!("command: notify_app_to_reload_state");
+pub fn notify_app_notification_dismissed(app_handle: AppHandle) -> Result<(), String> {
+    info!("command: notify_app_to_dismiss_notification");
     app_handle
-        .emit("reload-state", ())
+        .emit("notification-dismissed", ())
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn notify_app_notification_created(app_handle: AppHandle) -> Result<(), String> {
+    info!("command: notify_app_to_create_notification");
+    app_handle
+        .emit("notification-created", ())
         .map_err(|e| e.to_string())
 }
 

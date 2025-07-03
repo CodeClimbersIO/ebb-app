@@ -1,13 +1,17 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { CheckCircle, X, Shield, AlertTriangle, PartyPopper, HelpCircle } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Hotkey } from '@/components/ui/hotkey'
 import { cn } from '@/lib/utils/tailwind.util'
 import { convertFileSrc, invoke } from '@tauri-apps/api/core'
 import { error, info } from '@tauri-apps/plugin-log'
 import { resolveResource } from '@tauri-apps/api/path'
 import { isDev } from '@/lib/utils/environment.util'
 import { SmartSessionApi } from '@/api/ebbApi/smartSessionApi'
+import { emit, listen } from '@tauri-apps/api/event'
+import { SHORTCUT_EVENT } from '@/api/ebbApi/shortcutApi'
+import { useShortcutStore } from '@/lib/stores/shortcutStore'
 
 type NotificationType = 'session-start' | 'smart-start-suggestion' | 'blocked-app' | 'session-end' | 'session-warning'
 
@@ -33,19 +37,18 @@ const NOTIFICATION_CONFIGS: Record<NotificationType, NotificationConfig> = {
     soundFile: 'session_start.mp3',
   },
   'smart-start-suggestion': {
-    title: 'Start a session?',
+    title: 'Start Focus?',
     description: 'Looks like you\'re in a groove!',
     icon: HelpCircle,
-    iconColor: 'text-green-500',
-    progressColor: 'bg-green-500',
+    iconColor: 'text-primary',
+    progressColor: 'bg-primary',
     defaultDuration: 10*1000,
-    soundFile: 'smart_start_suggestion.mp3',
-    buttonText: 'Start Session',
+    buttonText: 'Start',
     buttonAction: async () => { 
       info('starting smart session')
       const session = await SmartSessionApi.startSmartSession()
       info(`session started: ${JSON.stringify(session)}`)
-      invoke('notify_app_to_reload_state')
+      invoke('notify_app_notification_dismissed')
     }
   },
   'blocked-app': {
@@ -55,7 +58,13 @@ const NOTIFICATION_CONFIGS: Record<NotificationType, NotificationConfig> = {
     progressColor: 'bg-red-500',
     defaultDuration: 8000,
     soundFile: 'app_blocked.mp3',
-    buttonText: 'Snooze'
+    buttonText: 'Snooze',
+    buttonAction: async () => {
+      info('snoozing blocking')
+      await invoke('snooze_blocking', {
+        duration: 1000 * 60 // 1 minute snoozer
+      })
+    }
   },
   'session-end': {
     title: 'Session Ended',
@@ -64,7 +73,11 @@ const NOTIFICATION_CONFIGS: Record<NotificationType, NotificationConfig> = {
     progressColor: 'bg-green-500',
     defaultDuration: 8000,
     soundFile: 'session_end.mp3',
-    buttonText: 'View Recap'
+    buttonText: 'View Recap',
+    buttonAction: async () => {
+      info('viewing recap')
+      await emit('navigate-to-flow-recap')
+    }
   },
   'session-warning': {
     title: 'Session Warning',
@@ -73,7 +86,14 @@ const NOTIFICATION_CONFIGS: Record<NotificationType, NotificationConfig> = {
     progressColor: 'bg-amber-500',
     defaultDuration: 12000,
     soundFile: 'session_warning.mp3',
-    buttonText: 'Extend Session'
+    buttonText: 'Extend Session',
+    buttonAction: async () => {
+      info('extending session')
+      await emit('add-time-event', {
+        action: 'add-time',
+        minutes: 15
+      })
+    }
   }
 }
 
@@ -91,11 +111,96 @@ export const Notification = () => {
   const [notificationType, setNotificationType] = useState<NotificationType | null>(null)
   const [config, setConfig] = useState<NotificationConfig | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
-
-
+  const [keysPressed, setKeysPressed] = useState(false)
+  const [buttonState, setButtonState] = useState<'idle' | 'processing' | 'success'>('idle')
+  const { shortcutParts, loadShortcutFromStorage } = useShortcutStore()
 
   const notificationDuration = config?.defaultDuration
   const IconComponent = config?.icon
+
+  // Map notification colors to hotkey colors
+  const getHotkeyColor = (iconColor: string): string => {
+    if (iconColor.includes('primary')) return 'primary'
+    if (iconColor.includes('red')) return 'red'
+    if (iconColor.includes('green')) return 'green'
+    if (iconColor.includes('amber')) return 'amber'
+    return 'primary' // fallback
+  }
+
+  const handleExit = useCallback(() => {
+    setIsExiting(true)
+
+    setTimeout(() => {
+      setIsVisible(false)
+      invoke('hide_notification')
+    }, 500)
+  }, [])
+
+  const handleButtonClick = useCallback(async () => {
+    if (buttonState !== 'idle') return // Prevent multiple clicks
+    
+    setButtonState('processing')
+    
+    try {
+      if (config?.buttonAction) {
+        await config.buttonAction()
+      }
+      
+      setButtonState('success')
+      
+      // Wait 200ms before dismissing
+      setTimeout(() => {
+        handleExit()
+      }, 1000)
+    } catch (error) {
+      info(`handleButtonClick: error - ${error}`)
+      setButtonState('idle') // Reset on error
+    }
+  }, [config?.buttonAction, handleExit, buttonState])
+
+  const triggerKeyPressedFeedback = useCallback(() => {
+    setKeysPressed(true)
+    setTimeout(() => {
+      setKeysPressed(false)
+    }, 150) // Match the transition duration
+  }, [])
+
+  // Load user's configured shortcut
+  useEffect(() => {
+    loadShortcutFromStorage()
+  }, [loadShortcutFromStorage])
+
+  // Listen to global shortcut events when notification has a button action
+  useEffect(() => {
+    if (!config?.buttonAction) return
+
+    let unlistenShortcut: (() => void) | undefined
+
+    const setupShortcutListener = async () => {
+      try {
+        unlistenShortcut = await listen(SHORTCUT_EVENT, () => {
+          if (buttonState === 'idle') {
+            triggerKeyPressedFeedback()
+            handleButtonClick()
+          }
+        })
+      } catch (err) {
+        error(`Failed to setup shortcut listener: ${err}`)
+      }
+    }
+
+    if(isVisible) {
+      setupShortcutListener()
+    } else {
+      unlistenShortcut?.()
+    }
+
+    return () => {
+      if (unlistenShortcut) {
+        unlistenShortcut()
+      }
+    }
+  }, [config?.buttonAction, triggerKeyPressedFeedback, handleButtonClick, isVisible, buttonState])
 
   useEffect(() => {
     if (!config) return
@@ -124,7 +229,7 @@ export const Notification = () => {
         audioRef.current = null
       }
     }
-  }, [config, audioRef, isVisible])
+  }, [config, audioRef, isVisible, handleExit])
 
   useEffect(() => {
     // Get the window type from URL parameters (dev) or hash (production)
@@ -141,6 +246,7 @@ export const Notification = () => {
     if(notificationType === 'smart-start-suggestion') {
       SmartSessionApi.setLastSessionCheck()
     }
+    invoke('notify_app_notification_created')
     // Set body background to transparent for notification windows
     document.body.style.background = 'transparent'
     document.documentElement.style.background = 'transparent'
@@ -155,25 +261,6 @@ export const Notification = () => {
     }
     setConfig(notificationConfig)
   }, [notificationType])
-
-  const handleExit = () => {
-    setIsExiting(true)
-    // Wait for exit animation to complete before calling onDismiss
-    info('handleExit')
-
-    setTimeout(() => {
-      info('hiding notification')
-      setIsVisible(false)
-      invoke('hide_notification')
-    }, 500)
-  }
-
-  const handleButtonClick = async () => {
-    if (config?.buttonAction) {
-      await config.buttonAction()
-    }
-    handleExit()
-  }
 
   if (!isVisible) return null
 
@@ -203,18 +290,40 @@ export const Notification = () => {
         {/* Action Button */}
         {config.buttonText && (
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
-            className="h-8 px-3 text-xs hover:bg-accent hover:text-accent-foreground"
+            className={cn(
+              'h-8 px-3 text-xs flex items-center gap-2 transition-all duration-200',
+              buttonState === 'idle' && 'hover:bg-accent hover:text-accent-foreground',
+              buttonState === 'success' && 'bg-green-500/20 text-green-400 border-green-500/50'
+            )}
             onClick={handleButtonClick}
+            disabled={buttonState !== 'idle'}
           >
-            {config.buttonText}
+            <span>
+              {buttonState === 'idle' && config.buttonText}
+              {buttonState === 'success' && 'Success!'}
+            </span>
+            {buttonState === 'idle' && shortcutParts.length > 0 && shortcutParts.some(part => part) && (
+              <div className="flex items-center gap-1">
+                {shortcutParts.map((part, index) => (
+                  <Hotkey 
+                    key={index} 
+                    size="sm" 
+                    pressed={keysPressed}
+                    color={getHotkeyColor(config.iconColor)}
+                  >
+                    {part}
+                  </Hotkey>
+                ))}
+              </div>
+            )}
           </Button>
         )}
 
         {/* Dismiss Button */}
         <Button
-          variant="ghost"
+          variant="outline"
           size="icon"
           className={cn(
             'h-5 w-5 absolute -top-2 -left-2 rounded-full bg-card shadow-sm',

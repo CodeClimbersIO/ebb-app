@@ -11,8 +11,6 @@ export const DEFAULT_SHORTCUT = 'CommandOrControl+E'
 export const SHORTCUT_EVENT = 'global-shortcut-triggered'
 const SHORTCUT_KEY = 'global-focus-shortcut'
 
-let isInitialized = false
-
 const getCurrentShortcutFromDb = async (): Promise<string> => {
   try {
     const savedShortcut = await UserPreferenceRepo.getPreference(SHORTCUT_KEY)
@@ -36,10 +34,7 @@ const saveShortcut = async (shortcut: string): Promise<void> => {
 }
 
 export const updateGlobalShortcut = async (newShortcut: string): Promise<void> => {
-  if (!isInitialized) {
-    logAndToastError('Cannot update shortcut before initialization', error)
-    return
-  }
+
 
   const currentShortcut = await getCurrentShortcutFromDb()
   if (newShortcut === currentShortcut) {
@@ -72,9 +67,6 @@ export const updateGlobalShortcut = async (newShortcut: string): Promise<void> =
 }
 
 export const initializeGlobalShortcut = async (): Promise<void> => {
-  if (isInitialized) {
-    return
-  }
 
   try {
     const shortcutToRegister = await getCurrentShortcutFromDb()
@@ -92,31 +84,23 @@ export const initializeGlobalShortcut = async (): Promise<void> => {
       })
     }
 
-    isInitialized = true
   } catch (err) {
     // appears to happen every time we register a shortcut even if it is successful. Probably a bug with the plugin.
     logError(`Failed to initialize global shortcut: ${err}`)
-    isInitialized = true
   }
 }
 
 export const getCurrentShortcut = async (): Promise<string> => {
-  if (!isInitialized) {
-    return ''
-  }
   return getCurrentShortcutFromDb()
 }
 
 export const unregisterAllManagedShortcuts = async (): Promise<void> => {
-  if (isInitialized) {
-    const currentShortcut = await getCurrentShortcutFromDb()
-    if (currentShortcut) {
-      try {
-        await unregisterShortcutTauri(currentShortcut)
-      } catch (err) {
-        logAndToastError(`Failed to unregister ${currentShortcut} during cleanup: ${err}`, error)
-      }
+  const currentShortcut = await getCurrentShortcutFromDb()
+  if (currentShortcut) {
+    try {
+      await unregisterShortcutTauri(currentShortcut)
+    } catch (err) {
+      logAndToastError(`Failed to unregister ${currentShortcut} during cleanup: ${err}`, error)
     }
   }
-  isInitialized = false
 }
