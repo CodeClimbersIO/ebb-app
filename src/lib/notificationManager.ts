@@ -7,7 +7,7 @@ import { isDev } from './utils/environment.util'
 
 interface NotificationOptions {
   duration?: number
-  type: 'session-start-smart' | 'session-start' | 'session-end' | 'session-warning' | 'blocked-app'
+  type: 'smart-start-suggestion' | 'session-start' | 'session-end' | 'session-warning' | 'blocked-app'
   difficulty?: 'easy' | 'medium' | 'hard'
 }
 
@@ -29,7 +29,7 @@ class NotificationManager {
   private async getNotificationResources(type: NotificationOptions['type']) {
     try {
       const soundMap = {
-        'session-start-smart': 'session_start.mp3',
+        'smart-start-suggestion': 'session_start.mp3',
         'session-start': 'session_start.mp3',
         'session-end': 'session_end.mp3',
         'session-warning': 'session_warning.mp3',

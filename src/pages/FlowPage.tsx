@@ -244,15 +244,9 @@ export const FlowPage = () => {
       await startBlocking(workflow)
       await startTimer(flowSession, workflow)
 
-      if (flowSession.type === 'smart') {
-        invoke('show_notification', {
-          notificationType: 'session-start-smart',
-        })
-      } else {
-        invoke('show_notification', {
-          notificationType: 'session-start',
-        })
-      }
+      invoke('show_notification', {
+        notificationType: 'session-start',
+      })
 
 
     }
@@ -421,16 +415,7 @@ export const FlowPage = () => {
     await stopFlowTimer()
     await FlowSessionApi.endFlowSession()
 
-    navigate('/flow-recap', {
-      state: {
-        sessionId: flowSession.id,
-        startTime: flowSession.start,
-        endTime: new Date().toISOString(),
-        timeInFlow: '00:00',
-        idleTime: '0h 34m',
-        objective: flowSession.objective
-      }
-    })
+    navigate('/flow-recap')
   }
 
   const handlePlayPause = async () => {

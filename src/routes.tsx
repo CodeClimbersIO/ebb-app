@@ -23,8 +23,7 @@ import { FriendsAnalyticsPage } from '@/pages/FriendsAnalyticsPage/FriendsAnalyt
 import { useLicenseWithDevices } from '@/api/hooks/useLicense'
 import { useOnboarding } from '@/hooks/useOnboarding'
 import { useCheckout } from '@/hooks/useCheckout'
-import { FlowSessionApi } from './api/ebbApi/flowSessionApi'
-import { WorkflowApi } from './api/ebbApi/workflowApi'
+import { useFlowListener } from '@/hooks/useFlowListener'
 
 
 const Router = () => {
@@ -35,6 +34,7 @@ const Router = () => {
   const { user } = useAuth()
   useLicenseWithDevices(user?.id || null)
   useOnboarding()
+  useFlowListener()
   const { error } = useStore(toastStore)
 
   useEffect(() => {
@@ -57,23 +57,7 @@ const Router = () => {
         logAndToastError(`(Router) Failed to set up tray navigation: ${error}`, error)
       }
     }
-    const init = async () => {
-      const flowSession = await FlowSessionApi.getInProgressFlowSession()
-      if (flowSession) {
-        navigate('/flow')
-      }
-      window.addEventListener('flow-session-started', async ()=>{
-        const flowSession = await FlowSessionApi.getInProgressFlowSession()
-        if (!flowSession || !flowSession.workflow_id) return
-        const workflow = await WorkflowApi.getWorkflowById(flowSession.workflow_id)
-        if (workflow?.settings.hasBreathing) {
-          navigate('/breathing-exercise')
-        } else {
-          navigate('/flow')
-        }
-      })
-    }
-    init()
+
     setup()
 
     return () => {

@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
 import { Card, CardContent } from '@/components/ui/card'
 import { DateTime } from 'luxon'
 import { TopNav } from '@/components/TopNav'
@@ -7,27 +6,16 @@ import { Logo } from '@/components/ui/logo'
 import { MonitorApi, AppsWithTime, GraphableTimeByHourBlock } from '../api/monitorApi/monitorApi'
 import { UsageSummary } from '@/components/UsageSummary'
 import { invoke } from '@tauri-apps/api/core'
+import { useGetMostRecentFlowSession } from '../api/hooks/useFlowSession'
 
-interface LocationState {
-  sessionId: string
-  timeInFlow: string
-  contextSwitches: number
-  idleTime: string
-  objective: string
-  startTime: string
-  endTime: string
-}
 
 export const FlowRecapPage = () => {
-  const location = useLocation()
-  const navigate = useNavigate()
-  const state = location.state as LocationState
   const effectRan = useRef(false)
+  const { data: mostRecentFlowSession } = useGetMostRecentFlowSession()
   const [appUsage, setAppUsage] = useState<AppsWithTime[]>([])
   const [totalCreating, setTotalCreating] = useState(0)
   const [totalTime, setTotalTime] = useState(0)
   const [chartData, setChartData] = useState<GraphableTimeByHourBlock[]>([])
-
   useEffect(() => {
     if (effectRan.current) return
     effectRan.current = true
@@ -37,10 +25,9 @@ export const FlowRecapPage = () => {
     })
 
     const init = async () => {
-      if (!state?.startTime || !state?.endTime) return
-
-      const start = DateTime.fromISO(state.startTime)
-      const end = DateTime.fromISO(state.endTime)
+      if (!mostRecentFlowSession || !mostRecentFlowSession.end) return
+      const start = DateTime.fromISO(mostRecentFlowSession.start)
+      const end = DateTime.fromISO(mostRecentFlowSession.end)
       
       const rawChartData = await MonitorApi.getTimeCreatingByHour(start, end)
       const topApps = await MonitorApi.getTopAppsByPeriod(start, end)
@@ -57,16 +44,16 @@ export const FlowRecapPage = () => {
       setChartData(processedChartData)
     }
     init()
-  }, [state, navigate])
+  }, [mostRecentFlowSession])
 
-  if (!state) {
+  if (!mostRecentFlowSession) {
     return <div>Loading...</div>
   }
 
   const formatTimeRange = () => {
-    if (!state.startTime || !state.endTime) return ''
-    const start = DateTime.fromISO(state.startTime)
-    const end = DateTime.fromISO(state.endTime)
+    if (!mostRecentFlowSession.start || !mostRecentFlowSession.end) return ''
+    const start = DateTime.fromISO(mostRecentFlowSession.start)
+    const end = DateTime.fromISO(mostRecentFlowSession.end)
     return `${start.toFormat('h:mm a')} - ${end.toFormat('h:mm a')}`
   }
 
@@ -87,7 +74,7 @@ export const FlowRecapPage = () => {
           <CardContent className="p-6">
             <div className="mb-4 flex justify-between items-center">
               <div className="text-sm">
-                <span className="font-medium">'{state?.objective}'</span>
+                <span className="font-medium">'{mostRecentFlowSession.objective}'</span>
               </div>
               <div className="text-sm text-muted-foreground">
                 {formatTimeRange()}

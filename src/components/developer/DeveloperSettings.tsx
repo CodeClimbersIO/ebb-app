@@ -6,7 +6,7 @@ import { invoke } from '@tauri-apps/api/core'
 import { info } from '@tauri-apps/plugin-log'
 // const notificationManager = NotificationManager.getInstance()
 export function DeveloperSettings() {
-  const handleTestNotification = (type: 'session-start-smart' |  'session-start' | 'session-end' | 'session-warning' | 'blocked-app', difficulty: 'easy' | 'medium' | 'hard') => {
+  const handleTestNotification = (type: 'smart-start-suggestion' |  'session-start' | 'session-end' | 'session-warning' | 'blocked-app', difficulty: 'easy' | 'medium' | 'hard') => {
     info(`show_notification ${difficulty} ${type}`)
     invoke('show_notification', { notificationType: type })
   }
@@ -21,7 +21,7 @@ export function DeveloperSettings() {
             <Button onClick={() => handleTestNotification('session-start', 'easy')}>
             Test Session Start
             </Button>
-            <Button onClick={() => handleTestNotification('session-start-smart', 'easy')}> 
+            <Button onClick={() => handleTestNotification('smart-start-suggestion', 'easy')}> 
             Test Smart Session Start
             </Button>
             <Button onClick={() => handleTestNotification('session-end', 'easy')}>

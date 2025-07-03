@@ -8,7 +8,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::sync::Mutex;
 use tauri::command;
-use tauri::AppHandle;
+use tauri::{AppHandle, Emitter};
 use tokio::time::{sleep, Duration};
 
 use crate::notification::{create_notification_window, dismiss_notification_window};
@@ -281,6 +281,14 @@ pub fn get_app_version(app_handle: tauri::AppHandle) -> String {
 #[tauri::command]
 pub fn show_notification(app_handle: AppHandle, notification_type: String) -> Result<(), String> {
     create_notification_window(&app_handle, &notification_type).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn notify_app_to_reload_state(app_handle: AppHandle) -> Result<(), String> {
+    info!("command: notify_app_to_reload_state");
+    app_handle
+        .emit("reload-state", ())
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]

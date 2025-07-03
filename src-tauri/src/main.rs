@@ -98,6 +98,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             commands::detect_spotify,
             commands::get_app_version,
             commands::show_notification,
+            commands::notify_app_to_reload_state,
             commands::hide_notification,
             change_autostart,
             tray_icon_gen::generate_timer_icon,

@@ -1,19 +1,19 @@
 import { useEffect, useState, useRef } from 'react'
-import { CheckCircle, X, Shield, AlertTriangle, PartyPopper } from 'lucide-react'
+import { CheckCircle, X, Shield, AlertTriangle, PartyPopper, HelpCircle } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils/tailwind.util'
 import { convertFileSrc, invoke } from '@tauri-apps/api/core'
 import { error, info } from '@tauri-apps/plugin-log'
 import { resolveResource } from '@tauri-apps/api/path'
-import { isDev } from './lib/utils/environment.util'
-import { SmartSessionApi } from './api/ebbApi/smartSessionApi'
-import { DeviceProfileApi } from './api/ebbApi/deviceProfileApi'
+import { isDev } from '@/lib/utils/environment.util'
+import { SmartSessionApi } from '@/api/ebbApi/smartSessionApi'
 
-type NotificationType = 'session-start' | 'session-start-smart' | 'blocked-app' | 'session-end' | 'session-warning'
+type NotificationType = 'session-start' | 'smart-start-suggestion' | 'blocked-app' | 'session-end' | 'session-warning'
 
 interface NotificationConfig {
   title: string
+  description?: string
 icon: React.ComponentType<{ className?: string }>
   iconColor: string
   progressColor: string
@@ -32,22 +32,21 @@ const NOTIFICATION_CONFIGS: Record<NotificationType, NotificationConfig> = {
     defaultDuration: 5000,
     soundFile: 'session_start.mp3',
   },
-  'session-start-smart': {
-    title: 'Smart Session Start',
-    icon: CheckCircle,
-    iconColor: 'text-primary',
-    progressColor: 'bg-primary',
-    defaultDuration: 5000,
-    soundFile: 'session_start.mp3',
+  'smart-start-suggestion': {
+    title: 'Start a session?',
+    description: 'Looks like you\'re in a groove!',
+    icon: HelpCircle,
+    iconColor: 'text-green-500',
+    progressColor: 'bg-green-500',
+    defaultDuration: 10*1000,
+    soundFile: 'smart_start_suggestion.mp3',
     buttonText: 'Start Session',
-    // buttonAction: () => {
-    //   DeviceProfileApi.getDeviceId().then((deviceId) => {
-    //     info(`deviceId: ${deviceId}`)
-    //     SmartSessionApi.startSmartSession(deviceId).then((session) => {
-    //       info(`session: ${JSON.stringify(session)}`)
-    //     })
-    //   })
-    // }
+    buttonAction: async () => { 
+      info('starting smart session')
+      const session = await SmartSessionApi.startSmartSession()
+      info(`session started: ${JSON.stringify(session)}`)
+      invoke('notify_app_to_reload_state')
+    }
   },
   'blocked-app': {
     title: 'App Blocked',
@@ -139,6 +138,9 @@ export const Notification = () => {
 
     if(!notificationType) return
     setNotificationType(notificationType as NotificationType)
+    if(notificationType === 'smart-start-suggestion') {
+      SmartSessionApi.setLastSessionCheck()
+    }
     // Set body background to transparent for notification windows
     document.body.style.background = 'transparent'
     document.documentElement.style.background = 'transparent'
@@ -189,11 +191,13 @@ export const Notification = () => {
         {/* Icon */}
         {IconComponent && <IconComponent className={cn('h-6 w-6 shrink-0', config.iconColor)} />}
         
+
         {/* Content */}
         <div className="flex-1">
           <h3 className="text-card-foreground font-semibold text-base">
             {config.title}
           </h3>
+          {config.description && <p className="text-card-foreground text-sm">{config.description}</p>}
         </div>
 
         {/* Action Button */}
