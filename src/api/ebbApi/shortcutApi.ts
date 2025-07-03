@@ -34,8 +34,6 @@ const saveShortcut = async (shortcut: string): Promise<void> => {
 }
 
 export const updateGlobalShortcut = async (newShortcut: string): Promise<void> => {
-
-
   const currentShortcut = await getCurrentShortcutFromDb()
   if (newShortcut === currentShortcut) {
     return

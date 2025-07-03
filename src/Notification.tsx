@@ -13,7 +13,7 @@ import { emit, listen } from '@tauri-apps/api/event'
 import { SHORTCUT_EVENT } from '@/api/ebbApi/shortcutApi'
 import { useShortcutStore } from '@/lib/stores/shortcutStore'
 
-type NotificationType = 'session-start' | 'smart-start-suggestion' | 'blocked-app' | 'session-end' | 'session-warning'
+type NotificationType = 'session-start' | 'quick-start' | 'smart-start-suggestion' | 'blocked-app' | 'session-end' | 'session-warning'
 
 interface NotificationConfig {
   title: string
@@ -24,6 +24,7 @@ icon: React.ComponentType<{ className?: string }>
   defaultDuration: number
   soundFile?: string
   buttonText?: string
+  dismissImmediatelyOnAction?: boolean
   buttonAction?: () => void | Promise<void>
 }
 
@@ -35,6 +36,20 @@ const NOTIFICATION_CONFIGS: Record<NotificationType, NotificationConfig> = {
     progressColor: 'bg-primary',
     defaultDuration: 5000,
     soundFile: 'session_start.mp3',
+  },
+  'quick-start': {
+    title: 'Start Focus?',
+    icon: HelpCircle,
+    iconColor: 'text-primary',
+    progressColor: 'bg-primary',
+    defaultDuration: 10*1000,
+    buttonText: 'Start',
+    dismissImmediatelyOnAction: true,
+    buttonAction: async () => { 
+      info('starting quick start session')
+      const session = await SmartSessionApi.startSmartSession()
+      info(`quick start session started: ${JSON.stringify(session)}`)
+    }
   },
   'smart-start-suggestion': {
     title: 'Start Focus?',
@@ -48,7 +63,6 @@ const NOTIFICATION_CONFIGS: Record<NotificationType, NotificationConfig> = {
       info('starting smart session')
       const session = await SmartSessionApi.startSmartSession()
       info(`session started: ${JSON.stringify(session)}`)
-      invoke('notify_app_notification_dismissed')
     }
   },
   'blocked-app': {
@@ -132,8 +146,9 @@ export const Notification = () => {
 
     setTimeout(() => {
       setIsVisible(false)
+      invoke('notify_app_notification_dismissed')
       invoke('hide_notification')
-    }, 500)
+    }, config?.dismissImmediatelyOnAction ? 0 : 500)
   }, [])
 
   const handleButtonClick = useCallback(async () => {
@@ -201,6 +216,26 @@ export const Notification = () => {
       }
     }
   }, [config?.buttonAction, triggerKeyPressedFeedback, handleButtonClick, isVisible, buttonState])
+
+  // Listen for Escape key to dismiss notification
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        info('Escape key pressed, dismissing notification')
+        handleExit()
+      }
+    }
+
+    if (isVisible) {
+      info('adding event listener for Escape key')
+      document.addEventListener('keydown', handleKeyDown)
+    }
+
+    return () => {
+      info('removing event listener for Escape key')
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isVisible, handleExit])
 
   useEffect(() => {
     if (!config) return
