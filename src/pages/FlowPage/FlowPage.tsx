@@ -296,11 +296,12 @@ export const FlowPage = () => {
       notificationType: 'session-end'
     })
 
-    navigate('/flow-recap')
+    navigate('/')
   }
 
   const handlePlayPause = async () => {
     if (!player) return
+    
     try {
       setClickedButton('play')
       if (isPlaying) {

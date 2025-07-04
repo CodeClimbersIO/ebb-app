@@ -247,7 +247,23 @@ export const StartFlowPage = () => {
         throw new Error('No workflow found')
       }
 
-      await FlowSessionApi.startFlowSession(objective || currentWorkflow.name, 'manual', currentWorkflow)
+      // Create workflow with current state to ensure latest settings are used
+      const workflowWithCurrentState: Workflow = {
+        ...currentWorkflow,
+        selectedApps,
+        settings: {
+          ...currentWorkflow.settings,
+          selectedPlaylist,
+          selectedPlaylistName: currentWorkflow.settings.selectedPlaylistName,
+          defaultDuration: duration?.as('minutes') ?? null,
+          isAllowList,
+          hasBreathing,
+          hasMusic,
+          difficulty
+        }
+      }
+
+      await FlowSessionApi.startFlowSession(objective || currentWorkflow.name, 'manual', workflowWithCurrentState)
 
     } catch (error) {
       logAndToastError(`Failed to start flow session: ${error}`, error)

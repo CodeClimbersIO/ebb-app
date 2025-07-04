@@ -6,8 +6,6 @@ import { Logo } from '@/components/ui/logo'
 import { MonitorApi, AppsWithTime, GraphableTimeByHourBlock } from '../api/monitorApi/monitorApi'
 import { UsageSummary } from '@/components/UsageSummary'
 import { useGetMostRecentFlowSession } from '../api/hooks/useFlowSession'
-import { logAndToastError } from '../lib/utils/ebbError.util'
-import { getCurrentWindow } from '@tauri-apps/api/window'
 
 
 export const FlowRecapPage = () => {
@@ -39,12 +37,6 @@ export const FlowRecapPage = () => {
       
       const processedChartData = rawChartData.slice(6)
       setChartData(processedChartData)
-      
-      const window = getCurrentWindow()
-      void Promise.all([
-        window.show().catch(err => logAndToastError(`(Flow recap) Error showing window: ${err}`, err)),
-        window.setFocus().catch(err => logAndToastError(`(Flow recap) Error focusing window: ${err}`, err))
-      ])
     }
     init()
   }, [mostRecentFlowSession])
