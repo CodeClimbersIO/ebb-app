@@ -31,6 +31,7 @@ import { Workflow, WorkflowApi } from '../../api/ebbApi/workflowApi'
 import { BlockingPreferenceApi } from '../../api/ebbApi/blockingPreferenceApi'
 import { EbbWorker } from '../../lib/ebbWorker'
 import { Timer } from './Timer'
+import { MonitorApi } from '../../api/monitorApi/monitorApi'
 
 type CurrentTrack = {
   song: {
@@ -292,16 +293,26 @@ export const FlowPage = () => {
     await invoke('stop_blocking')
     await stopFlowTimer()
     await FlowSessionApi.endFlowSession()
-    await invoke('show_notification', {
-      notificationType: 'session-end'
-    })
+    if(flowSession.start && flowSession.end) {
+      const timeCreating = await MonitorApi.getTimeCreatingByTimePeriod(DateTime.fromISO(flowSession.start), DateTime.fromISO(flowSession.end))
+      
+      const payload = JSON.stringify({
+        title: 'Session Completed',
+        description: `You created for ${timeCreating} minutes!`,
+      })
+        
+      await invoke('show_notification', {
+        notificationType: 'session-end',
+        payload
+      })
+    }
 
     navigate('/')
   }
 
   const handlePlayPause = async () => {
     if (!player) return
-    
+
     try {
       setClickedButton('play')
       if (isPlaying) {

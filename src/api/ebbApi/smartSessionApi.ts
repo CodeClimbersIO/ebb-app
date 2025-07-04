@@ -5,7 +5,7 @@ import { DeviceProfileApi } from './deviceProfileApi'
 import { FlowSession } from '../../db/ebb/flowSessionRepo'
 
 const isCreatingFromTimePeriod = async (start: DateTime, end: DateTime): Promise<boolean> => {
-  const activityStates = await MonitorApi.getTimeCreatingByTimePeriod(start, end)
+  const activityStates = await MonitorApi.getActivityStatesByTimePeriod(start, end)
   const tags = activityStates.map(state => state.tags_json).flat()
   
   // 75% of tags must be creating

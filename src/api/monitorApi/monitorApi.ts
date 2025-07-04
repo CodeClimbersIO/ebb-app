@@ -250,7 +250,7 @@ function aggregateTimeBlocks(
     })
 }
 
-const getTimeCreatingByTimePeriod = async (start: DateTime, end: DateTime): Promise<ActivityState[]> => {
+const getActivityStatesByTimePeriod = async (start: DateTime, end: DateTime): Promise<ActivityState[]> => {
   const tags = await TagRepo.getTagsByType('default')
   const activityStatesDB = await getActivityStatesByTagsAndTimePeriod(tags.map(tag => tag.id), start, end)
   const activityStates: ActivityState[] = activityStatesDB.map(state => ({
@@ -258,6 +258,22 @@ const getTimeCreatingByTimePeriod = async (start: DateTime, end: DateTime): Prom
     tags_json: state.tags ? JSON.parse(state.tags) : []
   }))
   return activityStates
+}
+
+const getActivityStateDuration = (activityState: ActivityState): number => {
+  return DateTime.fromISO(activityState.end_time).diff(DateTime.fromISO(activityState.start_time), 'minutes').minutes
+}
+
+const getTimeCreatingByTimePeriod = async (start: DateTime, end: DateTime) => {
+  const activity_states = await getActivityStatesByTimePeriod(start, end)
+  const timeCreating = activity_states.reduce((acc, activity_state) => {
+    const duration = getActivityStateDuration(activity_state)
+    if(activity_state.tags_json?.some(tag => tag.name === 'creating')) {
+      return acc + duration
+    }
+    return acc
+  }, 0)
+  return timeCreating
 }
 
 export const getTimeCreatingByHour = async (start: DateTime, end: DateTime): Promise<GraphableTimeByHourBlock[]> => {
@@ -311,7 +327,7 @@ export const getTopAppsByPeriod = async (start: DateTime, end: DateTime): Promis
           rating: getRatingFromTag(app.tags?.find(tag => tag.tag_type === 'default')),
         }
       }
-      const duration = DateTime.fromISO(activityState.end_time).diff(DateTime.fromISO(activityState.start_time), 'minutes').minutes
+      const duration = getActivityStateDuration(activityState)
       appsWithTime[app.id].duration += duration / appsUsed
     }
   }
@@ -356,5 +372,6 @@ export const MonitorApi = {
   setAppDefaultTag,
   createApp,
   getLatestActivity,
-  getTimeCreatingByTimePeriod,
+  getActivityStatesByTimePeriod,
+  getTimeCreatingByTimePeriod
 }

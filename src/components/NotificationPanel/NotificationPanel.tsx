@@ -16,10 +16,17 @@ import { useShortcutKeyDetection } from '../../hooks/useShortcutKeyDetection'
 
 type NotificationType = 'session-start' | 'quick-start' | 'smart-start-suggestion' | 'blocked-app' | 'session-end' | 'session-warning'
 
+interface NotificationPayload {
+  timeCreating?: number
+  totalDuration?: number
+  percentage?: number
+  [key: string]: string | number | boolean | undefined
+}
+
 interface NotificationConfig {
   title: string
   description?: string
-icon: React.ComponentType<{ className?: string }>
+  icon: React.ComponentType<{ className?: string }>
   iconColor: string
   progressColor: string
   defaultDuration: number
@@ -118,6 +125,7 @@ export const NotificationPanel = () => {
   const [isExiting, setIsExiting] = useState(false)
   const [notificationType, setNotificationType] = useState<NotificationType | null>(null)
   const [config, setConfig] = useState<NotificationConfig | null>(null)
+  const [payload, setPayload] = useState<NotificationPayload | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const invisibleInputRef = useRef<HTMLInputElement | null>(null)
   const [buttonState, setButtonState] = useState<'idle' | 'processing' | 'success'>('idle')
@@ -283,10 +291,27 @@ export const NotificationPanel = () => {
     info(`urlParams: ${urlParams}`)
     info(`hashParams: ${hashParams}`)
     const notificationType = urlParams.get('notification_type') || hashParams.get('notification_type')
+    const payloadString = urlParams.get('payload') || hashParams.get('payload')
     info(`notificationType: ${notificationType}`)
+    info(`payloadString: ${payloadString}`)
 
     if(!notificationType) return
     setNotificationType(notificationType as NotificationType)
+
+    console.log('payloadString', payloadString)
+    // Parse payload if it exists
+    if (payloadString) {
+      try {
+        const parsedPayload = JSON.parse(payloadString)
+        info(`parsedPayload: ${JSON.stringify(parsedPayload)}`)
+        console.log('parsedPayload', parsedPayload)
+        setPayload(parsedPayload)
+        info(`Parsed payload: ${JSON.stringify(parsedPayload)}`)
+      } catch (error) {
+        info(`Failed to parse payload: ${error}`)
+      }
+    }
+
     if(notificationType === 'smart-start-suggestion') {
       SmartSessionApi.setLastSessionCheck()
     }
@@ -336,8 +361,9 @@ export const NotificationPanel = () => {
         {/* Content */}
         <div className="flex-1">
           <h3 className="text-card-foreground font-semibold text-base">
-            {config.title}
+            {payload?.title || config.title}
           </h3>
+          {payload?.description && <p className="text-card-foreground text-sm">{payload.description}</p>}
           {config.description && <p className="text-card-foreground text-sm">{config.description}</p>}
         </div>
 

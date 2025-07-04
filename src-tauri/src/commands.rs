@@ -279,8 +279,12 @@ pub fn get_app_version(app_handle: tauri::AppHandle) -> String {
 }
 
 #[tauri::command]
-pub fn show_notification(app_handle: AppHandle, notification_type: String) -> Result<(), String> {
-    create_notification_window(&app_handle, &notification_type).map_err(|e| e.to_string())
+pub fn show_notification(
+    app_handle: AppHandle,
+    notification_type: String,
+    payload: Option<String>,
+) -> Result<(), String> {
+    create_notification_window(&app_handle, &notification_type, payload).map_err(|e| e.to_string())
 }
 
 #[tauri::command]

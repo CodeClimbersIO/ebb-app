@@ -10,22 +10,39 @@ use tauri_nspanel::{
 
 use url::{ParseError, Url};
 
-pub fn get_notification_url(notification_type: &str) -> Result<Url, ParseError> {
-    let params = &[("notification_type", notification_type)];
-    println!("params: {:?}", params);
-    if cfg!(dev) {
-        Url::parse_with_params("http://localhost:1420/notification.html", params)
+pub fn get_notification_url(
+    notification_type: &str,
+    payload: Option<String>,
+) -> Result<Url, ParseError> {
+    println!(
+        "get_notification_url called with type: {}, payload: {:?}",
+        notification_type, payload
+    );
+    let base_url = if cfg!(dev) {
+        "http://localhost:1420/notification.html"
     } else {
-        Url::parse_with_params("tauri://localhost/notification.html", params)
+        "tauri://localhost/notification.html"
+    };
+
+    let mut url = Url::parse(base_url)?;
+    url.query_pairs_mut()
+        .append_pair("notification_type", notification_type);
+
+    if let Some(payload_data) = payload {
+        url.query_pairs_mut().append_pair("payload", &payload_data);
     }
+
+    println!("final url: {:?}", url);
+    Ok(url)
 }
 
 pub fn show_notification_window<R: Runtime>(
     notification_window: WebviewWindow<R>,
     panel: Id<RawNSPanel, Shared>,
     notification_type: &str,
+    payload: Option<String>,
 ) -> tauri::Result<()> {
-    let Ok(notification_url) = get_notification_url(notification_type) else {
+    let Ok(notification_url) = get_notification_url(notification_type, payload) else {
         log::error!("Failed to get notification URL");
         return Err(tauri::Error::WindowNotFound);
     };
@@ -65,15 +82,30 @@ pub fn get_notification_window_and_panel<R: Runtime>(
 pub fn create_notification_window<R: Runtime>(
     app: &AppHandle<R>,
     notification_type: &str,
+    payload: Option<String>,
 ) -> tauri::Result<()> {
     let app_handle = app.app_handle();
 
     if let Ok((notification_window, panel)) = get_notification_window_and_panel(app) {
-        show_notification_window(notification_window, panel, notification_type)?;
+        show_notification_window(
+            notification_window,
+            panel,
+            notification_type,
+            payload.clone(),
+        )?;
         return Ok(());
     }
 
-    let params = format!("?notification_type={}", notification_type);
+    let mut params = format!("?notification_type={}", notification_type);
+    if let Some(payload_data) = payload {
+        // Use simple URL encoding for the payload
+        let encoded_payload = payload_data
+            .replace("&", "%26")
+            .replace("=", "%3D")
+            .replace(" ", "%20");
+        params.push_str(&format!("&payload={}", encoded_payload));
+    }
+
     // Create a notification window programmatically using WebviewWindowBuilder
 
     // sometime the escape button works...
@@ -126,7 +158,7 @@ pub fn create_notification_window<R: Runtime>(
     // Convert the window to a spotlight panel
     let panel = notification_window.to_spotlight_panel()?;
 
-    show_notification_window(notification_window, panel, notification_type)?;
+    show_notification_window(notification_window, panel, notification_type, None)?;
 
     Ok(())
 }
@@ -147,11 +179,19 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_get_notification_url() {
-        let url = get_notification_url("smart-session-start").unwrap();
+    fn test_get_notification_url_without_payload() {
+        let url = get_notification_url("smart-session-start", None).unwrap();
         assert_eq!(
             url.to_string(),
             "http://localhost:1420/notification.html?notification_type=smart-session-start"
         );
+    }
+
+    #[test]
+    fn test_get_notification_url_with_payload() {
+        let payload = r#"{"timeCreating": 1500, "percentage": 75}"#;
+        let url = get_notification_url("session-end", Some(payload.to_string())).unwrap();
+        assert!(url.to_string().contains("notification_type=session-end"));
+        assert!(url.to_string().contains("payload="));
     }
 }
