@@ -125,6 +125,7 @@ export const NotificationPanel = () => {
   const [notificationType, setNotificationType] = useState<NotificationType | null>(null)
   const [config, setConfig] = useState<NotificationConfig | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const invisibleInputRef = useRef<HTMLInputElement | null>(null)
   const [keysPressed, setKeysPressed] = useState(false)
   const [buttonState, setButtonState] = useState<'idle' | 'processing' | 'success'>('idle')
   const [isFirstTimeDismiss, setIsFirstTimeDismiss] = useState(false)
@@ -132,6 +133,13 @@ export const NotificationPanel = () => {
 
   const notificationDuration = config?.defaultDuration
   const IconComponent = config?.icon
+
+  // Focus the invisible input when component loads
+  useEffect(() => {
+    if (invisibleInputRef.current) {
+      invisibleInputRef.current.focus()
+    }
+  }, [])
 
   // Check if this is user's first time dismissing a notification
   useEffect(() => {
@@ -301,6 +309,7 @@ export const NotificationPanel = () => {
     document.documentElement.style.background = 'transparent'
     
   }, [])
+  
   useEffect(() => {
     if(!notificationType) return
     const notificationConfig = NOTIFICATION_CONFIGS[notificationType]
@@ -317,6 +326,15 @@ export const NotificationPanel = () => {
 
   return (
     <div className="min-h-screen font-sans p-2">
+      {/* Invisible input field that takes focus. used to ensure that the esc key will register*/}
+      <input
+        ref={invisibleInputRef}
+        className="absolute opacity-0 pointer-events-none w-0 h-0 border-0 outline-none"
+        style={{ position: 'absolute', left: '-9999px' }}
+        tabIndex={-1}
+        autoFocus
+      />
+      
       <Card 
         className={cn(
           'group relative flex items-center gap-3 p-4 bg-card/95 backdrop-blur-sm shadow-lg border-border',
