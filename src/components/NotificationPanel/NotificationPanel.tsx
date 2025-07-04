@@ -12,6 +12,7 @@ import { SmartSessionApi } from '@/api/ebbApi/smartSessionApi'
 import { emit, listen } from '@tauri-apps/api/event'
 import { SHORTCUT_EVENT } from '@/api/ebbApi/shortcutApi'
 import { useShortcutStore } from '@/lib/stores/shortcutStore'
+import { useShortcutKeyDetection } from '../../hooks/useShortcutKeyDetection'
 
 type NotificationType = 'session-start' | 'quick-start' | 'smart-start-suggestion' | 'blocked-app' | 'session-end' | 'session-warning'
 
@@ -126,34 +127,30 @@ export const NotificationPanel = () => {
   const [config, setConfig] = useState<NotificationConfig | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const invisibleInputRef = useRef<HTMLInputElement | null>(null)
-  const [keysPressed, setKeysPressed] = useState(false)
   const [buttonState, setButtonState] = useState<'idle' | 'processing' | 'success'>('idle')
   const [isFirstTimeDismiss, setIsFirstTimeDismiss] = useState(false)
   const { shortcutParts, loadShortcutFromStorage } = useShortcutStore()
+  const { pressedKeys } = useShortcutKeyDetection()
 
   const notificationDuration = config?.defaultDuration
   const IconComponent = config?.icon
-
-  // Focus the invisible input when component loads
-  useEffect(() => {
-    if (invisibleInputRef.current) {
-      invisibleInputRef.current.focus()
-    }
-  }, [])
 
   // Check if this is user's first time dismissing a notification
   useEffect(() => {
     const hasEverDismissed = localStorage.getItem('notification-ever-dismissed')
     setIsFirstTimeDismiss(!hasEverDismissed)
+
+    if (invisibleInputRef.current) {  // focus the invisible input
+      invisibleInputRef.current.focus()
+    }
   }, [])
 
-  // Map notification colors to hotkey colors
   const getHotkeyColor = (iconColor: string): string => {
     if (iconColor.includes('primary')) return 'primary'
     if (iconColor.includes('red')) return 'red'
     if (iconColor.includes('green')) return 'green'
     if (iconColor.includes('amber')) return 'amber'
-    return 'primary' // fallback
+    return 'primary'
   }
 
   const handleExit = useCallback(() => {
@@ -189,19 +186,17 @@ export const NotificationPanel = () => {
     }
   }, [config?.buttonAction, handleExit, buttonState])
 
-  const triggerKeyPressedFeedback = useCallback(() => {
-    setKeysPressed(true)
-    setTimeout(() => {
-      setKeysPressed(false)
-    }, 150) // Match the transition duration
-  }, [])
+
 
   // Load user's configured shortcut
   useEffect(() => {
 
     loadShortcutFromStorage()
+  }, [])
+
+  useEffect(() => {
     console.log('shortcutParts', shortcutParts)
-  }, [shortcutParts, loadShortcutFromStorage])
+  }, [shortcutParts])
 
   // Listen to global shortcut events when notification has a button action
   useEffect(() => {
@@ -213,7 +208,6 @@ export const NotificationPanel = () => {
       try {
         unlistenShortcut = await listen(SHORTCUT_EVENT, () => {
           if (buttonState === 'idle') {
-            triggerKeyPressedFeedback()
             handleButtonClick()
           }
         })
@@ -233,7 +227,7 @@ export const NotificationPanel = () => {
         unlistenShortcut()
       }
     }
-  }, [config?.buttonAction, triggerKeyPressedFeedback, handleButtonClick, isVisible, buttonState])
+  }, [config?.buttonAction, handleButtonClick, isVisible, buttonState])
 
   // Listen for Escape key to dismiss notification
   useEffect(() => {
@@ -373,16 +367,33 @@ export const NotificationPanel = () => {
             </span>
             {buttonState === 'idle' && shortcutParts.length > 0 && shortcutParts.some(part => part) && (
               <div className="flex items-center gap-1">
-                {shortcutParts.map((part, index) => (
-                  <Hotkey 
-                    key={index} 
-                    size="sm" 
-                    pressed={keysPressed}
-                    color={getHotkeyColor(config.iconColor)}
-                  >
-                    {part}
-                  </Hotkey>
-                ))}
+                {shortcutParts.map((part, index) => {
+                  // Map display part back to database format to check if it's pressed
+                  const dbPart = (() => {
+                    switch (part) {
+                    case '⌘': return 'CommandOrControl'
+                    case '⌃': return 'Control'
+                    case '⌥': return 'Option'
+                    case '⇧': return 'Shift'
+                    case '↵': return 'ENTER'
+                    case '⎵': return 'SPACE'
+                    default: return part
+                    }
+                  })()
+                  
+                  const isThisKeyPressed = pressedKeys.has(dbPart)
+                  
+                  return (
+                    <Hotkey 
+                      key={index} 
+                      size="sm" 
+                      pressed={isThisKeyPressed}
+                      color={getHotkeyColor(config.iconColor)}
+                    >
+                      {part}
+                    </Hotkey>
+                  )
+                })}
               </div>
             )}
           </Button>

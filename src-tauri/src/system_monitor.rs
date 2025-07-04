@@ -49,7 +49,7 @@ async fn thirty_second_loop(app_handle: tauri::AppHandle) {
         app_handle.emit("online-ping", id).unwrap_or_else(|e| {
             log::error!("Failed to emit online-ping event: {}", e);
         });
-        sleep(Duration::from_secs(10)).await;
+        sleep(Duration::from_secs(30)).await;
     }
 }
 

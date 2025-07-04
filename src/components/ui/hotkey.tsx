@@ -29,27 +29,31 @@ const variantClasses: Record<HotkeyVariant, string> = {
 }
 
 const pressedClasses: Record<HotkeyVariant, string> = {
-  selected: 'bg-violet-950 border-violet-950 shadow-inner',
-  unselected: 'bg-muted/80 border-muted/80 shadow-inner'
+  selected: 'bg-violet-950 border-violet-950 shadow-inner transform scale-95',
+  unselected: 'bg-muted/80 border-muted/80 shadow-inner transform scale-95'
 }
 
 // Color mappings for different notification types
 const colorVariants = {
   primary: {
     base: 'bg-primary border-primary text-primary-foreground',
-    pressed: 'bg-primary/80 border-primary/80 text-primary-foreground'
+    pressed: 'bg-primary/80 border-primary/80 text-primary-foreground shadow-inner transform scale-95'
   },
   red: {
     base: 'bg-red-500 border-red-500 text-white',
-    pressed: 'bg-red-600 border-red-600 text-white'
+    pressed: 'bg-red-600 border-red-600 text-white shadow-inner transform scale-95'
   },
   green: {
     base: 'bg-green-500 border-green-500 text-white',
-    pressed: 'bg-green-600 border-green-600 text-white'
+    pressed: 'bg-green-600 border-green-600 text-white shadow-inner transform scale-95'
   },
   amber: {
     base: 'bg-amber-500 border-amber-500 text-white',
-    pressed: 'bg-amber-600 border-amber-600 text-white'
+    pressed: 'bg-amber-600 border-amber-600 text-white shadow-inner transform scale-95'
+  },
+  default: {
+    base: 'bg-muted border-muted text-muted-foreground',
+    pressed: 'bg-muted/80 border-muted/80 text-muted-foreground shadow-inner transform scale-95'
   }
 }
 
@@ -78,7 +82,7 @@ export function Hotkey({
       transition-all duration-150 ease-in-out
       ${getColorClasses()}
       ${sizeClasses[size]}
-      ${pressed ? 'scale-95 shadow-inner' : 'shadow-sm'}
+      ${pressed ? '' : 'shadow-sm'}
     `}>
       <span className={`${textSizeClasses(isModifier)[size]} font-bold`}>
         {children}
