@@ -43,10 +43,10 @@ export function useGlobalShortcut() {
 
         const activeSession = await FlowSessionApi.getInProgressFlowSession()
         info(`activeSession: ${JSON.stringify(activeSession)}`)
-        // if(activeSession) {
-        //   info('in progress session, skipping quick start notification')
-        //   return
-        // }
+        if(activeSession) {
+          info('in progress session, skipping quick start notification')
+          return
+        }
 
         info('showing quick start notification')
         invoke('show_notification', {

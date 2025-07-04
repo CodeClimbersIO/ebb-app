@@ -303,3 +303,29 @@ pub fn notify_app_notification_created(app_handle: AppHandle) -> Result<(), Stri
 pub fn hide_notification(app_handle: AppHandle) -> Result<(), String> {
     dismiss_notification_window(&app_handle).map_err(|e| e.to_string())
 }
+
+#[tauri::command]
+pub fn notify_start_flow(app_handle: AppHandle) -> Result<(), String> {
+    app_handle.emit("start-flow", ()).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn notify_view_flow_recap(app_handle: AppHandle) -> Result<(), String> {
+    app_handle
+        .emit("navigate-to-flow-recap", ())
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn notify_add_time_event(app_handle: AppHandle) -> Result<(), String> {
+    app_handle
+        .emit("add-time-event", ())
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn notify_snooze_blocking(app_handle: AppHandle) -> Result<(), String> {
+    app_handle
+        .emit("snooze-blocking", ())
+        .map_err(|e| e.to_string())
+}

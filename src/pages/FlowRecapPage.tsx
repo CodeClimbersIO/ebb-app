@@ -5,7 +5,6 @@ import { TopNav } from '@/components/TopNav'
 import { Logo } from '@/components/ui/logo'
 import { MonitorApi, AppsWithTime, GraphableTimeByHourBlock } from '../api/monitorApi/monitorApi'
 import { UsageSummary } from '@/components/UsageSummary'
-import { invoke } from '@tauri-apps/api/core'
 import { useGetMostRecentFlowSession } from '../api/hooks/useFlowSession'
 import { logAndToastError } from '../lib/utils/ebbError.util'
 import { getCurrentWindow } from '@tauri-apps/api/window'
@@ -21,10 +20,6 @@ export const FlowRecapPage = () => {
   useEffect(() => {
     if (effectRan.current) return
     effectRan.current = true
-
-    invoke('show_notification', {
-      notificationType: 'session-end'
-    })
 
     const init = async () => {
       if (!mostRecentFlowSession || !mostRecentFlowSession.end) return

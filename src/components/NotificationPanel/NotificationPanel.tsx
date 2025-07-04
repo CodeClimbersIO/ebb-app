@@ -9,7 +9,7 @@ import { error, info } from '@tauri-apps/plugin-log'
 import { resolveResource } from '@tauri-apps/api/path'
 import { isDev } from '@/lib/utils/environment.util'
 import { SmartSessionApi } from '@/api/ebbApi/smartSessionApi'
-import { emit, listen } from '@tauri-apps/api/event'
+import { listen } from '@tauri-apps/api/event'
 import { SHORTCUT_EVENT } from '@/api/ebbApi/shortcutApi'
 import { useShortcutStore } from '@/lib/stores/shortcutStore'
 import { useShortcutKeyDetection } from '../../hooks/useShortcutKeyDetection'
@@ -48,8 +48,7 @@ const NOTIFICATION_CONFIGS: Record<NotificationType, NotificationConfig> = {
     dismissImmediatelyOnAction: true,
     buttonAction: async () => { 
       info('starting quick start session')
-      const session = await SmartSessionApi.startSmartSession()
-      info(`quick start session started: ${JSON.stringify(session)}`)
+      await invoke('notify_start_flow')
     }
   },
   'smart-start-suggestion': {
@@ -62,8 +61,7 @@ const NOTIFICATION_CONFIGS: Record<NotificationType, NotificationConfig> = {
     buttonText: 'Start',
     buttonAction: async () => { 
       info('starting smart session')
-      const session = await SmartSessionApi.startSmartSession()
-      info(`session started: ${JSON.stringify(session)}`)
+      await invoke('notify_start_flow')
     }
   },
   'blocked-app': {
@@ -76,9 +74,7 @@ const NOTIFICATION_CONFIGS: Record<NotificationType, NotificationConfig> = {
     buttonText: 'Snooze',
     buttonAction: async () => {
       info('snoozing blocking')
-      await invoke('snooze_blocking', {
-        duration: 1000 * 60 // 1 minute snoozer
-      })
+      await invoke('notify_snooze_blocking')
     }
   },
   'session-end': {
@@ -91,7 +87,7 @@ const NOTIFICATION_CONFIGS: Record<NotificationType, NotificationConfig> = {
     buttonText: 'View Recap',
     buttonAction: async () => {
       info('viewing recap')
-      await emit('navigate-to-flow-recap')
+      await invoke('notify_view_flow_recap')
     }
   },
   'session-warning': {
@@ -104,10 +100,7 @@ const NOTIFICATION_CONFIGS: Record<NotificationType, NotificationConfig> = {
     buttonText: 'Extend Session',
     buttonAction: async () => {
       info('extending session')
-      await emit('add-time-event', {
-        action: 'add-time',
-        minutes: 15
-      })
+      await invoke('notify_add_time_event')
     }
   }
 }
