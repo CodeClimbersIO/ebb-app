@@ -22,6 +22,7 @@ declare global {
     }
 
     interface Player {
+      removeListener(event: 'player_state_changed' | 'ready' | 'not_ready'): void;
       addListener(event: 'player_state_changed', callback: (state: PlaybackState | null) => void): void;
       addListener(event: 'ready' | 'not_ready', callback: (data: { device_id: string }) => void): void;
       addListener(event: 'initialization_error' | 'authentication_error' | 'account_error' | 'playback_error', 

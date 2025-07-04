@@ -32,8 +32,6 @@ import { BlockingPreferenceApi } from '../../api/ebbApi/blockingPreferenceApi'
 import { EbbWorker } from '../../lib/ebbWorker'
 import { Timer } from './Timer'
 
-
-
 type CurrentTrack = {
   song: {
     name: string
@@ -129,6 +127,8 @@ export const FlowPage = () => {
         await player.pause()
         await SpotifyApiService.transferPlaybackToComputerDevice()
         player.disconnect() // Disconnect the Web Playback SDK player
+        setPlayer(null)
+        setSpotifyDeviceId('')
         setIsPlaying(false)
         setCurrentTrack(null)
         setSelectedPlaylistId('')
@@ -149,10 +149,8 @@ export const FlowPage = () => {
         setIsSpotifyAuthenticated(isAuthenticated)
 
         if (!isAuthenticated) return
-
-        await SpotifyApiService.initializePlayer()
+        await SpotifyApiService.initSdkScript()
         const newPlayer = await SpotifyApiService.createPlayer()
-
         newPlayer.addListener('ready', ({ device_id }: { device_id: string }) => {
           setSpotifyDeviceId(device_id) 
           if (selectedPlaylistId) {
@@ -206,13 +204,23 @@ export const FlowPage = () => {
 
     const hasMusic = workflow?.settings.hasMusic
     if (hasMusic) {
-      EbbWorker.debounceWork(initSpotify, 'init_spotify')
+      EbbWorker.debounceWork(initSpotify, 'init_spotify', 1)
     }
-
-    return () => {
-      player?.disconnect()
-    }
+    
   }, [workflow])
+
+  useEffect(() => {
+    return () => { // cleanup player when component unmounts
+      if (player) {
+        player.removeListener('player_state_changed')
+        player.removeListener('ready')
+        player.removeListener('not_ready')
+        player.disconnect()
+        setPlayer(null)
+        setSpotifyDeviceId('')
+      }
+    }
+  }, [player])
 
   useEffect(() => {
     const loadPlaylistData = async () => {
