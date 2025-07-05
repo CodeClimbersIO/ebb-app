@@ -7,7 +7,8 @@
     "session-start",
     "session-end",
     "session-warning",
-    "blocked-app"
+    "blocked-app",
+    "notification"
   ],
   "permissions": [
     "core:default",

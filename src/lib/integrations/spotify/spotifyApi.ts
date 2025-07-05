@@ -94,10 +94,11 @@ export class SpotifyApiService {
     }
   }
 
-  static async initializePlayer(): Promise<void> {
+  static async initSdkScript(): Promise<void> {
     const script = document.createElement('script')
     script.src = 'https://sdk.scdn.co/spotify-player.js'
     script.async = true
+    script.id = 'spotify-player-script'
     document.body.appendChild(script)
 
     return new Promise((resolve) => {

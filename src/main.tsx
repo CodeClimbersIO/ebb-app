@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.documentElement.insertBefore(dragRegionDiv, document.body)
 })
 
+
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
     <PostHogProvider

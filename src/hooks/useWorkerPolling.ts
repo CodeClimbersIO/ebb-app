@@ -45,7 +45,12 @@ export const useWorkerPolling = () => {
             refetch()
           }
           if(deviceId && canUseSmartFocus(user?.email)) {
-            await SmartSessionApi.startSmartSession(deviceId)
+            const shouldSuggestSmartSession = await SmartSessionApi.checkShouldSuggestSmartSession(deviceId)
+            if(shouldSuggestSmartSession) {
+              invoke('show_notification', {
+                notificationType: 'smart-start-suggestion',
+              })
+            }
           }
         }
         EbbWorker.work(event.payload, run) // used to make sure we don't run the same work multiple times

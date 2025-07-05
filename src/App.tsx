@@ -18,6 +18,7 @@ const queryClient = new QueryClient({
 
 const AppRouterWrapper = () => {
   useInitializeAppState()
+
   return <AppRouter />
 }
 

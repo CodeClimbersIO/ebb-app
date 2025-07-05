@@ -4,8 +4,10 @@ use tokio;
 
 mod autostart;
 mod commands;
+mod notification;
 mod system_monitor;
 mod tray_icon_gen;
+mod window;
 
 use autostart::{change_autostart, enable_autostart};
 
@@ -37,6 +39,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let migrations = migrations::get_migrations();
     tauri::Builder::default()
+        .plugin(tauri_nspanel::init())
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             None,
@@ -70,6 +73,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .plugin(tauri_plugin_updater::Builder::new().build())?;
             enable_autostart(app);
             tauri::async_runtime::spawn(async move { initialize_device_profile().await });
+
             Ok(())
         })
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
@@ -93,6 +97,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             commands::restore_app_data_from_backup,
             commands::detect_spotify,
             commands::get_app_version,
+            commands::show_notification,
+            commands::notify_app_notification_dismissed,
+            commands::notify_app_notification_created,
+            commands::hide_notification,
+            commands::notify_start_flow,
+            commands::notify_view_flow_recap,
+            commands::notify_add_time_event,
+            commands::notify_snooze_blocking,
             change_autostart,
             tray_icon_gen::generate_timer_icon,
         ])

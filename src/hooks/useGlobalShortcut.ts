@@ -1,7 +1,6 @@
 import { useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { getCurrentWindow } from '@tauri-apps/api/window'
-import { listen } from '@tauri-apps/api/event'
+import { listen, UnlistenFn } from '@tauri-apps/api/event'
 import { FlowSessionApi } from '@/api/ebbApi/flowSessionApi'
 import { OnboardingUtils } from '@/lib/utils/onboarding.util'
 import {
@@ -9,7 +8,8 @@ import {
   SHORTCUT_EVENT,
 } from '@/api/ebbApi/shortcutApi'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
-import { error as logError } from '@tauri-apps/plugin-log'
+import { info, error as logError } from '@tauri-apps/plugin-log'
+import { invoke } from '@tauri-apps/api/core'
 
 export function useGlobalShortcut() {
   const navigate = useNavigate()
@@ -18,17 +18,16 @@ export function useGlobalShortcut() {
   useEffect(() => {
     let mounted = true
     let unlistenShortcut: (() => void) | undefined
+    let unlistenNotificationDismissed: UnlistenFn | undefined
+    let unlistenNotificationCreated: UnlistenFn | undefined
 
     const handleShortcut = async () => {
+      info('handleShortcut')
       if (!mounted) return
 
       try {
-        const window = getCurrentWindow()
-        void Promise.all([
-          window.show().catch(err => logAndToastError(`(Shortcut) Error showing window: ${err}`, err)),
-          window.setFocus().catch(err => logAndToastError(`(Shortcut) Error focusing window: ${err}`, err))
-        ])
 
+        info('handleShortcut')
         if (location.pathname === '/onboarding/shortcut-tutorial') {
           await OnboardingUtils.markOnboardingCompleted()
           if (mounted) {
@@ -43,7 +42,18 @@ export function useGlobalShortcut() {
         }
 
         const activeSession = await FlowSessionApi.getInProgressFlowSession()
-        const targetPath = activeSession ? '/flow' : '/start-flow'
+        info(`activeSession: ${JSON.stringify(activeSession)}`)
+        if(activeSession) {
+          info('in progress session, skipping quick start notification')
+          return
+        }
+
+        info('showing quick start notification')
+        invoke('show_notification', {
+          notificationType: 'quick-start',
+        })
+
+        const targetPath = '/start-flow'
         
         if (mounted) {
           navigate(targetPath, { replace: true })
@@ -52,6 +62,7 @@ export function useGlobalShortcut() {
         logAndToastError(`(Shortcut) Error getting session or navigating: ${error}`, error)
         if (mounted) {
           navigate('/start-flow', { replace: true })
+
         }
       }
     }
@@ -62,7 +73,15 @@ export function useGlobalShortcut() {
 
         if (mounted) {
           unlistenShortcut = await listen(SHORTCUT_EVENT, () => {
+            info('handleShortcut first registry')
             void handleShortcut()
+          })
+          unlistenNotificationCreated = await listen('notification-created', async () => {
+            try {
+              await unlistenShortcut?.() // reinitialize the global shortcut when notifications is dismissed
+            } catch (error) {
+              logAndToastError(`(Shortcut) Error unlistening shortcut: ${error}`, error)
+            }
           })
         }
       } catch (error) {
@@ -74,15 +93,22 @@ export function useGlobalShortcut() {
 
         logAndToastError(`(Shortcut) Setup failed: ${error}`, error)
       }
+      unlistenNotificationDismissed = await listen('notification-dismissed', async () => {
+        info('notification-dismissed handleShortcut')
+        unlistenShortcut = await listen(SHORTCUT_EVENT, () => {
+          info('handleShortcut second registry')
+          void handleShortcut()
+        })
+      })
     }
-
+    
     void setup()
 
     return () => {
       mounted = false
-      if (unlistenShortcut) {
-        unlistenShortcut()
-      }
+      unlistenShortcut?.()
+      unlistenNotificationDismissed?.()
+      unlistenNotificationCreated?.()
     }
   }, [navigate, location.pathname])
 } 
