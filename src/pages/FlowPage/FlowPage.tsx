@@ -293,19 +293,16 @@ export const FlowPage = () => {
     await invoke('stop_blocking')
     await stopFlowTimer()
     await FlowSessionApi.endFlowSession()
-    if(flowSession.start && flowSession.end) {
-      const timeCreating = await MonitorApi.getTimeCreatingByTimePeriod(DateTime.fromISO(flowSession.start), DateTime.fromISO(flowSession.end))
+    const timeCreating = await MonitorApi.getTimeCreatingByTimePeriod(DateTime.fromISO(flowSession.start), DateTime.now())
       
-      const payload = JSON.stringify({
-        title: 'Session Completed',
-        description: `You created for ${timeCreating} minutes!`,
-      })
-        
-      await invoke('show_notification', {
-        notificationType: 'session-end',
-        payload
-      })
-    }
+    const payload = JSON.stringify({
+      title: 'Session Completed',
+      description: `You created for ${timeCreating} minutes!`,
+    })
+    await invoke('show_notification', {
+      notificationType: 'session-end',
+      payload
+    })
 
     navigate('/')
   }

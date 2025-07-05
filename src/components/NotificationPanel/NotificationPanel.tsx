@@ -195,9 +195,6 @@ export const NotificationPanel = () => {
     loadShortcutFromStorage()
   }, [])
 
-  useEffect(() => {
-    console.log('shortcutParts', shortcutParts)
-  }, [shortcutParts])
 
   // Listen to global shortcut events when notification has a button action
   useEffect(() => {
@@ -298,13 +295,11 @@ export const NotificationPanel = () => {
     if(!notificationType) return
     setNotificationType(notificationType as NotificationType)
 
-    console.log('payloadString', payloadString)
     // Parse payload if it exists
     if (payloadString) {
       try {
         const parsedPayload = JSON.parse(payloadString)
         info(`parsedPayload: ${JSON.stringify(parsedPayload)}`)
-        console.log('parsedPayload', parsedPayload)
         setPayload(parsedPayload)
         info(`Parsed payload: ${JSON.stringify(parsedPayload)}`)
       } catch (error) {

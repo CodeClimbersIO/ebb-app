@@ -43,7 +43,6 @@ export const useNotificationListener = () => {
         info('App: adding time event')
         EbbWorker.debounceWork(async () => {
           info('App: adding time event')
-          console.log('adding time event')
           await useFlowTimer.getState().addToTimer(15 * 60)
         })
       })

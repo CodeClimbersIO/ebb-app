@@ -3,7 +3,7 @@ import { convertFileSrc, invoke } from '@tauri-apps/api/core'
 import { resolveResource } from '@tauri-apps/api/path'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { isDev } from './utils/environment.util'
-// import { EbbWorker } from './ebbWorker'
+import { EbbWorker } from './ebbWorker'
 
 interface NotificationOptions {
   duration?: number
@@ -210,8 +210,7 @@ class NotificationManager {
 
         info('Notification complete')
       }
-      console.log('running notification', run)
-      // EbbWorker.debounceWork(run, 'notification')
+      EbbWorker.debounceWork(run, 'notification')
     } catch (err) {
       error(`Error showing notification: ${err}`)
       throw err

@@ -48,13 +48,10 @@ export const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
     if (!flowSession) return
 
     const updateTimer = () => {
-      console.log('updateTimer')
       const now = DateTime.now()
       const nowAsSeconds = now.toSeconds()
       const startTime = DateTime.fromISO(flowSession.start).toSeconds()
       const diff = nowAsSeconds - startTime
-
-      console.log('totalDuration', totalDuration?.as('minutes'))
 
       if (!flowSession.duration && diff >= MAX_SESSION_DURATION) {
         window.dispatchEvent(new CustomEvent('flowSessionComplete'))
