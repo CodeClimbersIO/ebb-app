@@ -48,7 +48,7 @@ export function Sidebar() {
                 asChild
               >
                 <Link to="/categories">
-                  <UsersIcon size={20} />
+                  <ChartIcon size={20} />
                   {hasPendingInvitesReceived && (
                     <div className="absolute w-3 h-3 bg-red-500 rounded-full border border-background" style={{ top: '4px', right: '4px' }}/>
                   )}
