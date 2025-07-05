@@ -44,14 +44,11 @@ export function Sidebar() {
               <Button
                 variant="ghost"
                 iconSize={5}
-                className={`w-9 h-9 p-2 relative ${location.pathname === '/categories' ? 'text-foreground [&>svg]:text-foreground' : 'text-muted-foreground [&>svg]:text-muted-foreground'}`}
+                className={`w-9 h-9 p-2 relative ${location.pathname === '/category-dashboard' ? 'text-foreground [&>svg]:text-foreground' : 'text-muted-foreground [&>svg]:text-muted-foreground'}`}
                 asChild
               >
-                <Link to="/categories">
+                <Link to="/category-dashboard">
                   <ChartIcon size={20} />
-                  {hasPendingInvitesReceived && (
-                    <div className="absolute w-3 h-3 bg-red-500 rounded-full border border-background" style={{ top: '4px', right: '4px' }}/>
-                  )}
                 </Link>
               </Button>
             </TooltipTrigger>

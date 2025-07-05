@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tag } from '@/db/monitor/tagRepo'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { ArrowUpRight, ArrowDownRight } from 'lucide-react'
+import { formatTime } from '@/components/UsageSummary'
 // Chart imports
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import {
@@ -19,7 +20,7 @@ import { DateTime } from 'luxon'
 
 function getColor(index: number) {
   const colors = [
-    'rgb(124,58,237)', // purple
+    'hsl(var(--border))', // purple
     'rgb(239,68,68)',  // red
     'rgb(34,197,94)',  // green
     'rgb(14,165,233)', // sky
@@ -28,15 +29,6 @@ function getColor(index: number) {
     'rgb(251,146,60)', // orange
   ]
   return colors[index % colors.length]
-}
-
-export const formatTime = (minutes: number) => {
-  const hours = Math.floor(minutes / 60)
-  const remainingMinutes = Math.round(minutes % 60)
-  if (remainingMinutes === 60) {
-    return `${hours + 1}h 0m`
-  }
-  return `${hours}h ${remainingMinutes}m`
 }
 
 function TrendIndicator({ trend }: { trend?: { percent: number; direction: 'up' | 'down' | 'none' } }) {
@@ -74,7 +66,7 @@ export default function CategoryDashboardPage () {
   }> = {}
 
   summary.appUsage.forEach(app => {
-    const cat = app.category_tag || { tag_id: 'uncategorized', tag_name: 'uncategorized' }
+    const cat = app.category_tag || { tag_id: 'others', tag_name: 'others' }
 
     // ---- Totals (for list & stacked bar) ----
     if (!categoryTotals[cat.tag_id]) {
@@ -163,7 +155,7 @@ export default function CategoryDashboardPage () {
         const apps = state.apps_json || []
         const durationPerApp = apps.length ? duration / apps.length : 0
         for (const app of apps) {
-          const cat = app.tags?.find((t: Tag) => (t as any).tag_type === 'category') || { tag_id: 'uncategorized', tag_name: 'uncategorized' }
+          const cat = app.tags?.find((t: Tag) => (t as any).tag_type === 'category') || { tag_id: 'others', tag_name: 'others' }
           if (!totalByCat[cat.tag_id]) {
             totalByCat[cat.tag_id] = {
               tag: { id: cat.tag_id, name: cat.tag_name, tag_type: 'category', is_default: false, is_blocked: false, created_at: '', updated_at: '', parent_tag_id: null },
@@ -219,7 +211,7 @@ export default function CategoryDashboardPage () {
         const apps = state.apps_json || []
         const durationPerApp = apps.length ? duration / apps.length : 0
         for (const app of apps) {
-          const cat = app.tags?.find((t: Tag) => (t as any).tag_type === 'category') || { tag_id: 'uncategorized', tag_name: 'uncategorized' }
+          const cat = app.tags?.find((t: Tag) => (t as any).tag_type === 'category') || { tag_id: 'others', tag_name: 'others' }
           if (catIds.includes(cat.tag_id)) bucket[cat.tag_id] += durationPerApp
           else bucket.others += durationPerApp
         }
@@ -243,6 +235,23 @@ export default function CategoryDashboardPage () {
     return Object.keys(timelineConfig).reduce((sum, key) => sum + (b[key] || 0), 0)
   })) : 60
 
+  // Filter out keys that have no data across the timeline so we don't render empty Bars
+  // Determine which categories actually have any usage in the data
+  let visibleBarKeys = Object.keys(timelineConfig).filter(key =>
+    categoryTimeline.some(bucket => {
+      const v = (bucket as any)[key]
+      return typeof v === 'number' && v > 0
+    })
+  )
+
+  // Ensure the "others" category is rendered last so it appears on the top of the stack
+  if (visibleBarKeys.includes('others')) {
+    visibleBarKeys = [
+      ...visibleBarKeys.filter(k => k !== 'others'),
+      'others',
+    ]
+  }
+
   return (
     <Layout>
       <div className="p-8 max-w-5xl mx-auto">
@@ -254,10 +263,8 @@ export default function CategoryDashboardPage () {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {/* stacked bar */}
               <div className="w-full h-6 rounded overflow-hidden flex">
-                {/* {categoriesArr.filter(cat => cat.total >= 1).map((cat) => ( */}
-                {categoriesArr.map((cat) => (
+                {[...categoriesArr].reverse().map((cat) => (
                   <div
                     key={cat.tag.id}
                     style={{ width: `${(Math.ceil(cat.total) / totalTime) * 100}%`, backgroundColor: colorMap[cat.tag.id] }}
@@ -312,7 +319,14 @@ export default function CategoryDashboardPage () {
                     tickMargin={8}
                     width={40}
                     allowDataOverflow={true}
-                    tickFormatter={() => ''}
+                    tickFormatter={value => {
+                      // Show hours/minutes for week view, minutes for today
+                        if (yAxisMaxTimeline && yAxisMaxTimeline > 60) {
+                          const hours = Math.round(value / 60 * 10) / 10
+                          return hours > 0 ? `${hours}h` : `${value}m`
+                        }
+                        return ''
+                      }}
                   />
                   <ChartTooltip
                     content={({ active, payload }) => {
@@ -334,13 +348,13 @@ export default function CategoryDashboardPage () {
                     }}
                   />
                   <ChartLegend content={<ChartLegendContent />} />
-                  {Object.keys(timelineConfig).map((key, idx, arr) => (
+                  {visibleBarKeys.map((key, idx, arr) => (
                     <Bar
                       key={key}
                       dataKey={key}
                       stackId="a"
                       fill={timelineConfig[key].color}
-                      radius={idx === 0 ? [0,0,4,4] : idx === arr.length -1 ? [4,4,0,0] : [0,0,0,0]}
+                      radius={idx === 0 ? [0,0,4,4] : idx === arr.length - 1 ? [4,4,0,0] : [0,0,0,0]}
                       barSize={20}
                     />
                   ))}
