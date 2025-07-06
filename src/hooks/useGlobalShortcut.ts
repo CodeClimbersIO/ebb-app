@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { listen, UnlistenFn } from '@tauri-apps/api/event'
+import { UnlistenFn } from '@tauri-apps/api/event'
 import { FlowSessionApi } from '@/api/ebbApi/flowSessionApi'
 import { OnboardingUtils } from '@/lib/utils/onboarding.util'
 import {
@@ -10,32 +10,25 @@ import {
 import { logAndToastError } from '@/lib/utils/ebbError.util'
 import { info, error as logError } from '@tauri-apps/plugin-log'
 import { invoke } from '@tauri-apps/api/core'
+import { EbbWorker } from '../lib/ebbWorker'
+import { EbbListen } from '../lib/ebbListen'
 
 export function useGlobalShortcut() {
   const navigate = useNavigate()
   const location = useLocation()
 
   useEffect(() => {
-    let mounted = true
     let unlistenShortcut: (() => void) | undefined
     let unlistenNotificationDismissed: UnlistenFn | undefined
     let unlistenNotificationCreated: UnlistenFn | undefined
 
     const handleShortcut = async () => {
-      info('handleShortcut')
-      if (!mounted) return
-
       try {
-
-        info('handleShortcut')
         if (location.pathname === '/onboarding/shortcut-tutorial') {
           await OnboardingUtils.markOnboardingCompleted()
-          if (mounted) {
-            navigate('/start-flow', { replace: true })
-          }
+          navigate('/start-flow', { replace: true })
           return
         }
-
 
         if (!OnboardingUtils.isOnboardingCompleted()) {
           return
@@ -48,22 +41,18 @@ export function useGlobalShortcut() {
           return
         }
 
-        info('showing quick start notification')
-        invoke('show_notification', {
-          notificationType: 'quick-start',
-        })
+        EbbWorker.debounceWork(async () => {
+          info('showing quick start notification')
+          invoke('show_notification', {
+            notificationType: 'quick-start',
+          })
+        }, 'show_notification')
 
         const targetPath = '/start-flow'
-        
-        if (mounted) {
-          navigate(targetPath, { replace: true })
-        }
+        navigate(targetPath, { replace: true })
       } catch (error) {
         logAndToastError(`(Shortcut) Error getting session or navigating: ${error}`, error)
-        if (mounted) {
-          navigate('/start-flow', { replace: true })
-
-        }
+        navigate('/start-flow', { replace: true })
       }
     }
 
@@ -71,21 +60,23 @@ export function useGlobalShortcut() {
       try {
         await initializeGlobalShortcut()
 
-        if (mounted) {
-          unlistenShortcut = await listen(SHORTCUT_EVENT, () => {
-            info('handleShortcut first registry')
-            void handleShortcut()
-          })
-          unlistenNotificationCreated = await listen('notification-created', async () => {
-            try {
-              await unlistenShortcut?.() // reinitialize the global shortcut when notifications is dismissed
-            } catch (error) {
-              logAndToastError(`(Shortcut) Error unlistening shortcut: ${error}`, error)
-            }
-          })
-        }
+        info('setting up global shortcut')
+        unlistenShortcut = await EbbListen.listen(SHORTCUT_EVENT, () => {
+          info('shortcut pressed in global-shortcut')
+          void handleShortcut()
+        }, 'global-shortcut')
+        
+        unlistenNotificationCreated = await EbbListen.listen('notification-created', async () => {
+          info('notification-created, unlistening shortcut')
+          try {
+            unlistenShortcut?.() // reinitialize the global shortcut when notifications is dismissed
+            info('shortcut unlistened')
+          } catch (error) {
+            logAndToastError(`(Shortcut) Error unlistening shortcut: ${error}`, error)
+          }
+        }, 'global-shortcut-notification-created')
       } catch (error) {
-        // if database is locked, don't log and taost
+        // if database is locked, don't log and toast
         if (error instanceof Error && error.message.includes('database is locked')) {
           logError(`(Shortcut) Database is locked: ${error}`)
           return
@@ -93,19 +84,29 @@ export function useGlobalShortcut() {
 
         logAndToastError(`(Shortcut) Setup failed: ${error}`, error)
       }
-      unlistenNotificationDismissed = await listen('notification-dismissed', async () => {
-        info('notification-dismissed handleShortcut')
-        unlistenShortcut = await listen(SHORTCUT_EVENT, () => {
-          info('handleShortcut second registry')
+    }
+
+    const setupNotificationDismissedListener = async () => {
+      unlistenNotificationDismissed = await EbbListen.listen('notification-dismissed', async () => {
+        info('notification-dismissed, re-listening to shortcut')
+        unlistenShortcut = await EbbListen.listen(SHORTCUT_EVENT, () => {
+          info('shortcut pressed in notification-dismissed')
           void handleShortcut()
-        })
-      })
+        }, 'global-shortcut')
+      }, 'global-shortcut-notification-dismissed')
     }
     
-    void setup()
+    EbbWorker.debounceWork(async () => {
+      info('setting up global shortcut')
+      await setup()
+    }, 'global-shortcut-setup')
+
+    // Set up the notification dismissed listener immediately
+    EbbWorker.debounceWork(async () => {
+      void setupNotificationDismissedListener()
+    }, 'global-shortcut-notification-dismissed-setup')
 
     return () => {
-      mounted = false
       unlistenShortcut?.()
       unlistenNotificationDismissed?.()
       unlistenNotificationCreated?.()
