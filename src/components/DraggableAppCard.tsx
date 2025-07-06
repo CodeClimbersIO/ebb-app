@@ -1,10 +1,10 @@
 import { useDraggable } from '@dnd-kit/core';
-import { AppIcon } from './AppIcon'; // Assuming AppIcon is in the same components folder
+import { AppIcon } from './AppIcon'; 
 import { Progress } from './ui/progress';
-import { formatTime }  from '@/components/UsageSummary'; // Assuming formatTime is in a utils file
-import { AppsWithTime } from '../api/monitorApi/monitorApi'; // Adjust path as needed
+import { formatTime }  from '@/components/UsageSummary'; 
+import { AppsWithTime } from '../api/monitorApi/monitorApi'; 
 import { ActivityRating } from '@/lib/app-directory/apps-types'
-import { Tag } from '../db/monitor/tagRepo'; // Adjust path as needed
+import { Tag } from '../db/monitor/tagRepo'; 
 
 
 type DraggableAppCardProps = {
@@ -12,6 +12,7 @@ type DraggableAppCardProps = {
     totalAppUsage: number;
     showAppRatingControls?: boolean;
     onRatingChange?: (tagId: string, rating: ActivityRating, tags: Tag[]) => void;
+    tags?: Tag[]; 
 }
 
 export function DraggableAppCard({ 
