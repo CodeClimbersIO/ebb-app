@@ -58,8 +58,10 @@ export const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
         return
       }
 
-      if (totalDuration) {
-        const remaining = (totalDuration.as('seconds')) - diff
+      const totalDurationAsSeconds = totalDuration?.as('seconds') || 0
+
+      if (totalDurationAsSeconds > 0) {
+        const remaining = totalDurationAsSeconds - diff
         if (remaining <= 0) {
           window.dispatchEvent(new CustomEvent('flowSessionComplete'))
           return
