@@ -108,7 +108,7 @@ impl<R: Runtime> WebviewWindowExt for WebviewWindow<R> {
             origin: NSPoint {
                 x: (monitor_position.x + (monitor_size.width / 2.0))
                     - (window_frame.size.width / 2.0),
-                y: (monitor_position.y + (monitor_size.height)) - window_frame.size.height - 10.0,
+                y: (monitor_position.y + (monitor_size.height)) - window_frame.size.height - 25.0,
             },
             size: window_frame.size,
         };
