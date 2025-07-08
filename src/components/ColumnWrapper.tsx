@@ -9,6 +9,7 @@ import { Tag } from '../db/monitor/tagRepo';
 type ColumnWrapperProps = {
   id: string; 
   title: string; 
+  titleClassName?: string;
   apps: AppsWithTime[]; 
   totalAppUsage: number;
   showAppRatingControls: boolean;
@@ -19,6 +20,7 @@ type ColumnWrapperProps = {
 export function ColumnWrapper({
   id,
   title,
+  titleClassName,
   apps,
   totalAppUsage,
   showAppRatingControls = false,
@@ -29,14 +31,15 @@ export function ColumnWrapper({
     id: id,
   });
 
-  const highlightClass = isOver ? 'bg-primary/10 border-primary' : 'bg-muted/20 border-transparent';
+  const ColumnColour = id === 'creation' ? 'bg-[rgb(124,58,237)]' : id === 'neutral' ? 'bg-gray-500' : 'bg-[rgb(239,68,68)]';
+
+  const highlightClass = isOver ? `bg-${ColumnColour}/10 border-${ColumnColour}` : 'bg-muted/20 border-transparent';
 
   return (
      // Attach setNodeRef to the root element of the column
     <Card className={`p-4 border ${highlightClass} transition-colors duration-200`} ref={setNodeRef}>
       <CardHeader className="p-0 mb-4 flex flex-row items-center justify-between">
-        <CardTitle className="text-lg">{title}</CardTitle>
-        <span className="text-sm text-muted-foreground">{apps.length} apps</span>
+        <CardTitle className={titleClassName}>{title}</CardTitle>
       </CardHeader>
       <CardContent className="p-0 space-y-4 min-h-[100px]"> {/* min-h to prevent collapse when empty */}
         {apps.length === 0 && (

@@ -35,10 +35,10 @@ export function DraggableAppCard({
     // Attach setNodeRef, listeners, and attributes to the root draggable element
     // Apply the style for visual transformation
     <div
-        ref = {setNodeRef}
+        ref={setNodeRef}
         {...listeners}
         {...attributes}
-        className="flex flex-col items-center p-4 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200"
+        className="flex items-center gap-4 py-2 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200"
         style={style}>
             <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
         <AppIcon app={app} size="md" />
