@@ -3,6 +3,7 @@ import { getEbbDb } from './ebbDb'
 export interface SmartFocusSettings {
   enabled: boolean
   trigger_duration_minutes: number // 10, 15, 20, 25, 30 (increments of 5)
+  doomscroll_duration_minutes: number // 10, 15, 20, 25, 30 (increments of 5)
   workflow_id: string | null
 }
 

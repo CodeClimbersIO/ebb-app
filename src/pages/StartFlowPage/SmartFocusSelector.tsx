@@ -33,6 +33,7 @@ export function SmartFocusSelector({ workflows }: SmartFocusSelectorProps) {
   const [settings, setSettings] = useState<SmartFocusSettingsType>({
     enabled: false,
     trigger_duration_minutes: 10,
+    doomscroll_duration_minutes: 30,
     workflow_id: null
   })
   const { deviceId, deviceProfile } = useDeviceProfile()

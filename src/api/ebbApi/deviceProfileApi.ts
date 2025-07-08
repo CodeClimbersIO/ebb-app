@@ -5,6 +5,7 @@ import { DevicePreference, DeviceProfileDb, DeviceProfileRepo, SmartFocusSetting
 const DEFAULT_SMART_FOCUS_SETTINGS: SmartFocusSettings = {
   enabled: false,
   trigger_duration_minutes: 10,
+  doomscroll_duration_minutes: 30,
   workflow_id: null
 }
 
@@ -30,6 +31,7 @@ const getDeviceProfile = async (deviceId: string): Promise<DeviceProfile> => {
         smart_focus_settings: {
           enabled: true,
           trigger_duration_minutes: DEFAULT_SMART_FOCUS_SETTINGS.trigger_duration_minutes,
+          doomscroll_duration_minutes: DEFAULT_SMART_FOCUS_SETTINGS.doomscroll_duration_minutes,
           workflow_id: latestWorkflow.id
         }
       } as DevicePreference)
@@ -40,6 +42,7 @@ const getDeviceProfile = async (deviceId: string): Promise<DeviceProfile> => {
           smart_focus_settings: {
             enabled: true,
             trigger_duration_minutes: DEFAULT_SMART_FOCUS_SETTINGS.trigger_duration_minutes,
+            doomscroll_duration_minutes: DEFAULT_SMART_FOCUS_SETTINGS.doomscroll_duration_minutes,
             workflow_id: latestWorkflow.id,
           }
         },

@@ -16,6 +16,15 @@ const isCreatingFromTimePeriod = async (start: DateTime, end: DateTime): Promise
   return percentage >= 0.75
 }
 
+const doomscrollDetectionForTimePeriod = async (start: DateTime, end: DateTime): Promise<boolean> => {
+  const activityStates = await MonitorApi.getActivityStatesByTimePeriod(start, end)
+  const tags = activityStates.map(state => state.tags_json).flat()
+  const doomscrollCount = tags.filter(tag => tag?.name === 'consuming').length
+  const totalCount = tags.length
+  const percentage = doomscrollCount / totalCount
+  return percentage >= 0.75
+}
+
 const getLastSessionCheck = () => {
   const time = localStorage.getItem('lastSessionCheck')
   return time ? DateTime.fromISO(time) : null
@@ -29,8 +38,12 @@ export const hasSmartSessionCooldown = (mostRecentSession?: FlowSession)=>{
 
   const lastSessionCheck = getLastSessionCheck()
   const timeSinceLastSessionCheck = lastSessionCheck ? now.diff(lastSessionCheck, 'minutes').minutes : 1000
+  console.log('timeSinceLastSession', timeSinceLastSession)
+  console.log('timeSinceLastSessionCheck', timeSinceLastSessionCheck)
   return timeSinceLastSession > 60 && timeSinceLastSessionCheck > 30
 }
+
+type SmartSessionType = 'doomscroll' | 'smart' | 'none'
 
 export const SmartSessionApi = {
   setLastSessionCheck: () => {
@@ -38,31 +51,40 @@ export const SmartSessionApi = {
     localStorage.setItem('lastSessionCheck', time)
     return time
   },
-  checkShouldSuggestSmartSession: async (deviceId: string) => {
+  checkShouldSuggestSmartSession: async (deviceId: string): Promise<SmartSessionType> => {
     const inProgressSession = await FlowSessionApi.getInProgressFlowSession()
     if (inProgressSession) {
-      return
+      return 'none'
     }
 
     const mostRecentSession = await FlowSessionApi.getMostRecentFlowSession()
     const hasCooldown = hasSmartSessionCooldown(mostRecentSession)
     if (!hasCooldown) {
-      return
+      return 'none'
     }
     const deviceProfile = await DeviceProfileApi.getDeviceProfile(deviceId)
     const smartFocusSettings = deviceProfile.preferences_json?.smart_focus_settings
 
     if (!smartFocusSettings || !smartFocusSettings.enabled) {
-      return
+      return 'none'
+    }
+
+    const doomscrollDuration = smartFocusSettings.doomscroll_duration_minutes || 30
+
+    const doomscroll = await doomscrollDetectionForTimePeriod(DateTime.now().toUTC().minus({ minutes: doomscrollDuration }), DateTime.now().toUTC())
+    if (doomscroll) {
+      return 'doomscroll'
     }
 
     const triggerDuration = smartFocusSettings.trigger_duration_minutes || 10
+    
     const isCreating = await isCreatingFromTimePeriod(DateTime.now().toUTC().minus({ minutes: triggerDuration }), DateTime.now().toUTC())
     if (!isCreating) {
-      return
+      return 'none'
     }
 
-    return true
+
+    return 'smart'
   },
   startSmartSession: async () => {
     const newSession = await FlowSessionApi.startFlowSession('Smart Flow', 'smart')

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { CheckCircle, Shield, AlertTriangle, PartyPopper, HelpCircle } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -15,7 +15,7 @@ import { useShortcutStore } from '@/lib/stores/shortcutStore'
 import { useShortcutKeyDetection } from '../../hooks/useShortcutKeyDetection'
 import { EbbWorker } from '../../lib/ebbWorker'
 
-type NotificationType = 'session-start' | 'quick-start' | 'smart-start-suggestion' | 'blocked-app' | 'session-end' | 'session-warning' | 'end-session'  
+type NotificationType = 'session-start' | 'quick-start' | 'smart-start-suggestion' | 'doomscroll-start-suggestion' | 'blocked-app' | 'session-end' | 'session-warning' | 'end-session'  
 
 interface NotificationPayload {
   timeCreating?: number
@@ -26,7 +26,7 @@ interface NotificationPayload {
 
 interface NotificationConfig {
   title: string
-  description?: string
+  description?: ()=>string
   icon: React.ComponentType<{ className?: string }>
   iconColor: string
   progressColor: string
@@ -35,6 +35,42 @@ interface NotificationConfig {
   buttonText?: string
   dismissImmediatelyOnAction?: boolean
   buttonAction?: () => void | Promise<void>
+}
+
+const getDoomScrollDescription = () => {
+  const potentialDescriptions = [
+    'Maybe time to do a focus session! 🤔',
+    'Focus session incoming! 🎉',
+    'Time to build something! 🚀',
+    'Ready to create magic? ✨',
+    'Let\'s make something cool! 💪',
+    'Create mode activated! 🎨',
+    'Time to ship something! 📦',
+    'Let\'s build today! 🛠️',
+    'Ready to create? 💻',
+    'Time for deep work! 🧠',
+    'Create something awesome! 🔥',
+  ]
+  const randomIndex = Math.floor(Math.random() * potentialDescriptions.length)
+  return potentialDescriptions[randomIndex]
+}
+
+const getSmartStartDescription = () => {
+  const potentialDescriptions = [
+    'Looks like you\'re in a groove!',
+    'Keep that momentum going! 🔥',
+    'Protect your focus time! 🛡️',
+    'You\'re on a roll! 🎯',
+    'Lock in this productive streak! 🔒',
+    'Don\'t break the flow! 🌊',
+    'Keep the magic happening! ✨',
+    'Stay in the zone! 🎯',
+    'Momentum is building! 📈',
+    'Guard this productive time! ⚡',
+    'You\'re crushing it! 💪',
+  ]
+  const randomIndex = Math.floor(Math.random() * potentialDescriptions.length)
+  return potentialDescriptions[randomIndex]
 }
 
 const NOTIFICATION_CONFIGS: Record<NotificationType, NotificationConfig> = {
@@ -61,14 +97,27 @@ const NOTIFICATION_CONFIGS: Record<NotificationType, NotificationConfig> = {
   },
   'smart-start-suggestion': {
     title: 'Start Focus?',
-    description: 'Looks like you\'re in a groove!',
-    icon: HelpCircle,
+    description: () => getSmartStartDescription(),
+    icon: Shield,
     iconColor: 'text-primary',
     progressColor: 'bg-primary',
     defaultDuration: 10*1000,
     buttonText: 'Start',
     buttonAction: async () => { 
       info('starting smart session')
+      await invoke('notify_start_flow')
+    }
+  },
+  'doomscroll-start-suggestion': {
+    title: 'Start Creating?',
+    description: () => getDoomScrollDescription(),
+    icon: Shield,
+    iconColor: 'text-amber-500',
+    progressColor: 'bg-amber-500',
+    defaultDuration: 10*1000,
+    buttonText: 'Start',
+    buttonAction: async () => { 
+      info('starting doomscroll session')
       await invoke('notify_start_flow')
     }
   },
@@ -174,6 +223,14 @@ export const NotificationPanel = () => {
       }, config?.dismissImmediatelyOnAction ? 0 : 500)
     }, 'notify_app_notification_dismissed')
   }, [isFirstTimeDismiss])
+
+  const configDescription = useMemo(() => {
+    if(config?.description) {
+      return config.description()
+    }
+    return ''
+  }, [config])
+
 
   const handleButtonClick = useCallback(async () => {
     if (buttonState !== 'idle') return // Prevent multiple clicks
@@ -348,6 +405,7 @@ export const NotificationPanel = () => {
 
   if(!config) return null
 
+
   return (
     <div className="min-h-screen font-sans p-2">
       {/* Invisible input field that takes focus. used to ensure that the esc key will register*/}
@@ -376,7 +434,7 @@ export const NotificationPanel = () => {
             {payload?.title || config.title}
           </h3>
           {payload?.description && <p className="text-card-foreground text-sm">{payload.description}</p>}
-          {config.description && <p className="text-card-foreground text-sm">{config.description}</p>}
+          {configDescription && <p className="text-card-foreground text-sm">{configDescription}</p>}
         </div>
 
         {/* Action Button */}

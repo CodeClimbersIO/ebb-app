@@ -46,9 +46,14 @@ export const useWorkerPolling = () => {
           }
           if(deviceId && canUseSmartFocus(user?.email)) {
             const shouldSuggestSmartSession = await SmartSessionApi.checkShouldSuggestSmartSession(deviceId)
-            if(shouldSuggestSmartSession) {
+            if(shouldSuggestSmartSession === 'smart') {
               invoke('show_notification', {
                 notificationType: 'smart-start-suggestion',
+              })
+            }
+            else if(shouldSuggestSmartSession === 'doomscroll') {
+              invoke('show_notification', {
+                notificationType: 'doomscroll-start-suggestion',
               })
             }
           }
