@@ -333,3 +333,10 @@ pub fn notify_snooze_blocking(app_handle: AppHandle) -> Result<(), String> {
         .emit("snooze-blocking", ())
         .map_err(|e| e.to_string())
 }
+
+#[tauri::command]
+pub fn notify_end_session(app_handle: AppHandle) -> Result<(), String> {
+    app_handle
+        .emit("end-session", ())
+        .map_err(|e| e.to_string())
+}
