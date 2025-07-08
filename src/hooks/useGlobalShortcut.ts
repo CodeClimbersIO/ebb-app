@@ -23,6 +23,7 @@ export function useGlobalShortcut() {
     let unlistenNotificationCreated: UnlistenFn | undefined
 
     const handleShortcut = async () => {
+      info('TROUBLESHOOTING: shortcut pressed in global-shortcut')
       try {
         if (location.pathname === '/onboarding/shortcut-tutorial') {
           await OnboardingUtils.markOnboardingCompleted()
@@ -42,7 +43,7 @@ export function useGlobalShortcut() {
         }
 
         EbbWorker.debounceWork(async () => {
-          info('showing quick start notification')
+          info('TROUBLESHOOTING: creating event to show quick start notification')
           invoke('show_notification', {
             notificationType: 'quick-start',
           })
@@ -60,17 +61,19 @@ export function useGlobalShortcut() {
       try {
         await initializeGlobalShortcut()
 
-        info('setting up global shortcut')
+        info('TROUBLESHOOTING: global shortcut initialized')
+
+        info('TROUBLESHOOTING: setting up global shortcut listener')
         unlistenShortcut = await EbbListen.listen(SHORTCUT_EVENT, () => {
-          info('shortcut pressed in global-shortcut')
+          info('TROUBLESHOOTING: shortcut pressed in global-shortcut')
           void handleShortcut()
         }, 'global-shortcut')
         
         unlistenNotificationCreated = await EbbListen.listen('notification-created', async () => {
-          info('notification-created, unlistening shortcut')
+          info('TROUBLESHOOTING: notification-created, unlistening shortcut')
           try {
             unlistenShortcut?.() // reinitialize the global shortcut when notifications is dismissed
-            info('shortcut unlistened')
+            info('TROUBLESHOOTING: shortcut unlistened')
           } catch (error) {
             logAndToastError(`(Shortcut) Error unlistening shortcut: ${error}`, error)
           }
@@ -88,16 +91,16 @@ export function useGlobalShortcut() {
 
     const setupNotificationDismissedListener = async () => {
       unlistenNotificationDismissed = await EbbListen.listen('notification-dismissed', async () => {
-        info('notification-dismissed, re-listening to shortcut')
+        info('TROUBLESHOOTING: notification-dismissed, re-listening to shortcut')
         unlistenShortcut = await EbbListen.listen(SHORTCUT_EVENT, () => {
-          info('shortcut pressed in notification-dismissed')
+          info('TROUBLESHOOTING: shortcut pressed in notification-dismissed')
           void handleShortcut()
         }, 'global-shortcut')
       }, 'global-shortcut-notification-dismissed')
     }
     
     EbbWorker.debounceWork(async () => {
-      info('setting up global shortcut')
+      info('TROUBLESHOOTING: initializing global shortcut')
       await setup()
     }, 'global-shortcut-setup')
 

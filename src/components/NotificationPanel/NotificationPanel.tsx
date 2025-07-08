@@ -9,10 +9,11 @@ import { error, info } from '@tauri-apps/plugin-log'
 import { resolveResource } from '@tauri-apps/api/path'
 import { isDev } from '@/lib/utils/environment.util'
 import { SmartSessionApi } from '@/api/ebbApi/smartSessionApi'
-import { listen } from '@tauri-apps/api/event'
 import { SHORTCUT_EVENT } from '@/api/ebbApi/shortcutApi'
+import { EbbListen } from '@/lib/ebbListen'
 import { useShortcutStore } from '@/lib/stores/shortcutStore'
 import { useShortcutKeyDetection } from '../../hooks/useShortcutKeyDetection'
+import { EbbWorker } from '../../lib/ebbWorker'
 
 type NotificationType = 'session-start' | 'quick-start' | 'smart-start-suggestion' | 'blocked-app' | 'session-end' | 'session-warning'
 
@@ -158,11 +159,13 @@ export const NotificationPanel = () => {
     // Mark that user has dismissed a notification
     setIsExiting(true)
 
-    setTimeout(() => {
-      setIsVisible(false)
-      invoke('notify_app_notification_dismissed')
-      invoke('hide_notification')
-    }, config?.dismissImmediatelyOnAction ? 0 : 500)
+    EbbWorker.debounceWork(async () => {
+      setTimeout(() => {
+        setIsVisible(false)
+        invoke('notify_app_notification_dismissed')
+        invoke('hide_notification')
+      }, config?.dismissImmediatelyOnAction ? 0 : 500)
+    }, 'notify_app_notification_dismissed')
   }, [isFirstTimeDismiss])
 
   const handleButtonClick = useCallback(async () => {
@@ -171,14 +174,13 @@ export const NotificationPanel = () => {
     setButtonState('processing')
     
     try {
-      if (config?.buttonAction) {
-        await config.buttonAction()
-      }
-      
       setButtonState('success')
       
       // Wait 200ms before dismissing
       setTimeout(() => {
+        if (config?.buttonAction) {
+          void config.buttonAction()
+        }
         handleExit()
       }, 1000)
     } catch (error) {
@@ -204,11 +206,11 @@ export const NotificationPanel = () => {
 
     const setupShortcutListener = async () => {
       try {
-        unlistenShortcut = await listen(SHORTCUT_EVENT, () => {
+        unlistenShortcut = await EbbListen.listen(SHORTCUT_EVENT, () => {
           if (buttonState === 'idle') {
             handleButtonClick()
           }
-        })
+        }, 'notification-panel-shortcut')
       } catch (err) {
         error(`Failed to setup shortcut listener: ${err}`)
       }
@@ -253,8 +255,10 @@ export const NotificationPanel = () => {
 
   useEffect(() => {
     if (!config) return
+    if(!isVisible) return
+
     const playSound = async () => {
-      if (config.soundFile && isVisible) {
+      if (config.soundFile) {
         const soundPath = await getSoundPath(config.soundFile)
         audioRef.current = new Audio(soundPath)
         audioRef.current.addEventListener('canplaythrough', () => {
@@ -266,10 +270,12 @@ export const NotificationPanel = () => {
     }
     playSound()
 
+
     // Auto-dismiss after duration
     const timer = setTimeout(() => {
       handleExit()
     }, config.defaultDuration)
+
 
     return () => {
       clearTimeout(timer)
@@ -310,7 +316,11 @@ export const NotificationPanel = () => {
     if(notificationType === 'smart-start-suggestion') {
       SmartSessionApi.setLastSessionCheck()
     }
-    invoke('notify_app_notification_created')
+
+    EbbWorker.debounceWork(async () => {
+      invoke('notify_app_notification_created')
+    }, 'notify_app_notification_created')
+
     // Set body background to transparent for notification windows
     document.body.style.background = 'transparent'
     document.documentElement.style.background = 'transparent'
