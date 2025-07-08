@@ -53,7 +53,6 @@ export function AppKanbanBoard({
   // useEffect to populate columns when initialAppUsage changes
   useEffect(() => {
     if (initialAppUsage.length > 0 && !isInitialized.current) {
-      console.log('AppKanbanBoard: Initializing columns from initialAppUsage:', initialAppUsage);
       const newColumns: KanbanColumns = {
         'creation': [],
         'neutral': [],
@@ -74,7 +73,6 @@ export function AppKanbanBoard({
       setColumns(newColumns);
       isInitialized.current = true;
     } else if (initialAppUsage.length > 0 && isInitialized.current) {
-       console.log('AppKanbanBoard: initialAppUsage changed but columns already initialized. Not re-initializing.');
     }
   }, [initialAppUsage]);
 
@@ -82,12 +80,10 @@ export function AppKanbanBoard({
   // handleDragStart function for DND Kit
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
-    console.log('Drag Start: Active item ID:', active.id); // Log
     // Find which column the active item belongs to when drag starts
     for (const columnId in columns) {
       if (columns[columnId as ColumnId].some((app: AppsWithTime) => app.id === active.id)) {
         setActiveDragSourceColumnId(columnId as ColumnId);
-        console.log('Drag Start: Source Column ID:', columnId); // Log
         break;
       }
     }
@@ -102,23 +98,19 @@ export function AppKanbanBoard({
 
     // Guard: If dropped outside any valid droppable area
     if (!over) {
-      console.log('Drag End: Dropped outside valid area. No action.'); // Log
       return;
     }
 
     const draggedAppId = active.id;
     const targetColumnId = over.id as ColumnId; // Cast over.id to ColumnId
-    console.log('Drag End: Dragged ID:', draggedAppId, 'Dropped Over Column ID:', targetColumnId); // Log
 
     // --- NEW GUARD: If dropped into the same column it came from ---
     if (activeDragSourceColumnId && activeDragSourceColumnId === targetColumnId) {
-      console.log(`Drag End: App ${draggedAppId} dropped back into its original column ${targetColumnId}. No state change.`); // Log
       return; // Do nothing if dropped back into the same column
     }
     // --- END NEW GUARD ---
 
     setColumns((prevColumns: KanbanColumns) => {
-      console.log('Drag End: (Inside setColumns) Previous Columns State:', JSON.parse(JSON.stringify(prevColumns))); // Log deep copy
       const newColumns = { ...prevColumns };
 
       let draggedApp: AppsWithTime | null = null;
@@ -132,23 +124,19 @@ export function AppKanbanBoard({
         if (appIndex !== -1) {
           draggedApp = appsInSourceColumn[appIndex];
           newColumns[activeDragSourceColumnId] = appsInSourceColumn.filter((app: AppsWithTime) => app.id !== draggedAppId);
-          console.log(`Drag End: App ${draggedAppId} removed from source column ${activeDragSourceColumnId}.`); // Log
         } else {
             // Fallback: This case should ideally not happen if activeDragSourceColumnId is reliable
-            console.warn(`Drag End: App ${draggedAppId} not found in recorded source column ${activeDragSourceColumnId}. Searching all columns as fallback.`); // Log
             for (const colId in newColumns) {
                 const foundIndex = newColumns[colId as ColumnId].findIndex((app: AppsWithTime) => app.id === draggedAppId);
                 if (foundIndex !== -1) {
                     draggedApp = newColumns[colId as ColumnId][foundIndex];
                     newColumns[colId as ColumnId] = newColumns[colId as ColumnId].filter((app: AppsWithTime) => app.id !== draggedAppId);
-                    console.warn(`Drag End: App ${draggedAppId} found and removed from ${colId} as a fallback.`); // Log
                     break;
                 }
             }
         }
       } else {
           // Fallback: This means activeDragSourceColumnId was null or invalid, which is unexpected
-          console.error(`Drag End: activeDragSourceColumnId was null or invalid: ${activeDragSourceColumnId}. Cannot determine source column efficiently. Searching all columns.`); // Log
           for (const colId in newColumns) {
               const foundIndex = newColumns[colId as ColumnId].findIndex((app: AppsWithTime) => app.id === draggedAppId);
               if (foundIndex !== -1) {
@@ -179,22 +167,18 @@ export function AppKanbanBoard({
 
           const updatedDraggedApp = { ...draggedApp, rating: newRating };
           newColumns[targetColumnId].push(updatedDraggedApp);
-          console.log(`Drag End: App ${draggedAppId} added to target column ${targetColumnId} with new rating ${newRating}.`); // Log
 
           if (onRatingChange && updatedDraggedApp.default_tag) {
             onRatingChange(updatedDraggedApp.default_tag.id, newRating, tags);
-            console.log(`Drag End: Calling onRatingChange for ${draggedAppId} with rating ${newRating}.`); // Log
           }
         } else {
-          console.warn(`Drag End: App ${draggedAppId} is already present in target column ${targetColumnId}. Skipping add to prevent duplicate.`); // Log
         }
       } else if (!draggedApp) {
-          console.error(`Drag End: Could not find dragged app ${draggedAppId} in any column.`); // Log
+          console.error(`Drag End: Could not find dragged app ${draggedAppId} in any column.`); 
       } else {
-          console.error(`Drag End: Target column ${targetColumnId} is invalid or not found.`); // Log
+          console.error(`Drag End: Target column ${targetColumnId} is invalid or not found.`); 
       }
 
-      console.log('Drag End: (Inside setColumns) New Columns State (before return):', JSON.parse(JSON.stringify(newColumns))); // Log deep copy
       return newColumns;
     });
   };
