@@ -136,9 +136,11 @@ export const FlowPage = () => {
       }
       handleEndSession()
     }
+    window.addEventListener('end-session', handleSessionComplete)
     window.addEventListener('flowSessionComplete', handleSessionComplete)
 
     return () => {
+      window.removeEventListener('end-session', handleSessionComplete)
       window.removeEventListener('flowSessionComplete', handleSessionComplete)
     }
   }, [flowSession, player, spotifyDeviceId])
