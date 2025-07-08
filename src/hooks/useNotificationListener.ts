@@ -42,6 +42,12 @@ export const useNotificationListener = () => {
           })
         })
       })
+      unlistenEndSession = await listen('end-session', async () => {
+        info('App: ending session')
+        EbbWorker.debounceWork(async () => {
+          window.dispatchEvent(new Event('end-session'))
+        })
+      })
 
     }
 

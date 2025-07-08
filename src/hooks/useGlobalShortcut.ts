@@ -38,7 +38,12 @@ export function useGlobalShortcut() {
         const activeSession = await FlowSessionApi.getInProgressFlowSession()
         info(`activeSession: ${JSON.stringify(activeSession)}`)
         if(activeSession) {
-          info('in progress session, skipping quick start notification')
+          info('in progress session, showing end session notification')
+          EbbWorker.debounceWork(async () => {
+            invoke('show_notification', {
+              notificationType: 'end-session',
+            })
+          }, 'show_notification')
           return
         }
 

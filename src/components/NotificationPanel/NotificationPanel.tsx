@@ -15,7 +15,7 @@ import { useShortcutStore } from '@/lib/stores/shortcutStore'
 import { useShortcutKeyDetection } from '../../hooks/useShortcutKeyDetection'
 import { EbbWorker } from '../../lib/ebbWorker'
 
-type NotificationType = 'session-start' | 'quick-start' | 'smart-start-suggestion' | 'blocked-app' | 'session-end' | 'session-warning'
+type NotificationType = 'session-start' | 'quick-start' | 'smart-start-suggestion' | 'blocked-app' | 'session-end' | 'session-warning' | 'end-session'  
 
 interface NotificationPayload {
   timeCreating?: number
@@ -83,6 +83,18 @@ const NOTIFICATION_CONFIGS: Record<NotificationType, NotificationConfig> = {
     buttonAction: async () => {
       info('snoozing blocking')
       await invoke('notify_snooze_blocking')
+    }
+  },
+  'end-session': {
+    title: 'End Session?',
+    icon: AlertTriangle,
+    iconColor: 'text-red-500',
+    progressColor: 'bg-red-500',
+    defaultDuration: 8000,
+    buttonText: 'End Session',
+    buttonAction: async () => {
+      info('ending session early')
+      await invoke('notify_end_session')
     }
   },
   'session-end': {
