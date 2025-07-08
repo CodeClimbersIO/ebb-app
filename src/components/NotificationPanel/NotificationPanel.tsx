@@ -92,11 +92,6 @@ const NOTIFICATION_CONFIGS: Record<NotificationType, NotificationConfig> = {
     progressColor: 'bg-green-500',
     defaultDuration: 8000,
     soundFile: 'session_end.mp3',
-    buttonText: 'View Recap',
-    buttonAction: async () => {
-      info('viewing recap')
-      await invoke('notify_view_flow_recap')
-    }
   },
   'session-warning': {
     title: 'Session Warning',

@@ -4,8 +4,6 @@ import { info } from '@tauri-apps/plugin-log'
 import { useEffect } from 'react'
 import { EbbWorker } from '../lib/ebbWorker'
 import { useNavigate } from 'react-router-dom'
-import { getCurrentWindow } from '@tauri-apps/api/window'
-import { logAndToastError } from '../lib/utils/ebbError.util'
 import { SmartSessionApi } from '../api/ebbApi/smartSessionApi'
 import { useFlowTimer } from '../lib/stores/flowTimer'
 
@@ -28,17 +26,7 @@ export const useNotificationListener = () => {
           navigate('/flow')
         })
       })
-      unlistenEndSession = await listen('navigate-to-flow-recap', async () => {
-        info('App: navigate-to-flow-recap')
-        EbbWorker.debounceWork(async () => {
-          const window = getCurrentWindow()
-          void Promise.all([
-            window.show().catch(err => logAndToastError(`(Flow recap) Error showing window: ${err}`, err)),
-            window.setFocus().catch(err => logAndToastError(`(Flow recap) Error focusing window: ${err}`, err))
-          ])
-          navigate('/flow-recap')
-        }, 'navigate-to-flow-recap')
-      })
+
       unlistenAddTimeEvent = await listen('add-time-event', async () => {
         info('App: adding time event')
         EbbWorker.debounceWork(async () => {
