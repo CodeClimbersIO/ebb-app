@@ -105,6 +105,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             commands::notify_view_flow_recap,
             commands::notify_add_time_event,
             commands::notify_snooze_blocking,
+            commands::notify_end_session,
             change_autostart,
             tray_icon_gen::generate_timer_icon,
         ])

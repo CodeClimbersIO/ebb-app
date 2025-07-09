@@ -377,7 +377,7 @@ export const NotificationPanel = () => {
       }
     }
 
-    if(notificationType === 'smart-start-suggestion') {
+    if(notificationType === 'smart-start-suggestion' || notificationType === 'doomscroll-start-suggestion') {
       SmartSessionApi.setLastSessionCheck()
     }
 
