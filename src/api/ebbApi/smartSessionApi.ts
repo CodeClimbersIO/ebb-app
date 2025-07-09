@@ -38,8 +38,6 @@ export const hasSmartSessionCooldown = (mostRecentSession?: FlowSession)=>{
 
   const lastSessionCheck = getLastSessionCheck()
   const timeSinceLastSessionCheck = lastSessionCheck ? now.diff(lastSessionCheck, 'minutes').minutes : 1000
-  console.log('timeSinceLastSession', timeSinceLastSession)
-  console.log('timeSinceLastSessionCheck', timeSinceLastSessionCheck)
   return timeSinceLastSession > 60 && timeSinceLastSessionCheck > 30
 }
 

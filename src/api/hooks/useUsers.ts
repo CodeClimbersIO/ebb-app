@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { platformApiRequest } from '../platformRequest'
 import { EbbStatus } from './useProfile'
 import { getRandomPoint } from '../../lib/utils/location.util'
+import { User } from '@supabase/supabase-js'
 
 const communityKeys = {
   all: ['communityKeys'] as const,
@@ -49,19 +50,21 @@ const getLocations = async () => {
   return locations
 }
 
-export const useUserStatusCounts = () => {
+export const useUserStatusCounts = (user: User | null) => {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: communityKeys.all,
     queryFn: () => getUserStatusCounts(),
+    enabled: !!user,
   })
 
   return { data, isLoading, error, refetch }
 }
 
-export const useUserLocations = () => {
+export const useUserLocations = (user: User | null) => {
   const { data, isLoading, error } = useQuery({
     queryKey: ['userLocations'],
     queryFn: () => getLocations(),
+    enabled: !!user,
   })
 
   return { data, isLoading, error }

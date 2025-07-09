@@ -5,6 +5,7 @@ import { useEffect } from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import { isSupabaseError, SupabaseErrorCodes } from '@/lib/utils/supabase.util'
 import { platformApiRequest } from '../platformRequest'
+import { User } from '@supabase/supabase-js'
 
 const profileKeys = {
   all: ['profile'] as const,
@@ -76,10 +77,11 @@ const updateProfileLocation = async () => {
   return data
 }
 
-export function useGetCurrentProfile() {
+export function useGetCurrentProfile(user: User | null) {
   return useQuery({
     queryKey: profileKeys.current(),
     queryFn: fetchCurrentProfile,
+    enabled: !!user,
     retry: false,
   })
 }
@@ -129,7 +131,7 @@ export const useUpdateProfileLocation = () => {
 
 export const useProfile = () => {
   const { user, loading: authLoading } = useAuth()
-  const { data: profile, isLoading, refetch } = useGetCurrentProfile()
+  const { data: profile, isLoading, refetch } = useGetCurrentProfile(user)
   const { mutate: createProfile } = useCreateProfile()
 
   useEffect(() => {

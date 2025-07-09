@@ -7,6 +7,7 @@ import { EbbLocation, useUserLocations } from '../api/hooks/useUsers'
 import { Marker } from 'cobe'
 import { cn } from '../lib/utils/tailwind.util'
 import { useEffect, useState } from 'react'
+import { useAuth } from '../hooks/useAuth'
 
 const geLocationsAsMarkers = (userLocations?: EbbLocation[]): Marker[] => {
   if (!userLocations) return []
@@ -58,7 +59,8 @@ const CommunityStatusCard = ({ locations, title, onLocationHover }: CommunitySta
 }
 
 export const CommunityPage = () => {
-  const { data: userLocations } = useUserLocations()
+  const { user } = useAuth()
+  const { data: userLocations } = useUserLocations(user)
 
   const { connected } = useConnectedStore()
   const { theme } = useTheme()
