@@ -373,5 +373,6 @@ export const MonitorApi = {
   createApp,
   getLatestActivity,
   getActivityStatesByTimePeriod,
-  getTimeCreatingByTimePeriod
+  getTimeCreatingByTimePeriod,
+  getActivityStatesWithApps
 }
