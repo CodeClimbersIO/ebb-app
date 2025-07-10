@@ -1,7 +1,19 @@
 use sqlx::{Pool, Sqlite, sqlite::SqlitePool};
+use std::collections::HashMap;
+use std::sync::Arc;
+use tokio::sync::{Mutex, OnceCell};
 
 pub struct DbManager {
     pub pool: Pool<Sqlite>,
+}
+
+// Global singleton for shared connection pools
+static SHARED_POOLS: OnceCell<Mutex<HashMap<String, Arc<DbManager>>>> = OnceCell::const_new();
+
+async fn get_shared_pools() -> &'static Mutex<HashMap<String, Arc<DbManager>>> {
+    SHARED_POOLS
+        .get_or_init(|| async { Mutex::new(HashMap::new()) })
+        .await
 }
 
 pub fn get_default_ebb_db_path() -> String {
@@ -64,6 +76,8 @@ async fn set_wal_mode(pool: &sqlx::SqlitePool) -> Result<(), sqlx::Error> {
 }
 
 impl DbManager {
+    /// Create a new DbManager with a dedicated connection pool
+    /// This creates a separate pool and should only be used when connection sharing is not needed
     pub async fn new(db_path: &str) -> Result<Self, sqlx::Error> {
         let database_url = format!("sqlite:{db_path}");
 
@@ -91,6 +105,39 @@ impl DbManager {
         // sqlx::migrate!().run(&pool).await.unwrap();
 
         Ok(Self { pool })
+    }
+
+    /// Get or create a shared DbManager instance for the given database path
+    /// This ensures all callers get the same connection pool for the same database
+    pub async fn get_shared(db_path: &str) -> Result<Arc<Self>, sqlx::Error> {
+        let pools = get_shared_pools().await;
+        let mut pools_guard = pools.lock().await;
+
+        // Check if we already have a shared instance for this path
+        if let Some(existing) = pools_guard.get(db_path) {
+            log::trace!("Reusing existing shared connection pool for: {}", db_path);
+            return Ok(existing.clone());
+        }
+
+        // Create new shared instance
+        log::trace!("Creating new shared connection pool for: {}", db_path);
+        let db_manager = Self::new(db_path).await?;
+        let shared_manager = Arc::new(db_manager);
+
+        // Store for future reuse
+        pools_guard.insert(db_path.to_string(), shared_manager.clone());
+
+        Ok(shared_manager)
+    }
+
+    /// Get the default shared ebb database connection
+    pub async fn get_shared_ebb() -> Result<Arc<Self>, sqlx::Error> {
+        Self::get_shared(&get_default_ebb_db_path()).await
+    }
+
+    /// Get the default shared codeclimbers database connection  
+    pub async fn get_shared_codeclimbers() -> Result<Arc<Self>, sqlx::Error> {
+        Self::get_shared(&get_default_codeclimbers_db_path()).await
     }
 }
 

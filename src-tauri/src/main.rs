@@ -1,4 +1,4 @@
-use ebb_db::{db_manager, migrations, services::device_service::DeviceService};
+use ebb_db::{db_manager, migrations, services::device_service::DeviceService, shared_sql_plugin};
 use tauri::Manager;
 use tokio;
 
@@ -37,7 +37,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         std::fs::create_dir_all(parent).expect("Failed to create directory");
     }
 
-    let migrations = migrations::get_migrations();
+    let shared_migrations = migrations::get_shared_migrations();
     tauri::Builder::default()
         .plugin(tauri_nspanel::init())
         .plugin(tauri_plugin_autostart::init(
@@ -80,8 +80,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_process::init())
         .plugin(
-            tauri_plugin_sql::Builder::new()
-                .add_migrations(&format!("sqlite:{db_path}"), migrations)
+            shared_sql_plugin::Builder::new()
+                .add_migrations(&format!("sqlite:{db_path}"), shared_migrations)
                 .build(),
         )
         .invoke_handler(tauri::generate_handler![
