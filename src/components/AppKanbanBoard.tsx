@@ -34,21 +34,21 @@ export function AppKanbanBoard() {
               <ColumnWrapper
                 id="creation"
                 title="Creation"
-                titleClassName="text-sm text-[rgb(124,58,237)]"
+                titleClassName="text-md text-[rgb(124,58,237)]"
                 apps={columns.creation}
                 totalAppUsage={totalAppUsage}
               />
               <ColumnWrapper
                 id="neutral"
                 title="Neutral"
-                titleClassName="text-sm text-gray-500"
+                titleClassName="text-md text-gray-500"
                 apps={columns.neutral}
                 totalAppUsage={totalAppUsage}
               />
               <ColumnWrapper
                 id="consumption"
                 title="Consumption"
-                titleClassName="text-sm text-[rgb(239,68,68)]"
+                titleClassName="text-md text-[rgb(239,68,68)]"
                 apps={columns.consumption}
                 totalAppUsage={totalAppUsage}
               />
