@@ -89,6 +89,10 @@ export const setAppDefaultTag = async (appTagId: string, rating: ActivityRating,
   await ActivityStateTagRepo.updateActivityStateTagById(appTagId, tag.id)
 }
 
+export const updateAppRating = async (tagId: string, rating: ActivityRating) => {
+  const tags = await getTagsByType('default');
+  await setAppDefaultTag(tagId, rating, tags);
+}
 
 // group activity states by hour and create time blocks. activity states are already sorted by time (ascending)
 export const createTimeBlockFromActivityState = (activityStates: ActivityState[]): TimeBlock[] => {
@@ -345,7 +349,6 @@ const getLatestActivity = async (): Promise<Activity | undefined> => {
 }
 
 
-
 export const MonitorApi = {
   getApps,
   getTagsByType,
@@ -354,6 +357,7 @@ export const MonitorApi = {
   getTimeCreatingByWeek,
   getTopAppsByPeriod,
   setAppDefaultTag,
+  updateAppRating,
   createApp,
   getLatestActivity,
   getTimeCreatingByTimePeriod,
