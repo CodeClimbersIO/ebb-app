@@ -11,6 +11,15 @@ const isCreatingFromTimePeriod = async (start: DateTime, end: DateTime): Promise
   // 75% of tags must be creating
   const creatingCount = tags.filter(tag => tag?.name === 'creating').length
 
+  const totalDuration = activityStates.reduce((acc, state) => {
+    const startTime = DateTime.fromISO(state.start_time)
+    const endTime = DateTime.fromISO(state.end_time)
+    return acc + endTime.diff(startTime).toMillis()
+  }, 0)
+  if (totalDuration < end.diff(start).toMillis()) {
+    return false
+  }
+
   const totalCount = tags.length
   const percentage = creatingCount / totalCount
   return percentage >= 0.75
@@ -20,6 +29,16 @@ const doomscrollDetectionForTimePeriod = async (start: DateTime, end: DateTime):
   const activityStates = await MonitorApi.getActivityStatesByTimePeriod(start, end)
   const tags = activityStates.map(state => state.tags_json).flat()
   const doomscrollCount = tags.filter(tag => tag?.name === 'consuming').length
+
+  const totalDuration = activityStates.reduce((acc, state) => {
+    const startTime = DateTime.fromISO(state.start_time)
+    const endTime = DateTime.fromISO(state.end_time)
+    return acc + endTime.diff(startTime).toMillis()
+  }, 0)
+  if (totalDuration < end.diff(start).toMillis()) {
+    return false
+  }
+  
   const totalCount = tags.length
   const percentage = doomscrollCount / totalCount
   return percentage >= 0.75
@@ -89,4 +108,6 @@ export const SmartSessionApi = {
     
     return newSession
   },
+  isCreatingFromTimePeriod,
+  doomscrollDetectionForTimePeriod,
 }
