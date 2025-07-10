@@ -30,9 +30,7 @@ export const HomePage = () => {
     totalCreating,
     totalTime,
     chartData,
-    tags,
     isLoading,
-    handleRatingChange,
     yAxisMax,
     showIdleTime,
     setShowIdleTime,
@@ -92,9 +90,6 @@ export const HomePage = () => {
             chartData={chartData}
             appUsage={appUsage}
             showTopAppsButton={true}
-            showAppRatingControls={true}
-            onRatingChange={handleRatingChange}
-            tags={tags}
             isLoading={isLoading}
             yAxisMax={yAxisMax}
             showIdleTime={showIdleTime}
