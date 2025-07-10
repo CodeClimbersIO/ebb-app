@@ -36,7 +36,7 @@ struct Migrations(Mutex<HashMap<String, MigrationList>>);
 #[derive(Default, Clone, Deserialize)]
 pub struct PluginConfig {
     #[serde(default)]
-    preload: Vec<String>,
+    pub preload: Vec<String>,
 }
 
 #[derive(Debug)]
@@ -86,6 +86,9 @@ impl MigrationSource<'static> for MigrationList {
     }
 }
 
+/// Channel for notifying when migrations are complete
+pub type MigrationCompleteNotifier = tokio::sync::broadcast::Sender<()>;
+
 /// Allows blocking on async code without creating a nested runtime.
 fn run_async_command<F: std::future::Future>(cmd: F) -> F::Output {
     if tokio::runtime::Handle::try_current().is_ok() {
@@ -96,14 +99,34 @@ fn run_async_command<F: std::future::Future>(cmd: F) -> F::Output {
 }
 
 /// Tauri shared SQL plugin builder.
-#[derive(Default)]
 pub struct Builder {
     migrations: Option<HashMap<String, MigrationList>>,
+    migration_notifier: Option<MigrationCompleteNotifier>,
+}
+
+impl Default for Builder {
+    fn default() -> Self {
+        Self {
+            migrations: None,
+            migration_notifier: None,
+        }
+    }
 }
 
 impl Builder {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Create a new builder with a migration notifier channel.
+    /// Returns (builder, receiver) - use the receiver to listen for migration completion.
+    pub fn new_with_notifier() -> (Self, tokio::sync::broadcast::Receiver<()>) {
+        let (tx, rx) = tokio::sync::broadcast::channel(1);
+        let builder = Self {
+            migrations: None,
+            migration_notifier: Some(tx),
+        };
+        (builder, rx)
     }
 
     /// Add migrations to a database.
@@ -115,7 +138,24 @@ impl Builder {
         self
     }
 
-    pub fn build<R: Runtime>(mut self) -> TauriPlugin<R, Option<PluginConfig>> {
+    /// Set a channel to notify when migrations are complete.
+    /// This is useful for initialization tasks that depend on the database schema being ready.
+    #[must_use]
+    pub fn with_migration_notifier(mut self, notifier: MigrationCompleteNotifier) -> Self {
+        self.migration_notifier = Some(notifier);
+        self
+    }
+
+    pub fn build<R: Runtime>(self) -> TauriPlugin<R, Option<PluginConfig>> {
+        self.build_with_config(PluginConfig::default())
+    }
+
+    pub fn build_with_config<R: Runtime>(
+        mut self,
+        config: PluginConfig,
+    ) -> TauriPlugin<R, Option<PluginConfig>> {
+        let migration_notifier = self.migration_notifier.take();
+
         PluginBuilder::<R, Option<PluginConfig>>::new("sql")
             .invoke_handler(tauri::generate_handler![
                 commands::load,
@@ -123,21 +163,30 @@ impl Builder {
                 commands::select,
                 commands::close
             ])
-            .setup(|app, api| {
-                let config = api.config().clone().unwrap_or_default();
+            .setup(move |app, api| {
+                let plugin_config = api.config().clone().unwrap_or(config);
 
                 run_async_command(async move {
                     let instances = SharedDbInstances::default();
                     let mut lock = instances.0.write().await;
 
-                    for db in config.preload {
+                    for db in plugin_config.preload {
+                        log::info!("Connecting to database: {}", db);
                         let pool = SharedDbPool::connect(&db, app).await?;
 
                         if let Some(migrations) =
                             self.migrations.as_mut().and_then(|mm| mm.remove(&db))
                         {
+                            log::info!(
+                                "Running {} migrations for database: {}",
+                                migrations.0.len(),
+                                db
+                            );
                             let migrator = Migrator::new(migrations).await?;
                             pool.migrate(&migrator).await?;
+                            log::info!("Migrations completed for database: {}", db);
+                        } else {
+                            log::info!("No migrations to run for database: {}", db);
                         }
 
                         lock.insert(db, pool);
@@ -148,6 +197,11 @@ impl Builder {
                     app.manage(Migrations(Mutex::new(
                         self.migrations.take().unwrap_or_default(),
                     )));
+
+                    // Notify that migrations are complete
+                    if let Some(notifier) = migration_notifier {
+                        let _ = notifier.send(()); // Ignore if no receivers
+                    }
 
                     Ok(())
                 })
