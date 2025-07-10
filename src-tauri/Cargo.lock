@@ -1336,11 +1336,15 @@ name = "ebb-db"
 version = "0.1.0"
 dependencies = [
  "dirs 6.0.0",
+ "futures-core",
+ "indexmap 2.9.0",
  "log",
  "serde",
  "serde_json",
  "sqlx",
+ "tauri",
  "tauri-plugin-sql",
+ "thiserror 1.0.69",
  "time",
  "tokio",
  "uuid",

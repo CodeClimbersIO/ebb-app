@@ -1,4 +1,4 @@
-use ebb_db::{db_manager, migrations, services::device_service::DeviceService};
+use ebb_db::{db_manager, migrations, services::device_service::DeviceService, shared_sql_plugin};
 use tauri::Manager;
 use tokio;
 
@@ -12,13 +12,23 @@ mod window;
 use autostart::{change_autostart, enable_autostart};
 
 async fn initialize_device_profile() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    log::info!("Starting device profile initialization...");
+
     let ebb_db_path = db_manager::get_default_ebb_db_path();
-    let db_manager = db_manager::DbManager::new(&ebb_db_path).await?;
-    let device_service = DeviceService::new_with_pool(db_manager.pool);
+    log::info!("Using database path: {}", ebb_db_path);
+
+    // Use shared DbManager to ensure connection sharing with the SQL plugin
+    let db_manager = db_manager::DbManager::get_shared(&ebb_db_path).await?;
+    log::info!("Connected to shared database manager");
+
+    let device_service = DeviceService::new_with_pool(db_manager.pool.clone());
     let device_profile = device_service.get_device_profile().await;
     match device_profile {
-        Ok(device_profile) => println!("device_profile: {:?}", device_profile),
-        Err(e) => println!("error getting device id: {}", e),
+        Ok(device_profile) => log::info!("Device profile initialized: {:?}", device_profile),
+        Err(e) => {
+            log::error!("Error getting device profile: {}", e);
+            return Err(e.into());
+        }
     }
     Ok(())
 }
@@ -37,7 +47,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         std::fs::create_dir_all(parent).expect("Failed to create directory");
     }
 
-    let migrations = migrations::get_migrations();
+    let shared_migrations = migrations::get_shared_migrations();
+
+    // Create SQL plugin with migration notifier
+    let (sql_builder, mut migration_rx) = shared_sql_plugin::Builder::new_with_notifier();
+
+    // Spawn task to listen for migration completion and run initialization
+    tauri::async_runtime::spawn(async move {
+        if migration_rx.recv().await.is_ok() {
+            if let Err(e) = initialize_device_profile().await {
+                log::error!("Failed to initialize device profile: {}", e);
+            }
+        } else {
+            log::warn!("Migration notification channel closed without receiving signal");
+        }
+    });
+
     tauri::Builder::default()
         .plugin(tauri_nspanel::init())
         .plugin(tauri_plugin_autostart::init(
@@ -72,7 +97,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             app.handle()
                 .plugin(tauri_plugin_updater::Builder::new().build())?;
             enable_autostart(app);
-            tauri::async_runtime::spawn(async move { initialize_device_profile().await });
 
             Ok(())
         })
@@ -80,9 +104,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_process::init())
         .plugin(
-            tauri_plugin_sql::Builder::new()
-                .add_migrations(&format!("sqlite:{db_path}"), migrations)
-                .build(),
+            sql_builder
+                .add_migrations(&format!("sqlite:{db_path}"), shared_migrations)
+                .build_with_config(shared_sql_plugin::PluginConfig {
+                    preload: vec![format!("sqlite:{db_path}")],
+                }),
         )
         .invoke_handler(tauri::generate_handler![
             commands::get_app_icon,
