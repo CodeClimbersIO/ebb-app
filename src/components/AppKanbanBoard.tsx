@@ -14,8 +14,6 @@ export function AppKanbanBoard() {
     handleDragEnd,
     isLoading,
     error,
-    updateRating,
-    tags
   } = useAppKanbanData();
 
   if (error) {
@@ -39,9 +37,6 @@ export function AppKanbanBoard() {
                 titleClassName="text-sm text-[rgb(124,58,237)]"
                 apps={columns.creation}
                 totalAppUsage={totalAppUsage}
-                onRatingChange={updateRating}
-                tags={tags}
-                showAppRatingControls={false}
               />
               <ColumnWrapper
                 id="neutral"
@@ -49,9 +44,6 @@ export function AppKanbanBoard() {
                 titleClassName="text-sm text-gray-500"
                 apps={columns.neutral}
                 totalAppUsage={totalAppUsage}
-                onRatingChange={updateRating}
-                tags={tags}
-                showAppRatingControls={false}
               />
               <ColumnWrapper
                 id="consumption"
@@ -59,9 +51,6 @@ export function AppKanbanBoard() {
                 titleClassName="text-sm text-[rgb(239,68,68)]"
                 apps={columns.consumption}
                 totalAppUsage={totalAppUsage}
-                onRatingChange={updateRating}
-                tags={tags}
-                showAppRatingControls={false}
               />
             </div>
           )}

@@ -17,8 +17,6 @@ import { AppIcon } from './AppIcon'
 import { Button } from './ui/button'
 import { useRef, useEffect, useState } from 'react'
 import { Switch } from './ui/switch'
-import { ActivityRating } from '@/lib/app-directory/apps-types'
-import { Tag } from '../db/monitor/tagRepo'
 import { Skeleton } from './ui/skeleton'
 import { ArrowUpRight, ArrowDownRight } from 'lucide-react'
 import { useCreateNotification, useGetNotificationBySentId } from '@/api/hooks/useNotifications'
@@ -87,11 +85,8 @@ export interface UsageSummaryProps {
   chartData: GraphableTimeByHourBlock[];
   appUsage: AppsWithTime[];
   showTopAppsButton?: boolean;
-  showAppRatingControls?: boolean;
   showIdleTime?: boolean;
   setShowIdleTime?: (showIdleTime: boolean) => void;
-  onRatingChange?: (tagId: string, rating: ActivityRating, tags: Tag[]) => void;
-  tags?: Tag[];
   isLoading?: boolean;
   yAxisMax?: number;
 }
@@ -122,9 +117,6 @@ export const UsageSummary = ({
   chartData,
   appUsage,
   showTopAppsButton = false,
-  showAppRatingControls = false,
-  onRatingChange,
-  tags = [],
   isLoading = false,
   yAxisMax,
   showIdleTime,
@@ -367,13 +359,9 @@ export const UsageSummary = ({
       </Card>
 
 
-        <AppKanbanBoard
-        initialAppUsage={appUsage} // Pass the initial data
-        showAppRatingControls={showAppRatingControls}
-        onRatingChange={onRatingChange}
-        tags={tags}
-        isLoading={isLoading}
-      />
+      <div ref={appUsageRef}>
+        <AppKanbanBoard />
+      </div>
       
     </>
   )

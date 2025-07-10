@@ -2,8 +2,6 @@ import { useDroppable } from '@dnd-kit/core';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { DraggableAppCard } from './DraggableAppCard';
 import { AppsWithTime } from '../api/monitorApi/monitorApi';
-import { ActivityRating } from '@/lib/app-directory/apps-types'; 
-import { Tag } from '../db/monitor/tagRepo'; 
 
 
 type ColumnWrapperProps = {
@@ -12,9 +10,6 @@ type ColumnWrapperProps = {
   titleClassName?: string;
   apps: AppsWithTime[]; 
   totalAppUsage: number;
-  showAppRatingControls: boolean;
-  onRatingChange?: (tagId: string, rating: ActivityRating, tags: Tag[]) => void;
-  tags?: Tag[];
 };
 
 export function ColumnWrapper({
@@ -23,9 +18,6 @@ export function ColumnWrapper({
   titleClassName,
   apps,
   totalAppUsage,
-  showAppRatingControls = false,
-  onRatingChange,
-  tags = [],
 }: ColumnWrapperProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: id,
@@ -54,9 +46,6 @@ export function ColumnWrapper({
               key={app.id}
               app={app}
               totalAppUsage={totalAppUsage}
-              showAppRatingControls={showAppRatingControls}
-              onRatingChange={onRatingChange}
-              tags={tags}
             />
           ))}
       </CardContent>
