@@ -29,7 +29,6 @@ export const StartFlowPage = () => {
   const [selectedApps, setSelectedApps] = useState<SearchOption[]>([])
   const [objective, setObjective] = useState<string>('')
   const [isAllowList, setIsAllowList] = useState(false)
-  const [hasBreathing, setHasBreathing] = useState(true)
   const [workflows, setWorkflows] = useState<Workflow[]>([])
   const [hasMusic, setHasMusic] = useState(true)
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard' | null>(null)
@@ -69,7 +68,6 @@ export const StartFlowPage = () => {
           setSelectedPlaylist(mostRecentWorkflow.settings.selectedPlaylist || null)
           setSelectedApps(mostRecentWorkflow.selectedApps || [])
           setIsAllowList(mostRecentWorkflow.settings.isAllowList || false)
-          setHasBreathing(mostRecentWorkflow.settings.hasBreathing ?? true)
           setHasMusic(mostRecentWorkflow.settings.hasMusic ?? true)
           setDifficulty(mostRecentWorkflow.settings.difficulty || null)
         }
@@ -109,7 +107,6 @@ export const StartFlowPage = () => {
         selectedPlaylistName: selectedWorkflow.settings.selectedPlaylistName,
         defaultDuration: duration?.as('minutes') ?? null,
         isAllowList,
-        hasBreathing,
         hasMusic,
         difficulty
       }
@@ -120,7 +117,7 @@ export const StartFlowPage = () => {
     } catch (error) {
       logAndToastError(`Failed to save workflow changes: ${error}`, error)
     }
-  }, [duration, selectedPlaylist, selectedApps, isAllowList, selectedWorkflow, hasBreathing, hasMusic, difficulty])
+  }, [duration, selectedPlaylist, selectedApps, isAllowList, selectedWorkflow, hasMusic, difficulty])
 
   useEffect(() => {
     if (selectedWorkflow?.id) {
@@ -129,7 +126,7 @@ export const StartFlowPage = () => {
       }, 150)
       return () => clearTimeout(timeoutId)
     }
-  }, [selectedWorkflow, duration, selectedPlaylist, selectedApps, isAllowList, hasBreathing, hasMusic, saveChanges])
+  }, [selectedWorkflow, duration, selectedPlaylist, selectedApps, isAllowList, hasMusic, saveChanges])
 
   const handleWorkflowSelect = async (workflowId: string) => {
     try {
@@ -142,7 +139,6 @@ export const StartFlowPage = () => {
         setSelectedPlaylist(workflow.settings.selectedPlaylist || null)
         setSelectedApps(workflow.selectedApps || [])
         setIsAllowList(workflow.settings.isAllowList || false)
-        setHasBreathing(workflow.settings.hasBreathing ?? true)
         setHasMusic(workflow.settings.hasMusic ?? true)
         setDifficulty(workflow.settings.difficulty || null)
       }
@@ -170,7 +166,6 @@ export const StartFlowPage = () => {
   const handleSettingsChange = (workflowId: string, newSettings: Workflow['settings']) => {
     if (workflowId === selectedWorkflowId) {
       setHasMusic(newSettings.hasMusic ?? true)
-      setHasBreathing(newSettings.hasBreathing ?? true)
     }
   }
 
@@ -188,7 +183,6 @@ export const StartFlowPage = () => {
         is_allowlist: isAllowList,
         difficulty: difficulty,
         has_music: hasMusic,
-        has_breathing: hasBreathing,
         selected_categories: selectedApps.map(app => {
           if (app.type === 'app') {
             return {
@@ -221,7 +215,7 @@ export const StartFlowPage = () => {
             selectedPlaylistName: currentWorkflow?.settings.selectedPlaylistName,
             defaultDuration: duration?.as('minutes') ?? null,
             isAllowList,
-            hasBreathing,
+            hasBreathing: true,
             hasMusic,
             typewriterMode: false,
             difficulty,
@@ -257,7 +251,6 @@ export const StartFlowPage = () => {
           selectedPlaylistName: currentWorkflow.settings.selectedPlaylistName,
           defaultDuration: duration?.as('minutes') ?? null,
           isAllowList,
-          hasBreathing,
           hasMusic,
           difficulty
         }
