@@ -55,7 +55,6 @@ function WorkflowBadge({
   const [isEditing, setIsEditing] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showAdvancedDialog, setShowAdvancedDialog] = useState(false)
-  const [hasBreathing, setHasBreathing] = useState(workflow.settings.hasBreathing ?? true)
   const [hasMusic, setHasMusic] = useState(workflow.settings.hasMusic ?? true)
   const badgeRef = useRef<HTMLDivElement>(null)
   const editableRef = useRef<HTMLSpanElement>(null)
@@ -100,15 +99,6 @@ function WorkflowBadge({
     onDelete?.()
   }
 
-  const handleBreathingChange = (checked: boolean) => {
-    setHasBreathing(checked)
-    if (onUpdateSettings) {
-      onUpdateSettings({
-        ...workflow.settings,
-        hasBreathing: checked
-      })
-    }
-  }
 
   const handleMusicChange = (checked: boolean) => {
     setHasMusic(checked)
@@ -241,18 +231,6 @@ function WorkflowBadge({
           <div className="space-y-6">
             <div className="h-px bg-border" />
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <span>Breathing Exercise</span>
-                  <p className="text-sm text-muted-foreground">
-                    Start each session with a 10 sec breathing exercise
-                  </p>
-                </div>
-                <Switch
-                  checked={hasBreathing}
-                  onCheckedChange={handleBreathingChange}
-                />
-              </div>
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">

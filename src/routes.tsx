@@ -5,7 +5,6 @@ import { CommunityPage } from '@/pages/CommunityPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 import { useAuth } from '@/hooks/useAuth'
 import { FlowPage } from '@/pages/FlowPage/FlowPage'
-import { BreathingExercisePage } from '@/pages/BreathingExercisePage'
 import { FlowRecapPage } from '@/pages/FlowRecapPage'
 import { AccessibilityPage } from '@/pages/AccessibilityPage'
 import { ShortcutTutorialPage } from '@/pages/ShortcutTutorialPage'
@@ -80,7 +79,6 @@ const Router = () => {
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/friends-analytics" element={<FriendsAnalyticsPage />} />
       <Route path="/start-flow" element={<StartFlowPage />} />
-      <Route path="/breathing-exercise" element={<BreathingExercisePage />} />
       <Route path="/flow" element={<FlowPage />} />
       <Route path="/flow-recap" element={<FlowRecapPage />} />
       <Route path="/feedback" element={<FeedbackPage />} />
