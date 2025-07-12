@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
 import { Layout } from '@/components/Layout'
-import { useUsageSummary } from '@/pages/useUsageSummary'
+import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
+import { Calendar } from '@/components/ui/calendar'
+import { formatTime } from '@/components/UsageSummary'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useUsageSummary } from '@/pages/useUsageSummary'
 import { Tag } from '@/db/monitor/tagRepo'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { ArrowUpRight, ArrowDownRight } from 'lucide-react'
-import { formatTime } from '@/components/UsageSummary'
+import { ArrowUpRight, ArrowDownRight, ChevronDown } from 'lucide-react'
 // Chart imports
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import {
@@ -17,6 +19,8 @@ import {
 } from '@/components/ui/chart'
 import { MonitorApi } from '@/api/monitorApi/monitorApi'
 import { DateTime } from 'luxon'
+import { RangeModeSelector } from '@/components/RangeModeSelector'
+import { Popover, PopoverContent, PopoverTrigger } from '@radix-ui/react-popover'
 
 function getColor(index: number) {
   const colors = [
@@ -50,79 +54,29 @@ function TrendIndicator({ trend }: { trend?: { percent: number; direction: 'up' 
 }
 
 export default function CategoryDashboardPage () {
-  const summary = useUsageSummary()
-
-  // Derive category totals from appUsage
-  const categoryTotals: Record<string, { tag: Tag, total: number }> = {}
-  // For the chart, aggregate creating/neutral/consuming per category
-  const categoryChart: Record<string, {
-    tag: Tag,
-    creating: number,
-    neutral: number,
-    consuming: number,
-    idle: number,
-    offline: number,
-    total: number,
-  }> = {}
-
-  summary.appUsage.forEach(app => {
-    const cat = app.category_tag || { tag_id: 'others', tag_name: 'others' }
-
-    // ---- Totals (for list & stacked bar) ----
-    if (!categoryTotals[cat.tag_id]) {
-      categoryTotals[cat.tag_id] = {
-        tag: {
-          id: cat.tag_id,
-          name: cat.tag_name,
-          tag_type: 'category',
-          is_default: false,
-          is_blocked: false,
-          created_at: '',
-          updated_at: '',
-          parent_tag_id: null,
-        },
-        total: 0,
-      }
-    }
-    categoryTotals[cat.tag_id].total += app.duration
-
-    // ---- Chart breakdown ----
-    if (!categoryChart[cat.tag_id]) {
-      categoryChart[cat.tag_id] = {
-        tag: categoryTotals[cat.tag_id].tag,
-        creating: 0,
-        neutral: 0,
-        consuming: 0,
-        idle: 0,
-        offline: 0,
-        total: 0,
-      }
-    }
-    // Determine activity bucket based on app rating
-    if (app.rating >= 4) {
-      categoryChart[cat.tag_id].creating += app.duration
-    } else if (app.rating <= 2) {
-      categoryChart[cat.tag_id].consuming += app.duration
-    } else {
-      categoryChart[cat.tag_id].neutral += app.duration
-    }
-    categoryChart[cat.tag_id].total += app.duration
-  })
-
-  const categoriesArr = Object.values(categoryTotals).sort((a, b) => b.total - a.total)
-  const totalTime = categoriesArr.reduce((a, b) => a + b.total, 0)
-
-  // Color map so we use same color everywhere
-  const colorMap: Record<string, string> = {}
+  const {
+    date, 
+    rangeMode, 
+    appUsage,
+    totalTimeLabel,
+    totalTime,
+    setRangeMode, 
+    setDate,
+    totalTimeTooltip,
+    totalCreating
+  } = useUsageSummary()
+  const {
+    categoriesArr,
+    colorMap,
+    categoryTotalTime,
+    topThree
+  } = MonitorApi.getTimeByCategoryFromSummary(appUsage)
   categoriesArr.forEach((c, idx) => { colorMap[c.tag.id] = getColor(idx) })
-
-  const topThree = categoriesArr.slice(0, 3)
 
   // ---- Time-based Category Chart (top N categories) ----
   const TOP_N = 5
   const [categoryTimeline, setCategoryTimeline] = useState<any[]>([])
   const [timelineConfig, setTimelineConfig] = useState<any>({})
-  const { date, rangeMode } = summary
 
   useEffect(() => {
     const fetchTimeline = async () => {
@@ -255,7 +209,39 @@ export default function CategoryDashboardPage () {
   return (
     <Layout>
       <div className="p-8 max-w-5xl mx-auto">
-
+        <div className="mb-8 flex items-center justify-end">
+          <div className="flex items-center gap-2">
+            <RangeModeSelector value={rangeMode} onChange={setRangeMode} />
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="justify-start text-left font-normal"
+                >
+                  <div className="flex items-center gap-2">
+                    {date.toLocaleDateString() === new Date().toLocaleDateString()
+                      ? 'Today'
+                      : DateTime.fromJSDate(date).toFormat('LLL dd, yyyy')}
+                    <ChevronDown className="h-4 w-4" />
+                  </div>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={date}
+                  onSelect={(newDate) => {
+                    if (newDate) {
+                      setDate(newDate)
+                    }
+                  }}
+                  disabled={(date: any) => date > new Date()}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
         {/* Top stacked bar/legend section */}
         <Card className="mb-8">
           <CardHeader>
@@ -267,7 +253,7 @@ export default function CategoryDashboardPage () {
                 {[...categoriesArr].reverse().map((cat) => (
                   <div
                     key={cat.tag.id}
-                    style={{ width: `${(Math.ceil(cat.total) / totalTime) * 100}%`, backgroundColor: colorMap[cat.tag.id] }}
+                    style={{ width: `${(Math.ceil(cat.total) / categoryTotalTime) * 100}%`, backgroundColor: colorMap[cat.tag.id] }}
                     title={`${cat.tag.name}: ${Math.ceil(cat.total)} min`}
                   />
                 ))}
@@ -369,18 +355,18 @@ export default function CategoryDashboardPage () {
           <TooltipProvider>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">{summary.totalTimeLabel}</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">{totalTimeLabel}</CardTitle>
               </CardHeader>
               <CardContent>
                 <Tooltip>
                   <TooltipTrigger>
                     <div className="text-2xl font-bold flex items-center">
-                      {formatTime(summary.totalTime.value)}
-                      <TrendIndicator trend={summary.totalTime.trend} />
+                      {formatTime(totalTime.value)}
+                      <TrendIndicator trend={totalTime.trend} />
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>{summary.totalTimeTooltip}</p>
+                    <p>{totalTimeTooltip}</p>
                   </TooltipContent>
                 </Tooltip>
               </CardContent>
@@ -392,8 +378,8 @@ export default function CategoryDashboardPage () {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold flex items-center">
-                  {Math.round(summary.totalCreating.value / 60)}h {Math.round(summary.totalCreating.value % 60)}m
-                  <TrendIndicator trend={summary.totalCreating.trend} />
+                  {Math.round(totalCreating.value / 60)}h {Math.round(totalCreating.value % 60)}m
+                  <TrendIndicator trend={totalCreating.trend} />
                 </div>
               </CardContent>
             </Card>
@@ -429,7 +415,7 @@ export default function CategoryDashboardPage () {
                       <span className="text-sm text-muted-foreground">{Math.ceil(cat.total)} min</span>
                     </div>
                     <Progress
-                      value={(cat.total / totalTime) * 100}
+                      value={(cat.total / categoryTotalTime) * 100}
                       className="bg-muted [&>div]:bg-primary"
                       style={{ ['--tw-gradient-from' as any]: colorMap[cat.tag.id], ['--tw-gradient-to' as any]: colorMap[cat.tag.id] }}
                     />
