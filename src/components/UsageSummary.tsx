@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ArrowUpRight, ArrowDownRight } from 'lucide-react'
 import {
   Tooltip,
   TooltipContent,
@@ -13,17 +14,16 @@ import {
   ChartTooltip,
 } from '@/components/ui/chart'
 import { Progress } from '@/components/ui/progress'
-import { GraphableTimeByHourBlock, AppsWithTime } from '../api/monitorApi/monitorApi'
-import { AppIcon } from './AppIcon'
-import { Button } from './ui/button'
+import { GraphableTimeByHourBlock, AppsWithTime } from '@/api/monitorApi/monitorApi'
+import { AppIcon } from '@/components/AppIcon'
+import { Button } from '@/components/ui/button'
 import { useRef, useEffect, useState } from 'react'
-import { Popover, PopoverContent, PopoverTrigger } from './ui/popover'
-import { Slider } from './ui/slider'
-import { Switch } from './ui/switch'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Slider } from '@/components/ui/slider'
+import { Switch } from '@/components/ui/switch'
 import { ActivityRating } from '@/lib/app-directory/apps-types'
-import { Tag } from '../db/monitor/tagRepo'
-import { Skeleton } from './ui/skeleton'
-import { ArrowUpRight, ArrowDownRight } from 'lucide-react'
+import { Tag } from '@/db/monitor/tagRepo'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useCreateNotification, useGetNotificationBySentId } from '@/api/hooks/useNotifications'
 import { useAuth } from '@/hooks/useAuth'
 

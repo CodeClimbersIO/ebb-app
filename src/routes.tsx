@@ -17,6 +17,7 @@ import { logAndToastError } from '@/lib/utils/ebbError.util'
 import FeedbackPage from '@/pages/FeedbackPage'
 import { toastStore } from '@/lib/stores/toastStore'
 import { useStore } from 'zustand'
+import CategoryDashboardPage from './pages/CategoryDashboardPage'
 import { StartFlowPage } from '@/pages/StartFlowPage/StartFlowPage'
 import { FriendsAnalyticsPage } from '@/pages/FriendsAnalyticsPage/FriendsAnalyticsPage'
 import { useLicenseWithDevices } from '@/api/hooks/useLicense'
@@ -78,6 +79,7 @@ const Router = () => {
       <Route path="/community" element={<CommunityPage />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/friends-analytics" element={<FriendsAnalyticsPage />} />
+      <Route path="/category-dashboard" element={<CategoryDashboardPage />} />
       <Route path="/start-flow" element={<StartFlowPage />} />
       <Route path="/flow" element={<FlowPage />} />
       <Route path="/flow-recap" element={<FlowRecapPage />} />
