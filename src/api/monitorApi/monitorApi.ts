@@ -265,7 +265,7 @@ const getActivityStateDuration = (activityState: ActivityState): number => {
 }
 
 // Temporary until we get type working in `getTimeCreatingByTimePeriod`
-const getTimeByCategoryFromSummary = (appUsage: any[] ) => {
+const getTimeByCategoryFromSummary = (appUsage: AppsWithTime[] ) => {
   // Derive category totals from appUsage
   const categoryTotals: Record<string, { tag: Tag, total: number }> = {}
   // For the chart, aggregate creating/neutral/consuming per category
@@ -280,63 +280,63 @@ const getTimeByCategoryFromSummary = (appUsage: any[] ) => {
   }> = {}
 
   appUsage.forEach(app => {
-      const cat = app.category_tag || { tag_id: 'others', tag_name: 'others' }
+    const cat = app.category_tag || { tag_id: 'others', tag_name: 'others' }
   
-      // ---- Totals (for list & stacked bar) ----
-      if (!categoryTotals[cat.tag_id]) {
-        categoryTotals[cat.tag_id] = {
-          tag: {
-            id: cat.tag_id,
-            name: cat.tag_name,
-            tag_type: 'category',
-            is_default: false,
-            is_blocked: false,
-            created_at: '',
-            updated_at: '',
-            parent_tag_id: null,
-          },
-          total: 0,
-        }
+    // ---- Totals (for list & stacked bar) ----
+    if (!categoryTotals[cat.tag_id]) {
+      categoryTotals[cat.tag_id] = {
+        tag: {
+          id: cat.tag_id,
+          name: cat.tag_name,
+          tag_type: 'category',
+          is_default: false,
+          is_blocked: false,
+          created_at: '',
+          updated_at: '',
+          parent_tag_id: null,
+        },
+        total: 0,
       }
-      categoryTotals[cat.tag_id].total += app.duration
-  
-      // ---- Chart breakdown ----
-      if (!categoryChart[cat.tag_id]) {
-        categoryChart[cat.tag_id] = {
-          tag: categoryTotals[cat.tag_id].tag,
-          creating: 0,
-          neutral: 0,
-          consuming: 0,
-          idle: 0,
-          offline: 0,
-          total: 0,
-        }
-      }
-      // Determine activity bucket based on app rating
-      if (app.rating >= 4) {
-        categoryChart[cat.tag_id].creating += app.duration
-      } else if (app.rating <= 2) {
-        categoryChart[cat.tag_id].consuming += app.duration
-      } else {
-        categoryChart[cat.tag_id].neutral += app.duration
-      }
-      categoryChart[cat.tag_id].total += app.duration
-    })
-
-    const categoriesArr = Object.values(categoryTotals).sort((a, b) => b.total - a.total)
-    const totalTime = categoriesArr.reduce((a, b) => a + b.total, 0)
-  
-    // Color map so we use same color everywhere
-    const colorMap: Record<string, string> = {}
-    
-    const topThree = categoriesArr.slice(0, 3)
-
-    return {
-      categoriesArr,
-      categoryTotalTime: totalTime,
-      colorMap,
-      topThree
     }
+    categoryTotals[cat.tag_id].total += app.duration
+  
+    // ---- Chart breakdown ----
+    if (!categoryChart[cat.tag_id]) {
+      categoryChart[cat.tag_id] = {
+        tag: categoryTotals[cat.tag_id].tag,
+        creating: 0,
+        neutral: 0,
+        consuming: 0,
+        idle: 0,
+        offline: 0,
+        total: 0,
+      }
+    }
+    // Determine activity bucket based on app rating
+    if (app.rating >= 4) {
+      categoryChart[cat.tag_id].creating += app.duration
+    } else if (app.rating <= 2) {
+      categoryChart[cat.tag_id].consuming += app.duration
+    } else {
+      categoryChart[cat.tag_id].neutral += app.duration
+    }
+    categoryChart[cat.tag_id].total += app.duration
+  })
+
+  const categoriesArr = Object.values(categoryTotals).sort((a, b) => b.total - a.total)
+  const totalTime = categoriesArr.reduce((a, b) => a + b.total, 0)
+  
+  // Color map so we use same color everywhere
+  const colorMap: Record<string, string> = {}
+    
+  const topThree = categoriesArr.slice(0, 3)
+
+  return {
+    categoriesArr,
+    categoryTotalTime: totalTime,
+    colorMap,
+    topThree
+  }
 }
 
 const getTimeCreatingByTimePeriod = async (start: DateTime, end: DateTime) => {

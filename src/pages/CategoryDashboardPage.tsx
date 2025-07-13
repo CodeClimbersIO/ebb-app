@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { CSSProperties, useEffect, useState } from 'react'
 import { Layout } from '@/components/Layout'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
@@ -17,10 +17,10 @@ import {
   ChartLegendContent,
   ChartTooltip,
 } from '@/components/ui/chart'
-import { MonitorApi } from '@/api/monitorApi/monitorApi'
+import { GraphableTimeByHourBlock, MonitorApi } from '@/api/monitorApi/monitorApi'
 import { DateTime } from 'luxon'
 import { RangeModeSelector } from '@/components/RangeModeSelector'
-import { Popover, PopoverContent, PopoverTrigger } from '@radix-ui/react-popover'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 
 function getColor(index: number) {
   const colors = [
@@ -75,8 +75,8 @@ export default function CategoryDashboardPage () {
 
   // ---- Time-based Category Chart (top N categories) ----
   const TOP_N = 5
-  const [categoryTimeline, setCategoryTimeline] = useState<any[]>([])
-  const [timelineConfig, setTimelineConfig] = useState<any>({})
+  const [categoryTimeline, setCategoryTimeline] = useState<GraphableTimeByHourBlock[]>([])
+  const [timelineConfig, setTimelineConfig] = useState<Record<string, { label: string; color: string }>>({})
 
   useEffect(() => {
     const fetchTimeline = async () => {
@@ -109,7 +109,7 @@ export default function CategoryDashboardPage () {
         const apps = state.apps_json || []
         const durationPerApp = apps.length ? duration / apps.length : 0
         for (const app of apps) {
-          const cat = app.tags?.find((t: Tag) => (t as any).tag_type === 'category') || { tag_id: 'others', tag_name: 'others' }
+          const cat = app.tags?.find((t: Tag) => t.tag_type === 'category') || { tag_id: 'others', tag_name: 'others' }
           if (!totalByCat[cat.tag_id]) {
             totalByCat[cat.tag_id] = {
               tag: { id: cat.tag_id, name: cat.tag_name, tag_type: 'category', is_default: false, is_blocked: false, created_at: '', updated_at: '', parent_tag_id: null },
@@ -123,6 +123,7 @@ export default function CategoryDashboardPage () {
       const catIds = topCats.map(c => c.tag.id)
 
       // Build bucket keys
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const buckets: Record<string, any> = {}
       let current = start
       while (current <= end) {
@@ -144,8 +145,8 @@ export default function CategoryDashboardPage () {
           current = current.plus({ weeks: 1 })
         }
         buckets[key] = {
-          xAxisLabel,
-          timeRange,
+          xAxisLabel: xAxisLabel as string,
+          timeRange: timeRange,
           ...catIds.reduce((obj, id) => ({ ...obj, [id]: 0 }), {}),
           others: 0,
         }
@@ -165,17 +166,17 @@ export default function CategoryDashboardPage () {
         const apps = state.apps_json || []
         const durationPerApp = apps.length ? duration / apps.length : 0
         for (const app of apps) {
-          const cat = app.tags?.find((t: Tag) => (t as any).tag_type === 'category') || { tag_id: 'others', tag_name: 'others' }
+          const cat = app.tags?.find((t: Tag) => t.tag_type === 'category') || { tag_id: 'others', tag_name: 'others' }
           if (catIds.includes(cat.tag_id)) bucket[cat.tag_id] += durationPerApp
           else bucket.others += durationPerApp
         }
       }
 
       const timelineArr = Object.values(buckets)
-      setCategoryTimeline(timelineArr)
+      setCategoryTimeline(timelineArr as GraphableTimeByHourBlock[])
 
       // Build config for legend / colors
-      const cfg: any = {}
+      const cfg: Record<string, { label: string; color: string }> = {}
       topCats.forEach((c, idx) => {
         cfg[c.tag.id] = { label: c.tag.name, color: getColor(idx) }
       })
@@ -186,14 +187,14 @@ export default function CategoryDashboardPage () {
   }, [date, rangeMode])
 
   const yAxisMaxTimeline = categoryTimeline.length > 0 ? Math.max(...categoryTimeline.map(b => {
-    return Object.keys(timelineConfig).reduce((sum, key) => sum + (b[key] || 0), 0)
+    return Object.keys(timelineConfig).reduce((sum, key) => sum + (Number(b[key as keyof GraphableTimeByHourBlock]) || 0), 0)
   })) : 60
 
   // Filter out keys that have no data across the timeline so we don't render empty Bars
   // Determine which categories actually have any usage in the data
   let visibleBarKeys = Object.keys(timelineConfig).filter(key =>
     categoryTimeline.some(bucket => {
-      const v = (bucket as any)[key]
+      const v = bucket[key as keyof GraphableTimeByHourBlock]
       return typeof v === 'number' && v > 0
     })
   )
@@ -235,7 +236,7 @@ export default function CategoryDashboardPage () {
                       setDate(newDate)
                     }
                   }}
-                  disabled={(date: any) => date > new Date()}
+                  disabled={(date: Date) => date > new Date()}
                   initialFocus
                 />
               </PopoverContent>
@@ -279,7 +280,7 @@ export default function CategoryDashboardPage () {
         <Card className="mb-8">
           <CardContent className="p-0">
             <div className="relative p-6">
-              <ChartContainer config={timelineConfig as any}>
+              <ChartContainer config={timelineConfig}>
                 <BarChart height={200} data={categoryTimeline} margin={{ right: 16 }}>
                   <defs>
                     <linearGradient id="creatingGradientCat" x1="0" y1="0" x2="0" y2="1">
@@ -307,25 +308,25 @@ export default function CategoryDashboardPage () {
                     allowDataOverflow={true}
                     tickFormatter={value => {
                       // Show hours/minutes for week view, minutes for today
-                        if (yAxisMaxTimeline && yAxisMaxTimeline > 60) {
-                          const hours = Math.round(value / 60 * 10) / 10
-                          return hours > 0 ? `${hours}h` : `${value}m`
-                        }
-                        return ''
-                      }}
+                      if (yAxisMaxTimeline && yAxisMaxTimeline > 60) {
+                        const hours = Math.round(value / 60 * 10) / 10
+                        return hours > 0 ? `${hours}h` : `${value}m`
+                      }
+                      return ''
+                    }}
                   />
                   <ChartTooltip
                     content={({ active, payload }) => {
                       if (!active || !payload?.length) return null
-                      const data = payload[0].payload as any
+                      const data = payload[0].payload as GraphableTimeByHourBlock
                       return (
                         <div className="rounded-lg border bg-background p-2 shadow-md">
                           <div className="mb-2 font-medium">{data.timeRange}</div>
                           <div className="space-y-1">
-                            {Object.keys(timelineConfig).map(key => (
+                            {Object.keys(timelineConfig).map((key) => (
                               <div key={key} className="flex justify-between" style={{ color: timelineConfig[key].color }}>
                                 <span>{timelineConfig[key].label}:</span>
-                                <span>{Math.round(data[key] || 0)} min</span>
+                                <span>{Math.round(Number(data[key as keyof GraphableTimeByHourBlock]) || 0)} min</span>
                               </div>
                             ))}
                           </div>
@@ -417,7 +418,7 @@ export default function CategoryDashboardPage () {
                     <Progress
                       value={(cat.total / categoryTotalTime) * 100}
                       className="bg-muted [&>div]:bg-primary"
-                      style={{ ['--tw-gradient-from' as any]: colorMap[cat.tag.id], ['--tw-gradient-to' as any]: colorMap[cat.tag.id] }}
+                      style={{ ['--tw-gradient-from' as keyof CSSProperties]: colorMap[cat.tag.id], ['--tw-gradient-to' as keyof CSSProperties]: colorMap[cat.tag.id] }}
                     />
                   </div>
                 </div>
