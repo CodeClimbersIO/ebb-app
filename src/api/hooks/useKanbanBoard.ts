@@ -39,7 +39,7 @@ export const useKanbanBoard = () => {
   const totalAppUsage = Object.values(columns).flat().reduce((acc: number, app: AppsWithTime) => acc + app.duration, 0)
 
   // State to track the source column during drag for efficiency
-  const [activeDragSourceColumnId, setActiveDragSourceColumnId] = useState<tagName | null>(null)
+  const [activeDragSourceTagId, setActiveDragSourceTagId] = useState<string | null>(null)
 
   // Flag to track if columns have been initialized from appUsage
   const isInitialized = useRef(false)
@@ -48,7 +48,6 @@ export const useKanbanBoard = () => {
   useEffect(() => {
     // MODIFIED: Now depends on fetchedAppUsage from useQuery
     if (fetchedAppUsage && fetchedAppUsage.length > 0 && !isInitialized.current) {
-      console.log('useAppUsage: Initializing columns from fetchedAppUsage:', fetchedAppUsage)
       const newColumns: KanbanColumns = {
         'creation': [],
         'neutral': [],
@@ -69,10 +68,7 @@ export const useKanbanBoard = () => {
       setColumns(newColumns)
       isInitialized.current = true
     } else if (fetchedAppUsage && fetchedAppUsage.length > 0 && isInitialized.current) {
-      console.log('useAppUsage: fetchedAppUsage changed but columns already initialized. Not re-initializing.')
-      // Optional: If you want to resync the Kanban board with fresh data from the API
-      // without losing user's current drag state, you'd need more complex merge logic here.
-      // For simplicity, we're currently preventing re-initialization if already initialized.
+      console.log('useAppUsage: fetchedAppU xsage changed but columns already initialized. Not re-initializing.')
     }
   }, [fetchedAppUsage]) // MODIFIED: Dependency is now fetchedAppUsage
 
@@ -80,11 +76,9 @@ export const useKanbanBoard = () => {
   // handleDragStart function for DND Kit
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event
-    console.log('Drag Start: Active item ID:', active.id)
-    for (const columnId in columns) {
-      if (columns[columnId as tagName].some((app: AppsWithTime) => app.id === active.id)) {
-        setActiveDragSourceColumnId(columnId as tagName)
-        console.log('Drag Start: Source Column ID:', columnId)
+    for (const tagId in columns) {
+      if (columns[tagId as tagName].some((app: AppsWithTime) => app.id === active.id)) {
+        setActiveDragSourceTagId(tagId as tagName)
         break
       }
     }
@@ -92,101 +86,82 @@ export const useKanbanBoard = () => {
 
   // handleDragEnd function for DND Kit
   const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event
+    const { active, over } = event;
 
-    // Reset active drag source column ID
-    setActiveDragSourceColumnId(null)
+    setActiveDragSourceTagId(null);
 
     if (!over) {
-      console.log('Drag End: Dropped outside valid area. No action.')
-      return
+      return;
     }
 
-    const draggedAppId = active.id
-    const targetColumnId = over.id as tagName
-    console.log('Drag End: Dragged ID:', draggedAppId, 'Dropped Over Column ID:', targetColumnId)
+    const draggedAppId = active.id;
+    const targetTagId = over.id as tagName;
 
-    if (activeDragSourceColumnId && activeDragSourceColumnId === targetColumnId) {
-      console.log(`Drag End: App ${draggedAppId} dropped back into its original column ${targetColumnId}. No state change.`)
-      return
+    // If dropped back into the same column, do nothing
+    if (activeDragSourceTagId && activeDragSourceTagId === targetTagId) {
+      return;
     }
 
     setColumns((prevColumns: KanbanColumns) => {
-      console.log('Drag End: (Inside setColumns) Previous Columns State:', JSON.parse(JSON.stringify(prevColumns)))
-      const newColumns = { ...prevColumns }
+      const newColumns = { ...prevColumns }; // Create a shallow copy of the columns object
 
-      let draggedApp: AppsWithTime | null = null
+      let draggedApp: AppsWithTime | null = null;
+      let sourceTagId: tagName | null = null;
 
-      if (activeDragSourceColumnId && newColumns[activeDragSourceColumnId]) {
-        const appsInSourceColumn = newColumns[activeDragSourceColumnId]
-        const appIndex = appsInSourceColumn.findIndex((app: AppsWithTime) => app.id === draggedAppId)
-
-        if (appIndex !== -1) {
-          draggedApp = appsInSourceColumn[appIndex]
-          newColumns[activeDragSourceColumnId] = appsInSourceColumn.filter((app: AppsWithTime) => app.id !== draggedAppId)
-          console.log(`Drag End: App ${draggedAppId} removed from source column ${activeDragSourceColumnId}.`)
-        } else {
-          console.warn(`Drag End: App ${draggedAppId} not found in recorded source column ${activeDragSourceColumnId}. Searching all columns as fallback.`)
-          for (const colId in newColumns) {
-            const foundIndex = newColumns[colId as tagName].findIndex((app: AppsWithTime) => app.id === draggedAppId)
-            if (foundIndex !== -1) {
-              draggedApp = newColumns[colId as tagName][foundIndex]
-              newColumns[colId as tagName] = newColumns[colId as tagName].filter((app: AppsWithTime) => app.id !== draggedAppId)
-              console.warn(`Drag End: App ${draggedAppId} found and removed from ${colId} as a fallback.`)
-              break
-            }
-          }
-        }
-      } else {
-        console.error(`Drag End: activeDragSourceColumnId was null or invalid: ${activeDragSourceColumnId}. Cannot determine source column efficiently. Searching all columns.`)
-        for (const colId in newColumns) {
-          const foundIndex = newColumns[colId as tagName].findIndex((app: AppsWithTime) => app.id === draggedAppId)
-          if (foundIndex !== -1) {
-            draggedApp = newColumns[colId as tagName][foundIndex]
-            console.warn(`Drag End: App ${draggedAppId} found and removed from ${colId} as a fallback (activeDragSourceColumnId was missing).`)
-            break
-          }
+      // Find the dragged app and its actual source column by iterating through all columns
+      for (const colId of Object.keys(newColumns) as tagName[]) {
+        const foundApp = newColumns[colId].find((app: AppsWithTime) => app.id === draggedAppId);
+        if (foundApp) {
+          draggedApp = foundApp;
+          sourceTagId = colId;
+          break;
         }
       }
 
-      if (draggedApp && newColumns[targetColumnId]) {
-        const isAlreadyInTarget = newColumns[targetColumnId].some(app => app.id === draggedAppId)
-
-        if (!isAlreadyInTarget) {
-          let newRating: ActivityRating
-
-          if (targetColumnId === 'creation') {
-            newRating = draggedApp.rating >= 4 ? draggedApp.rating : 4
-          } else if (targetColumnId === 'neutral') {
-            newRating = 3
-          } else {
-            newRating = draggedApp.rating <= 2 ? draggedApp.rating : 2
-          }
-
-          const updatedDraggedApp = { ...draggedApp, rating: newRating }
-          newColumns[targetColumnId].push(updatedDraggedApp)
-          console.log(`Drag End: App ${draggedAppId} added to target column ${targetColumnId} with new rating ${newRating}.`)
-
-          // NEW: Call the mutation to persist the rating change
-          if (updatedDraggedApp.default_tag) {
-            updateRating(updatedDraggedApp.default_tag.id, newRating)
-            console.log(`Drag End: Triggered mutation for ${draggedAppId} with rating ${newRating}.`)
-          } else {
-            console.warn(`App ${draggedAppId} has no default_tag. Rating change not persisted.`)
-          }
-        } else {
-          console.warn(`Drag End: App ${draggedAppId} is already present in target column ${targetColumnId}. Skipping add to prevent duplicate.`)
-        }
-      } else if (!draggedApp) {
-        console.error(`Drag End: Could not find dragged app ${draggedAppId} in any column.`)
-      } else {
-        console.error(`Drag End: Target column ${targetColumnId} is invalid or not found.`)
+      // If the dragged app is not found or source column is unknown, return previous state
+      if (!draggedApp || !sourceTagId) {
+        return prevColumns;
       }
 
-      console.log('Drag End: (Inside setColumns) New Columns State (before return):', JSON.parse(JSON.stringify(newColumns)))
-      return newColumns
-    })
-  }
+      // Remove the app from its source column (immutably)
+      newColumns[sourceTagId] = newColumns[sourceTagId].filter((app: AppsWithTime) => app.id !== draggedAppId);
+
+      // Check if the target column is valid
+      if (!newColumns[targetTagId]) {
+        return prevColumns; // Return previous state if target column is invalid
+      }
+
+      // Check if the app is already in the target column to prevent duplicates (should ideally not happen with proper DND, but as a safeguard)
+      const isAlreadyInTarget = newColumns[targetTagId].some(app => app.id === draggedAppId);
+      if (isAlreadyInTarget) {
+        return newColumns; // Return the state after removal, but before adding
+      }
+
+      // Determine the new rating based on the target column
+      let newRating: ActivityRating;
+      if (targetTagId === 'creation') {
+        newRating = draggedApp.rating >= 4 ? draggedApp.rating : 4;
+      } else if (targetTagId === 'neutral') {
+        newRating = 3;
+      } else { // consumption
+        newRating = draggedApp.rating <= 2 ? draggedApp.rating : 2;
+      }
+
+      // Create an updated version of the dragged app with the new rating
+      const updatedDraggedApp = { ...draggedApp, rating: newRating };
+
+      // Add the updated app to the target column (immutably)
+      newColumns[targetTagId] = [...newColumns[targetTagId], updatedDraggedApp];
+
+      // Trigger the mutation to persist the rating change to the backend
+      if (updatedDraggedApp.default_tag) {
+        updateRating(updatedDraggedApp.default_tag.id, newRating);
+      } else {
+      }
+
+      return newColumns;
+    });
+  };
 
   // Return the necessary state and handlers
   return {
