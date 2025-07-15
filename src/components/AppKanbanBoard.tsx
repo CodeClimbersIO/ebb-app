@@ -30,7 +30,7 @@ export function AppKanbanBoard() {
           {isLoading ? (
             <Skeleton className="h-[200px] w-full" />
           ) : (
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <ColumnWrapper
                 id="creation"
                 title="Creation"
