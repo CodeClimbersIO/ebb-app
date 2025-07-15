@@ -15,3 +15,7 @@ export const isCanaryUser = (email?: string) => {
 export const canUseCategoryDashboard = (email?: string) => {
   return isCanaryUser(email)
 }
+
+export const canUseSlackIntegration = (email?: string) => {
+  return isCanaryUser(email)
+}

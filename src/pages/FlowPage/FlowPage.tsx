@@ -90,16 +90,19 @@ export const FlowPage = () => {
   const { isSpotifyInstalled } = useSpotifyInstallation()
   const [clickedButton, setClickedButton] = useState<'prev' | 'play' | 'next' | null>(null)
 
+  console.log('flow page render')
   useEffect(() => {
     const init = async () => {
+      console.log('flow page initializing')
       const flowSession = await FlowSessionApi.getInProgressFlowSession()
-
+      console.log('flow session', flowSession)
       if (!flowSession || !flowSession.workflow_id) {
         navigate('/start-flow')
         return
       }
       
       const workflow = await WorkflowApi.getWorkflowById(flowSession.workflow_id)
+      console.log('workflow', workflow)
       if(!workflow) {
         navigate('/start-flow')
         return
@@ -110,13 +113,16 @@ export const FlowPage = () => {
       setFlowSession(flowSession || null)
       setDifficulty(workflow?.settings.difficulty || 'medium')
 
+      console.log('starting blocking')
       await startBlocking(workflow)
+      console.log('starting timer')
       await startTimer(flowSession)
 
+      console.log('showing notification')
       invoke('show_notification', {
         notificationType: 'session-start',
       })
-
+      console.log('flow page initialized')
 
     }
     init()
