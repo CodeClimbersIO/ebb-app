@@ -1,8 +1,8 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { DateTime } from 'luxon'
-import { MonitorApi, GraphableTimeByHourBlock, AppsWithTime } from '../api/monitorApi/monitorApi'
+import { MonitorApi, GraphableTimeByHourBlock } from '../api/monitorApi/monitorApi'
 import { Tag } from '../db/monitor/tagRepo'
-import { ActivityRating } from '@/lib/app-directory/apps-types'
+import { useAppUsage, useGetChartData } from '../api/hooks/useAppUsage'
 
 const buildTotalTimeTooltip = (rangeMode: 'day' | 'week' | 'month', showIdleTime: boolean) => {
   let message = 'Total time spent online'
@@ -29,10 +29,11 @@ const buildTotalTimeLabel = (showIdleTime: boolean) => {
 export function useUsageSummary() {
   const [date, setDate] = useState<Date>(new Date())
   const [rangeMode, setRangeMode] = useState<'day' | 'week' | 'month'>('day')
-  const [appUsage, setAppUsage] = useState<AppsWithTime[]>([])
+  const { data: appUsage } = useAppUsage()
+  const [yAxisMax, setYAxisMax] = useState(0)
   const [totalCreating, setTotalCreating] = useState(0)
   const [totalTime, setTotalTime] = useState(0)
-  const [chartData, setChartData] = useState<GraphableTimeByHourBlock[]>([])
+  const { data: chartData } = useGetChartData({ rangeMode, date })
   const [tags, setTags] = useState<Tag[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const refreshIntervalRef = useRef<number | null>(null)
@@ -94,13 +95,10 @@ export function useUsageSummary() {
     }
 
     const tags = await MonitorApi.getTagsByType('default')
-    const topApps = await MonitorApi.getTopAppsByPeriod(start, end)
     setTags(tags)
-    setAppUsage(topApps)
     setTotalCreating(chartData.reduce((acc, curr) => acc + curr.creating, 0))
     const online = chartData.reduce((acc, curr) => acc + curr.creating + curr.neutral + curr.consuming + (showIdleTime ? curr.idle : 0), 0)
     setTotalTime(online)
-    setChartData(chartData)
     setIsLoading(false)
 
     // --- Trend Calculation ---
@@ -125,7 +123,14 @@ export function useUsageSummary() {
       if (current > prev) return { percent, direction: 'up' }
       if (current < prev) return { percent, direction: 'down' }
       return { percent: 0, direction: 'none' }
+    }  
+    let yAxisMax: number | undefined = undefined
+    if ((rangeMode === 'week' || rangeMode === 'month') && chartData.length > 0) {
+      yAxisMax = Math.max(...chartData.map(day => day.creating + day.consuming + day.neutral + day.idle))
     }
+
+    setYAxisMax(yAxisMax || 0)
+
     if(rangeMode !== 'day') {
       setTotalCreatingTrend(calcTrend(chartData.reduce((acc, curr) => acc + curr.creating, 0), prevCreating))
       setTotalTimeTrend(calcTrend(online, prevOnline))
@@ -161,22 +166,7 @@ export function useUsageSummary() {
     }
   }, [date, rangeMode, refreshData])
 
-  const handleRatingChange = async (tagId: string, rating: ActivityRating, tags: Tag[]) => {
-    await MonitorApi.setAppDefaultTag(tagId, rating, tags)
-    setAppUsage(prev => prev.map(a => {
-      if (a.default_tag?.id === tagId) {
-        return { ...a, rating }
-      }
-      return a
-    }))
-    refreshData()
-  }
 
-  // Calculate yAxisMax for week/month view
-  let yAxisMax: number | undefined = undefined
-  if ((rangeMode === 'week' || rangeMode === 'month') && chartData.length > 0) {
-    yAxisMax = Math.max(...chartData.map(day => day.creating + day.consuming + day.neutral + day.idle))
-  }
 
   return {
     date,
@@ -189,7 +179,6 @@ export function useUsageSummary() {
     chartData,
     tags,
     isLoading,
-    handleRatingChange,
     yAxisMax,
     showIdleTime,
     setShowIdleTime,

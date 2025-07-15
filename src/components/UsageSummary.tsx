@@ -12,7 +12,7 @@ import {
   ChartLegendContent,
   ChartTooltip,
 } from '@/components/ui/chart'
-import { GraphableTimeByHourBlock, AppsWithTime } from '../api/monitorApi/monitorApi'
+import { AppsWithTime, GraphableTimeByHourBlock } from '../api/monitorApi/monitorApi'
 import { AppIcon } from './AppIcon'
 import { Button } from './ui/button'
 import { useRef, useEffect, useState } from 'react'
@@ -127,9 +127,11 @@ export const UsageSummary = ({
   const { data: notificationBySentId } = useGetNotificationBySentId('firefox_not_supported')
   const [chartDataState, setChartDataState] = useState(chartData)
   const [chartConfigState, setChartConfigState] = useState(defaultChartConfig)
-  const sortedAppUsage = [...appUsage].sort((a, b) => b.duration - a.duration)
+  const sortedAppUsage = [...appUsage || []].sort((a, b) => b.duration - a.duration)
   const appUsageRef = useRef<HTMLDivElement>(null)
+
   useEffect(() => {
+    if(!appUsage) return
     const hasFirefox = appUsage.some(app => app.app_external_id === 'org.mozilla.firefox')
     if (user?.id && hasFirefox) {
       if (notificationBySentId) return

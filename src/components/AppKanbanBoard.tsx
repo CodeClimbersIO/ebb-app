@@ -1,8 +1,8 @@
-import { DndContext } from '@dnd-kit/core';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { ColumnWrapper } from './ColumnWrapper';
-import { useAppKanbanData } from '@/api/hooks/useAppKanban';
+import { DndContext } from '@dnd-kit/core'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
+import { ColumnWrapper } from './ColumnWrapper'
+import { useKanbanBoard } from '../api/hooks/useKanbanBoard'
 
 
 export function AppKanbanBoard() {
@@ -14,10 +14,10 @@ export function AppKanbanBoard() {
     handleDragEnd,
     isLoading,
     error,
-  } = useAppKanbanData();
+  } = useKanbanBoard()
 
   if (error) {
-    return <div>Error loading data</div>;
+    return <div>Error loading data</div>
   }
 
   return (
@@ -57,5 +57,5 @@ export function AppKanbanBoard() {
         </CardContent>
       </Card>
     </DndContext>
-  );
+  )
 }

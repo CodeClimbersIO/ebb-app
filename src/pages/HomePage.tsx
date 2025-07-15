@@ -25,8 +25,8 @@ export const HomePage = () => {
     date,
     setDate,
     rangeMode,
-    setRangeMode,
     appUsage,
+    setRangeMode,
     totalCreating,
     totalTime,
     chartData,
@@ -86,8 +86,8 @@ export const HomePage = () => {
             totalTimeTooltip={totalTimeTooltip}
             totalTime={totalTime}
             totalCreating={totalCreating}
-            chartData={chartData}
-            appUsage={appUsage}
+            chartData={chartData || []}
+            appUsage={appUsage || []}
             showTopAppsButton={true}
             isLoading={isLoading}
             yAxisMax={yAxisMax}
