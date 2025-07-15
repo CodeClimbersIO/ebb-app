@@ -70,7 +70,7 @@ export default function CategoryDashboardPage () {
     colorMap,
     categoryTotalTime,
     topThree
-  } = MonitorApi.getTimeByCategoryFromSummary(appUsage)
+  } = MonitorApi.getTimeByCategoryFromSummary(appUsage || [])
   categoriesArr.forEach((c, idx) => { colorMap[c.tag.id] = getColor(idx) })
 
   // ---- Time-based Category Chart (top N categories) ----
