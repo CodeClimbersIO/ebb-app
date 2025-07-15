@@ -13,19 +13,15 @@ import {
   ChartLegendContent,
   ChartTooltip,
 } from '@/components/ui/chart'
-import { Progress } from '@/components/ui/progress'
+import { Skeleton } from './ui/skeleton'
 import { GraphableTimeByHourBlock, AppsWithTime } from '@/api/monitorApi/monitorApi'
 import { AppIcon } from '@/components/AppIcon'
 import { Button } from '@/components/ui/button'
 import { useRef, useEffect, useState } from 'react'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Slider } from '@/components/ui/slider'
 import { Switch } from '@/components/ui/switch'
-import { ActivityRating } from '@/lib/app-directory/apps-types'
-import { Tag } from '@/db/monitor/tagRepo'
-import { Skeleton } from '@/components/ui/skeleton'
 import { useCreateNotification, useGetNotificationBySentId } from '@/api/hooks/useNotifications'
 import { useAuth } from '@/hooks/useAuth'
+import { AppKanbanBoard } from './AppKanbanBoard'
 
 type ChartLabel = {
   label: string
@@ -81,7 +77,6 @@ export const formatTimeToDecimalHours = (minutes: number) => {
   return `${minutes}m`
 }
 
-
 export interface UsageSummaryProps {
   totalTimeLabel?: string;
   totalTimeTooltip?: string;
@@ -90,11 +85,8 @@ export interface UsageSummaryProps {
   chartData: GraphableTimeByHourBlock[];
   appUsage: AppsWithTime[];
   showTopAppsButton?: boolean;
-  showAppRatingControls?: boolean;
   showIdleTime?: boolean;
   setShowIdleTime?: (showIdleTime: boolean) => void;
-  onRatingChange?: (tagId: string, rating: ActivityRating, tags: Tag[]) => void;
-  tags?: Tag[];
   isLoading?: boolean;
   yAxisMax?: number;
 }
@@ -125,9 +117,6 @@ export const UsageSummary = ({
   chartData,
   appUsage,
   showTopAppsButton = false,
-  showAppRatingControls = false,
-  onRatingChange,
-  tags = [],
   isLoading = false,
   yAxisMax,
   showIdleTime,
@@ -138,11 +127,11 @@ export const UsageSummary = ({
   const { data: notificationBySentId } = useGetNotificationBySentId('firefox_not_supported')
   const [chartDataState, setChartDataState] = useState(chartData)
   const [chartConfigState, setChartConfigState] = useState(defaultChartConfig)
-  const sortedAppUsage = [...appUsage].sort((a, b) => b.duration - a.duration)
+  const sortedAppUsage = [...appUsage || []].sort((a, b) => b.duration - a.duration)
   const appUsageRef = useRef<HTMLDivElement>(null)
 
-  const totalAppUsage = appUsage.reduce((acc, app) => acc + app.duration, 0)
   useEffect(() => {
+    if(!appUsage) return
     const hasFirefox = appUsage.some(app => app.app_external_id === 'org.mozilla.firefox')
     if (user?.id && hasFirefox) {
       if (notificationBySentId) return
@@ -371,109 +360,11 @@ export const UsageSummary = ({
         </CardContent>
       </Card>
 
-      <Card className="mt-4" ref={appUsageRef}>
-        <CardHeader>
-          <CardTitle>App/Website Usage</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-6">
-            {isLoading ? (
-              <Skeleton className="h-[200px] w-full" />
-            ) : (
-              sortedAppUsage
-                .filter(app => app.duration >= 1)
-                .map((app) => (
-                  <div key={app.id} className="flex items-center gap-4">
-                    <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
-                      <AppIcon app={app} size="md" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-1">
-                          <span className="font-medium">{app.is_browser ? app.app_external_id : app.name}</span>
-                          {showAppRatingControls && (
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <div className="w-[80px]">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className={`h-6 px-2 py-0 text-xs font-medium justify-start ${app.rating >= 4 ? 'text-[rgb(124,58,237)] hover:bg-primary/10' :
-                                      app.rating <= 2 ? 'text-[rgb(239,68,68)] hover:bg-destructive/10' :
-                                        'text-gray-500 hover:bg-muted'
-                                    }`}
-                                  >
-                                    {app.rating === 5 ? 'High Creation' :
-                                      app.rating === 4 ? 'Creation' :
-                                        app.rating === 3 ? 'Neutral' :
-                                          app.rating === 2 ? 'Consumption' :
-                                            'High Consumption'}
-                                  </Button>
-                                </div>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-[280px] p-4">
-                                <div className="space-y-4">
-                                  <div className="relative">
-                                    <Slider
-                                      defaultValue={[app.rating]}
-                                      max={5}
-                                      min={1}
-                                      step={1}
-                                      trackColor={
-                                        app.rating >= 4
-                                          ? 'bg-[rgb(124,58,237)]/20'
-                                          : app.rating <= 2
-                                            ? 'bg-[rgb(239,68,68)]/20'
-                                            : 'bg-gray-500/20'
-                                      }
-                                      rangeColor={
-                                        app.rating >= 4
-                                          ? 'bg-[rgb(124,58,237)]'
-                                          : app.rating <= 2
-                                            ? 'bg-[rgb(239,68,68)]'
-                                            : 'bg-gray-500'
-                                      }
-                                      thumbBorderColor={
-                                        app.rating >= 4
-                                          ? 'border-[rgb(124,58,237)]'
-                                          : app.rating <= 2
-                                            ? 'border-[rgb(239,68,68)]'
-                                            : 'border-gray-500'
-                                      }
-                                      onValueChange={([value]) => {
-                                        if (onRatingChange && app.default_tag) {
-                                          onRatingChange(app.default_tag.id, value as ActivityRating, tags)
-                                        }
-                                      }}
-                                      className="[&_[role=slider]]:h-4 [&_[role=slider]]:w-4 [&_[role=slider]]:bg-background"
-                                    />
-                                  </div>
-                                </div>
-                              </PopoverContent>
-                            </Popover>
-                          )}
-                        </div>
-                        <span className="text-sm text-muted-foreground">
-                          {formatTime(app.duration)}
-                        </span>
-                      </div>
-                      <Progress
-                        value={(app.duration / totalAppUsage) * 100}
-                        className={
-                          app.rating >= 4
-                            ? 'bg-[rgb(124,58,237)]/20 [&>div]:bg-[rgb(124,58,237)]' :
-                            app.rating <= 2
-                              ? 'bg-[rgb(239,68,68)]/20 [&>div]:bg-[rgb(239,68,68)]' :
-                              'bg-gray-500/20 [&>div]:bg-gray-500'
-                        }
-                      />
-                    </div>
-                  </div>
-                ))
-            )}
-          </div>
-        </CardContent>
-      </Card>
+
+      <div ref={appUsageRef}>
+        <AppKanbanBoard />
+      </div>
+      
     </>
   )
 }

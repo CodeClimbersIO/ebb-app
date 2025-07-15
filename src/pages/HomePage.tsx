@@ -25,14 +25,12 @@ export const HomePage = () => {
     date,
     setDate,
     rangeMode,
-    setRangeMode,
     appUsage,
+    setRangeMode,
     totalCreating,
     totalTime,
     chartData,
-    tags,
     isLoading,
-    handleRatingChange,
     yAxisMax,
     showIdleTime,
     setShowIdleTime,
@@ -89,12 +87,9 @@ export const HomePage = () => {
             totalTimeTooltip={totalTimeTooltip}
             totalTime={totalTime}
             totalCreating={totalCreating}
-            chartData={chartData}
-            appUsage={appUsage}
+            chartData={chartData || []}
+            appUsage={appUsage || []}
             showTopAppsButton={true}
-            showAppRatingControls={true}
-            onRatingChange={handleRatingChange}
-            tags={tags}
             isLoading={isLoading}
             yAxisMax={yAxisMax}
             showIdleTime={showIdleTime}

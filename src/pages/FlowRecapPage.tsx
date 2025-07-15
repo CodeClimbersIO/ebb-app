@@ -84,7 +84,6 @@ export const FlowRecapPage = () => {
               chartData={chartData}
               appUsage={appUsage}
               showTopAppsButton={true}
-              showAppRatingControls={false}
             />
           </CardContent>
         </Card>
