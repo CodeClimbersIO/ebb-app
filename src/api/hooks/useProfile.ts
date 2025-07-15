@@ -5,6 +5,7 @@ import { useEffect } from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import { isSupabaseError, SupabaseErrorCodes } from '@/lib/utils/supabase.util'
 import { platformApiRequest } from '../platformRequest'
+import { User } from '@supabase/supabase-js'
 
 const profileKeys = {
   all: ['profile'] as const,
@@ -33,11 +34,10 @@ interface CreateProfile {
 }
 
 const fetchCurrentProfile = async () => {
-  const { data } = await supabase
-    .from('user_profile')
-    .select('*')
-    .single()
-
+  const data = await platformApiRequest({
+    url: '/api/users/profile/me',
+    method: 'GET',
+  })
   return data as UserProfile
 }
 
@@ -46,10 +46,11 @@ const createProfile = async (profile: CreateProfile) => {
     .from('user_profile')
     .insert(profile)
     .select()
-    .single()
+    .order('created_at', { ascending: false })
+    .limit(1)
 
   if (error) throw error
-  return data as UserProfile
+  return data?.[0] as UserProfile
 }
 
 const updateProfile = async (updates: Partial<UserProfile>) => {
@@ -60,10 +61,11 @@ const updateProfile = async (updates: Partial<UserProfile>) => {
     .update(profileUpdates)
     .eq('id', id)
     .select()
-    .single()
+    .order('created_at', { ascending: false })
+    .limit(1)
 
   if (error) throw error
-  return data as UserProfile
+  return data?.[0] as UserProfile
 }
 
 const updateProfileLocation = async () => {
@@ -75,12 +77,12 @@ const updateProfileLocation = async () => {
   return data
 }
 
-export function useGetCurrentProfile() {
+export function useGetCurrentProfile(user: User | null) {
   return useQuery({
     queryKey: profileKeys.current(),
     queryFn: fetchCurrentProfile,
+    enabled: !!user,
     retry: false,
-    
   })
 }
 
@@ -129,7 +131,7 @@ export const useUpdateProfileLocation = () => {
 
 export const useProfile = () => {
   const { user, loading: authLoading } = useAuth()
-  const { data: profile, isLoading, refetch } = useGetCurrentProfile()
+  const { data: profile, isLoading, refetch } = useGetCurrentProfile(user)
   const { mutate: createProfile } = useCreateProfile()
 
   useEffect(() => {

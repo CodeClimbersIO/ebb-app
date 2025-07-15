@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ArrowUpRight, ArrowDownRight } from 'lucide-react'
 import {
   Tooltip,
   TooltipContent,
@@ -12,13 +13,12 @@ import {
   ChartLegendContent,
   ChartTooltip,
 } from '@/components/ui/chart'
-import { AppsWithTime, GraphableTimeByHourBlock } from '../api/monitorApi/monitorApi'
-import { AppIcon } from './AppIcon'
-import { Button } from './ui/button'
-import { useRef, useEffect, useState } from 'react'
-import { Switch } from './ui/switch'
 import { Skeleton } from './ui/skeleton'
-import { ArrowUpRight, ArrowDownRight } from 'lucide-react'
+import { GraphableTimeByHourBlock, AppsWithTime } from '@/api/monitorApi/monitorApi'
+import { AppIcon } from '@/components/AppIcon'
+import { Button } from '@/components/ui/button'
+import { useRef, useEffect, useState } from 'react'
+import { Switch } from '@/components/ui/switch'
 import { useCreateNotification, useGetNotificationBySentId } from '@/api/hooks/useNotifications'
 import { useAuth } from '@/hooks/useAuth'
 import { AppKanbanBoard } from './AppKanbanBoard'

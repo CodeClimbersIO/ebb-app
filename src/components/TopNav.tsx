@@ -26,7 +26,7 @@ export function TopNav({ variant = 'default' }: TopNavProps) {
   }
 
   return (
-    <div className="flex">
+    <div className="flex mt-4">
       <div className="w-16 shrink-0">
         <div className="h-14 border-b flex items-center pl-4">
           <div 

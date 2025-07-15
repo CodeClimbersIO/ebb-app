@@ -43,7 +43,6 @@ const endFlowSession = async (): Promise<QueryResult> => {
   const flowSessionUpdated: Partial<FlowSessionSchema> = {
     end: new Date().toISOString(),
   }
-  console.log('flowSessionUpdated', flowSessionUpdated)
 
   return FlowSessionRepo.updateFlowSession(flowSession.id, flowSessionUpdated)
 }

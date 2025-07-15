@@ -50,7 +50,7 @@ function StatusBadge({ color, count, statusName, disabled = false }: StatusBadge
 const getStatusCounts = (userStatusCounts?: UserStatusCounts) => {
   if (!userStatusCounts) return { online: 0, flowing: 0 }
   return {
-    online: userStatusCounts.online + userStatusCounts.active,
+    online: userStatusCounts.online + userStatusCounts.active + userStatusCounts.flowing,
     flowing: userStatusCounts.flowing,
   }
 }
@@ -67,6 +67,7 @@ const StatusButton = ()=> {
   const handleClick = async () => {
     if (!user) {
       navigate('/login')
+      return
     }
     if (!profile?.latitude || !profile?.longitude) {
       try {
@@ -100,8 +101,9 @@ const StatusButton = ()=> {
 }
 
 export function SocialStatusSummary() {
+  const { user } = useAuth()
   const { connected } = useConnectedStore()
-  const { data: communityStatuses, isLoading: isLoadingStatuses, refetch: refetchStatusCounts } = useUserStatusCounts()
+  const { data: communityStatuses, isLoading: isLoadingStatuses, refetch: refetchStatusCounts } = useUserStatusCounts(user)
   const { isLoading: isLoadingProfile } = useProfile()
 
   const navigate = useNavigate()

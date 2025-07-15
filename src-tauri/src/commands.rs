@@ -1,3 +1,5 @@
+use crate::system_monitor;
+use log::info;
 use os_monitor::{
     get_application_icon_data, has_accessibility_permissions, request_accessibility_permissions,
     start_blocking as os_start_blocking, stop_blocking as os_stop_blocking, BlockableItem,
@@ -6,10 +8,10 @@ use std::fs;
 use std::path::PathBuf;
 use std::sync::Mutex;
 use tauri::command;
+use tauri::{AppHandle, Emitter};
 use tokio::time::{sleep, Duration};
 
-use crate::system_monitor;
-
+use crate::notification::{create_notification_window, dismiss_notification_window};
 // Store the current blocking state
 static BLOCKING_STATE: Mutex<Option<(Vec<BlockableItem>, bool)>> = Mutex::new(None);
 #[derive(Debug, serde::Deserialize)]
@@ -274,4 +276,67 @@ pub fn detect_spotify() -> bool {
 #[command]
 pub fn get_app_version(app_handle: tauri::AppHandle) -> String {
     app_handle.package_info().version.to_string()
+}
+
+#[tauri::command]
+pub fn show_notification(
+    app_handle: AppHandle,
+    notification_type: String,
+    payload: Option<String>,
+) -> Result<(), String> {
+    create_notification_window(&app_handle, &notification_type, payload).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn notify_app_notification_dismissed(app_handle: AppHandle) -> Result<(), String> {
+    info!("command: notify_app_to_dismiss_notification");
+    app_handle
+        .emit("notification-dismissed", ())
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn notify_app_notification_created(app_handle: AppHandle) -> Result<(), String> {
+    info!("command: notify_app_to_create_notification");
+    app_handle
+        .emit("notification-created", ())
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn hide_notification(app_handle: AppHandle) -> Result<(), String> {
+    dismiss_notification_window(&app_handle).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn notify_start_flow(app_handle: AppHandle) -> Result<(), String> {
+    app_handle.emit("start-flow", ()).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn notify_view_flow_recap(app_handle: AppHandle) -> Result<(), String> {
+    app_handle
+        .emit("navigate-to-flow-recap", ())
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn notify_add_time_event(app_handle: AppHandle) -> Result<(), String> {
+    app_handle
+        .emit("add-time-event", ())
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn notify_snooze_blocking(app_handle: AppHandle) -> Result<(), String> {
+    app_handle
+        .emit("snooze-blocking", ())
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn notify_end_session(app_handle: AppHandle) -> Result<(), String> {
+    app_handle
+        .emit("end-session", ())
+        .map_err(|e| e.to_string())
 }

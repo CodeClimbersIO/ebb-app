@@ -13,7 +13,6 @@ export const NotificationBanner: React.FC = () => {
     }
   }, [activeNotification?.id, markAsRead])
 
-
   if (!activeNotification) {
     return null
   }

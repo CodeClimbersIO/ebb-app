@@ -7,7 +7,8 @@
     "session-start",
     "session-end",
     "session-warning",
-    "blocked-app"
+    "blocked-app",
+    "notification"
   ],
   "permissions": [
     "core:default",
@@ -26,6 +27,7 @@
     "core:window:allow-minimize",
     "core:window:allow-destroy",
     "core:window:allow-set-visible-on-all-workspaces",
+    "core:window:allow-start-dragging",
     "process:allow-restart",
     "updater:default",
     "core:webview:allow-create-webview-window",
@@ -39,8 +41,6 @@
     "os:allow-os-type"
   ],
   "remote": {
-    "urls": [
-      "asset://localhost"
-    ]
+    "urls": ["asset://localhost"]
   }
 }

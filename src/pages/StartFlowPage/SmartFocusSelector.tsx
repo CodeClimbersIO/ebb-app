@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { SmartFocusIcon } from '@/components/icons/SmartFocusIcon'
+import { Shield } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
 import {
   Select,
@@ -33,6 +33,7 @@ export function SmartFocusSelector({ workflows }: SmartFocusSelectorProps) {
   const [settings, setSettings] = useState<SmartFocusSettingsType>({
     enabled: false,
     trigger_duration_minutes: 10,
+    doomscroll_duration_minutes: 30,
     workflow_id: null
   })
   const { deviceId, deviceProfile } = useDeviceProfile()
@@ -117,6 +118,22 @@ export function SmartFocusSelector({ workflows }: SmartFocusSelectorProps) {
     setIsSaving(false)
   }
 
+  const handleDoomscrollDurationChange = async (value: string) => {
+    if (!deviceId || !deviceProfile) return
+    setIsSaving(true)
+    const doomscroll_duration_minutes = parseInt(value)
+    const newSettings = { ...settings, doomscroll_duration_minutes }
+    await updateDeviceProfilePreferences({
+      deviceId,
+      preferences: {
+        ...deviceProfile.preferences_json,
+        smart_focus_settings: newSettings
+      }
+    })
+    setSettings(newSettings)
+    setIsSaving(false)
+  }
+
   return (
     <>
       <div className="flex items-center">
@@ -129,11 +146,13 @@ export function SmartFocusSelector({ workflows }: SmartFocusSelectorProps) {
                 onClick={() => setShowDialog(true)}
                 className="h-9 w-9 rounded-md flex items-center justify-center hover:bg-accent cursor-pointer"
               >
-                <SmartFocusIcon 
+                <Shield 
+                  stroke="currentColor"
+                  strokeWidth={1.5}
                   className={`h-5 w-5 transition-all duration-500 ${
                     settings.enabled 
-                      ? 'text-violet-500' 
-                      : 'text-muted-foreground'
+                      ? 'text-violet-500 fill-violet-500/30' 
+                      : 'text-muted-foreground fill-muted-foreground/30'
                   } ${
                     isAnimating && !settings.enabled
                       ? 'animate-pulse drop-shadow-lg brightness-250' 
@@ -158,7 +177,7 @@ export function SmartFocusSelector({ workflows }: SmartFocusSelectorProps) {
               <div>
                 <div className="font-medium">Auto-start Focus Sessions</div>
                 <div className="text-sm text-muted-foreground">
-                  Automatically start focus sessions when you've been creating for a set time
+                  Suggest focus sessions when you've been creating for a set time
                 </div>
               </div>
               <Switch
@@ -174,12 +193,37 @@ export function SmartFocusSelector({ workflows }: SmartFocusSelectorProps) {
                   <div>
                     <div className="font-medium">Trigger Duration</div>
                     <div className="text-sm text-muted-foreground">
-                      How long you need to be creating before a session starts
+                      How long you need to be creating before a session is suggested
                     </div>
                   </div>
                   <Select 
                     value={settings.trigger_duration_minutes.toString()} 
                     onValueChange={handleDurationChange}
+                    disabled={isSaving}
+                  >
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {durationOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value.toString()}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium">Doomscroll Detection</div>
+                    <div className="text-sm text-muted-foreground">
+                      How long you need to be consuming before a session is suggested
+                    </div>
+                  </div>
+                  <Select 
+                    value={settings.doomscroll_duration_minutes?.toString() || '30'} 
+                    onValueChange={handleDoomscrollDurationChange}
                     disabled={isSaving}
                   >
                     <SelectTrigger className="w-32">

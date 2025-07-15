@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { FlowSession } from '@/db/ebb/flowSessionRepo'
 import { DateTime, Duration } from 'luxon'
-import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
+import { FlowSessionApi } from '../../api/ebbApi/flowSessionApi'
 import type { Difficulty } from '@/components/difficulty-selector/types'
 import {
   Card,
@@ -16,152 +16,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Music, Loader2 } from 'lucide-react'
+import { Music } from 'lucide-react'
 import { SpotifyIcon } from '@/components/icons/SpotifyIcon'
 import { getSpotifyIdFromUri, openSpotifyLink, PlaybackState, SpotifyApiService } from '@/lib/integrations/spotify/spotifyApi'
 import { SpotifyAuthService } from '@/lib/integrations/spotify/spotifyAuth'
 import { invoke } from '@tauri-apps/api/core'
-import NotificationManager from '@/lib/notificationManager'
-import { listen, UnlistenFn } from '@tauri-apps/api/event'
 import { useBlockedEvents } from '@/hooks/useBlockedEvents'
-import { useFlowTimer } from '../lib/stores/flowTimer'
-import { startFlowTimer, stopFlowTimer } from '../lib/tray'
+import { useFlowTimer } from '../../lib/stores/flowTimer'
+import { startFlowTimer, stopFlowTimer } from '../../lib/tray'
 import { DifficultyButton } from '@/components/DifficultyButton'
 import { useSpotifyInstallation } from '@/hooks/useSpotifyInstallation'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
-import { Workflow, WorkflowApi } from '../api/ebbApi/workflowApi'
-import { BlockingPreferenceApi } from '../api/ebbApi/blockingPreferenceApi'
-import { EbbWorker } from '../lib/ebbWorker'
-
-const getDurationFormatFromSeconds = (seconds: number) => {
-  const duration = Duration.fromMillis(seconds * 1000)
-  const format = duration.as('minutes') >= 60 ? 'hh:mm:ss' : 'mm:ss'
-  return duration.toFormat(format)
-}
-
-const MAX_SESSION_DURATION = 8 * 60 * 60
-
-const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
-  const [time, setTime] = useState<string>('00:00')
-  const [isAddingTime, setIsAddingTime] = useState(false)
-  const [cooldown, setCooldown] = useState(false)
-  const [hasShownWarning, setHasShownWarning] = useState(false)
-
-  const handleAddTime = async () => {
-    if (!flowSession || !flowSession.duration || isAddingTime || cooldown) return
-
-    try {
-      setIsAddingTime(true)
-      setCooldown(true)
-
-      const additionalSeconds = 15 * 60
-      const newTotalDurationInSeconds = flowSession.duration + additionalSeconds
-
-      await FlowSessionApi.updateFlowSessionDuration(flowSession.id, newTotalDurationInSeconds)
-
-      const newTotalDurationForStore = Duration.fromObject({ seconds: newTotalDurationInSeconds })
-      useFlowTimer.getState().setTotalDuration(newTotalDurationForStore)
-
-      setHasShownWarning(false)
-
-      flowSession.duration = newTotalDurationInSeconds
-    } catch (error) {
-      logAndToastError(`Failed to extend session duration: ${error}`, error)
-    } finally {
-      setIsAddingTime(false)
-      setTimeout(() => {
-        setCooldown(false)
-      }, 1000)
-    }
-  }
-
-  useEffect(() => {
-    if (!flowSession) return
-
-    const updateTimer = () => {
-      const now = DateTime.now()
-      const nowAsSeconds = now.toSeconds()
-      const startTime = DateTime.fromISO(flowSession.start).toSeconds()
-      const diff = nowAsSeconds - startTime
-
-      if (!flowSession.duration && diff >= MAX_SESSION_DURATION) {
-        window.dispatchEvent(new CustomEvent('flowSessionComplete'))
-        return
-      }
-
-      if (flowSession.duration) {
-        const remaining = (flowSession.duration) - diff
-        if (remaining <= 0) {
-          window.dispatchEvent(new CustomEvent('flowSessionComplete'))
-          return
-        }
-
-        if (remaining <= 60 && !hasShownWarning) {
-          NotificationManager.getInstance().show({ type: 'session-warning' })
-          setHasShownWarning(true)
-        }
-
-        const duration = getDurationFormatFromSeconds(remaining)
-        setTime(duration)
-      } else {
-        const duration = getDurationFormatFromSeconds(diff)
-        setTime(duration)
-      }
-    }
-
-    updateTimer()
-    const interval = setInterval(updateTimer, 1000)
-
-    return () => clearInterval(interval)
-  }, [flowSession, hasShownWarning])
-
-  useEffect(() => {
-    let unlistenAddTime: UnlistenFn | undefined
-
-    const setupListener = async () => {
-      unlistenAddTime = await listen<{ action: string, minutes: number }>('add-time-event', (event) => {
-        if (event.payload.action === 'add-time') {
-          handleAddTime()
-        }
-      })
-    }
-
-    void setupListener()
-
-    return () => {
-      unlistenAddTime?.()
-    }
-  }, [handleAddTime])
-
-  return (
-    <>
-      <div className="text-sm text-muted-foreground mb-2">{flowSession?.objective}</div>
-      <div className="text-6xl font-bold mb-2 font-mono tracking-tight">
-        {time}
-      </div>
-      {flowSession?.duration && (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleAddTime}
-          className="mt-2"
-          disabled={isAddingTime || cooldown}
-        >
-          {isAddingTime ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Adding time...
-            </>
-          ) : cooldown ? (
-            'Adding...'
-          ) : (
-            'Add 15 min'
-          )}
-        </Button>
-      )}
-    </>
-  )
-}
+import { Workflow, WorkflowApi } from '../../api/ebbApi/workflowApi'
+import { BlockingPreferenceApi } from '../../api/ebbApi/blockingPreferenceApi'
+import { EbbWorker } from '../../lib/ebbWorker'
+import { Timer } from './Timer'
+import { MonitorApi } from '../../api/monitorApi/monitorApi'
 
 type CurrentTrack = {
   song: {
@@ -183,10 +53,9 @@ type CurrentTrack = {
   position_ms: number
 }
 
-const startTimer = async (flowSession: FlowSession, workflow: Workflow) => {
-  console.log('startTimer', workflow)
-  const duration = workflow.settings.defaultDuration || 0
-  useFlowTimer.getState().setTotalDuration(Duration.fromObject({ minutes: duration }))
+const startTimer = async (flowSession: FlowSession) => {
+  const duration = flowSession.duration || 0
+  useFlowTimer.getState().setTotalDuration(Duration.fromObject({ seconds: duration }))
   const start = DateTime.fromISO(flowSession.start) || DateTime.now()
   startFlowTimer(start)
 } 
@@ -242,17 +111,11 @@ export const FlowPage = () => {
       setDifficulty(workflow?.settings.difficulty || 'medium')
 
       await startBlocking(workflow)
-      await startTimer(flowSession, workflow)
+      await startTimer(flowSession)
 
-      if (flowSession.type === 'smart') {
-        NotificationManager.getInstance().show({
-          type: 'session-start-smart'
-        })
-      } else {
-        NotificationManager.getInstance().show({
-          type: 'session-start'
-        })
-      }
+      invoke('show_notification', {
+        notificationType: 'session-start',
+      })
 
 
     }
@@ -265,15 +128,19 @@ export const FlowPage = () => {
         await player.pause()
         await SpotifyApiService.transferPlaybackToComputerDevice()
         player.disconnect() // Disconnect the Web Playback SDK player
+        setPlayer(null)
+        setSpotifyDeviceId('')
         setIsPlaying(false)
         setCurrentTrack(null)
         setSelectedPlaylistId('')
       }
       handleEndSession()
     }
+    window.addEventListener('end-session', handleSessionComplete)
     window.addEventListener('flowSessionComplete', handleSessionComplete)
 
     return () => {
+      window.removeEventListener('end-session', handleSessionComplete)
       window.removeEventListener('flowSessionComplete', handleSessionComplete)
     }
   }, [flowSession, player, spotifyDeviceId])
@@ -285,10 +152,8 @@ export const FlowPage = () => {
         setIsSpotifyAuthenticated(isAuthenticated)
 
         if (!isAuthenticated) return
-
-        await SpotifyApiService.initializePlayer()
+        await SpotifyApiService.initSdkScript()
         const newPlayer = await SpotifyApiService.createPlayer()
-
         newPlayer.addListener('ready', ({ device_id }: { device_id: string }) => {
           setSpotifyDeviceId(device_id) 
           if (selectedPlaylistId) {
@@ -342,13 +207,23 @@ export const FlowPage = () => {
 
     const hasMusic = workflow?.settings.hasMusic
     if (hasMusic) {
-      EbbWorker.debounceWork(initSpotify, 'init_spotify')
+      EbbWorker.debounceWork(initSpotify, 'init_spotify', 1)
     }
-
-    return () => {
-      player?.disconnect()
-    }
+    
   }, [workflow])
+
+  useEffect(() => {
+    return () => { // cleanup player when component unmounts
+      if (player) {
+        player.removeListener('player_state_changed')
+        player.removeListener('ready')
+        player.removeListener('not_ready')
+        player.disconnect()
+        setPlayer(null)
+        setSpotifyDeviceId('')
+      }
+    }
+  }, [player])
 
   useEffect(() => {
     const loadPlaylistData = async () => {
@@ -420,21 +295,23 @@ export const FlowPage = () => {
     await invoke('stop_blocking')
     await stopFlowTimer()
     await FlowSessionApi.endFlowSession()
-
-    navigate('/flow-recap', {
-      state: {
-        sessionId: flowSession.id,
-        startTime: flowSession.start,
-        endTime: new Date().toISOString(),
-        timeInFlow: '00:00',
-        idleTime: '0h 34m',
-        objective: flowSession.objective
-      }
+    const timeCreating = await MonitorApi.getTimeCreatingByTimePeriod(DateTime.fromISO(flowSession.start), DateTime.now())
+      
+    const payload = JSON.stringify({
+      title: 'Session Completed',
+      description: `You created for ${timeCreating} minutes!`,
     })
+    await invoke('show_notification', {
+      notificationType: 'session-end',
+      payload
+    })
+
+    navigate('/')
   }
 
   const handlePlayPause = async () => {
     if (!player) return
+
     try {
       setClickedButton('play')
       if (isPlaying) {

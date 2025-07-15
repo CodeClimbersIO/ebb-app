@@ -12,11 +12,17 @@ pub struct SmartFocusSettings {
     pub enabled: bool,
     #[serde(default = "default_trigger_duration")]
     pub trigger_duration_minutes: i32,
+    #[serde(default = "default_doomscroll_duration")]
+    pub doomscroll_duration_minutes: i32,
     pub workflow_id: Option<String>,
 }
 
 fn default_trigger_duration() -> i32 {
     10 // Default to 10 minutes
+}
+
+fn default_doomscroll_duration() -> i32 {
+    30 // Default to 30 minutes
 }
 
 pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
@@ -210,6 +216,7 @@ mod tests {
         let settings = SmartFocusSettings {
             enabled: true,
             trigger_duration_minutes: 15,
+            doomscroll_duration_minutes: 30,
             workflow_id: Some("test-workflow-id".to_string()),
         };
 
@@ -222,6 +229,10 @@ mod tests {
             assert_eq!(
                 retrieved_settings.trigger_duration_minutes,
                 settings.trigger_duration_minutes
+            );
+            assert_eq!(
+                retrieved_settings.doomscroll_duration_minutes,
+                settings.doomscroll_duration_minutes
             );
             assert_eq!(retrieved_settings.workflow_id, settings.workflow_id);
         } else {

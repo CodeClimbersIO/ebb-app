@@ -4,8 +4,7 @@ import { LoginPage } from '@/pages/LoginPage'
 import { CommunityPage } from '@/pages/CommunityPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 import { useAuth } from '@/hooks/useAuth'
-import { FlowPage } from '@/pages/FlowPage'
-import { BreathingExercisePage } from '@/pages/BreathingExercisePage'
+import { FlowPage } from '@/pages/FlowPage/FlowPage'
 import { FlowRecapPage } from '@/pages/FlowRecapPage'
 import { AccessibilityPage } from '@/pages/AccessibilityPage'
 import { ShortcutTutorialPage } from '@/pages/ShortcutTutorialPage'
@@ -18,13 +17,14 @@ import { logAndToastError } from '@/lib/utils/ebbError.util'
 import FeedbackPage from '@/pages/FeedbackPage'
 import { toastStore } from '@/lib/stores/toastStore'
 import { useStore } from 'zustand'
+import CategoryDashboardPage from './pages/CategoryDashboardPage'
 import { StartFlowPage } from '@/pages/StartFlowPage/StartFlowPage'
 import { FriendsAnalyticsPage } from '@/pages/FriendsAnalyticsPage/FriendsAnalyticsPage'
 import { useLicenseWithDevices } from '@/api/hooks/useLicense'
 import { useOnboarding } from '@/hooks/useOnboarding'
 import { useCheckout } from '@/hooks/useCheckout'
-import { FlowSessionApi } from './api/ebbApi/flowSessionApi'
-import { WorkflowApi } from './api/ebbApi/workflowApi'
+import { useFlowListener } from '@/hooks/useFlowListener'
+import { useNotificationListener } from '@/hooks/useNotificationListener'
 
 
 const Router = () => {
@@ -35,6 +35,8 @@ const Router = () => {
   const { user } = useAuth()
   useLicenseWithDevices(user?.id || null)
   useOnboarding()
+  useFlowListener()
+  useNotificationListener()
   const { error } = useStore(toastStore)
 
   useEffect(() => {
@@ -57,23 +59,7 @@ const Router = () => {
         logAndToastError(`(Router) Failed to set up tray navigation: ${error}`, error)
       }
     }
-    const init = async () => {
-      const flowSession = await FlowSessionApi.getInProgressFlowSession()
-      if (flowSession) {
-        navigate('/flow')
-      }
-      window.addEventListener('flow-session-started', async ()=>{
-        const flowSession = await FlowSessionApi.getInProgressFlowSession()
-        if (!flowSession || !flowSession.workflow_id) return
-        const workflow = await WorkflowApi.getWorkflowById(flowSession.workflow_id)
-        if (workflow?.settings.hasBreathing) {
-          navigate('/breathing-exercise')
-        } else {
-          navigate('/flow')
-        }
-      })
-    }
-    init()
+
     setup()
 
     return () => {
@@ -93,8 +79,8 @@ const Router = () => {
       <Route path="/community" element={<CommunityPage />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/friends-analytics" element={<FriendsAnalyticsPage />} />
+      <Route path="/category-dashboard" element={<CategoryDashboardPage />} />
       <Route path="/start-flow" element={<StartFlowPage />} />
-      <Route path="/breathing-exercise" element={<BreathingExercisePage />} />
       <Route path="/flow" element={<FlowPage />} />
       <Route path="/flow-recap" element={<FlowRecapPage />} />
       <Route path="/feedback" element={<FeedbackPage />} />

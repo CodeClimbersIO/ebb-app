@@ -7,7 +7,6 @@ import { useUpdateRollupForUser } from '../api/hooks/useActivityRollups'
 import { useDeviceProfile } from '../api/hooks/useDeviceProfile'
 import { EbbWorker } from '../lib/ebbWorker'
 import { invoke } from '@tauri-apps/api/core'
-import { canUseSmartFocus } from '../lib/utils/environment.util'
 import { SmartSessionApi } from '../api/ebbApi/smartSessionApi'
 import { useAuth } from './useAuth'
 
@@ -44,8 +43,18 @@ export const useWorkerPolling = () => {
             updateProfile({ id: profile.id, last_check_in: last_check_in.toISO(), version })
             refetch()
           }
-          if(deviceId && canUseSmartFocus(user?.email)) {
-            await SmartSessionApi.startSmartSession(deviceId)
+          if(deviceId) {
+            const shouldSuggestSmartSession = await SmartSessionApi.checkShouldSuggestSmartSession(deviceId)
+            if(shouldSuggestSmartSession === 'smart') {
+              invoke('show_notification', {
+                notificationType: 'smart-start-suggestion',
+              })
+            }
+            else if(shouldSuggestSmartSession === 'doomscroll') {
+              invoke('show_notification', {
+                notificationType: 'doomscroll-start-suggestion',
+              })
+            }
           }
         }
         EbbWorker.work(event.payload, run) // used to make sure we don't run the same work multiple times

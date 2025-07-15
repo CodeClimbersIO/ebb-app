@@ -3,6 +3,8 @@ import { useEffect, useRef } from 'react'
 import { ApiError, platformApiRequest } from '../platformRequest'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
 import { toast } from 'sonner'
+import { User } from '@supabase/supabase-js'
+import { useAuth } from '../../hooks/useAuth'
 
 // --- Backend types ---
 export type FriendRequestStatus = 'pending' | 'accepted' | 'rejected' | 'cancelled'
@@ -135,32 +137,35 @@ const respondToFriendRequest = async ({ requestId, action }: { requestId: string
   return data
 }
 
-export function useGetFriends() {
+export function useGetFriends(user: User | null) {
   return useQuery({
     queryKey: friendKeys.list(),
     queryFn: getFriends,
+    enabled: !!user,
   })
 }
 
-export function useGetPendingRequestsSent() {
+export function useGetPendingRequestsSent(user: User | null) {
   return useQuery({
     queryKey: friendKeys.sentRequests(),
     queryFn: getPendingRequestsSent,
+    enabled: !!user,
   })
 }
 
-export function useGetPendingRequestsReceived() {
+export function useGetPendingRequestsReceived(user: User | null) {
   return useQuery({
     queryKey: friendKeys.receivedRequests(),
     queryFn: getPendingRequestsReceived,
+    enabled: !!user,
   })
 }
 
-export function useGetDashboardInsights(date: string) {
+export function useGetDashboardInsights(date: string, user: User | null) {
   return useQuery({
     queryKey: friendKeys.dashboardInsights(date),
     queryFn: () => getDashboardInsights(date),
-    enabled: !!date,
+    enabled: !!date && !!user,
   })
 }
 
@@ -218,9 +223,10 @@ export function useRespondToFriendRequest() {
 }
 
 export const useFriends = () => {
-  const { data: friends, isLoading: isLoadingFriends } = useGetFriends()
-  const { data: sentRequests, isLoading: isLoadingSentRequests } = useGetPendingRequestsSent()
-  const { data: receivedRequests, isLoading: isLoadingReceivedRequests } = useGetPendingRequestsReceived()
+  const { user } = useAuth()
+  const { data: friends, isLoading: isLoadingFriends } = useGetFriends(user)
+  const { data: sentRequests, isLoading: isLoadingSentRequests } = useGetPendingRequestsSent(user)
+  const { data: receivedRequests, isLoading: isLoadingReceivedRequests } = useGetPendingRequestsReceived(user)
   const { mutateAsync: inviteFriend, isPending: isInviting } = useInviteFriend()
   const { mutateAsync: respondToRequest, isPending: isResponding } = useRespondToFriendRequest()
 
@@ -253,13 +259,13 @@ export const useFriends = () => {
 
 // Enhanced hook with dashboard insights
 export const useFriendsWithInsights = () => {
+  const { user } = useAuth()
   const today = new Date()
   const date = today.toISOString().split('T')[0]
   const queryClient = useQueryClient()
   const refreshIntervalRef = useRef<number | null>(null)
-  
   const friendsData = useFriends()
-  const { data: dashboardInsights, isLoading: isLoadingInsights } = useGetDashboardInsights(date)
+  const { data: dashboardInsights, isLoading: isLoadingInsights } = useGetDashboardInsights(date, user)
 
   const pendingInvitesReceivedCount = friendsData.receivedRequests && friendsData.receivedRequests.length > 0 ? friendsData.receivedRequests.length : 0
   const hasPendingInvitesReceived = pendingInvitesReceivedCount > 0

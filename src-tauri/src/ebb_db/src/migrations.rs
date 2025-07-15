@@ -2,6 +2,11 @@
 use sqlx::{Pool, Sqlite};
 use tauri_plugin_sql::{Migration, MigrationKind};
 
+// Add import for our custom plugin
+use crate::shared_sql_plugin::{
+    Migration as SharedMigration, MigrationKind as SharedMigrationKind,
+};
+
 pub fn get_migrations() -> Vec<Migration> {
     vec![
         Migration {
@@ -236,6 +241,22 @@ pub fn get_migrations() -> Vec<Migration> {
             kind: MigrationKind::Up,
         },
     ]
+}
+
+/// Convert tauri-plugin-sql migrations to shared_sql_plugin migrations
+pub fn get_shared_migrations() -> Vec<SharedMigration> {
+    get_migrations()
+        .into_iter()
+        .map(|migration| SharedMigration {
+            version: migration.version,
+            description: migration.description,
+            sql: migration.sql,
+            kind: match migration.kind {
+                MigrationKind::Up => SharedMigrationKind::Up,
+                MigrationKind::Down => SharedMigrationKind::Down,
+            },
+        })
+        .collect()
 }
 
 #[cfg(test)]

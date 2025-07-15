@@ -12,6 +12,6 @@ export const isCanaryUser = (email?: string) => {
   return canaryUsers.includes(email || '')
 }
 
-export const canUseSmartFocus = (email?: string) => {
+export const canUseCategoryDashboard = (email?: string) => {
   return isCanaryUser(email)
 }
