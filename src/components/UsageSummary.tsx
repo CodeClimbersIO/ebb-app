@@ -253,7 +253,7 @@ export const UsageSummary = ({
                 </TooltipContent>
               </Tooltip>
               
-              <ChartContainer config={chartConfigState} className="h-[295px] aspect-auto w-full">
+              <ChartContainer config={chartConfigState} className="h-[280px] aspect-auto w-full">
                 <BarChart height={200} data={chartDataState}>
                   <defs>
                     <linearGradient id="creatingGradient" x1="0" y1="0" x2="0" y2="1">
