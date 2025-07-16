@@ -42,7 +42,8 @@ export const getActivityStatesByTagsAndTimePeriod = async (tagIds: string[], sta
     FROM activity_state acts
       LEFT JOIN activity_state_tag ast ON ast.activity_state_id = acts.id
       LEFT JOIN tag t ON ast.tag_id = t.id
-    WHERE acts.start_time >= '${startUtc}' AND acts.end_time <= '${endUtc}' AND ast.tag_id IN ('${tagIds.join('\',\'')}')
+    WHERE acts.end_time >= '${startUtc}' 
+    AND acts.end_time <= '${endUtc}' AND ast.tag_id IN ('${tagIds.join('\',\'')}')
     GROUP BY acts.id, acts.state, acts.app_switches, acts.start_time, acts.end_time, acts.created_at`
   const activityStates = await monitorDb.select<ActivityStateDb[]>(query)
   return activityStates
