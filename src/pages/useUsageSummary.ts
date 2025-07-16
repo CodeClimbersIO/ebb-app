@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { DateTime } from 'luxon'
 import { MonitorApi, GraphableTimeByHourBlock } from '../api/monitorApi/monitorApi'
 import { Tag } from '../db/monitor/tagRepo'
@@ -29,11 +29,11 @@ const buildTotalTimeLabel = (showIdleTime: boolean) => {
 export function useUsageSummary() {
   const [date, setDate] = useState<Date>(new Date())
   const [rangeMode, setRangeMode] = useState<'day' | 'week' | 'month'>('day')
-  const { data: appUsage } = useAppUsage()
+  const { data: appUsage, refetch: refetchAppUsage } = useAppUsage()
+  const { data: chartData, refetch: refetchChartData } = useGetChartData({ rangeMode, date })
   const [yAxisMax, setYAxisMax] = useState(0)
   const [totalCreating, setTotalCreating] = useState(0)
   const [totalTime, setTotalTime] = useState(0)
-  const { data: chartData } = useGetChartData({ rangeMode, date })
   const [tags, setTags] = useState<Tag[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const refreshIntervalRef = useRef<number | null>(null)
@@ -66,95 +66,101 @@ export function useUsageSummary() {
     return { prevStart, prevEnd }
   }
 
-  const refreshData = useCallback(async () => {
-    if (rangeMode === 'month') setIsLoading(true)
-    else setIsLoading(false)
+  useEffect(() => {
+    const fetchData = async () => {
+      if (rangeMode === 'month') setIsLoading(true)
+      else setIsLoading(false)
 
-    let start, end
-    if (rangeMode === 'day') {
-      start = DateTime.fromJSDate(date).startOf('day')
-      end = DateTime.fromJSDate(date).endOf('day')
-    } else if (rangeMode === 'week') {
-      start = DateTime.fromJSDate(date).minus({ days: 6 }).startOf('day')
-      end = DateTime.fromJSDate(date).endOf('day')
-    } else {
+      let start, end
+      if (rangeMode === 'day') {
+        start = DateTime.fromJSDate(date).startOf('day')
+        end = DateTime.fromJSDate(date).endOf('day')
+      } else if (rangeMode === 'week') {
+        start = DateTime.fromJSDate(date).minus({ days: 6 }).startOf('day')
+        end = DateTime.fromJSDate(date).endOf('day')
+      } else {
       // Month view - show current week and previous 4 weeks
-      const currentDate = DateTime.fromJSDate(date)
-      end = currentDate.endOf('day')
-      start = currentDate.minus({ weeks: 4 }).startOf('week')
+        const currentDate = DateTime.fromJSDate(date)
+        end = currentDate.endOf('day')
+        start = currentDate.minus({ weeks: 4 }).startOf('week')
+      }
+
+      let chartData: GraphableTimeByHourBlock[]
+      if (rangeMode === 'week') {
+        chartData = await MonitorApi.getTimeCreatingByDay(start, end)
+      } else if (rangeMode === 'month') {
+        chartData = await MonitorApi.getTimeCreatingByWeek(start, end)
+      } else {
+        const chartDataRaw = await MonitorApi.getTimeCreatingByHour(start, end)
+        chartData = chartDataRaw.slice(6)
+      }
+
+      const tags = await MonitorApi.getTagsByType('default')
+      setTags(tags)
+      setTotalCreating(chartData.reduce((acc, curr) => acc + curr.creating, 0))
+      const online = chartData.reduce((acc, curr) => acc + curr.creating + curr.neutral + curr.consuming + (showIdleTime ? curr.idle : 0), 0)
+      setTotalTime(online)
+      setIsLoading(false)
+
+      // --- Trend Calculation ---
+      const { prevStart, prevEnd } = getPreviousPeriod()
+      let prevChartData: GraphableTimeByHourBlock[]
+      if (rangeMode === 'week') {
+        prevChartData = await MonitorApi.getTimeCreatingByDay(prevStart, prevEnd)
+      } else if (rangeMode === 'month') {
+        prevChartData = await MonitorApi.getTimeCreatingByWeek(prevStart, prevEnd)
+      } else {
+        prevChartData = []
+      }
+
+      const prevCreating = prevChartData.reduce((acc, curr) => acc + curr.creating, 0)
+      const prevOnline = prevChartData.reduce((acc, curr) => acc + curr.creating + curr.neutral + curr.consuming, 0)
+
+      // Calculate trends
+      const calcTrend = (current: number, prev: number): { percent: number, direction: 'up' | 'down' | 'none' } => {
+        if (prev === 0 && current === 0) return { percent: 0, direction: 'none' }
+        if (prev === 0) return { percent: 100, direction: 'up' }
+        const percent = Math.abs(((current - prev) / prev) * 100)
+        if (current > prev) return { percent, direction: 'up' }
+        if (current < prev) return { percent, direction: 'down' }
+        return { percent: 0, direction: 'none' }
+      }  
+      let yAxisMax: number | undefined = undefined
+      if ((rangeMode === 'week' || rangeMode === 'month') && chartData.length > 0) {
+        yAxisMax = Math.max(...chartData.map(day => day.creating + day.consuming + day.neutral + day.idle))
+      }
+
+      setYAxisMax(yAxisMax || 0)
+
+      if(rangeMode !== 'day') {
+        setTotalCreatingTrend(calcTrend(chartData.reduce((acc, curr) => acc + curr.creating, 0), prevCreating))
+        setTotalTimeTrend(calcTrend(online, prevOnline))
+      } else {
+        setTotalCreatingTrend({ percent: 0, direction: 'none' })
+        setTotalTimeTrend({ percent: 0, direction: 'none' })
+      }
     }
-
-    let chartData: GraphableTimeByHourBlock[]
-    if (rangeMode === 'week') {
-      chartData = await MonitorApi.getTimeCreatingByDay(start, end)
-    } else if (rangeMode === 'month') {
-      chartData = await MonitorApi.getTimeCreatingByWeek(start, end)
-    } else {
-      const chartDataRaw = await MonitorApi.getTimeCreatingByHour(start, end)
-      chartData = chartDataRaw.slice(6)
-    }
-
-    const tags = await MonitorApi.getTagsByType('default')
-    setTags(tags)
-    setTotalCreating(chartData.reduce((acc, curr) => acc + curr.creating, 0))
-    const online = chartData.reduce((acc, curr) => acc + curr.creating + curr.neutral + curr.consuming + (showIdleTime ? curr.idle : 0), 0)
-    setTotalTime(online)
-    setIsLoading(false)
-
-    // --- Trend Calculation ---
-    const { prevStart, prevEnd } = getPreviousPeriod()
-    let prevChartData: GraphableTimeByHourBlock[]
-    if (rangeMode === 'week') {
-      prevChartData = await MonitorApi.getTimeCreatingByDay(prevStart, prevEnd)
-    } else if (rangeMode === 'month') {
-      prevChartData = await MonitorApi.getTimeCreatingByWeek(prevStart, prevEnd)
-    } else {
-      prevChartData = []
-    }
-
-    const prevCreating = prevChartData.reduce((acc, curr) => acc + curr.creating, 0)
-    const prevOnline = prevChartData.reduce((acc, curr) => acc + curr.creating + curr.neutral + curr.consuming, 0)
-
-    // Calculate trends
-    const calcTrend = (current: number, prev: number): { percent: number, direction: 'up' | 'down' | 'none' } => {
-      if (prev === 0 && current === 0) return { percent: 0, direction: 'none' }
-      if (prev === 0) return { percent: 100, direction: 'up' }
-      const percent = Math.abs(((current - prev) / prev) * 100)
-      if (current > prev) return { percent, direction: 'up' }
-      if (current < prev) return { percent, direction: 'down' }
-      return { percent: 0, direction: 'none' }
-    }  
-    let yAxisMax: number | undefined = undefined
-    if ((rangeMode === 'week' || rangeMode === 'month') && chartData.length > 0) {
-      yAxisMax = Math.max(...chartData.map(day => day.creating + day.consuming + day.neutral + day.idle))
-    }
-
-    setYAxisMax(yAxisMax || 0)
-
-    if(rangeMode !== 'day') {
-      setTotalCreatingTrend(calcTrend(chartData.reduce((acc, curr) => acc + curr.creating, 0), prevCreating))
-      setTotalTimeTrend(calcTrend(online, prevOnline))
-    } else {
-      setTotalCreatingTrend({ percent: 0, direction: 'none' })
-      setTotalTimeTrend({ percent: 0, direction: 'none' })
-    }
-    
-  }, [date, rangeMode, showIdleTime])
+    fetchData()
+  }, [date, rangeMode, showIdleTime, chartData])
 
   useEffect(() => {
-    refreshData()
+    const refetchData = async () => {
+      await refetchAppUsage()
+      await refetchChartData()
+    }
+    refetchData()
     refreshIntervalRef.current = window.setInterval(async () => {
       if (rangeMode === 'day' && date.toDateString() === new Date().toDateString()) {
-        await refreshData()
+        await refetchData()
       } else if (rangeMode === 'week' || rangeMode === 'month') {
-        await refreshData()
+        await refetchData()
       }
     }, 30000)
     const handleFocus = async () => {
       if (rangeMode === 'day' && date.toDateString() === new Date().toDateString()) {
-        await refreshData()
+        await refetchData()
       } else if (rangeMode === 'week' || rangeMode === 'month') {
-        await refreshData()
+        await refetchData()
       }
     }
     window.addEventListener('focus', handleFocus)
@@ -164,7 +170,7 @@ export function useUsageSummary() {
       }
       window.removeEventListener('focus', handleFocus)
     }
-  }, [date, rangeMode, refreshData])
+  }, [date, rangeMode, refetchAppUsage, refetchChartData])
 
 
 

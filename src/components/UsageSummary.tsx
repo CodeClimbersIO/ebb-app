@@ -230,11 +230,11 @@ export const UsageSummary = ({
       <Card>
         <CardContent className="p-0">
           {isLoading ? (
-            <div className="pt-6 aspect-video">
+            <div className="pt-6 h-[200px]">
               <Skeleton className="h-full w-full" />
             </div>
           ) : (
-            <div className="relative p-6">
+            <div className="relative p-6 pb-2">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="absolute top-4 right-4 z-10 flex items-center space-x-2 bg-background/80 backdrop-blur-sm rounded-md px-3 py-2 border">
@@ -253,7 +253,7 @@ export const UsageSummary = ({
                 </TooltipContent>
               </Tooltip>
               
-              <ChartContainer config={chartConfigState}>
+              <ChartContainer config={chartConfigState} className="h-[295px] aspect-auto w-full">
                 <BarChart height={200} data={chartDataState}>
                   <defs>
                     <linearGradient id="creatingGradient" x1="0" y1="0" x2="0" y2="1">
@@ -305,8 +305,8 @@ export const UsageSummary = ({
                       const data = payload[0].payload
                       return (
                         <div className="rounded-lg border bg-background p-2 shadow-md">
-                          <div className="mb-2 font-medium">{data.timeRange}</div>
-                          <div className="space-y-1">
+                          <div className="mb-1 font-medium">{data.timeRange}</div>
+                          <div className="space-y-0.5">
                             <div className="text-[rgb(124,58,237)]">Creating: {formatTimeToDecimalHours(data.creating)}</div>
                             <div className="text-gray-500">Neutral: {formatTimeToDecimalHours(data.neutral)}</div>
                             <div className="text-[rgb(239,68,68)]">Consuming: {formatTimeToDecimalHours(data.consuming)}</div>
