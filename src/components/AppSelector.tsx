@@ -407,9 +407,9 @@ export function AppSelector({
   }
 
   const handleDifficultyChange = (value: 'easy' | 'medium' | 'hard') => {
-    if (value === 'hard' && !canUseHardDifficulty) {
-      return
-    }
+    // if (value === 'hard' && !canUseHardDifficulty) {
+    //   return
+    // }
     onDifficultyChange?.(value)
   }
 
@@ -510,7 +510,7 @@ export function AppSelector({
             <DifficultySelector
               value={difficulty || null}
               onChange={handleDifficultyChange}
-              disabledOptions={!canUseHardDifficulty ? ['hard'] : []}
+              disabledOptions={[]}
             />
           )}
           

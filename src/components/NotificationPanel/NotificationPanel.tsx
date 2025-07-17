@@ -15,7 +15,7 @@ import { useShortcutStore } from '@/lib/stores/shortcutStore'
 import { useShortcutKeyDetection } from '../../hooks/useShortcutKeyDetection'
 import { EbbWorker } from '../../lib/ebbWorker'
 
-type NotificationType = 'session-start' | 'quick-start' | 'smart-start-suggestion' | 'doomscroll-start-suggestion' | 'blocked-app' | 'session-end' | 'session-warning' | 'end-session'  
+type NotificationType = 'session-start' | 'quick-start' | 'smart-start-suggestion' | 'doomscroll-start-suggestion' | 'blocked-app' | 'session-end' | 'session-warning' | 'end-session' | 'hard-mode-exit-blocked'  
 
 interface NotificationPayload {
   timeCreating?: number
@@ -166,6 +166,15 @@ const NOTIFICATION_CONFIGS: Record<NotificationType, NotificationConfig> = {
       info('extending session')
       await invoke('notify_add_time_event')
     }
+  },
+  'hard-mode-exit-blocked': {
+    title: 'Hard Mode Active',
+    description: () => 'Cannot quit during hard mode session! 🔒',
+    icon: Shield,
+    iconColor: 'text-red-500',
+    progressColor: 'bg-red-500',
+    defaultDuration: 6000,
+    soundFile: 'app_blocked.mp3',
   }
 }
 

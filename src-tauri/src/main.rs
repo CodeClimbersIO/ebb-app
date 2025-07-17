@@ -1,5 +1,5 @@
 use ebb_db::{db_manager, migrations, services::device_service::DeviceService, shared_sql_plugin};
-use tauri::Manager;
+use tauri::{Manager, Emitter};
 use tokio;
 
 mod autostart;
@@ -132,6 +132,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             commands::notify_add_time_event,
             commands::notify_snooze_blocking,
             commands::notify_end_session,
+            commands::is_hard_mode_session_active,
             change_autostart,
             tray_icon_gen::generate_timer_icon,
         ])
@@ -143,6 +144,44 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         window.show().unwrap();
                         window.set_focus().unwrap();
                     }
+                }
+                tauri::RunEvent::ExitRequested { api, .. } => {
+                    // Check if hard mode session is active before allowing exit
+                    let app_handle = app.clone();
+                    tauri::async_runtime::spawn(async move {
+                        use ebb_db::db_manager::DbManager;
+                        use ebb_db::services::flow_session_service::FlowSessionService;
+
+                        match DbManager::get_shared_ebb().await {
+                            Ok(db_manager) => {
+                                let service = FlowSessionService::new(db_manager);
+                                match service.is_hard_mode_session_active().await {
+                                    Ok(true) => {
+                                        // Hard mode session is active - prevent exit and show notification
+                                        api.prevent_exit();
+                                        log::info!("Exit prevented: Hard mode session is active");
+                                        
+                                        // Emit event to show user feedback
+                                        if let Err(e) = app_handle.emit("hard-mode-exit-blocked", ()) {
+                                            log::error!("Failed to emit hard-mode-exit-blocked event: {}", e);
+                                        }
+                                    }
+                                    Ok(false) => {
+                                        // No hard mode session - allow exit
+                                        log::info!("Exit allowed: No hard mode session active");
+                                    }
+                                    Err(e) => {
+                                        // Error checking - log and allow exit for safety
+                                        log::error!("Error checking hard mode session status: {}", e);
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                log::error!("Error connecting to database: {}", e);
+                                // Allow exit if we can't check the database
+                            }
+                        }
+                    });
                 }
                 _ => {}
             },

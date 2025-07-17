@@ -14,6 +14,7 @@ export const useNotificationListener = () => {
     let unlistenEndSession: UnlistenFn | undefined
     let unlistenAddTimeEvent: UnlistenFn | undefined
     let unlistenSnoozeBlocking: UnlistenFn | undefined
+    let unlistenHardModeExitBlocked: UnlistenFn | undefined
 
     const setupListeners = async () => {
 
@@ -49,6 +50,16 @@ export const useNotificationListener = () => {
         })
       })
 
+      unlistenHardModeExitBlocked = await listen('hard-mode-exit-blocked', async () => {
+        info('App: hard mode exit blocked')
+        EbbWorker.debounceWork(async () => {
+          await invoke('show_notification', {
+            notificationType: 'hard-mode-exit-blocked',
+            payload: null
+          })
+        })
+      })
+
     }
 
     void setupListeners()
@@ -58,6 +69,7 @@ export const useNotificationListener = () => {
       unlistenEndSession?.()
       unlistenAddTimeEvent?.()
       unlistenSnoozeBlocking?.()
+      unlistenHardModeExitBlocked?.()
     }
   }, []) 
 }

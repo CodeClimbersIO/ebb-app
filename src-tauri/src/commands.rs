@@ -340,3 +340,19 @@ pub fn notify_end_session(app_handle: AppHandle) -> Result<(), String> {
         .emit("end-session", ())
         .map_err(|e| e.to_string())
 }
+
+#[command]
+pub async fn is_hard_mode_session_active() -> Result<bool, String> {
+    use ebb_db::db_manager::DbManager;
+    use ebb_db::services::flow_session_service::FlowSessionService;
+
+    let db_manager = DbManager::get_shared_ebb()
+        .await
+        .map_err(|e| e.to_string())?;
+    
+    let service = FlowSessionService::new(db_manager);
+    
+    service.is_hard_mode_session_active()
+        .await
+        .map_err(|e| e.to_string())
+}
