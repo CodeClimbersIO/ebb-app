@@ -186,7 +186,6 @@ export const NotificationPanel = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const invisibleInputRef = useRef<HTMLInputElement | null>(null)
   const [buttonState, setButtonState] = useState<'idle' | 'processing' | 'success'>('idle')
-  const [isFirstTimeDismiss, setIsFirstTimeDismiss] = useState(false)
   const { shortcutParts, loadShortcutFromStorage } = useShortcutStore()
   const { pressedKeys } = useShortcutKeyDetection()
 
@@ -195,8 +194,6 @@ export const NotificationPanel = () => {
 
   // Check if this is user's first time dismissing a notification
   useEffect(() => {
-    const hasEverDismissed = localStorage.getItem('notification-ever-dismissed')
-    setIsFirstTimeDismiss(!hasEverDismissed)
 
     if (invisibleInputRef.current) {  // focus the invisible input
       invisibleInputRef.current.focus()
@@ -222,7 +219,7 @@ export const NotificationPanel = () => {
         invoke('hide_notification')
       }, config?.dismissImmediatelyOnAction ? 0 : 500)
     }, 'notify_app_notification_dismissed')
-  }, [isFirstTimeDismiss])
+  }, [])
 
   const configDescription = useMemo(() => {
     if(config?.description) {
@@ -298,10 +295,6 @@ export const NotificationPanel = () => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         info('Escape key pressed, dismissing notification')
-        if (isFirstTimeDismiss) {
-          localStorage.setItem('notification-ever-dismissed', 'true')
-          setIsFirstTimeDismiss(false)
-        }
         handleExit()
       }
     }
@@ -492,7 +485,6 @@ export const NotificationPanel = () => {
         <div 
           className={cn(
             'absolute -top-2 -left-2 transition-opacity cursor-pointer',
-            isFirstTimeDismiss ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
           )}
           onClick={handleExit}
         >
