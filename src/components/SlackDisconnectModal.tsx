@@ -4,27 +4,21 @@ import { Button } from './ui/button'
 import { SlackIcon } from './icons/SlackIcon'
 import { slackApi } from '../api/ebbApi/slackApi'
 import { logAndToastError } from '../lib/utils/ebbError.util'
-
-interface SlackWorkspace {
-  team_name: string
-  team_domain: string
-  team_id?: string
-  created_at: string
-}
+import { useSlackStatus } from '../api/hooks/useSlack'
 
 interface SlackDisconnectModalProps {
   isOpen: boolean
   onClose: () => void
-  workspaces: SlackWorkspace[]
   onDisconnectSuccess: () => void
 }
 
 export const SlackDisconnectModal = ({ 
   isOpen, 
   onClose, 
-  workspaces, 
   onDisconnectSuccess 
 }: SlackDisconnectModalProps) => {
+  const { data: slackStatus } = useSlackStatus()
+  const workspaces = slackStatus?.workspaces || []
   const [isDisconnecting, setIsDisconnecting] = useState(false)
   const [disconnectingWorkspace, setDisconnectingWorkspace] = useState<string | null>(null)
 
@@ -33,7 +27,7 @@ export const SlackDisconnectModal = ({
     try {
       const result = await slackApi.disconnect()
       
-      if (result.success) {
+      if (result) {
         onDisconnectSuccess()
         onClose()
       } else {
@@ -49,7 +43,9 @@ export const SlackDisconnectModal = ({
   const handleDisconnectWorkspace = async (teamId: string, teamName: string) => {
     setDisconnectingWorkspace(teamId)
     try {
+      console.log('Disconnecting workspace:', { teamId, teamName })
       const result = await slackApi.disconnect(teamId)
+      console.log('Disconnect result:', result)
       
       if (result.success) {
         onDisconnectSuccess()
@@ -61,6 +57,7 @@ export const SlackDisconnectModal = ({
         throw new Error(result.error || `Failed to disconnect from ${teamName}`)
       }
     } catch (error) {
+      console.error('Disconnect error:', error)
       logAndToastError(`Failed to disconnect from ${teamName}`, error)
     } finally {
       setDisconnectingWorkspace(null)
@@ -84,7 +81,13 @@ export const SlackDisconnectModal = ({
           <p className="text-sm font-medium mb-2">Connected workspaces:</p>
           <div className="space-y-2">
             {workspaces.map((workspace) => {
-              const isDisconnectingThis = disconnectingWorkspace === workspace.team_id
+              const workspaceId = workspace.id
+              const isDisconnectingThis = disconnectingWorkspace === workspaceId
+              console.log('Workspace debug:', { 
+                workspaceName: workspace.team_name,
+                workspaceId, 
+                isDisconnectingThis 
+              })
               return (
                 <div 
                   key={workspace.team_name}
@@ -95,17 +98,15 @@ export const SlackDisconnectModal = ({
                     <div className="text-sm font-medium">{workspace.team_name}</div>
                     <div className="text-xs text-muted-foreground">{workspace.team_domain}</div>
                   </div>
-                  {workspace.team_id && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDisconnectWorkspace(workspace.team_id!, workspace.team_name)}
-                      disabled={isDisconnecting || isDisconnectingThis}
-                      className="text-xs px-2 py-1 h-6"
-                    >
-                      {isDisconnectingThis ? 'Disconnecting...' : 'Disconnect'}
-                    </Button>
-                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDisconnectWorkspace(workspace.id, workspace.team_name)}
+                    disabled={isDisconnecting || isDisconnectingThis}
+                    className="text-xs px-2 py-1 h-6"
+                  >
+                    {isDisconnectingThis ? 'Disconnecting...' : 'Disconnect'}
+                  </Button>
                 </div>
               )
             })}

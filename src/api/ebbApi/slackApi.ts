@@ -13,8 +13,10 @@ export interface SlackStatusResponse {
   data?: {
     connected: boolean
     workspaces: Array<{
+      id: string
       team_name: string
       team_domain: string
+      team_id?: string
       created_at: string
     }>
     preferences: {

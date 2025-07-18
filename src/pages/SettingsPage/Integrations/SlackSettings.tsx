@@ -110,7 +110,6 @@ export const SlackSettings = () => {
       <SlackDisconnectModal
         isOpen={isDisconnectModalOpen}
         onClose={() => setIsDisconnectModalOpen(false)}
-        workspaces={slackStatus?.workspaces || []}
         onDisconnectSuccess={handleDisconnectSuccess}
       />
     </div>

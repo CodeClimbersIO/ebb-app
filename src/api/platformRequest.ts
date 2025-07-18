@@ -104,7 +104,8 @@ const requestFn = () => {
           if (res) {
             try {
               const json = JSON.parse(res)
-              return json.data
+              console.log('json', json)
+              return json as { data: unknown, message?: string, success?: boolean }
             } catch {
               return res
             }
