@@ -64,9 +64,10 @@ const updatePreferences = async (preferences: SlackPreferences): Promise<{ succe
   })
 }
 
-const disconnect = async (): Promise<{ success: boolean; message?: string; error?: string }> => {
+const disconnect = async (teamId?: string): Promise<{ success: boolean; message?: string; error?: string }> => {
+  const url = teamId ? `/api/slack/disconnect/${teamId}` : '/api/slack/disconnect'
   return platformApiRequest({
-    url: '/api/slack/disconnect',
+    url,
     method: 'DELETE'
   })
 }

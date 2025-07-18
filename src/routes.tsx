@@ -2,7 +2,7 @@ import { HashRouter, Route, Routes, Navigate, useNavigate} from 'react-router-do
 import { HomePage } from '@/pages/HomePage'
 import { LoginPage } from '@/pages/LoginPage'
 import { CommunityPage } from '@/pages/CommunityPage'
-import { SettingsPage } from '@/pages/SettingsPage'
+import { SettingsPage } from '@/pages/SettingsPage/SettingsPage'
 import { useAuth } from '@/hooks/useAuth'
 import { FlowPage } from '@/pages/FlowPage/FlowPage'
 import { AccessibilityPage } from '@/pages/AccessibilityPage'
