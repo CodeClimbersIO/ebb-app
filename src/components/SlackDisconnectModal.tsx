@@ -31,7 +31,7 @@ export const SlackDisconnectModal = ({
         onDisconnectSuccess()
         onClose()
       } else {
-        throw new Error(result.error || 'Failed to disconnect from Slack')
+        throw new Error('Failed to disconnect from Slack')
       }
     } catch (error) {
       logAndToastError('Failed to disconnect from Slack', error)
@@ -54,7 +54,7 @@ export const SlackDisconnectModal = ({
           onClose()
         }
       } else {
-        throw new Error(result.error || `Failed to disconnect from ${teamName}`)
+        throw new Error(`Failed to disconnect from ${teamName}`)
       }
     } catch (error) {
       console.error('Disconnect error:', error)
@@ -64,21 +64,45 @@ export const SlackDisconnectModal = ({
     }
   }
 
+  const handleConnectWorkspace = async () => {
+    try {
+      const result = await slackApi.initiateOAuth()
+      if (result?.authUrl) {
+        window.location.href = result.authUrl
+      } else {
+        throw new Error('Failed to get Slack auth URL')
+      }
+    } catch (error) {
+      logAndToastError('Failed to initiate Slack connection', error)
+    }
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <SlackIcon />
-            Disconnect Slack Integration
+            Configure Slack Integration
           </DialogTitle>
           <DialogDescription>
-            You are about to disconnect from all Slack workspaces. This will disable all Slack integration features.
+            Manage your Slack workspace connections and integration settings.
           </DialogDescription>
         </DialogHeader>
         
         <div className="py-4">
-          <p className="text-sm font-medium mb-2">Connected workspaces:</p>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm font-medium">Connected workspaces:</p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleConnectWorkspace}
+              disabled={isDisconnecting || disconnectingWorkspace !== null}
+              className="text-xs"
+            >
+              Connect Another
+            </Button>
+          </div>
           <div className="space-y-2">
             {workspaces.map((workspace) => {
               const workspaceId = workspace.id
@@ -115,15 +139,17 @@ export const SlackDisconnectModal = ({
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={isDisconnecting || disconnectingWorkspace !== null}>
-            Cancel
+            Close
           </Button>
-          <Button 
-            variant="destructive" 
-            onClick={handleDisconnect}
-            disabled={isDisconnecting || disconnectingWorkspace !== null}
-          >
-            {isDisconnecting ? 'Disconnecting...' : 'Disconnect All'}
-          </Button>
+          {workspaces.length > 0 && (
+            <Button 
+              variant="destructive" 
+              onClick={handleDisconnect}
+              disabled={isDisconnecting || disconnectingWorkspace !== null}
+            >
+              {isDisconnecting ? 'Disconnecting...' : 'Disconnect All'}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

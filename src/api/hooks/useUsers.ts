@@ -22,7 +22,7 @@ export interface EbbLocation {
 }
 
 const getUserStatusCounts = async () => {
-  const data = await platformApiRequest({
+  const { data } = await platformApiRequest({
     url: '/api/users/status-counts',
     method: 'GET',
   })
@@ -31,12 +31,12 @@ const getUserStatusCounts = async () => {
 }
 
 const getLocations = async () => {
-  const data: EbbLocation[] = await platformApiRequest({
+  const { data } = await platformApiRequest({
     url: '/api/users/locations',
     method: 'GET',
-  })
+  }) as { data: EbbLocation[] }
 
-  const locations = data.map(location => { 
+  const locations = data.map((location: EbbLocation) => { 
     let markerLocation: [number, number] = [location.latitude, location.longitude]
     if(!location.latitude && !location.longitude) {
       markerLocation = getRandomPoint()

@@ -34,7 +34,7 @@ interface CreateProfile {
 }
 
 const fetchCurrentProfile = async () => {
-  const data = await platformApiRequest({
+  const { data } = await platformApiRequest({
     url: '/api/users/profile/me',
     method: 'GET',
   })

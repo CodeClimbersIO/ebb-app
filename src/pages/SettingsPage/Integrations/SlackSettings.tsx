@@ -87,7 +87,7 @@ export const SlackSettings = () => {
               size="sm"
               onClick={handleDisconnect}
             >
-              Disconnect
+              Configure
             </Button>
           ) : (
             <Tooltip>

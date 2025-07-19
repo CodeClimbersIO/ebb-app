@@ -45,33 +45,37 @@ export interface SlackPreferences {
 }
 
 const initiateOAuth = async (): Promise<SlackAuthResponse['data']> => {
-  return await platformApiRequest({
+  const { data } = await platformApiRequest({
     url: '/api/slack/auth',
     method: 'GET'
   })
+  return data as SlackAuthResponse['data']
 }
 
 const getStatus = async (): Promise<SlackStatusResponse['data']> => {
-  return await platformApiRequest({
+  const { data } = await platformApiRequest({
     url: '/api/slack/status',
     method: 'GET'
   })
+  return data as SlackStatusResponse['data']
 }
 
-const updatePreferences = async (preferences: SlackPreferences): Promise<{ success: boolean; data?: SlackPreferences; error?: string }> => {
-  return platformApiRequest({
+const updatePreferences = async (preferences: SlackPreferences): Promise<SlackPreferences> => {
+  const { data } = await platformApiRequest({
     url: '/api/slack/preferences',
-    method: 'PUT',
+    method: 'PUT',  
     body: preferences
   })
+  return data as SlackPreferences
 }
 
-const disconnect = async (teamId?: string): Promise<{ success: boolean; message?: string; error?: string }> => {
+const disconnect = async (teamId?: string): Promise<{success: boolean}> => {
   const url = teamId ? `/api/slack/disconnect/${teamId}` : '/api/slack/disconnect'
-  return platformApiRequest({
+  const { success } = await platformApiRequest({
     url,
     method: 'DELETE'
   })
+  return { success: success || false }
 }
 
 const startFocusSession = async (sessionId?: string, durationMinutes: number = 25) => {
