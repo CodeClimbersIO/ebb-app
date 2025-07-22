@@ -20,7 +20,14 @@ export const SlackSettings = () => {
     try {
       const result = await slackApi.initiateOAuth()
       if (result?.authUrl) {
-        window.location.href = result.authUrl
+        // Use the same pattern as Spotify - external browser for production
+        const isDev = import.meta.env.DEV
+        if (isDev) {
+          window.location.href = result.authUrl
+        } else {
+          const { invoke } = await import('@tauri-apps/api/core')
+          await invoke('plugin:shell|open', { path: result.authUrl })
+        }
       } else {
         throw new Error('Failed to get Slack auth URL')
       }
