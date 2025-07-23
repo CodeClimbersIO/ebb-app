@@ -41,11 +41,12 @@ export const useUpdateAppRatingMutation = () => {
   const queryClient = useQueryClient()
   
   return useMutation({
-    mutationFn: ({ tagId, rating }: { tagId: string; rating: ActivityRating }) =>
-      MonitorApi.updateAppRating(tagId, rating),
+    mutationFn: ({ appTagId, rating }: { appTagId: string; rating: ActivityRating }) =>
+      MonitorApi.updateAppRating(appTagId, rating),
     onSuccess: () => {
       // Invalidate app usage query to refetch updated data or update cache
       queryClient.invalidateQueries({ queryKey: appKanbanKeys.chartData() })
+      queryClient.invalidateQueries({ queryKey: appKanbanKeys.appUsage() })
       console.log('App rating updated successfully via mutation!')
     },
     onError: (error) => {

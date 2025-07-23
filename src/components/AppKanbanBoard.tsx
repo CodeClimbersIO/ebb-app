@@ -14,7 +14,6 @@ export function AppKanbanBoard({ rangeMode, date }: AppKanbanBoardProps) {
   const {
     columns,
     totalAppUsage,
-    handleDragStart,
     handleDragEnd,
     isLoading,
     error,
@@ -25,7 +24,7 @@ export function AppKanbanBoard({ rangeMode, date }: AppKanbanBoardProps) {
   }
 
   return (
-    <DndContext onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
+    <DndContext onDragEnd={handleDragEnd}>
       <Card className="mt-4">
         <CardHeader>
           <CardTitle>App/Website Usage</CardTitle>
@@ -36,10 +35,10 @@ export function AppKanbanBoard({ rangeMode, date }: AppKanbanBoardProps) {
           ) : (
             <div className="grid grid-cols-3 gap-4">
               <ColumnWrapper
-                id="creation"
-                title="Creation"
+                id="creating"
+                title="Creating"
                 titleClassName="text-md text-[rgb(124,58,237)]"
-                apps={columns.creation}
+                apps={columns.creating}
                 totalAppUsage={totalAppUsage}
               />
               <ColumnWrapper
@@ -50,10 +49,10 @@ export function AppKanbanBoard({ rangeMode, date }: AppKanbanBoardProps) {
                 totalAppUsage={totalAppUsage}
               />
               <ColumnWrapper
-                id="consumption"
-                title="Consumption"
+                id="consuming"
+                title="Consuming"
                 titleClassName="text-md text-[rgb(239,68,68)]"
-                apps={columns.consumption}
+                apps={columns.consuming}
                 totalAppUsage={totalAppUsage}
               />
             </div>
