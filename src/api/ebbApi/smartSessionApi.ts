@@ -57,7 +57,7 @@ export const hasSmartSessionCooldown = (mostRecentSession?: FlowSession)=>{
 
   const lastSessionCheck = getLastSessionCheck()
   const timeSinceLastSessionCheck = lastSessionCheck ? now.diff(lastSessionCheck, 'minutes').minutes : 1000
-  return timeSinceLastSession > 60 && timeSinceLastSessionCheck > 30
+  return timeSinceLastSession > 30 && timeSinceLastSessionCheck > 30
 }
 
 type SmartSessionType = 'doomscroll' | 'smart' | 'none'
