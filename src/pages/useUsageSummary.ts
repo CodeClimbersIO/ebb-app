@@ -29,7 +29,7 @@ const buildTotalTimeLabel = (showIdleTime: boolean) => {
 export function useUsageSummary() {
   const [date, setDate] = useState<Date>(new Date())
   const [rangeMode, setRangeMode] = useState<'day' | 'week' | 'month'>('day')
-  const { data: appUsage, refetch: refetchAppUsage } = useAppUsage()
+  const { data: appUsage, refetch: refetchAppUsage } = useAppUsage({ rangeMode, date })
   const { data: chartData, refetch: refetchChartData } = useGetChartData({ rangeMode, date })
   const [yAxisMax, setYAxisMax] = useState(0)
   const [totalCreating, setTotalCreating] = useState(0)

@@ -4,8 +4,12 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { ColumnWrapper } from './ColumnWrapper'
 import { useKanbanBoard } from '../api/hooks/useKanbanBoard'
 
+interface AppKanbanBoardProps {
+  rangeMode: 'day' | 'week' | 'month'
+  date: Date
+}
 
-export function AppKanbanBoard() {
+export function AppKanbanBoard({ rangeMode, date }: AppKanbanBoardProps) {
   // Use our new hook instead of managing state directly
   const {
     columns,
@@ -14,7 +18,7 @@ export function AppKanbanBoard() {
     handleDragEnd,
     isLoading,
     error,
-  } = useKanbanBoard()
+  } = useKanbanBoard({ rangeMode, date })
 
   if (error) {
     return <div>Error loading data</div>

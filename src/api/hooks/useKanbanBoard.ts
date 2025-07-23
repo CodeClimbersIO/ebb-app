@@ -17,8 +17,8 @@ interface KanbanColumns {
 
 
 
-export const useKanbanBoard = () => {
-  const { data: fetchedAppUsage, isLoading: isLoadingAppUsage, error: appUsageError } = useAppUsage()
+export const useKanbanBoard = ({ rangeMode, date }: { rangeMode: 'day' | 'week' | 'month', date: Date }) => {
+  const { data: fetchedAppUsage, isLoading: isLoadingAppUsage, error: appUsageError } = useAppUsage({ rangeMode, date })
 
   const { data: fetchedTags, isLoading: isLoadingTags, error: tagsError } = useTags()
 
@@ -46,9 +46,13 @@ export const useKanbanBoard = () => {
 
   // useEffect to populate columns when fetchedAppUsage changes (i.e., when data loads)
   useEffect(() => {
+    // Reset initialization flag when date or rangeMode changes
+    isInitialized.current = false
+  }, [date, rangeMode])
+
+  useEffect(() => {
     // MODIFIED: Now depends on fetchedAppUsage from useQuery
-    if (fetchedAppUsage && fetchedAppUsage.length > 0 && !isInitialized.current) {
-      console.log('useAppUsage: Initializing columns from fetchedAppUsage:', fetchedAppUsage)
+    if (fetchedAppUsage && fetchedAppUsage.length > 0) {
       const newColumns: KanbanColumns = {
         'creation': [],
         'neutral': [],
@@ -68,13 +72,8 @@ export const useKanbanBoard = () => {
       })
       setColumns(newColumns)
       isInitialized.current = true
-    } else if (fetchedAppUsage && fetchedAppUsage.length > 0 && isInitialized.current) {
-      console.log('useAppUsage: fetchedAppUsage changed but columns already initialized. Not re-initializing.')
-      // Optional: If you want to resync the Kanban board with fresh data from the API
-      // without losing user's current drag state, you'd need more complex merge logic here.
-      // For simplicity, we're currently preventing re-initialization if already initialized.
     }
-  }, [fetchedAppUsage]) // MODIFIED: Dependency is now fetchedAppUsage
+  }, [fetchedAppUsage])
 
 
   // handleDragStart function for DND Kit

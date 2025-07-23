@@ -94,6 +94,8 @@ export const HomePage = () => {
             yAxisMax={yAxisMax}
             showIdleTime={showIdleTime}
             setShowIdleTime={setShowIdleTime}
+            rangeMode={rangeMode}
+            date={date}
           />
         </div>
       </div>

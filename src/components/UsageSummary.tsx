@@ -89,6 +89,8 @@ export interface UsageSummaryProps {
   setShowIdleTime?: (showIdleTime: boolean) => void;
   isLoading?: boolean;
   yAxisMax?: number;
+  rangeMode: 'day' | 'week' | 'month';
+  date: Date;
 }
 
 function TrendIndicator({ trend }: { trend?: { percent: number; direction: 'up' | 'down' | 'none' } }) {
@@ -120,6 +122,8 @@ export const UsageSummary = ({
   isLoading = false,
   yAxisMax,
   showIdleTime,
+  rangeMode,
+  date,
   setShowIdleTime,
 }: UsageSummaryProps) => {
   const { user } = useAuth()
@@ -362,7 +366,7 @@ export const UsageSummary = ({
 
 
       <div ref={appUsageRef}>
-        <AppKanbanBoard />
+        <AppKanbanBoard rangeMode={rangeMode} date={date} />
       </div>
       
     </>

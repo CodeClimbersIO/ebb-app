@@ -13,15 +13,27 @@ const appKanbanKeys = {
   chartData: () => [...appKanbanKeys.all, 'chartData'] as const,
 }
 
-export const useAppUsage = () => {
+export const useAppUsage = ({ rangeMode, date }: { rangeMode: 'day' | 'week' | 'month', date: Date }) => {
   return useQuery<AppsWithTime[]>({
     queryKey: appKanbanKeys.appUsage(),
     queryFn: async () => {
-      const appUsage = await MonitorApi.getTopAppsByPeriod(DateTime.local().startOf('day'), DateTime.local().endOf('day'))
+      let start, end
+      if (rangeMode === 'day') {
+        start = DateTime.fromJSDate(date).startOf('day')
+        end = DateTime.fromJSDate(date).endOf('day')
+      } else if (rangeMode === 'week') {
+        start = DateTime.fromJSDate(date).minus({ days: 6 }).startOf('day')
+        end = DateTime.fromJSDate(date).endOf('day')
+      } else {
+      // Month view - show current week and previous 4 weeks
+        const currentDate = DateTime.fromJSDate(date)
+        end = currentDate.endOf('day')
+        start = currentDate.minus({ weeks: 4 }).startOf('week')
+      }
+      const appUsage = await MonitorApi.getTopAppsByPeriod(start, end)
       return appUsage || []
     },
-    staleTime: 5 * 60 * 1000, // Data considered fresh for 5 minutes
-    refetchOnWindowFocus: false, // Prevent refetch on window focus for this data
+    refetchOnWindowFocus: true, // Prevent refetch on window focus for this data
   })
 }
 
