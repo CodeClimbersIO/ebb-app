@@ -5,7 +5,6 @@ import { CommunityPage } from '@/pages/CommunityPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 import { useAuth } from '@/hooks/useAuth'
 import { FlowPage } from '@/pages/FlowPage/FlowPage'
-import { FlowRecapPage } from '@/pages/FlowRecapPage'
 import { AccessibilityPage } from '@/pages/AccessibilityPage'
 import { ShortcutTutorialPage } from '@/pages/ShortcutTutorialPage'
 // import { DeviceLimitPage } from './pages/DeviceLimitPage'
@@ -82,7 +81,6 @@ const Router = () => {
       <Route path="/category-dashboard" element={<CategoryDashboardPage />} />
       <Route path="/start-flow" element={<StartFlowPage />} />
       <Route path="/flow" element={<FlowPage />} />
-      <Route path="/flow-recap" element={<FlowRecapPage />} />
       <Route path="/feedback" element={<FeedbackPage />} />
       <Route path="/onboarding/accessibility" element={<AccessibilityPage />} />
       <Route path="/onboarding/shortcut-tutorial" element={<ShortcutTutorialPage />} />
