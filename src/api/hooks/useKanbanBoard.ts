@@ -1,5 +1,5 @@
 // hooks/useAppUsage.ts
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { DragEndEvent } from '@dnd-kit/core'
 import { AppsWithTime } from '@/api/monitorApi/monitorApi' // Adjust path as needed for types
 import { ActivityRating } from '@/lib/app-directory/apps-types' // Adjust path as needed for types
@@ -35,12 +35,10 @@ export const useKanbanBoard = ({ rangeMode, date }: { rangeMode: 'day' | 'week' 
   const totalAppUsage = Object.values(columns).flat().reduce((acc: number, app: AppsWithTime) => acc + app.duration, 0)
 
   // Flag to track if columns have been initialized from appUsage
-  const isInitialized = useRef(false)
 
   // useEffect to populate columns when fetchedAppUsage changes (i.e., when data loads)
   useEffect(() => {
     // Reset initialization flag when date or rangeMode changes
-    isInitialized.current = false
   }, [date, rangeMode])
 
   useEffect(() => {
@@ -59,7 +57,6 @@ export const useKanbanBoard = ({ rangeMode, date }: { rangeMode: 'day' | 'week' 
         }
       })
       setColumns(newColumns)
-      isInitialized.current = true
     }
   }, [fetchedAppUsage])
 
@@ -95,18 +92,14 @@ export const useKanbanBoard = ({ rangeMode, date }: { rangeMode: 'day' | 'week' 
       const updatedColumns = { ...prevColumns }
       const app = active.data.current?.app
       if (app && currentColumnId) {
-        // Remove from source column
         updatedColumns[currentColumnId] = updatedColumns[currentColumnId].filter(item => item.id !== app.id)
-        // Add to target column
         updatedColumns[targetColumnId].push(app)
-        // Sort the target column by duration
         updatedColumns[targetColumnId].sort((a, b) => b.duration - a.duration)
       }
       return updatedColumns
     })
     updateAppRatingMutation.mutate({ appTagId, rating: rating as ActivityRating })
 
-    isInitialized.current = false
 
   }
 
