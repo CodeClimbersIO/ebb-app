@@ -32,6 +32,12 @@ export const useInitializeAppState = () => {
       const hasPermissions = await invoke<boolean>('check_accessibility_permissions')
       beginCheckForUpdates()
 
+      document.addEventListener('keydown', (event) => {
+        if (event.metaKey && event.key === 'r') {
+          window.location.reload()
+        }
+      })
+
       if (hasPermissions) {
         await invoke('start_system_monitoring')
       }
@@ -49,6 +55,8 @@ export const useInitializeAppState = () => {
     } 
 
   }, [user, posthog, profile])
+
+
 
   useEffect(() => {
     loadShortcutFromStorage()
