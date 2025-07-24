@@ -42,6 +42,7 @@ export function useUsageSummary() {
   const [showIdleTime, setShowIdleTime] = useState(false)
   const [totalTimeTooltip, setTotalTimeTooltip] = useState('Total time spent online today (not including idle time)' )
   const [totalTimeLabel, setTotalTimeLabel] = useState('Total Active Time')
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
 
   useEffect(() => {
     const tooltip = buildTotalTimeTooltip(rangeMode, showIdleTime)
@@ -100,6 +101,7 @@ export function useUsageSummary() {
       setTotalCreating(chartData.reduce((acc, curr) => acc + curr.creating, 0))
       const online = chartData.reduce((acc, curr) => acc + curr.creating + curr.neutral + curr.consuming + (showIdleTime ? curr.idle : 0), 0)
       setTotalTime(online)
+      setLastUpdated(new Date())
       setIsLoading(false)
 
       // --- Trend Calculation ---
@@ -190,5 +192,6 @@ export function useUsageSummary() {
     setShowIdleTime,
     totalTimeTooltip,
     totalTimeLabel,
+    lastUpdated,
   }
 } 

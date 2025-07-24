@@ -1,7 +1,7 @@
-import { useDroppable } from '@dnd-kit/core';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { DraggableAppCard } from './DraggableAppCard';
-import { AppsWithTime } from '../api/monitorApi/monitorApi';
+import { useDroppable } from '@dnd-kit/core'
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
+import { DraggableAppCard } from './DraggableAppCard'
+import { AppsWithTime } from '../api/monitorApi/monitorApi'
 
 
 type ColumnWrapperProps = {
@@ -21,14 +21,14 @@ export function ColumnWrapper({
 }: ColumnWrapperProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: id,
-  });
+  })
 
-  const ColumnColour = id === 'creation' ? 'bg-[rgb(124,58,237)]' : id === 'neutral' ? 'bg-gray-500' : 'bg-[rgb(239,68,68)]';
+  const ColumnColour = id === 'creation' ? 'bg-[rgb(124,58,237)]' : id === 'neutral' ? 'bg-gray-500' : 'bg-[rgb(239,68,68)]'
 
-  const highlightClass = isOver ? `bg-${ColumnColour}/10 border-${ColumnColour}` : 'bg-muted/20 border-transparent';
+  const highlightClass = isOver ? `bg-${ColumnColour}/10 border-${ColumnColour}` : 'bg-muted/20 border-transparent'
 
   return (
-     // Attach setNodeRef to the root element of the column
+  // Attach setNodeRef to the root element of the column
     <Card className={`p-4 border ${highlightClass} transition-colors duration-200`} ref={setNodeRef}>
       <CardHeader className="p-0 mb-4 flex flex-row items-center justify-between">
         <CardTitle className={titleClassName}>{title}</CardTitle>
@@ -50,7 +50,7 @@ export function ColumnWrapper({
           ))}
       </CardContent>
     </Card>
-  );
+  )
 }
 
 

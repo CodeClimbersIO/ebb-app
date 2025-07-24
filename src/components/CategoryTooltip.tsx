@@ -96,10 +96,10 @@ export function CategoryTooltip({
                   {isCategory && categoryCount !== undefined
                     ? `${option.category} (${categoryCount})`
                     : option.type === 'app'
-                    ? option.app.is_browser ? option.app.app_external_id : option.app.name
-                    : option.type === 'custom'
-                    ? option.url
-                    : ''}
+                      ? option.app.is_browser ? option.app.app_external_id : option.app.name
+                      : option.type === 'custom'
+                        ? option.url
+                        : ''}
                 </span>
                 {onRemove && (
                   <X

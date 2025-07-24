@@ -36,6 +36,7 @@ export const HomePage = () => {
     setShowIdleTime,
     totalTimeTooltip,
     totalTimeLabel,
+    lastUpdated,
   } = useUsageSummary()
 
 
@@ -96,6 +97,7 @@ export const HomePage = () => {
             setShowIdleTime={setShowIdleTime}
             rangeMode={rangeMode}
             date={date}
+            lastUpdated={lastUpdated}
           />
         </div>
       </div>

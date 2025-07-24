@@ -91,6 +91,7 @@ export interface UsageSummaryProps {
   yAxisMax?: number;
   rangeMode: 'day' | 'week' | 'month';
   date: Date;
+  lastUpdated?: Date | null;
 }
 
 function TrendIndicator({ trend }: { trend?: { percent: number; direction: 'up' | 'down' | 'none' } }) {
@@ -124,6 +125,7 @@ export const UsageSummary = ({
   showIdleTime,
   rangeMode,
   date,
+  lastUpdated,
   setShowIdleTime,
 }: UsageSummaryProps) => {
   const { user } = useAuth()
@@ -163,6 +165,24 @@ export const UsageSummary = ({
 
   const scrollToAppUsage = () => {
     appUsageRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  const formatLastUpdated = (date: Date | null) => {
+    if (!date) return null
+    const now = new Date()
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
+    
+    if (diffInSeconds < 60) {
+      return 'Just now'
+    } else if (diffInSeconds < 3600) {
+      const minutes = Math.floor(diffInSeconds / 60)
+      return `${minutes} minute${minutes > 1 ? 's' : ''} ago`
+    } else if (diffInSeconds < 86400) {
+      const hours = Math.floor(diffInSeconds / 3600)
+      return `${hours} hour${hours > 1 ? 's' : ''} ago`
+    } else {
+      return date.toLocaleDateString() + ' at ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    }
   }
 
   return (
@@ -362,6 +382,13 @@ export const UsageSummary = ({
             </div>
           )}
         </CardContent>
+        {lastUpdated && (
+          <div className="px-6 pb-4">
+            <div className="text-xs text-muted-foreground text-right">
+              Last updated: {formatLastUpdated(lastUpdated)}
+            </div>
+          </div>
+        )}
       </Card>
 
 
