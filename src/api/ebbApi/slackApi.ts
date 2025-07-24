@@ -79,11 +79,11 @@ const disconnect = async (teamId?: string): Promise<{success: boolean}> => {
   return { success: success || false }
 }
 
-const startFocusSession = async (sessionId?: string, durationMinutes: number = 25) => {
+const startFocusSession = async (durationMinutes: number = 25) => {
   return await platformApiRequest({
     url: '/api/slack/focus-session/start',
     method: 'POST',
-    body: { sessionId, durationMinutes }
+    body: { durationMinutes }
   })
 }
 
@@ -124,6 +124,7 @@ const getDNDInfo = async () => {
     method: 'GET'
   })
 }
+
 
 export const slackApi = {
   initiateOAuth,

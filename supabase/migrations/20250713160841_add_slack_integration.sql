@@ -14,6 +14,20 @@ CREATE TABLE slack_oauth_states (
 -- Index for efficient cleanup of expired tokens
 CREATE INDEX idx_slack_oauth_states_expires_at ON slack_oauth_states(expires_at);
 
+-- Table to track active focus sessions for cleanup and status reporting
+CREATE TABLE slack_focus_sessions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  session_id TEXT NOT NULL,
+  duration_minutes INTEGER,
+  start_time TIMESTAMPTZ DEFAULT NOW(),
+  end_time TIMESTAMPTZ,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id, session_id)
+);
+
 -- Table to store Slack workspace integrations
 CREATE TABLE slack_workspaces (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -27,6 +41,22 @@ CREATE TABLE slack_workspaces (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+
+-- Table to track per-workspace state for each focus session
+CREATE TABLE slack_focus_session_workspaces (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  session_id UUID NOT NULL REFERENCES slack_focus_sessions(id) ON DELETE CASCADE,
+  workspace_id UUID NOT NULL REFERENCES slack_workspaces(id) ON DELETE CASCADE,
+  status_updated BOOLEAN DEFAULT false,
+  dnd_enabled BOOLEAN DEFAULT false,
+  error_message TEXT,
+  error_type TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(session_id, workspace_id)
+);
+
 
 -- Table to store user-specific Slack connections
 CREATE TABLE slack_user_connections (
@@ -79,6 +109,11 @@ CREATE INDEX idx_slack_user_connections_active ON slack_user_connections(user_id
 CREATE INDEX idx_slack_preferences_user_id ON slack_preferences(user_id);
 CREATE INDEX idx_slack_session_activities_user_id ON slack_session_activities(user_id);
 CREATE INDEX idx_slack_session_activities_created_at ON slack_session_activities(created_at);
+CREATE INDEX idx_slack_focus_sessions_user_id ON slack_focus_sessions(user_id);
+CREATE INDEX idx_slack_focus_sessions_active ON slack_focus_sessions(user_id, is_active);
+CREATE INDEX idx_slack_focus_sessions_start_time ON slack_focus_sessions(start_time);
+CREATE INDEX idx_slack_focus_session_workspaces_session_id ON slack_focus_session_workspaces(session_id);
+CREATE INDEX idx_slack_focus_session_workspaces_workspace_id ON slack_focus_session_workspaces(workspace_id);
 
 -- Update triggers for updated_at timestamps
 CREATE TRIGGER set_updated_at
@@ -106,15 +141,31 @@ CREATE TRIGGER set_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_updated_at();
 
+CREATE TRIGGER set_updated_at
+    BEFORE UPDATE ON slack_focus_sessions
+    FOR EACH ROW
+    EXECUTE FUNCTION public.handle_updated_at();
+
+CREATE TRIGGER set_updated_at
+    BEFORE UPDATE ON slack_focus_session_workspaces
+    FOR EACH ROW
+    EXECUTE FUNCTION public.handle_updated_at();
+
 -- ROLLBACK SCRIPT (commented out)
 -- To undo these changes, uncomment and run the following statements:
 --
--- DROP TRIGGER IF EXISTS set_updated_at ON slack_workspaces;
--- DROP TRIGGER IF EXISTS set_updated_at ON slack_user_connections;
--- DROP TRIGGER IF EXISTS set_updated_at ON slack_preferences;
--- DROP TRIGGER IF EXISTS set_updated_at ON slack_session_activities;
+-- DROP TRIGGER IF EXISTS set_updated_at ON slack_focus_session_workspaces;
+-- DROP TRIGGER IF EXISTS set_updated_at ON slack_focus_sessions;
 -- DROP TRIGGER IF EXISTS set_updated_at ON slack_oauth_states;
--- DROP FUNCTION IF EXISTS update_updated_at_column();
+-- DROP TRIGGER IF EXISTS set_updated_at ON slack_session_activities;
+-- DROP TRIGGER IF EXISTS set_updated_at ON slack_preferences;
+-- DROP TRIGGER IF EXISTS set_updated_at ON slack_user_connections;
+-- DROP TRIGGER IF EXISTS set_updated_at ON slack_workspaces;
+-- DROP INDEX IF EXISTS idx_slack_focus_session_workspaces_workspace_id;
+-- DROP INDEX IF EXISTS idx_slack_focus_session_workspaces_session_id;
+-- DROP INDEX IF EXISTS idx_slack_focus_sessions_start_time;
+-- DROP INDEX IF EXISTS idx_slack_focus_sessions_active;
+-- DROP INDEX IF EXISTS idx_slack_focus_sessions_user_id;
 -- DROP INDEX IF EXISTS idx_slack_session_activities_created_at;
 -- DROP INDEX IF EXISTS idx_slack_session_activities_user_id;
 -- DROP INDEX IF EXISTS idx_slack_preferences_user_id;
@@ -122,6 +173,8 @@ CREATE TRIGGER set_updated_at
 -- DROP INDEX IF EXISTS idx_slack_user_connections_workspace_id;
 -- DROP INDEX IF EXISTS idx_slack_user_connections_user_id;
 -- DROP INDEX IF EXISTS idx_slack_oauth_states_expires_at;
+-- DROP TABLE IF EXISTS slack_focus_session_workspaces;
+-- DROP TABLE IF EXISTS slack_focus_sessions;
 -- DROP TABLE IF EXISTS slack_session_activities;
 -- DROP TABLE IF EXISTS slack_preferences;
 -- DROP TABLE IF EXISTS slack_user_connections;
