@@ -10,15 +10,19 @@ import {
 } from '@/components/ui/dialog'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useSlackStatus } from '@/api/hooks/useSlack'
-import { slackApi } from '@/api/ebbApi/slackApi'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
 import { initiateSlackOAuth } from '@/lib/utils/slackAuth.util'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ExternalLink } from 'lucide-react'
+import { SlackSettings } from '@/api/ebbApi/workflowApi'
 
-export function SlackFocusToggle() {
+interface SlackFocusToggleProps {
+  slackSettings: SlackSettings
+  onSlackSettingsChange: (settings: SlackSettings) => void
+}
+
+export function SlackFocusToggle({ slackSettings, onSlackSettingsChange }: SlackFocusToggleProps) {
   const [showDialog, setShowDialog] = useState(false)
-  const [dndEnabled, setDndEnabled] = useState(false)
   const { data: slackStatus, isLoading: slackStatusLoading } = useSlackStatus()
 
   const handleSlackToggle = async () => {
@@ -33,12 +37,7 @@ export function SlackFocusToggle() {
 
   const handleDndToggle = async (enabled: boolean) => {
     try {
-      if (enabled) {
-        await slackApi.controlDND('enable', 25) // Default to 25 minutes
-      } else {
-        await slackApi.controlDND('disable')
-      }
-      setDndEnabled(enabled)
+      onSlackSettingsChange({ ...slackSettings, dndEnabled: enabled })
     } catch (error) {
       logAndToastError('Failed to toggle Slack DND', error)
     }
@@ -51,7 +50,7 @@ export function SlackFocusToggle() {
   }
 
   const isConnected = slackStatus?.connected && slackStatus?.workspaces?.length > 0
-  const isActive = isConnected && dndEnabled
+  const isActive = isConnected && slackSettings.dndEnabled
 
   return (
     <>
@@ -76,7 +75,7 @@ export function SlackFocusToggle() {
               </div>
             </TooltipTrigger>
             <TooltipContent side="right" sideOffset={10}>
-              {!isConnected ? 'Connect Slack' : dndEnabled ? 'Slack DND Active' : 'Slack DND Settings'}
+              {!isConnected ? 'Connect Slack' : slackSettings.dndEnabled ? 'Slack DND Active' : 'Slack DND Settings'}
             </TooltipContent>
           </Tooltip>
         )}
@@ -97,7 +96,7 @@ export function SlackFocusToggle() {
                 </div>
               </div>
               <Switch
-                checked={dndEnabled}
+                checked={slackSettings.dndEnabled}
                 onCheckedChange={handleDndToggle}
               />
             </div>

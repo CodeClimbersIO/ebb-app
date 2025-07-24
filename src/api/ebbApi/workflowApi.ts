@@ -1,5 +1,5 @@
 import { SearchOption } from '@/components/AppSelector'
-import { WorkflowDb, WorkflowRepo, WorkflowSettings } from '@/db/ebb/workflowRepo'
+import { WorkflowDb, WorkflowRepo, WorkflowSettings, SlackSettings } from '@/db/ebb/workflowRepo'
 import { getEbbDb } from '@/db/ebb/ebbDb'
 import { BlockingPreferenceApi } from './blockingPreferenceApi'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
@@ -41,6 +41,7 @@ const toDbWorkflow = (workflow: Workflow): Partial<WorkflowDb> => {
     selectedPlaylist: workflow.settings.selectedPlaylist,
     selectedPlaylistName: workflow.settings.selectedPlaylistName,
     difficulty: workflow.settings.difficulty,
+    slack: workflow.settings.slack,
   }
   
   const dbWorkflow: Partial<WorkflowDb> = {
@@ -121,4 +122,6 @@ export const WorkflowApi = {
   updateLastSelected,
   renameWorkflow,
   getSmartDefaultWorkflow
-} 
+}
+
+export type { SlackSettings }

@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { TopNav } from '@/components/TopNav'
 import { TimeSelector } from '@/components/TimeSelector'
 import { WorkflowSelector } from '@/components/WorkflowSelector'
-import { WorkflowApi, type Workflow } from '@/api/ebbApi/workflowApi'
+import { WorkflowApi, type Workflow, type SlackSettings } from '@/api/ebbApi/workflowApi'
 import { Duration } from 'luxon'
 import { getDurationFromDefault } from '@/lib/stores/flowTimer'
 import { MusicSelector } from '@/components/MusicSelector'
@@ -33,6 +33,7 @@ export const StartFlowPage = () => {
   const [workflows, setWorkflows] = useState<Workflow[]>([])
   const [hasMusic, setHasMusic] = useState(true)
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard' | null>(null)
+  const [slackSettings, setSlackSettings] = useState<SlackSettings>({ dndEnabled: false })
   const [spotifyProfile, setSpotifyProfile] = useState<{
     email: string
     display_name: string | null
@@ -71,6 +72,7 @@ export const StartFlowPage = () => {
           setIsAllowList(mostRecentWorkflow.settings.isAllowList || false)
           setHasMusic(mostRecentWorkflow.settings.hasMusic ?? true)
           setDifficulty(mostRecentWorkflow.settings.difficulty || null)
+          setSlackSettings(mostRecentWorkflow.settings.slack || { dndEnabled: false })
         }
       } catch (error) {
         logAndToastError(`Failed to load workflows: ${error}`, error)
@@ -109,7 +111,8 @@ export const StartFlowPage = () => {
         defaultDuration: duration?.as('minutes') ?? null,
         isAllowList,
         hasMusic,
-        difficulty
+        difficulty,
+        slack: slackSettings
       }
     }
 
@@ -118,7 +121,7 @@ export const StartFlowPage = () => {
     } catch (error) {
       logAndToastError(`Failed to save workflow changes: ${error}`, error)
     }
-  }, [duration, selectedPlaylist, selectedApps, isAllowList, selectedWorkflow, hasMusic, difficulty])
+  }, [duration, selectedPlaylist, selectedApps, isAllowList, selectedWorkflow, hasMusic, difficulty, slackSettings])
 
   useEffect(() => {
     if (selectedWorkflow?.id) {
@@ -127,7 +130,7 @@ export const StartFlowPage = () => {
       }, 150)
       return () => clearTimeout(timeoutId)
     }
-  }, [selectedWorkflow, duration, selectedPlaylist, selectedApps, isAllowList, hasMusic, saveChanges])
+  }, [selectedWorkflow, duration, selectedPlaylist, selectedApps, isAllowList, hasMusic, saveChanges, slackSettings])
 
   const handleWorkflowSelect = async (workflowId: string) => {
     try {
@@ -142,6 +145,7 @@ export const StartFlowPage = () => {
         setIsAllowList(workflow.settings.isAllowList || false)
         setHasMusic(workflow.settings.hasMusic ?? true)
         setDifficulty(workflow.settings.difficulty || null)
+        setSlackSettings(workflow.settings.slack || { dndEnabled: false })
       }
     } catch (error) {
       logAndToastError(`Failed to select workflow: ${error}`, error)
@@ -220,6 +224,7 @@ export const StartFlowPage = () => {
             hasMusic,
             typewriterMode: false,
             difficulty,
+            slack: slackSettings,
           },
         }
 
@@ -253,7 +258,8 @@ export const StartFlowPage = () => {
           defaultDuration: duration?.as('minutes') ?? null,
           isAllowList,
           hasMusic,
-          difficulty
+          difficulty,
+          slack: slackSettings
         }
       }
 
@@ -335,7 +341,10 @@ export const StartFlowPage = () => {
                 {workflows.length > 0 && (
                   <SmartFocusSelector workflows={workflows} />
                 )}
-                <SlackFocusToggle />
+                <SlackFocusToggle 
+                  slackSettings={slackSettings}
+                  onSlackSettingsChange={setSlackSettings}
+                />
               </div>
             </div>
 

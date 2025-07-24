@@ -10,6 +10,10 @@ export interface WorkflowDb {
   is_smart_default: boolean
 }
 
+export interface SlackSettings {
+  dndEnabled: boolean
+}
+
 export interface WorkflowSettings {
   typewriterMode: boolean
   hasBreathing: boolean
@@ -19,6 +23,7 @@ export interface WorkflowSettings {
   selectedPlaylist?: string | null
   selectedPlaylistName?: string | null
   difficulty?: 'easy' | 'medium' | 'hard' | null
+  slack?: SlackSettings
 }
 
 const getWorkflows = async (): Promise<WorkflowDb[]> => {

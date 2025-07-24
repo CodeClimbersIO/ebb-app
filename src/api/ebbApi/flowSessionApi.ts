@@ -1,6 +1,8 @@
 import { QueryResult } from '@tauri-apps/plugin-sql'
 import { FlowSession, FlowSessionRepo, FlowSessionSchema } from '@/db/ebb/flowSessionRepo'
 import { Workflow, WorkflowApi } from './workflowApi'
+import { slackApi } from './slackApi'
+import { logAndToastError } from '@/lib/utils/ebbError.util'
 
 
 const startFlowSession = async (
@@ -29,6 +31,17 @@ const startFlowSession = async (
   }
   
   await FlowSessionRepo.createFlowSession(flowSession)
+  
+  // Handle Slack DND if enabled
+  if (workflowToUse.settings.slack?.dndEnabled) {
+    try {
+      const durationMinutes = workflowToUse.settings.defaultDuration || 25
+      await slackApi.controlDND('enable', durationMinutes)
+    } catch (error) {
+      logAndToastError('Failed to enable Slack DND', error)
+    }
+  }
+  
   window.dispatchEvent(new CustomEvent('flow-session-started', { detail: { id: flowSession.id } }))
 
   return flowSession.id
@@ -38,6 +51,18 @@ const endFlowSession = async (): Promise<QueryResult> => {
   const flowSession = await FlowSessionRepo.getInProgressFlowSession()
   if (!flowSession) {
     throw new Error('Flow session not found')
+  }
+
+  // Get the workflow to check if Slack DND was enabled
+  if (flowSession.workflow_id) {
+    try {
+      const workflow = await WorkflowApi.getWorkflowById(flowSession.workflow_id)
+      if (workflow?.settings.slack?.dndEnabled) {
+        await slackApi.controlDND('disable')
+      }
+    } catch (error) {
+      logAndToastError('Failed to disable Slack DND', error)
+    }
   }
 
   const flowSessionUpdated: Partial<FlowSessionSchema> = {
