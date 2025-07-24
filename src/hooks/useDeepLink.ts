@@ -78,15 +78,9 @@ export const useDeepLink = () => {
 
         // Check if this is a Slack callback
         if (url.includes('slack/callback')) {
-          const slackCode = searchParams.get('code')
-          const state = searchParams.get('state')
-          if (slackCode && state) {
-            // TODO: Handle Slack callback - will need to implement SlackAuthService.handleCallback
-            // For now, just navigate to settings to show the new connection
-            navigate('/settings', { replace: true })
-            window.location.reload()
-            return
-          }
+          navigate('/settings', { replace: true })
+          window.location.reload()
+          return
         }
 
         const code = searchParams.get('code')

@@ -5,6 +5,7 @@ import { SlackIcon } from './icons/SlackIcon'
 import { slackApi } from '../api/ebbApi/slackApi'
 import { logAndToastError } from '../lib/utils/ebbError.util'
 import { useSlackStatus } from '../api/hooks/useSlack'
+import { initiateSlackOAuth } from '../lib/utils/slackAuth.util'
 
 interface SlackDisconnectModalProps {
   isOpen: boolean
@@ -65,24 +66,7 @@ export const SlackDisconnectModal = ({
   }
 
   const handleConnectWorkspace = async () => {
-    try {
-      const result = await slackApi.initiateOAuth()
-      if (result?.authUrl) {
-        // Use the same pattern as Spotify - external browser for production
-        const isDev = import.meta.env.DEV
-        if (isDev) {
-          window.location.href = result.authUrl
-        } else {
-          await import('@tauri-apps/api/core').then(({ invoke }) => 
-            invoke('plugin:shell|open', { path: result.authUrl })
-          )
-        }
-      } else {
-        throw new Error('Failed to get Slack auth URL')
-      }
-    } catch (error) {
-      logAndToastError('Failed to initiate Slack connection', error)
-    }
+    await initiateSlackOAuth()
   }
 
   return (
@@ -115,11 +99,6 @@ export const SlackDisconnectModal = ({
             {workspaces.map((workspace) => {
               const workspaceId = workspace.id
               const isDisconnectingThis = disconnectingWorkspace === workspaceId
-              console.log('Workspace debug:', { 
-                workspaceName: workspace.team_name,
-                workspaceId, 
-                isDisconnectingThis 
-              })
               return (
                 <div 
                   key={workspace.team_name}

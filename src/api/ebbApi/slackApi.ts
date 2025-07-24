@@ -44,9 +44,10 @@ export interface SlackPreferences {
   urgent_keywords?: string[]
 }
 
-const initiateOAuth = async (): Promise<SlackAuthResponse['data']> => {
+const initiateOAuth = async (redirectType?: 'dev' | 'prod'): Promise<SlackAuthResponse['data']> => {
+  const url = redirectType ? `/api/slack/auth?redirectType=${redirectType}` : '/api/slack/auth'
   const { data } = await platformApiRequest({
-    url: '/api/slack/auth',
+    url,
     method: 'GET'
   })
   return data as SlackAuthResponse['data']

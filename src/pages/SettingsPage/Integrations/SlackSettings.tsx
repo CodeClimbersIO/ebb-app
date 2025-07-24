@@ -5,8 +5,7 @@ import { Button } from '@/components/ui/button'
 import { SlackDisconnectModal } from '@/components/SlackDisconnectModal'
 
 import { useSlackStatus } from '@/api/hooks/useSlack'
-import { slackApi } from '@/api/ebbApi/slackApi'
-import { logAndToastError } from '@/lib/utils/ebbError.util'
+import { initiateSlackOAuth } from '@/lib/utils/slackAuth.util'
 
 export const SlackSettings = () => {
   const { data: slackStatus, isLoading: slackStatusLoading, refetch } = useSlackStatus()
@@ -17,23 +16,7 @@ export const SlackSettings = () => {
   }
 
   const handleConnect = async () => {
-    try {
-      const result = await slackApi.initiateOAuth()
-      if (result?.authUrl) {
-        // Use the same pattern as Spotify - external browser for production
-        const isDev = import.meta.env.DEV
-        if (isDev) {
-          window.location.href = result.authUrl
-        } else {
-          const { invoke } = await import('@tauri-apps/api/core')
-          await invoke('plugin:shell|open', { path: result.authUrl })
-        }
-      } else {
-        throw new Error('Failed to get Slack auth URL')
-      }
-    } catch (error) {
-      logAndToastError('Failed to initiate Slack connection', error)
-    }
+    await initiateSlackOAuth()
   }
 
   const handleDisconnect = async () => {
