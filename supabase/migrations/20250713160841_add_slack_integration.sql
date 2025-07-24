@@ -151,9 +151,19 @@ CREATE TRIGGER set_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_updated_at();
 
+-- Enable Row Level Security
+ALTER TABLE slack_oauth_states ENABLE ROW LEVEL SECURITY;
+ALTER TABLE slack_focus_sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE slack_workspaces ENABLE ROW LEVEL SECURITY;
+ALTER TABLE slack_focus_session_workspaces ENABLE ROW LEVEL SECURITY;
+ALTER TABLE slack_user_connections ENABLE ROW LEVEL SECURITY;
+ALTER TABLE slack_preferences ENABLE ROW LEVEL SECURITY;
+ALTER TABLE slack_session_activities ENABLE ROW LEVEL SECURITY;
+
+
 -- ROLLBACK SCRIPT (commented out)
 -- To undo these changes, uncomment and run the following statements:
---
+
 -- DROP TRIGGER IF EXISTS set_updated_at ON slack_focus_session_workspaces;
 -- DROP TRIGGER IF EXISTS set_updated_at ON slack_focus_sessions;
 -- DROP TRIGGER IF EXISTS set_updated_at ON slack_oauth_states;
