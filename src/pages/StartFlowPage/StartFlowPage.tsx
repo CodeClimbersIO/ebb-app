@@ -20,6 +20,7 @@ import { usePostHog } from 'posthog-js/react'
 import { Input } from '@/components/ui/input'
 import { FlowSessionApi } from '@/api/ebbApi/flowSessionApi'
 import { SmartFocusSelector } from '@/pages/StartFlowPage/SmartFocusSelector'
+import { SlackFocusToggle } from '@/components/SlackFocusToggle'
 
 export const StartFlowPage = () => {
   const [duration, setDuration] = useState<Duration | null>(null)
@@ -330,9 +331,12 @@ export const StartFlowPage = () => {
                   onChange={(value) => setDuration(value ? Duration.fromObject({ minutes: value }) : null)}
                 />
               </div>
-              {workflows.length > 0 && (
-                <SmartFocusSelector workflows={workflows} />
-              )}
+              <div className="flex items-center gap-2">
+                {workflows.length > 0 && (
+                  <SmartFocusSelector workflows={workflows} />
+                )}
+                <SlackFocusToggle />
+              </div>
             </div>
 
             {hasMusic && (
