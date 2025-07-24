@@ -6,8 +6,11 @@ import { SlackDisconnectModal } from '@/components/SlackDisconnectModal'
 
 import { useSlackStatus } from '@/api/hooks/useSlack'
 import { initiateSlackOAuth } from '@/lib/utils/slackAuth.util'
+import { canUseSlackIntegration } from '../../../lib/utils/environment.util'
+import { useAuth } from '../../../hooks/useAuth'
 
 export const SlackSettings = () => {
+  const { user } = useAuth()
   const { data: slackStatus, isLoading: slackStatusLoading, refetch } = useSlackStatus()
   const [isDisconnectModalOpen, setIsDisconnectModalOpen] = useState(false)
 
@@ -39,6 +42,10 @@ export const SlackSettings = () => {
       message = `Connected to ${slackStatus.workspaces.length} workspaces`
     }
     return message
+  }
+
+  if(!canUseSlackIntegration(user?.email)) {
+    return <></>
   }
 
   return (

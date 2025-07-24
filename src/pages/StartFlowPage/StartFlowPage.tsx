@@ -21,8 +21,11 @@ import { Input } from '@/components/ui/input'
 import { FlowSessionApi } from '@/api/ebbApi/flowSessionApi'
 import { SmartFocusSelector } from '@/pages/StartFlowPage/SmartFocusSelector'
 import { SlackFocusToggle } from '@/components/SlackFocusToggle'
-
+import { canUseSlackIntegration } from '../../lib/utils/environment.util'
+import { useAuth } from '../../hooks/useAuth'
+  
 export const StartFlowPage = () => {
+  const { user } = useAuth()
   const [duration, setDuration] = useState<Duration | null>(null)
   const [selectedWorkflowId, setSelectedWorkflowId] = useState<string | null>(null)
   const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(null)
@@ -341,10 +344,12 @@ export const StartFlowPage = () => {
                 {workflows.length > 0 && (
                   <SmartFocusSelector workflows={workflows} />
                 )}
-                <SlackFocusToggle 
-                  slackSettings={slackSettings}
-                  onSlackSettingsChange={setSlackSettings}
-                />
+                {canUseSlackIntegration(user?.email) && (
+                  <SlackFocusToggle 
+                    slackSettings={slackSettings}
+                    onSlackSettingsChange={setSlackSettings}
+                  />
+                )}
               </div>
             </div>
 
