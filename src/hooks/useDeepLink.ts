@@ -76,6 +76,13 @@ export const useDeepLink = () => {
           }
         }
 
+        // Check if this is a Slack callback
+        if (url.includes('slack/callback')) {
+          navigate('/settings', { replace: true })
+          window.location.reload()
+          return
+        }
+
         const code = searchParams.get('code')
         if (code) {
           const { data, error } = await supabase.auth.exchangeCodeForSession(code)

@@ -20,12 +20,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from './ui/popover'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from './ui/tooltip'
+
 import {
   Dialog,
   DialogContent,
@@ -307,19 +302,6 @@ export function MusicSelector({ selectedPlaylist, onPlaylistSelect }: MusicSelec
               <span>Connect Spotify</span>
             </div>
 
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex items-center justify-center gap-2 p-4 rounded-lg border opacity-50 cursor-not-allowed">
-                    <AppleMusicIcon />
-                    <span>Coming Soon</span>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Apple Music integration coming soon</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
           </div>
         </DialogContent>
       </Dialog>

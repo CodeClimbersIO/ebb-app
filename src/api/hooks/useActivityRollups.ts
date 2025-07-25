@@ -24,7 +24,7 @@ const activityKeys = {
 }
 
 const updateActivity = async (update: ActivityUpdate) => {
-  const data = await platformApiRequest({
+  const { data } = await platformApiRequest({
     url: '/api/rollup/update',
     method: 'POST',
     body: update,

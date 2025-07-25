@@ -28,6 +28,12 @@ export const getUrlParameters = (
   return ret.join('&')
 }
 
+interface PlatformApiResponse {
+  data: unknown
+  message?: string
+  success?: boolean
+}
+
 
 const requestFn = () => {
   const baseURL = BASE_URL
@@ -58,7 +64,7 @@ const requestFn = () => {
     responseType?: 'json' | 'text' | 'blob' | 'arraybuffer'
     headers?: Record<string, string>
     credentials?: RequestCredentials
-  }) => {
+  }): Promise<PlatformApiResponse> => {
     headers = await setHeaders(headers)
     return fetch(`${baseURL}${url}`, {
       method: method,
@@ -93,23 +99,24 @@ const requestFn = () => {
         }
         switch (responseType) {
         case 'blob':
-          return response.blob()
+          return { data: await response.blob() }
         case 'arraybuffer':
-          return response.arrayBuffer()
+          return { data: await response.arrayBuffer() }
         case 'text':
-          return response.text()
+          return { data: await response.text() }
         case 'json':
         default: {
           const res = await response.text()
           if (res) {
             try {
               const json = JSON.parse(res)
-              return json.data
+              console.log('json', json)
+              return json as PlatformApiResponse
             } catch {
-              return res
+              return { data: res }
             }
           }
-          return ''
+          return { data: '' }
         }
         }
       })
@@ -119,6 +126,7 @@ const requestFn = () => {
         const errorString = String(err)
         if(errorString.includes('Load failed') || err?.message?.includes('Load failed')){
           useNetworkStore.getState().setOffline(true)
+          return { data: '', success: false }
         }else {
           throw err
         }

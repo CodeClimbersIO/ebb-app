@@ -88,7 +88,7 @@ const friendKeys = {
 }
 
 const getFriends = async () => {
-  const data = await platformApiRequest({
+  const { data } = await platformApiRequest({
     url: '/api/friends/list',
     method: 'GET',
   })
@@ -96,7 +96,7 @@ const getFriends = async () => {
 }
 
 const getPendingRequestsSent = async () => {
-  const data = await platformApiRequest({
+  const { data } = await platformApiRequest({
     url: '/api/friends/requests/sent',
     method: 'GET',
   })
@@ -104,7 +104,7 @@ const getPendingRequestsSent = async () => {
 }
 
 const getPendingRequestsReceived = async () => {
-  const data = await platformApiRequest({
+  const { data } = await platformApiRequest({
     url: '/api/friends/requests/received',
     method: 'GET',
   })
@@ -112,7 +112,7 @@ const getPendingRequestsReceived = async () => {
 }
 
 const getDashboardInsights = async (date: string) => {
-  const data = await platformApiRequest({
+  const { data } = await platformApiRequest({
     url: `/api/friends/dashboard-insights?date=${date}`,
     method: 'GET',
   })
@@ -120,7 +120,7 @@ const getDashboardInsights = async (date: string) => {
 }
 
 const inviteFriend = async (email: string) => {
-  const data = await platformApiRequest({
+  const { data } = await platformApiRequest({
     url: '/api/friends/invite',
     method: 'POST',
     body: { to_email: email },
@@ -129,7 +129,7 @@ const inviteFriend = async (email: string) => {
 }
 
 const respondToFriendRequest = async ({ requestId, action }: { requestId: string; action: 'accept' | 'reject' }) => {
-  const data = await platformApiRequest({
+  const { data } = await platformApiRequest({
     url: `/api/friends/requests/${requestId}/respond`,
     method: 'POST',
     body: { action },
