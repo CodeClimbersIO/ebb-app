@@ -74,7 +74,7 @@ export function DeveloperSettings() {
       let result
       
       if (action === 'start') {
-        result = await slackApi.startFocusSession(sessionId, 25)
+        result = await slackApi.startFocusSession(25)
         console.log('Focus session started:', result)
       } else {
         result = await slackApi.endFocusSession(sessionId)
