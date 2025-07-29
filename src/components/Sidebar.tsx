@@ -10,12 +10,9 @@ import { GlobeIcon } from '@/components/icons/GlobeIcon'
 import { PaywallDialog } from '@/components/PaywallDialog'
 import { usePermissions } from '@/hooks/usePermissions'
 import { useFriendsWithInsights } from '@/api/hooks/useFriends'
-import { canUseCategoryDashboard } from '@/lib/utils/environment.util'
-import { useAuth } from '@/hooks/useAuth'
 
 export function Sidebar() {
   const location = useLocation()
-  const { user } = useAuth()
   const { hasProAccess } = usePermissions()
   const { hasPendingInvitesReceived } = useFriendsWithInsights()
 
@@ -42,7 +39,7 @@ export function Sidebar() {
             <TooltipContent side="right" sideOffset={10}>Today</TooltipContent>
           </Tooltip>
 
-          {canUseCategoryDashboard(user?.email) && <Tooltip>
+          <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 variant="ghost"
@@ -56,7 +53,7 @@ export function Sidebar() {
               </Button>
             </TooltipTrigger>
             <TooltipContent side="right" sideOffset={10}>Categories</TooltipContent>
-          </Tooltip>}
+          </Tooltip>
 
           <Tooltip>
             <TooltipTrigger asChild>

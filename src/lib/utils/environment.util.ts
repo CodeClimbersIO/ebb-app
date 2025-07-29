@@ -11,11 +11,3 @@ export const canaryUsers = ['rphovley@gmail.com', 'paul@ebb.cool', 'djl.hovley@g
 export const isCanaryUser = (email?: string) => {
   return canaryUsers.includes(email || '')
 }
-
-export const canUseCategoryDashboard = (email?: string) => {
-  return isCanaryUser(email)
-}
-
-export const canUseSlackIntegration = (email?: string) => {
-  return isCanaryUser(email)
-}
