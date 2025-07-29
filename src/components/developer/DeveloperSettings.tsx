@@ -13,10 +13,14 @@ export function DeveloperSettings() {
 
   const handleTestNotification = (type: 'smart-start-suggestion' |  'session-start' | 'session-end' | 'session-warning' | 'blocked-app', difficulty: 'easy' | 'medium' | 'hard') => {
     info(`show_notification ${difficulty} ${type}`)
-    invoke('show_notification', { notificationType: type, payload: JSON.stringify({
-      title: 'Session Completed',
-      description: 'You created for 51 minutes!',
-    }) })
+    let payload = {}
+    if(type === 'session-end') {
+      payload = {
+        title: 'Session Completed',
+        description: 'You created for 51 minutes!',
+      }
+    }
+    invoke('show_notification', { notificationType: type, payload: JSON.stringify(payload) })
   }
 
   const initiateSlackOAuth = async () => {

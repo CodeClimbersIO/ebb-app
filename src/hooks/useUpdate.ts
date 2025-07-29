@@ -4,8 +4,10 @@ import { info } from '@tauri-apps/plugin-log'
 import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
 import { isDev } from '../lib/utils/environment.util'
 import { logAndToastError } from '../lib/utils/ebbError.util'
+import { toast } from 'sonner'
 
 let consecutiveErrorCount = 0
+let lastNotifiedVersion: string | null = null
 
 const checkForUpdate = async () => {
   try {
@@ -32,29 +34,47 @@ export const checkAndUpdate = async () => {
   if (flowSession) return // don't update if flow is in progress
   const update = await checkForUpdate()
   if (update) {
-    info(
-      `found update ${update.version} from ${update.date} with notes ${update.body}`
-    )
-    let downloaded = 0
-    let contentLength = 0
-    await update.downloadAndInstall((event) => {
-      switch (event.event) {
-      case 'Started':
-        contentLength = event.data.contentLength ?? 0
-        info(`started downloading ${event.data.contentLength} bytes`)
-        break
-      case 'Progress':
-        downloaded += event.data.chunkLength
-        info(`downloaded ${downloaded} from ${contentLength}`)
-        break
-      case 'Finished':
-        info('download finished')
-        break
-      }
-    })
+    // Only show notification if we haven't already notified about this version
+    if (lastNotifiedVersion !== update.version) {
+      info(
+        `found update ${update.version} from ${update.date} with notes ${update.body}`
+      )
+      let downloaded = 0
+      let contentLength = 0
+      await update.downloadAndInstall((event) => {
+        switch (event.event) {
+        case 'Started':
+          contentLength = event.data.contentLength ?? 0
+          info(`started downloading ${event.data.contentLength} bytes`)
+          break
+        case 'Progress':
+          downloaded += event.data.chunkLength
+          info(`downloaded ${downloaded} from ${contentLength}`)
+          break
+        case 'Finished':
+          info('download finished')
+          break
+        }
+      })
 
-    info('update installed')
-    await relaunch()
+      info('update installed')
+      
+      // Show notification with restart button instead of auto-restarting
+      toast.success(`Ebb ${update.version} is available. Restart to apply latest updates.`, {
+        duration: Infinity, // Don't auto-dismiss
+        action: {
+          label: 'Restart Now',
+          onClick: () => {
+            // Reset the tracked version when user restarts
+            lastNotifiedVersion = null
+            relaunch()
+          }
+        }
+      })
+      
+      // Remember that we've notified about this version
+      lastNotifiedVersion = update.version
+    }
   }
 }
 

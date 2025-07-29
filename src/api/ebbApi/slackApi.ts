@@ -80,7 +80,7 @@ const disconnect = async (teamId?: string): Promise<{success: boolean}> => {
 }
 
 const startFocusSession = async (durationMinutes: number = 25) => {
-  return await platformApiRequest({
+  return platformApiRequest({
     url: '/api/slack/focus-session/start',
     method: 'POST',
     body: { durationMinutes }
@@ -88,7 +88,7 @@ const startFocusSession = async (durationMinutes: number = 25) => {
 }
 
 const endFocusSession = async (sessionId?: string) => {
-  return await platformApiRequest({
+  return platformApiRequest({
     url: '/api/slack/focus-session/end',
     method: 'POST',
     body: { sessionId }
@@ -96,7 +96,7 @@ const endFocusSession = async (sessionId?: string) => {
 }
 
 const setCustomStatus = async (statusText: string, statusEmoji?: string, expiration?: number) => {
-  return await platformApiRequest({
+  return platformApiRequest({
     url: '/api/slack/status/set',
     method: 'POST',
     body: { statusText, statusEmoji, expiration }
@@ -104,14 +104,14 @@ const setCustomStatus = async (statusText: string, statusEmoji?: string, expirat
 }
 
 const clearStatus = async () => {
-  return await platformApiRequest({
+  return platformApiRequest({
     url: '/api/slack/status/clear',
     method: 'POST'
   })
 }
 
 const controlDND = async (action: 'enable' | 'disable', durationMinutes?: number) => {
-  return await platformApiRequest({
+  return platformApiRequest({
     url: '/api/slack/dnd',
     method: 'POST',
     body: { action, durationMinutes }
@@ -119,7 +119,7 @@ const controlDND = async (action: 'enable' | 'disable', durationMinutes?: number
 }
 
 const getDNDInfo = async () => {
-  return await platformApiRequest({
+  return platformApiRequest({
     url: '/api/slack/dnd',
     method: 'GET'
   })
