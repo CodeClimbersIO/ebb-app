@@ -17,6 +17,7 @@ import { ExternalLink } from 'lucide-react'
 import { SlackSettings } from '@/api/ebbApi/workflowApi'
 import { useAuth } from '@/hooks/useAuth'
 import { useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
 
 interface SlackFocusToggleProps {
   slackSettings: SlackSettings
@@ -32,8 +33,12 @@ export function SlackFocusToggle({ slackSettings, onSlackSettingsChange }: Slack
 
   const handleSlackToggle = async () => {
     if (!user) {
-      // Not logged in - redirect to login page
-      navigate('/login')
+      toast.error('Must be logged in to use Slack', {
+        action: {
+          label: 'Login',
+          onClick: () => navigate('/login')
+        }
+      })
       return
     }
 
