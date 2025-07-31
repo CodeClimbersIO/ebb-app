@@ -13,5 +13,6 @@ export const useSlackStatus = () => {
   return useQuery({
     queryKey: slackKeys.status(),
     queryFn: getSlackStatus,
+    retry: false,
   })
 }

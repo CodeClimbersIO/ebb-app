@@ -6,14 +6,12 @@ import { SlackDisconnectModal } from '@/components/SlackDisconnectModal'
 
 import { useSlackStatus } from '@/api/hooks/useSlack'
 import { initiateSlackOAuth } from '@/lib/utils/slackAuth.util'
+import { useAuth } from '@/hooks/useAuth'
 
 export const SlackSettings = () => {
-  const { data: slackStatus, isLoading: slackStatusLoading, refetch } = useSlackStatus()
+  const { user } = useAuth()
+  const { data: slackStatus, refetch } = useSlackStatus()
   const [isDisconnectModalOpen, setIsDisconnectModalOpen] = useState(false)
-
-  if (slackStatusLoading) {
-    return <div>Loading...</div>
-  }
 
   const handleConnect = async () => {
     await initiateSlackOAuth()
@@ -27,11 +25,14 @@ export const SlackSettings = () => {
     refetch()
   }
 
-  if (!slackStatus) {
-    return <div>Error loading your Slack status. Please try again later.</div>
-  }
 
   const getSlackWorkspaceMessage = () => {
+    if (!user) {
+      return 'Please login to use the slack integration'
+    }
+    if (!slackStatus) {
+      return 'No workspaces connected'
+    }
     let message = 'No workspaces connected'
     if (slackStatus.workspaces.length === 1) {
       message = `Connected to ${slackStatus.workspaces[0].team_name}`
@@ -60,7 +61,7 @@ export const SlackSettings = () => {
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
-                  {slackStatus.workspaces.length > 0 ? slackStatus.workspaces.map((workspace) => (
+                  {slackStatus?.workspaces?.length || 0 > 0 ? slackStatus?.workspaces.map((workspace) => (
                     <div key={workspace.team_name}>
                       {workspace.team_name}
                     </div>
@@ -71,11 +72,12 @@ export const SlackSettings = () => {
           </div>
         </div>
         <div>
-          {slackStatus?.workspaces.length > 0 ? (
+          {slackStatus?.workspaces?.length || 0 > 0 ? (
             <Button
               variant="outline"
               size="sm"
               onClick={handleDisconnect}
+              disabled={!slackStatus?.workspaces?.length}
             >
               Configure
             </Button>
@@ -87,6 +89,7 @@ export const SlackSettings = () => {
                     variant="outline"
                     size="sm"
                     onClick={handleConnect}
+                    disabled={!slackStatus?.workspaces?.length}
                   >
                     Connect
                   </Button>

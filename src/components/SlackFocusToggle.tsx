@@ -15,6 +15,8 @@ import { initiateSlackOAuth } from '@/lib/utils/slackAuth.util'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ExternalLink } from 'lucide-react'
 import { SlackSettings } from '@/api/ebbApi/workflowApi'
+import { useAuth } from '@/hooks/useAuth'
+import { useNavigate } from 'react-router-dom'
 
 interface SlackFocusToggleProps {
   slackSettings: SlackSettings
@@ -22,10 +24,19 @@ interface SlackFocusToggleProps {
 }
 
 export function SlackFocusToggle({ slackSettings, onSlackSettingsChange }: SlackFocusToggleProps) {
+  const { user } = useAuth()
+  const navigate = useNavigate()
+
   const [showDialog, setShowDialog] = useState(false)
   const { data: slackStatus, isLoading: slackStatusLoading } = useSlackStatus()
 
   const handleSlackToggle = async () => {
+    if (!user) {
+      // Not logged in - redirect to login page
+      navigate('/login')
+      return
+    }
+
     if (!slackStatus?.connected) {
       // Not connected - initiate OAuth flow
       await initiateSlackOAuth()
@@ -49,7 +60,17 @@ export function SlackFocusToggle({ slackSettings, onSlackSettingsChange }: Slack
     window.location.hash = '#/settings'
   }
 
-  const isConnected = slackStatus?.connected && slackStatus?.workspaces?.length > 0
+  const getTooltipText = () => {
+    if (!user) {
+      return 'Please login to use the slack integration'
+    }
+    if (!isConnected) {
+      return 'Connect Slack'
+    }
+    return slackSettings.dndEnabled ? 'Slack DND Active' : 'Slack DND Settings'
+  }
+
+  const isConnected = user && slackStatus?.connected && slackStatus?.workspaces?.length > 0
   const isActive = isConnected && slackSettings.dndEnabled
 
   return (
@@ -75,7 +96,7 @@ export function SlackFocusToggle({ slackSettings, onSlackSettingsChange }: Slack
               </div>
             </TooltipTrigger>
             <TooltipContent side="right" sideOffset={10}>
-              {!isConnected ? 'Connect Slack' : slackSettings.dndEnabled ? 'Slack DND Active' : 'Slack DND Settings'}
+              {getTooltipText()}
             </TooltipContent>
           </Tooltip>
         )}

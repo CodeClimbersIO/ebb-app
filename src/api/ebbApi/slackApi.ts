@@ -56,7 +56,7 @@ const initiateOAuth = async (redirectType?: 'dev' | 'prod'): Promise<SlackAuthRe
 const getStatus = async (): Promise<SlackStatusResponse['data']> => {
   const { data } = await platformApiRequest({
     url: '/api/slack/status',
-    method: 'GET'
+    method: 'GET',
   })
   return data as SlackStatusResponse['data']
 }
