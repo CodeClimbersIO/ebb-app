@@ -33,7 +33,7 @@ export const StartFlowPage = () => {
   const [workflows, setWorkflows] = useState<Workflow[]>([])
   const [hasMusic, setHasMusic] = useState(true)
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard' | null>(null)
-  const [slackSettings, setSlackSettings] = useState<SlackSettings>({ dndEnabled: false })
+  const [slackSettings, setSlackSettings] = useState<SlackSettings>({ dndEnabled: true })
   const [spotifyProfile, setSpotifyProfile] = useState<{
     email: string
     display_name: string | null
@@ -362,7 +362,7 @@ export const StartFlowPage = () => {
             <div className="flex items-center gap-4">
               <div className="flex-1">
                 <Input
-                  placeholder="What will you focus on?"
+                  placeholder="What will you focus on? (optional)"
                   value={objective}
                   onChange={(e) => setObjective(e.target.value)}
                   maxLength={50}
