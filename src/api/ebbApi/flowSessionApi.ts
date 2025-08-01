@@ -34,12 +34,10 @@ const startFlowSession = async (
   
   // Handle Slack DND if enabled
   if (workflowToUse.settings.slack?.dndEnabled) {
-    try {
-      const durationMinutes = workflowToUse.settings.defaultDuration || 25
-      await slackApi.startFocusSession(durationMinutes)
-    } catch (error) {
+    const durationMinutes = workflowToUse.settings.defaultDuration || 25
+    slackApi.startFocusSession(durationMinutes).catch(error => {
       logAndToastError('Failed to enable Slack DND for all workspaces', error)
-    }
+    })
   }
   
   window.dispatchEvent(new CustomEvent('flow-session-started', { detail: { id: flowSession.id } }))
@@ -58,7 +56,9 @@ const endFlowSession = async (): Promise<QueryResult> => {
     try {
       const workflow = await WorkflowApi.getWorkflowById(flowSession.workflow_id)
       if (workflow?.settings.slack?.dndEnabled) {
-        await slackApi.endFocusSession()
+        slackApi.endFocusSession().catch(error => {
+          logAndToastError('Failed to disable Slack DND for all workspaces', error)
+        })
       }
     } catch (error) {
       logAndToastError('Failed to disable Slack DND for all workspaces', error)
