@@ -45,6 +45,7 @@ export function SlackFocusToggle({ slackSettings, onSlackSettingsChange }: Slack
     if (!slackStatus?.connected) {
       // Not connected - initiate OAuth flow
       await initiateSlackOAuth()
+      onSlackSettingsChange({ ...slackSettings, dndEnabled: true })
     } else {
       // Connected - show configuration dialog
       setShowDialog(true)
