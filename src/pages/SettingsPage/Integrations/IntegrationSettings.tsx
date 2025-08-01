@@ -61,6 +61,13 @@ export const IntegrationSettings = () => {
           section.scrollIntoView({ behavior: 'smooth' })
         }
       }
+
+      if (window.location.hash === '#slack-integrations') {
+        const section = document.getElementById('slack-integrations')
+        if (section) {
+          section.scrollIntoView({ behavior: 'smooth' })
+        }
+      }
     }
     initializeSettings()
   }, [])

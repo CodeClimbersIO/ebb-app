@@ -6,6 +6,7 @@ import { SettingsPage } from '@/pages/SettingsPage/SettingsPage'
 import { useAuth } from '@/hooks/useAuth'
 import { FlowPage } from '@/pages/FlowPage/FlowPage'
 import { AccessibilityPage } from '@/pages/AccessibilityPage'
+import { SlackOnboardingPage } from '@/pages/SlackOnboardingPage'
 import { ShortcutTutorialPage } from '@/pages/ShortcutTutorialPage'
 // import { DeviceLimitPage } from './pages/DeviceLimitPage'
 import { useDeepLink } from '@/hooks/useDeepLink'
@@ -83,6 +84,7 @@ const Router = () => {
       <Route path="/flow" element={<FlowPage />} />
       <Route path="/feedback" element={<FeedbackPage />} />
       <Route path="/onboarding/accessibility" element={<AccessibilityPage />} />
+      <Route path="/onboarding/slack-onboarding" element={<SlackOnboardingPage />} />
       <Route path="/onboarding/shortcut-tutorial" element={<ShortcutTutorialPage />} />
 
       {/* 404 catch-all */}

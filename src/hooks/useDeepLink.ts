@@ -76,9 +76,14 @@ export const useDeepLink = () => {
           }
         }
 
-        // Check if this is a Slack callback
         if (url.includes('slack/callback')) {
-          navigate('/settings', { replace: true })
+          const currentStep = OnboardingUtils.getOnboardingStep()
+          if (currentStep === 'slack-onboarding' && !OnboardingUtils.isOnboardingCompleted()) {
+            OnboardingUtils.setOnboardingStep('shortcut-tutorial')
+            navigate('/onboarding/shortcut-tutorial', { replace: true })
+          } else {
+            navigate('/settings#slack-integrations', { replace: true })
+          }
           window.location.reload()
           return
         }

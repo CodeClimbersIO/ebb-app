@@ -69,8 +69,8 @@ export const AccessibilityPage = () => {
   }
 
   const handleComplete = () => {
-    OnboardingUtils.setOnboardingStep('shortcut-tutorial')
-    navigate('/onboarding/shortcut-tutorial')
+    OnboardingUtils.setOnboardingStep('slack-onboarding')
+    navigate('/onboarding/slack-onboarding')
   }
 
   return (

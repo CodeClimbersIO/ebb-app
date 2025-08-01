@@ -43,7 +43,7 @@ export const SlackSettings = () => {
   }
 
   return (
-    <div className="space-y-2">
+    <div id="slack-integrations" className="space-y-2">
       <h3 className="text-sm font-semibold">Communication</h3>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">

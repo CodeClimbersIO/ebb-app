@@ -1,7 +1,7 @@
 const ONBOARDING_COMPLETED_KEY = 'onboarding_completed'
 const ONBOARDING_STEP_KEY = 'onboarding_step'
 
-type OnboardingStep = 'accessibility' | 'shortcut-tutorial' | 'login'
+type OnboardingStep = 'accessibility' | 'slack-onboarding' | 'shortcut-tutorial' | 'login'
 export const OnboardingUtils = {
   getOnboardingStep: (): OnboardingStep => {
     const step = localStorage.getItem(ONBOARDING_STEP_KEY)
