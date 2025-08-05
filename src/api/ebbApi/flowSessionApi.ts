@@ -1,9 +1,13 @@
 import { QueryResult } from '@tauri-apps/plugin-sql'
-import { FlowSession, FlowSessionRepo, FlowSessionSchema } from '@/db/ebb/flowSessionRepo'
+import { FlowSession, FlowSessionRepo, FlowSessionSchema, FlowSessionWithWorkflowDb } from '@/db/ebb/flowSessionRepo'
 import { Workflow, WorkflowApi } from './workflowApi'
 import { slackApi } from './slackApi'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
+import { WorkflowDb } from '../../db/ebb/workflowRepo'
 
+export type FlowSessionWithWorkflow = FlowSessionWithWorkflowDb & {
+  workflow_json?: Workflow
+}
 
 const startFlowSession = async (
   objective: string, 
@@ -86,6 +90,21 @@ const getInProgressFlowSession = async () => {
   return FlowSessionRepo.getInProgressFlowSession()
 }
 
+const getInProgressFlowSessionWithWorkflow = async (): Promise<FlowSessionWithWorkflow | undefined> => {
+  const flowSession = await FlowSessionRepo.getInProgressFlowSessionWithWorkflow()
+  if (!flowSession) return
+  const workflowDb: WorkflowDb = JSON.parse(flowSession.workflow || '{}')
+  return {
+    ...flowSession,
+    workflow_json: {
+      ...workflowDb,
+      settings: JSON.parse(workflowDb.settings),
+      selectedApps: [],
+      lastSelected: 0,
+    }
+  }
+}
+
 const getFlowSessions = async (limit = 10): Promise<FlowSession[]> => {
   const flowSessions = await FlowSessionRepo.getFlowSessions(limit)
   return flowSessions
@@ -107,6 +126,7 @@ export const FlowSessionApi = {
   endFlowSession,
   scoreFlowSession,
   getInProgressFlowSession,
+  getInProgressFlowSessionWithWorkflow,
   getFlowSessions,
   updateFlowSessionDuration,
   getMostRecentFlowSession,

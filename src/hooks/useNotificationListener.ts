@@ -6,6 +6,7 @@ import { EbbWorker } from '../lib/ebbWorker'
 import { useNavigate } from 'react-router-dom'
 import { SmartSessionApi } from '../api/ebbApi/smartSessionApi'
 import { useFlowTimer } from '../lib/stores/flowTimer'
+import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
 
 export const useNotificationListener = () => {
   const navigate = useNavigate()
@@ -14,6 +15,7 @@ export const useNotificationListener = () => {
     let unlistenEndSession: UnlistenFn | undefined
     let unlistenAddTimeEvent: UnlistenFn | undefined
     let unlistenSnoozeBlocking: UnlistenFn | undefined
+    let unlistenAppBlocked: UnlistenFn | undefined
 
     const setupListeners = async () => {
 
@@ -48,7 +50,22 @@ export const useNotificationListener = () => {
           window.dispatchEvent(new Event('end-session'))
         })
       })
-
+      unlistenAppBlocked = await listen('on-app-blocked', async () => {
+        info('App: app blocked')
+        EbbWorker.debounceWork(async () => {
+          try {
+            const session = await FlowSessionApi.getInProgressFlowSessionWithWorkflow()
+            const isHardMode = session?.workflow_json?.settings.difficulty === 'hard'
+            if (isHardMode) {
+              await invoke('show_notification', { notificationType: 'blocked-app-hard' })
+            } else {
+              await invoke('show_notification', { notificationType: 'blocked-app' })
+            }
+          } catch (error) {
+            console.error(`Error getting in progress flow session with workflow: ${error}`, error)
+          }
+        })
+      })
     }
 
     void setupListeners()
@@ -58,6 +75,7 @@ export const useNotificationListener = () => {
       unlistenEndSession?.()
       unlistenAddTimeEvent?.()
       unlistenSnoozeBlocking?.()
+      unlistenAppBlocked?.()
     }
   }, []) 
 }

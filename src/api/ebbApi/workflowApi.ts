@@ -111,7 +111,7 @@ const getSmartDefaultWorkflow = async (): Promise<Workflow | null> => {
   const device_id = await DeviceProfileApi.getDeviceId()
   const workflow = await WorkflowRepo.getSmartDefaultWorkflow(device_id)
   if (!workflow) return null
-  return await fromDbWorkflow(workflow)
+  return fromDbWorkflow(workflow)
 }
 
 export const WorkflowApi = {
@@ -121,7 +121,8 @@ export const WorkflowApi = {
   deleteWorkflow,
   updateLastSelected,
   renameWorkflow,
-  getSmartDefaultWorkflow
+  getSmartDefaultWorkflow,
+  fromDbWorkflow
 }
 
 export type { SlackSettings }

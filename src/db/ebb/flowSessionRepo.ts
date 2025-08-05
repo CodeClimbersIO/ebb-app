@@ -18,6 +18,10 @@ export interface FlowSessionSchema {
 export type FlowSession = FlowSessionSchema & {
 }
 
+export type FlowSessionWithWorkflowDb = FlowSession & {
+  workflow?: string
+}
+
 
 const createFlowSession = async (
   flowSession: FlowSessionSchema,
@@ -111,6 +115,30 @@ const getInProgressFlowSession = async (): Promise<FlowSession | undefined> => {
   return flowSession
 }
 
+const getInProgressFlowSessionWithWorkflow = async (): Promise<FlowSessionWithWorkflowDb | undefined> => {
+  const ebbDb = await getEbbDb()
+  const [result] = await ebbDb.select<FlowSessionWithWorkflowDb[]>(
+    `SELECT 
+      fs.*,
+      json_object(
+        'id', w.id,
+        'name', w.name,
+        'settings', w.settings,
+        'last_selected', w.last_selected,
+        'created_at', w.created_at,
+        'updated_at', w.updated_at
+      ) as workflow
+    FROM flow_session fs
+    LEFT JOIN workflow w ON fs.workflow_id = w.id
+    WHERE fs.end IS NULL
+    LIMIT 1;`,
+  )
+  
+  if (!result) return
+  
+  return result
+}
+
 const getMostRecentFlowSession = async (): Promise<FlowSession | undefined> => {
   const ebbDb = await getEbbDb()
   const [flowSession] = await ebbDb.select<FlowSession[]>(
@@ -125,5 +153,6 @@ export const FlowSessionRepo = {
   getFlowSessions,
   getFlowSessionById,
   getInProgressFlowSession,
+  getInProgressFlowSessionWithWorkflow,
   getMostRecentFlowSession,
 }

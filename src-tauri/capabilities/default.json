@@ -2,14 +2,7 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "Capabilities for Ebb windows",
-  "windows": [
-    "main",
-    "session-start",
-    "session-end",
-    "session-warning",
-    "blocked-app",
-    "notification"
-  ],
+  "windows": ["main", "notification"],
   "permissions": [
     "core:default",
     "sql:default",

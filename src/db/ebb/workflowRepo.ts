@@ -7,7 +7,6 @@ export interface WorkflowDb {
   last_selected: string | null
   created_at: string
   updated_at: string
-  is_smart_default: boolean
 }
 
 export interface SlackSettings {
