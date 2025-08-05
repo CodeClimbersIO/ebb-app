@@ -35,15 +35,17 @@ export function useGlobalShortcut() {
           return
         }
 
-        const activeSession = await FlowSessionApi.getInProgressFlowSession()
-        info(`activeSession: ${JSON.stringify(activeSession)}`)
-        if(activeSession) {
-          info('in progress session, showing end session notification')
+        const activeSession = await FlowSessionApi.getInProgressFlowSessionWithWorkflow()
+        if(activeSession && activeSession.workflow_json?.settings.difficulty !== 'hard') {
           EbbWorker.debounceWork(async () => {
             invoke('show_notification', {
               notificationType: 'end-session',
             })
           }, 'show_notification')
+          return
+        }
+        
+        if(activeSession){
           return
         }
 

@@ -1,17 +1,15 @@
 import { isDev } from '../../lib/utils/environment.util'
 import { ResetAppData } from './ResetAppData'
-// import NotificationManager from '../../lib/notificationManager'
 import { Button } from '../ui/button'
 import { invoke } from '@tauri-apps/api/core'
 import { info } from '@tauri-apps/plugin-log'
 import { useState } from 'react'
 import { slackApi, SlackStatusResponse } from '../../api/ebbApi/slackApi'
-// const notificationManager = NotificationManager.getInstance()
 export function DeveloperSettings() {
   const [slackStatus, setSlackStatus] = useState<SlackStatusResponse['data'] | undefined>()
   const [loading, setLoading] = useState(false)
 
-  const handleTestNotification = (type: 'smart-start-suggestion' |  'session-start' | 'session-end' | 'session-warning' | 'blocked-app', difficulty: 'easy' | 'medium' | 'hard') => {
+  const handleTestNotification = (type: 'smart-start-suggestion' |  'session-start' | 'session-end' | 'session-warning' | 'blocked-app' | 'blocked-app-hard', difficulty: 'easy' | 'medium' | 'hard') => {
     info(`show_notification ${difficulty} ${type}`)
     let payload = {}
     if(type === 'session-end') {
@@ -150,6 +148,9 @@ export function DeveloperSettings() {
             </Button>
             <Button onClick={() => handleTestNotification('blocked-app', 'easy')}>
             Test Blocked App
+            </Button>
+            <Button onClick={() => handleTestNotification('blocked-app-hard', 'easy')}>
+            Test Blocked App Hard
             </Button>
           </div>
         </div>

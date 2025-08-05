@@ -1,9 +1,9 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { CheckCircle, Shield, AlertTriangle, PartyPopper, HelpCircle } from 'lucide-react'
 import { Card } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { Hotkey } from '@/components/ui/hotkey'
 import { cn } from '@/lib/utils/tailwind.util'
+import { ActionButton } from './ActionButton'
 import { convertFileSrc, invoke } from '@tauri-apps/api/core'
 import { error, info } from '@tauri-apps/plugin-log'
 import { resolveResource } from '@tauri-apps/api/path'
@@ -15,7 +15,7 @@ import { useShortcutStore } from '@/lib/stores/shortcutStore'
 import { useShortcutKeyDetection } from '../../hooks/useShortcutKeyDetection'
 import { EbbWorker } from '../../lib/ebbWorker'
 
-type NotificationType = 'session-start' | 'quick-start' | 'smart-start-suggestion' | 'doomscroll-start-suggestion' | 'blocked-app' | 'session-end' | 'session-warning' | 'end-session'  
+type NotificationType = 'session-start' | 'quick-start' | 'smart-start-suggestion' | 'doomscroll-start-suggestion' | 'blocked-app' | 'blocked-app-hard' | 'session-end' | 'session-warning' | 'end-session'  
 
 interface NotificationPayload {
   timeCreating?: number
@@ -35,6 +35,7 @@ interface NotificationConfig {
   buttonText?: string
   dismissImmediatelyOnAction?: boolean
   buttonAction?: () => void | Promise<void>
+  isDisabled?: boolean
 }
 
 const getDoomScrollDescription = () => {
@@ -134,6 +135,16 @@ const NOTIFICATION_CONFIGS: Record<NotificationType, NotificationConfig> = {
       await invoke('notify_snooze_blocking')
     }
   },
+  'blocked-app-hard': {
+    title: 'App Blocked',
+    icon: Shield,
+    iconColor: 'text-red-500',
+    progressColor: 'bg-red-500',
+    defaultDuration: 8000,
+    soundFile: 'app_blocked.mp3',
+    buttonText: '🔒 Hard Mode',
+    isDisabled: true, 
+  },
   'end-session': {
     title: 'End Session?',
     icon: AlertTriangle,
@@ -200,13 +211,6 @@ export const NotificationPanel = () => {
     }
   }, [])
 
-  const getHotkeyColor = (iconColor: string): string => {
-    if (iconColor.includes('primary')) return 'primary'
-    if (iconColor.includes('red')) return 'red'
-    if (iconColor.includes('green')) return 'green'
-    if (iconColor.includes('amber')) return 'amber'
-    return 'primary'
-  }
 
   const handleExit = useCallback(() => {
     // Mark that user has dismissed a notification
@@ -432,53 +436,15 @@ export const NotificationPanel = () => {
 
         {/* Action Button */}
         {config.buttonText && (
-          <Button
-            variant="outline"
-            size="sm"
-            className={cn(
-              'h-8 px-3 text-xs flex items-center gap-2 transition-all duration-200',
-              buttonState === 'idle' && 'hover:bg-accent hover:text-accent-foreground',
-              buttonState === 'success' && 'bg-green-500/20 text-green-400 border-green-500/50'
-            )}
+          <ActionButton
+            buttonText={config.buttonText}
+            buttonState={buttonState}
+            isDisabled={config.isDisabled}
+            iconColor={config.iconColor}
+            shortcutParts={shortcutParts}
+            pressedKeys={pressedKeys}
             onClick={handleButtonClick}
-            disabled={buttonState !== 'idle'}
-          >
-            <span>
-              {buttonState === 'idle' && config.buttonText}
-              {buttonState === 'success' && 'Success!'}
-            </span>
-            {buttonState === 'idle' && shortcutParts.length > 0 && shortcutParts.some(part => part) && (
-              <div className="flex items-center gap-1">
-                {shortcutParts.map((part, index) => {
-                  // Map display part back to database format to check if it's pressed
-                  const dbPart = (() => {
-                    switch (part) {
-                    case '⌘': return 'CommandOrControl'
-                    case '⌃': return 'Control'
-                    case '⌥': return 'Option'
-                    case '⇧': return 'Shift'
-                    case '↵': return 'ENTER'
-                    case '⎵': return 'SPACE'
-                    default: return part
-                    }
-                  })()
-                  
-                  const isThisKeyPressed = pressedKeys.has(dbPart)
-                  
-                  return (
-                    <Hotkey 
-                      key={index} 
-                      size="sm" 
-                      pressed={isThisKeyPressed}
-                      color={getHotkeyColor(config.iconColor)}
-                    >
-                      {part}
-                    </Hotkey>
-                  )
-                })}
-              </div>
-            )}
-          </Button>
+          />
         )}
 
         {/* ESC Dismiss Indicator */}

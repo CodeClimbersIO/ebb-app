@@ -21,7 +21,6 @@ import { SpotifyIcon } from '@/components/icons/SpotifyIcon'
 import { getSpotifyIdFromUri, openSpotifyLink, PlaybackState, SpotifyApiService } from '@/lib/integrations/spotify/spotifyApi'
 import { SpotifyAuthService } from '@/lib/integrations/spotify/spotifyAuth'
 import { invoke } from '@tauri-apps/api/core'
-import { useBlockedEvents } from '@/hooks/useBlockedEvents'
 import { useFlowTimer } from '../../lib/stores/flowTimer'
 import { startFlowTimer, stopFlowTimer } from '../../lib/tray'
 import { DifficultyButton } from '@/components/DifficultyButton'
@@ -68,7 +67,6 @@ const startBlocking = async (workflow: Workflow) => {
 }
 
 export const FlowPage = () => {
-  useBlockedEvents()
   const navigate = useNavigate()
   const [flowSession, setFlowSession] = useState<FlowSession | null>(null)
   const [workflow, setWorkflow] = useState<Workflow | null>(null)
