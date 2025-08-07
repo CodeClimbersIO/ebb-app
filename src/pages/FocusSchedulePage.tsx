@@ -2,15 +2,18 @@ import { useState } from 'react'
 import { Layout } from '@/components/Layout'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { useFocusSchedulesWithWorkflow, useDeleteFocusSchedule } from '@/api/hooks/useFocusSchedule'
 import { FocusScheduleApi } from '@/api/ebbApi/focusScheduleApi'
 import { ScheduleSessionModal } from '@/components/ScheduleSessionModal'
 import { Calendar, Clock, Trash2 } from 'lucide-react'
+import { error as errorLog } from '@tauri-apps/plugin-log'
 
 export default function FocusSchedulePage() {
   const [showScheduleModal, setShowScheduleModal] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [editingScheduleId, setEditingScheduleId] = useState<string | undefined>()
+  const [deletingScheduleId, setDeletingScheduleId] = useState<string | undefined>()
   
   const { data: schedules, isLoading } = useFocusSchedulesWithWorkflow()
   const { mutateAsync: deleteFocusSchedule } = useDeleteFocusSchedule()
@@ -30,9 +33,20 @@ export default function FocusSchedulePage() {
     setEditingScheduleId(undefined)
   }
 
-  const handleDeleteSchedule = async (scheduleId: string) => {
-    if (confirm('Are you sure you want to delete this focus schedule?')) {
-      await deleteFocusSchedule(scheduleId)
+  const handleDeleteSchedule = (scheduleId: string) => {
+    setDeletingScheduleId(scheduleId)
+    setShowDeleteDialog(true)
+  }
+
+  const confirmDelete = async () => {
+    if (!deletingScheduleId) return
+    
+    try {
+      await deleteFocusSchedule(deletingScheduleId)
+      setShowDeleteDialog(false)
+      setDeletingScheduleId(undefined)
+    } catch (error) {
+      errorLog(`Failed to delete focus schedule: ${error}`)
     }
   }
 
@@ -137,6 +151,21 @@ export default function FocusSchedulePage() {
                 scheduleId={editingScheduleId}
                 onClose={handleCloseModal}
               />
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Delete Focus Schedule?</DialogTitle>
+                <DialogDescription>
+                  This will permanently remove this scheduled focus session. This action cannot be undone.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>Cancel</Button>
+                <Button variant="destructive" onClick={confirmDelete}>Delete</Button>
+              </DialogFooter>
             </DialogContent>
           </Dialog>
         </div>

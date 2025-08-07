@@ -73,7 +73,8 @@ const getFocusScheduleById = async (id: string): Promise<FocusSchedule | undefin
 
 const deleteFocusSchedule = async (id: string): Promise<QueryResult> => {
   const ebbDb = await getEbbDb()
-  return update(ebbDb, 'focus_schedule', { is_active: 0 }, id)
+  const result = await update(ebbDb, 'focus_schedule', { is_active: 0 }, id)
+  return result
 }
 
 const getFocusSchedulesWithWorkflow = async (): Promise<(FocusSchedule & { workflow_name?: string })[]> => {
