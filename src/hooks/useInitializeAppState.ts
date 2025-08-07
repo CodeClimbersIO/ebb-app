@@ -24,7 +24,7 @@ export const useInitializeAppState = () => {
   const { setConnected } = useConnectedStore()
   const { loadShortcutFromStorage } = useShortcutStore()
   const { mutate: createNotification } = useCreateNotification()
-  const { data: focusScheduleNotification } = useGetNotificationBySentId('focus_schedule_feature_intro')
+  const { data: focusScheduleNotification, isLoading: isFocusScheduleNotificationLoading } = useGetNotificationBySentId('focus_schedule_feature_intro')
   
   
   useEffect(() => {
@@ -68,7 +68,7 @@ export const useInitializeAppState = () => {
 
   // Show notification about Focus Schedule feature to new users
   useEffect(() => {
-    if(!isFocusScheduleFeatureEnabled()) {
+    if(!isFocusScheduleFeatureEnabled() || isFocusScheduleNotificationLoading) {
       return
     }
     if (user?.id && !focusScheduleNotification) {
@@ -82,6 +82,6 @@ export const useInitializeAppState = () => {
         dismissed: 0,
       })
     }
-  }, [user?.id, focusScheduleNotification, createNotification])
+  }, [user?.id, focusScheduleNotification, createNotification, isFocusScheduleNotificationLoading])
 
 }

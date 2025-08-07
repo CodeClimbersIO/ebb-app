@@ -19,11 +19,17 @@ export const useNotificationListener = () => {
 
     const setupListeners = async () => {
 
-      // add start-flow, end session, add to timer, and block snooze listeners
-      unlistenStartFlow = await listen('start-flow', async () => {
+      unlistenStartFlow = await listen('start-flow', async (event: { payload: { workflow_id?: string } }) => {
         info('App: starting flow')
         EbbWorker.debounceWork(async () => {
-          const session = await SmartSessionApi.startSmartSession()
+          let session
+          if (event.payload?.workflow_id) {
+            info(`Starting session with workflow ID: ${event.payload.workflow_id}`)
+            session = await SmartSessionApi.startSmartSessionWithWorkflow(event.payload.workflow_id)
+          } else {
+            info('Starting smart session (no specific workflow)')
+            session = await SmartSessionApi.startSmartSession()
+          }
           info(`session started: ${JSON.stringify(session)}`)
           navigate('/flow')
         })

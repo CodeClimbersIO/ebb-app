@@ -79,7 +79,7 @@ const getSmartStartDescription = () => {
   return potentialDescriptions[randomIndex]
 }
 
-const NOTIFICATION_CONFIGS: Record<NotificationType, NotificationConfig> = {
+const createNotificationConfigs = (payload: NotificationPayload | null): Record<NotificationType, NotificationConfig> => ({
   'session-start': {
     title: 'Session Start',
     icon: CheckCircle,
@@ -185,7 +185,7 @@ const NOTIFICATION_CONFIGS: Record<NotificationType, NotificationConfig> = {
   },
   'scheduled-session-reminder': {
     title: 'Focus Session Starting Soon',
-    description: () => 'Your scheduled focus session starts in 15 minutes',
+    description: () => payload?.workflowName ? `${payload.workflowName} session starts in 15 minutes` : 'Your scheduled focus session starts in 15 minutes',
     icon: Calendar,
     iconColor: 'text-primary',
     progressColor: 'bg-primary',
@@ -193,24 +193,32 @@ const NOTIFICATION_CONFIGS: Record<NotificationType, NotificationConfig> = {
     soundFile: 'session_start.mp3',
     buttonText: 'Start Now',
     buttonAction: async () => {
-      info('starting scheduled session early')
-      await invoke('notify_start_flow')
+      info(`starting scheduled session early with workflow ID: ${payload?.workflowId}`)
+      if (payload?.workflowId) {
+        await invoke('notify_start_flow_with_workflow', { workflowId: payload.workflowId })
+      } else {
+        await invoke('notify_start_flow')
+      }
     }
   },
   'scheduled-session-start': {
     title: 'Scheduled Session',
-    description: () => 'Start your scheduled focus session',
+    description: () => payload?.workflowName ? `Start your ${payload.workflowName} session` : 'Start your scheduled focus session',
     icon: Clock,
     iconColor: 'text-primary',
     progressColor: 'bg-primary',
     defaultDuration: 15000,
     buttonText: 'Start',
     buttonAction: async () => {
-      info('starting scheduled session')
-      await invoke('notify_start_flow')
+      info(`starting scheduled session with workflow ID: ${payload?.workflowId}`)
+      if (payload?.workflowId) {
+        await invoke('notify_start_flow_with_workflow', { workflowId: payload.workflowId })
+      } else {
+        await invoke('notify_start_flow')
+      }
     }
   }
-}
+})
 
 const getSoundPath = async (soundFile: string) => {
   if(isDev()) {
@@ -422,13 +430,14 @@ export const NotificationPanel = () => {
   
   useEffect(() => {
     if(!notificationType) return
-    const notificationConfig = NOTIFICATION_CONFIGS[notificationType]
+    const notificationConfigs = createNotificationConfigs(payload)
+    const notificationConfig = notificationConfigs[notificationType]
     if(!notificationConfig) {
       info(`Unknown notification type: ${notificationType}`)
       return
     }
     setConfig(notificationConfig)
-  }, [notificationType])
+  }, [notificationType, payload])
 
   if (!isVisible) return null
 

@@ -3,6 +3,7 @@ import { MonitorApi } from '../monitorApi/monitorApi'
 import { FlowSessionApi } from './flowSessionApi'
 import { DeviceProfileApi } from './deviceProfileApi'
 import { FlowSession } from '../../db/ebb/flowSessionRepo'
+import { WorkflowApi } from './workflowApi'
 
 const isCreatingFromTimePeriod = async (start: DateTime, end: DateTime): Promise<boolean> => {
   const activityStates = await MonitorApi.getActivityStatesByTimePeriod(start, end)
@@ -105,6 +106,16 @@ export const SmartSessionApi = {
   },
   startSmartSession: async () => {
     const newSession = await FlowSessionApi.startFlowSession('Smart Flow', 'smart')
+    
+    return newSession
+  },
+  startSmartSessionWithWorkflow: async (workflowId: string) => {
+    const workflow = await WorkflowApi.getWorkflowById(workflowId)
+    if (!workflow) {
+      throw new Error(`Workflow with ID ${workflowId} not found`)
+    }
+    
+    const newSession = await FlowSessionApi.startFlowSession(workflow.name, 'manual', workflow)
     
     return newSession
   },
