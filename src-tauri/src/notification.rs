@@ -97,7 +97,7 @@ pub fn create_notification_window<R: Runtime>(
     }
 
     let mut params = format!("?notification_type={}", notification_type);
-    if let Some(payload_data) = payload {
+    if let Some(ref payload_data) = payload {
         // Use simple URL encoding for the payload
         let encoded_payload = payload_data
             .replace("&", "%26")
@@ -158,7 +158,7 @@ pub fn create_notification_window<R: Runtime>(
     // Convert the window to a spotlight panel
     let panel = notification_window.to_spotlight_panel()?;
 
-    show_notification_window(notification_window, panel, notification_type, None)?;
+    show_notification_window(notification_window, panel, notification_type, payload)?;
 
     Ok(())
 }

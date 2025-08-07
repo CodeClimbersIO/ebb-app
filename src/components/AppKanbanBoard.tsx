@@ -13,10 +13,10 @@ export function AppKanbanBoard({ rangeMode, date }: AppKanbanBoardProps) {
   // Use our new hook instead of managing state directly
   const {
     columns,
-    totalAppUsage,
     handleDragEnd,
     isLoading,
     error,
+    totalCategoryUsage,
   } = useKanbanBoard({ rangeMode, date })
 
   if (error) {
@@ -39,21 +39,21 @@ export function AppKanbanBoard({ rangeMode, date }: AppKanbanBoardProps) {
                 title="Creating"
                 titleClassName="text-md text-[rgb(124,58,237)]"
                 apps={columns.creating}
-                totalAppUsage={totalAppUsage}
+                categoryUsage={totalCategoryUsage.creating}
               />
               <ColumnWrapper
                 id="neutral"
                 title="Neutral"
                 titleClassName="text-md text-gray-500"
                 apps={columns.neutral}
-                totalAppUsage={totalAppUsage}
+                categoryUsage={totalCategoryUsage.neutral}
               />
               <ColumnWrapper
                 id="consuming"
                 title="Consuming"
                 titleClassName="text-md text-[rgb(239,68,68)]"
                 apps={columns.consuming}
-                totalAppUsage={totalAppUsage}
+                categoryUsage={totalCategoryUsage.consuming}
               />
             </div>
           )}

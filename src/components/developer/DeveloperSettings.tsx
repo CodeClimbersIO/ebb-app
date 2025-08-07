@@ -20,13 +20,13 @@ export function DeveloperSettings() {
     }
     else if(type === 'scheduled-session-start') {
       payload = {
-        label: 'Focus Session',
+        workflowId: '8d3501ea-4373-405a-9982-144607d5fd33',
         workflowName: 'Focus Session',
       }
     }
     else if(type === 'scheduled-session-reminder') {
       payload = {
-        label: 'Focus Session',
+        workflowId: '8d3501ea-4373-405a-9982-144607d5fd33',
         workflowName: 'Focus Session',
       }
     }

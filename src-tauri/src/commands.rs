@@ -314,13 +314,17 @@ pub fn notify_start_flow(app_handle: AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn notify_start_flow_with_workflow(app_handle: AppHandle, workflow_id: String) -> Result<(), String> {
-    #[derive(serde::Serialize)]
+pub fn notify_start_flow_with_workflow(
+    app_handle: AppHandle,
+    workflow_id: String,
+) -> Result<(), String> {
+    #[derive(serde::Serialize, Clone)]
     struct StartFlowPayload {
         workflow_id: String,
     }
-    
-    app_handle.emit("start-flow", StartFlowPayload { workflow_id }).map_err(|e| e.to_string())
+    app_handle
+        .emit("start-flow", StartFlowPayload { workflow_id })
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]

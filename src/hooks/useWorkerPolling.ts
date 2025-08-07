@@ -61,13 +61,22 @@ export const useWorkerPolling = () => {
           // Check for scheduled sessions
           const scheduledSessionStatus = await ScheduledSessionExecutionApi.checkScheduledSessionStatus()
           if(scheduledSessionStatus.type === 'reminder') {
+            const payload = {
+              workflowId: scheduledSessionStatus.schedule.workflowId,
+              workflowName: scheduledSessionStatus.schedule.workflowName,
+            }
             invoke('show_notification', {
               notificationType: 'scheduled-session-reminder',
+              payload: JSON.stringify(payload),
             })
           }
           else if(scheduledSessionStatus.type === 'start') {
             invoke('show_notification', {
               notificationType: 'scheduled-session-start',
+              payload: JSON.stringify({
+                workflowId: scheduledSessionStatus.schedule.workflowId,
+                workflowName: scheduledSessionStatus.schedule.workflowName,
+              }),
             })
           }
 

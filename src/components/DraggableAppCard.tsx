@@ -7,12 +7,12 @@ import { cn } from '@/lib/utils/tailwind.util'
 
 type DraggableAppCardProps = {
     app: AppsWithTime;
-    totalAppUsage: number;
+    totalCategoryUsage: number;
 }
 
 export function DraggableAppCard({ 
   app, 
-  totalAppUsage, 
+  totalCategoryUsage, 
 }: DraggableAppCardProps) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: app.id,
@@ -65,7 +65,7 @@ export function DraggableAppCard({
           </span>
         </div>
         <Progress
-          value={(app.duration / totalAppUsage) * 100}
+          value={(app.duration / totalCategoryUsage) * 100}
           className={cn(
             app.rating >= 4 && 'bg-[rgb(124,58,237)]/10 [&>div]:bg-[rgb(124,58,237)]',
             app.rating <= 2 && 'bg-[rgb(239,68,68)]/10 [&>div]:bg-[rgb(239,68,68)]',
