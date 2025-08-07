@@ -240,6 +240,25 @@ pub fn get_migrations() -> Vec<Migration> {
             "#,
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 17,
+            description: "create_focus_schedule",
+            sql: r#"
+            CREATE TABLE IF NOT EXISTS focus_schedule (
+                id TEXT PRIMARY KEY NOT NULL,
+                label TEXT,
+                scheduled_time DATETIME NOT NULL,
+                workflow_id TEXT NOT NULL,
+                recurrence_settings TEXT,
+                is_active INTEGER NOT NULL DEFAULT 1,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (workflow_id) REFERENCES workflow (id)
+            );
+            ALTER TABLE flow_session ADD COLUMN focus_schedule_id TEXT;
+            "#,
+            kind: MigrationKind::Up,
+        },
     ]
 }
 

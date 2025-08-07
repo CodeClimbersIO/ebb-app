@@ -288,3 +288,7 @@ npm test
 ```
 
 Test files should be placed alongside the code they test with `.test.ts` or `.test.tsx` extensions.
+
+
+## Other preferences
+files should always end with a newline character

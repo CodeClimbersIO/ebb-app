@@ -7,6 +7,7 @@ import { ChartIcon } from '@/components/icons/ChartIcon'
 import { UsersIcon } from '@/components/icons/UsersIcon'
 import { KeyIcon } from '@/components/icons/KeyIcon'
 import { GlobeIcon } from '@/components/icons/GlobeIcon'
+import { Calendar } from 'lucide-react'
 import { PaywallDialog } from '@/components/PaywallDialog'
 import { usePermissions } from '@/hooks/usePermissions'
 import { useFriendsWithInsights } from '@/api/hooks/useFriends'
@@ -44,6 +45,22 @@ export function Sidebar() {
               <Button
                 variant="ghost"
                 iconSize={5}
+                className={`w-9 h-9 p-2 ${location.pathname === '/my-focus-schedule' ? 'text-foreground [&>svg]:text-foreground' : 'text-muted-foreground [&>svg]:text-muted-foreground'}`}
+                asChild
+              >
+                <Link to="/my-focus-schedule">
+                  <Calendar size={20} />
+                </Link>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right" sideOffset={10}>Focus Schedule</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                iconSize={5}
                 className={`w-9 h-9 p-2 relative ${location.pathname === '/category-dashboard' ? 'text-foreground [&>svg]:text-foreground' : 'text-muted-foreground [&>svg]:text-muted-foreground'}`}
                 asChild
               >
@@ -73,6 +90,7 @@ export function Sidebar() {
             </TooltipTrigger>
             <TooltipContent side="right" sideOffset={10}>Friends</TooltipContent>
           </Tooltip>
+
 
           <Tooltip>
             <TooltipTrigger asChild>
