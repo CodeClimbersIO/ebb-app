@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
-import { CheckCircle, Shield, AlertTriangle, PartyPopper, HelpCircle } from 'lucide-react'
+import { CheckCircle, Shield, AlertTriangle, PartyPopper, HelpCircle, Calendar, Clock } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Hotkey } from '@/components/ui/hotkey'
 import { cn } from '@/lib/utils/tailwind.util'
@@ -15,12 +15,17 @@ import { useShortcutStore } from '@/lib/stores/shortcutStore'
 import { useShortcutKeyDetection } from '../../hooks/useShortcutKeyDetection'
 import { EbbWorker } from '../../lib/ebbWorker'
 
-type NotificationType = 'session-start' | 'quick-start' | 'smart-start-suggestion' | 'doomscroll-start-suggestion' | 'blocked-app' | 'blocked-app-hard' | 'session-end' | 'session-warning' | 'end-session'  
+type NotificationType = 'session-start' | 'quick-start' | 'smart-start-suggestion' | 'doomscroll-start-suggestion' | 'blocked-app' | 'blocked-app-hard' | 'session-end' | 'session-warning' | 'end-session' | 'scheduled-session-reminder' | 'scheduled-session-start'  
 
 interface NotificationPayload {
   timeCreating?: number
   totalDuration?: number
   percentage?: number
+  scheduleId?: string
+  label?: string
+  workflowId?: string
+  workflowName?: string
+  scheduledTime?: string
   [key: string]: string | number | boolean | undefined
 }
 
@@ -176,6 +181,33 @@ const NOTIFICATION_CONFIGS: Record<NotificationType, NotificationConfig> = {
     buttonAction: async () => {
       info('extending session')
       await invoke('notify_add_time_event')
+    }
+  },
+  'scheduled-session-reminder': {
+    title: 'Focus Session Starting Soon',
+    description: () => 'Your scheduled focus session starts in 15 minutes',
+    icon: Calendar,
+    iconColor: 'text-primary',
+    progressColor: 'bg-primary',
+    defaultDuration: 15000,
+    soundFile: 'session_start.mp3',
+    buttonText: 'Start Now',
+    buttonAction: async () => {
+      info('starting scheduled session early')
+      await invoke('notify_start_flow')
+    }
+  },
+  'scheduled-session-start': {
+    title: 'Scheduled Session',
+    description: () => 'Start your scheduled focus session',
+    icon: Clock,
+    iconColor: 'text-primary',
+    progressColor: 'bg-primary',
+    defaultDuration: 15000,
+    buttonText: 'Start',
+    buttonAction: async () => {
+      info('starting scheduled session')
+      await invoke('notify_start_flow')
     }
   }
 }

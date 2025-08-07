@@ -8,7 +8,7 @@ import { FocusScheduleApi } from '@/api/ebbApi/focusScheduleApi'
 import { ScheduleSessionModal } from '@/components/ScheduleSessionModal'
 import { Calendar, Clock, Trash2 } from 'lucide-react'
 
-export default function MyFocusSchedulePage() {
+export default function FocusSchedulePage() {
   const [showScheduleModal, setShowScheduleModal] = useState(false)
   const [editingScheduleId, setEditingScheduleId] = useState<string | undefined>()
   
@@ -56,14 +56,14 @@ export default function MyFocusSchedulePage() {
         <div className="max-w-5xl mx-auto">
           <div className="mb-8 flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-semibold mb-2">My Focus Schedule</h1>
+              <h1 className="text-2xl font-semibold mb-2">Focus Schedules</h1>
               <p className="text-muted-foreground">
                 Schedule focus sessions to protect your most productive times
               </p>
             </div>
             <Button onClick={handleCreateNew}>
               <Calendar className="w-4 h-4 mr-2" />
-              Add Schedule
+              Create Schedule
             </Button>
           </div>
 
