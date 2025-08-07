@@ -7,9 +7,11 @@ import { ChartIcon } from '@/components/icons/ChartIcon'
 import { UsersIcon } from '@/components/icons/UsersIcon'
 import { KeyIcon } from '@/components/icons/KeyIcon'
 import { GlobeIcon } from '@/components/icons/GlobeIcon'
+import { CalendarDaysIcon } from '@/components/icons/CalendarDaysIcon'
 import { PaywallDialog } from '@/components/PaywallDialog'
 import { usePermissions } from '@/hooks/usePermissions'
 import { useFriendsWithInsights } from '@/api/hooks/useFriends'
+import { isFocusScheduleFeatureEnabled } from '../lib/utils/environment.util'
 
 export function Sidebar() {
   const location = useLocation()
@@ -39,6 +41,23 @@ export function Sidebar() {
             <TooltipContent side="right" sideOffset={10}>Today</TooltipContent>
           </Tooltip>
 
+          {isFocusScheduleFeatureEnabled() && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  iconSize={5}
+                  className={`w-9 h-9 p-2 ${location.pathname === '/focus-schedule' ? 'text-foreground [&>svg]:text-foreground' : 'text-muted-foreground [&>svg]:text-muted-foreground'}`}
+                  asChild
+                >
+                  <Link to="/focus-schedule">
+                    <CalendarDaysIcon size={20} />
+                  </Link>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right" sideOffset={10}>Focus Schedule</TooltipContent>
+            </Tooltip>
+          )}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -73,6 +92,7 @@ export function Sidebar() {
             </TooltipTrigger>
             <TooltipContent side="right" sideOffset={10}>Friends</TooltipContent>
           </Tooltip>
+
 
           <Tooltip>
             <TooltipTrigger asChild>

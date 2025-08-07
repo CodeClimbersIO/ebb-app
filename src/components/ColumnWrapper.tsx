@@ -9,7 +9,7 @@ type ColumnWrapperProps = {
   title: string; 
   titleClassName?: string;
   apps: AppsWithTime[]; 
-  totalAppUsage: number;
+  categoryUsage: number;
 };
 
 export function ColumnWrapper({
@@ -17,7 +17,7 @@ export function ColumnWrapper({
   title,
   titleClassName,
   apps,
-  totalAppUsage,
+  categoryUsage,
 }: ColumnWrapperProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: id,
@@ -45,7 +45,7 @@ export function ColumnWrapper({
             <DraggableAppCard
               key={app.id}
               app={app}
-              totalAppUsage={totalAppUsage}
+              totalCategoryUsage={categoryUsage} 
             />
           ))}
       </CardContent>

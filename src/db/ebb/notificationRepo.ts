@@ -6,8 +6,8 @@ export interface NotificationSchema {
   user_id?: string
   content: string
   notification_type: 'app'
-  notification_sub_type: 'warning'
-  notification_sent_id: 'firefox_not_supported'
+  notification_sub_type: 'warning' | 'info'
+  notification_sent_id: 'firefox_not_supported' | 'focus_schedule_feature_intro'
   read: number
   dismissed: number
   notification_sent_at: string

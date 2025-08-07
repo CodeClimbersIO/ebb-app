@@ -314,6 +314,20 @@ pub fn notify_start_flow(app_handle: AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
+pub fn notify_start_flow_with_workflow(
+    app_handle: AppHandle,
+    workflow_id: String,
+) -> Result<(), String> {
+    #[derive(serde::Serialize, Clone)]
+    struct StartFlowPayload {
+        workflow_id: String,
+    }
+    app_handle
+        .emit("start-flow", StartFlowPayload { workflow_id })
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 pub fn notify_view_flow_recap(app_handle: AppHandle) -> Result<(), String> {
     app_handle
         .emit("navigate-to-flow-recap", ())

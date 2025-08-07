@@ -8,6 +8,7 @@ import { useDeviceProfile } from '../api/hooks/useDeviceProfile'
 import { EbbWorker } from '../lib/ebbWorker'
 import { invoke } from '@tauri-apps/api/core'
 import { SmartSessionApi } from '../api/ebbApi/smartSessionApi'
+import { ScheduledSessionExecutionApi } from '../api/ebbApi/scheduledSessionExecutionApi'
 import { useAuth } from './useAuth'
 
 type OnlinePingEvent = {
@@ -56,6 +57,31 @@ export const useWorkerPolling = () => {
               })
             }
           }
+
+          // Check for scheduled sessions
+          const scheduledSessionStatus = await ScheduledSessionExecutionApi.checkScheduledSessionStatus()
+          if(scheduledSessionStatus.type === 'reminder') {
+            const payload = {
+              workflowId: scheduledSessionStatus.schedule.workflowId,
+              workflowName: scheduledSessionStatus.schedule.workflowName,
+            }
+            invoke('show_notification', {
+              notificationType: 'scheduled-session-reminder',
+              payload: JSON.stringify(payload),
+            })
+          }
+          else if(scheduledSessionStatus.type === 'start') {
+            invoke('show_notification', {
+              notificationType: 'scheduled-session-start',
+              payload: JSON.stringify({
+                workflowId: scheduledSessionStatus.schedule.workflowId,
+                workflowName: scheduledSessionStatus.schedule.workflowName,
+              }),
+            })
+          }
+
+          // Clean up old scheduled session tracking periodically
+          ScheduledSessionExecutionApi.cleanupOldSessionTracking()
         }
         EbbWorker.work(event.payload, run) // used to make sure we don't run the same work multiple times
 

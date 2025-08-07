@@ -10,6 +10,8 @@ import { useShortcutStore } from '@/lib/stores/shortcutStore'
 import { useConnectedStore } from '@/lib/stores/connectedStore'
 import { useProfile } from '@/api/hooks/useProfile'
 import { useWorkerPolling } from '@/hooks/useWorkerPolling'
+import { useCreateNotification, useGetNotificationBySentId } from '@/api/hooks/useNotifications'
+import { isFocusScheduleFeatureEnabled } from '../lib/utils/environment.util'
 
 export const useInitializeAppState = () => {  
   useProfile()
@@ -21,6 +23,8 @@ export const useInitializeAppState = () => {
   const { profile } = useProfile()
   const { setConnected } = useConnectedStore()
   const { loadShortcutFromStorage } = useShortcutStore()
+  const { mutate: createNotification } = useCreateNotification()
+  const { data: focusScheduleNotification, isLoading: isFocusScheduleNotificationLoading } = useGetNotificationBySentId('focus_schedule_feature_intro')
   
   
   useEffect(() => {
@@ -61,5 +65,23 @@ export const useInitializeAppState = () => {
   useEffect(() => {
     loadShortcutFromStorage()
   }, [loadShortcutFromStorage])
+
+  // Show notification about Focus Schedule feature to new users
+  useEffect(() => {
+    if(!isFocusScheduleFeatureEnabled() || isFocusScheduleNotificationLoading) {
+      return
+    }
+    if (user?.id && !focusScheduleNotification) {
+      createNotification({
+        user_id: user.id,
+        content: '📅 Schedule focus sessions to protect your most productive times!',
+        notification_type: 'app',
+        notification_sub_type: 'info',
+        notification_sent_id: 'focus_schedule_feature_intro',
+        read: 0,
+        dismissed: 0,
+      })
+    }
+  }, [user?.id, focusScheduleNotification, createNotification, isFocusScheduleNotificationLoading])
 
 }

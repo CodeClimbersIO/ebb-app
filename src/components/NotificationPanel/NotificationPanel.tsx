@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
-import { CheckCircle, Shield, AlertTriangle, PartyPopper, HelpCircle } from 'lucide-react'
+import { CheckCircle, Shield, AlertTriangle, PartyPopper, HelpCircle, Calendar, Clock } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Hotkey } from '@/components/ui/hotkey'
 import { cn } from '@/lib/utils/tailwind.util'
@@ -15,12 +15,17 @@ import { useShortcutStore } from '@/lib/stores/shortcutStore'
 import { useShortcutKeyDetection } from '../../hooks/useShortcutKeyDetection'
 import { EbbWorker } from '../../lib/ebbWorker'
 
-type NotificationType = 'session-start' | 'quick-start' | 'smart-start-suggestion' | 'doomscroll-start-suggestion' | 'blocked-app' | 'blocked-app-hard' | 'session-end' | 'session-warning' | 'end-session'  
+type NotificationType = 'session-start' | 'quick-start' | 'smart-start-suggestion' | 'doomscroll-start-suggestion' | 'blocked-app' | 'blocked-app-hard' | 'session-end' | 'session-warning' | 'end-session' | 'scheduled-session-reminder' | 'scheduled-session-start'  
 
 interface NotificationPayload {
   timeCreating?: number
   totalDuration?: number
   percentage?: number
+  scheduleId?: string
+  label?: string
+  workflowId?: string
+  workflowName?: string
+  scheduledTime?: string
   [key: string]: string | number | boolean | undefined
 }
 
@@ -74,7 +79,7 @@ const getSmartStartDescription = () => {
   return potentialDescriptions[randomIndex]
 }
 
-const NOTIFICATION_CONFIGS: Record<NotificationType, NotificationConfig> = {
+const createNotificationConfigs = (payload: NotificationPayload | null): Record<NotificationType, NotificationConfig> => ({
   'session-start': {
     title: 'Session Start',
     icon: CheckCircle,
@@ -177,8 +182,43 @@ const NOTIFICATION_CONFIGS: Record<NotificationType, NotificationConfig> = {
       info('extending session')
       await invoke('notify_add_time_event')
     }
+  },
+  'scheduled-session-reminder': {
+    title: 'Focus Session Starting Soon',
+    description: () => payload?.workflowName ? `${payload.workflowName} session starts in 15 minutes` : 'Your scheduled focus session starts in 15 minutes',
+    icon: Calendar,
+    iconColor: 'text-primary',
+    progressColor: 'bg-primary',
+    defaultDuration: 15000,
+    soundFile: 'session_start.mp3',
+    buttonText: 'Start Now',
+    buttonAction: async () => {
+      info(`starting scheduled session early with workflow ID: ${payload?.workflowId}`)
+      if (payload?.workflowId) {
+        await invoke('notify_start_flow_with_workflow', { workflowId: payload.workflowId })
+      } else {
+        await invoke('notify_start_flow')
+      }
+    }
+  },
+  'scheduled-session-start': {
+    title: 'Scheduled Session',
+    description: () => payload?.workflowName ? `Start your ${payload.workflowName} session` : 'Start your scheduled focus session',
+    icon: Clock,
+    iconColor: 'text-primary',
+    progressColor: 'bg-primary',
+    defaultDuration: 15000,
+    buttonText: 'Start',
+    buttonAction: async () => {
+      info(`starting scheduled session with workflow ID: ${payload?.workflowId}`)
+      if (payload?.workflowId) {
+        await invoke('notify_start_flow_with_workflow', { workflowId: payload.workflowId })
+      } else {
+        await invoke('notify_start_flow')
+      }
+    }
   }
-}
+})
 
 const getSoundPath = async (soundFile: string) => {
   if(isDev()) {
@@ -390,13 +430,14 @@ export const NotificationPanel = () => {
   
   useEffect(() => {
     if(!notificationType) return
-    const notificationConfig = NOTIFICATION_CONFIGS[notificationType]
+    const notificationConfigs = createNotificationConfigs(payload)
+    const notificationConfig = notificationConfigs[notificationType]
     if(!notificationConfig) {
       info(`Unknown notification type: ${notificationType}`)
       return
     }
     setConfig(notificationConfig)
-  }, [notificationType])
+  }, [notificationType, payload])
 
   if (!isVisible) return null
 

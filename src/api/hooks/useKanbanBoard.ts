@@ -33,6 +33,11 @@ export const useKanbanBoard = ({ rangeMode, date }: { rangeMode: 'day' | 'week' 
 
   // Calculate totalAppUsage from the columns state for progress bar within cards
   const totalAppUsage = Object.values(columns).flat().reduce((acc: number, app: AppsWithTime) => acc + app.duration, 0)
+  const totalCategoryUsage = {
+    creating: Object.values(columns.creating).reduce((acc: number, app: AppsWithTime) => acc + app.duration, 0),
+    neutral: Object.values(columns.neutral).reduce((acc: number, app: AppsWithTime) => acc + app.duration, 0),
+    consuming: Object.values(columns.consuming).reduce((acc: number, app: AppsWithTime) => acc + app.duration, 0),
+  }
 
   // Flag to track if columns have been initialized from appUsage
 
@@ -107,6 +112,7 @@ export const useKanbanBoard = ({ rangeMode, date }: { rangeMode: 'day' | 'week' 
   return {
     columns,
     totalAppUsage,
+    totalCategoryUsage,
     appUsage: fetchedAppUsage || [],
     handleDragEnd,
     isLoading: isLoadingAppUsage || isLoadingTags, // Overall loading state

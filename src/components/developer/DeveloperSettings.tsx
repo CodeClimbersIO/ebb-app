@@ -9,13 +9,25 @@ export function DeveloperSettings() {
   const [slackStatus, setSlackStatus] = useState<SlackStatusResponse['data'] | undefined>()
   const [loading, setLoading] = useState(false)
 
-  const handleTestNotification = (type: 'smart-start-suggestion' |  'session-start' | 'session-end' | 'session-warning' | 'blocked-app' | 'blocked-app-hard', difficulty: 'easy' | 'medium' | 'hard') => {
+  const handleTestNotification = (type: 'smart-start-suggestion' |  'session-start' | 'session-end' | 'session-warning' | 'blocked-app' | 'blocked-app-hard' | 'scheduled-session-start' | 'scheduled-session-reminder', difficulty: 'easy' | 'medium' | 'hard') => {
     info(`show_notification ${difficulty} ${type}`)
     let payload = {}
     if(type === 'session-end') {
       payload = {
         title: 'Session Completed',
         description: 'You created for 51 minutes!',
+      }
+    }
+    else if(type === 'scheduled-session-start') {
+      payload = {
+        workflowId: '8d3501ea-4373-405a-9982-144607d5fd33',
+        workflowName: 'Focus Session',
+      }
+    }
+    else if(type === 'scheduled-session-reminder') {
+      payload = {
+        workflowId: '8d3501ea-4373-405a-9982-144607d5fd33',
+        workflowName: 'Focus Session',
       }
     }
     invoke('show_notification', { notificationType: type, payload: JSON.stringify(payload) })
@@ -151,6 +163,12 @@ export function DeveloperSettings() {
             </Button>
             <Button onClick={() => handleTestNotification('blocked-app-hard', 'easy')}>
             Test Blocked App Hard
+            </Button>
+            <Button onClick={() => handleTestNotification('scheduled-session-start', 'easy')}> 
+            Test Scheduled Session Start
+            </Button>
+            <Button onClick={() => handleTestNotification('scheduled-session-reminder', 'easy')}> 
+            Test Scheduled Session Reminder
             </Button>
           </div>
         </div>

@@ -20,6 +20,7 @@ import { useStore } from 'zustand'
 import CategoryDashboardPage from './pages/CategoryDashboardPage'
 import { StartFlowPage } from '@/pages/StartFlowPage/StartFlowPage'
 import { FriendsAnalyticsPage } from '@/pages/FriendsAnalyticsPage/FriendsAnalyticsPage'
+import FocusSchedulePage from '@/pages/FocusSchedulePage'
 import { useLicenseWithDevices } from '@/api/hooks/useLicense'
 import { useOnboarding } from '@/hooks/useOnboarding'
 import { useCheckout } from '@/hooks/useCheckout'
@@ -80,6 +81,7 @@ const Router = () => {
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/friends-analytics" element={<FriendsAnalyticsPage />} />
       <Route path="/category-dashboard" element={<CategoryDashboardPage />} />
+      <Route path="/focus-schedule" element={<FocusSchedulePage />} />
       <Route path="/start-flow" element={<StartFlowPage />} />
       <Route path="/flow" element={<FlowPage />} />
       <Route path="/feedback" element={<FeedbackPage />} />

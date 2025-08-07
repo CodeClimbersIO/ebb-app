@@ -136,6 +136,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             commands::notify_app_notification_created,
             commands::hide_notification,
             commands::notify_start_flow,
+            commands::notify_start_flow_with_workflow,
             commands::notify_view_flow_recap,
             commands::notify_add_time_event,
             commands::notify_snooze_blocking,
