@@ -68,19 +68,20 @@ export default function FocusSchedulePage() {
     <Layout>
       <div className="p-8">
         <div className="max-w-5xl mx-auto">
-          <div className="mb-8 flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold mb-2">Focus Schedules</h1>
-              <p className="text-muted-foreground">
+          { schedules && schedules.length > 0 && (
+            <div className="mb-8 flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-semibold mb-2">Focus Schedules</h1>
+                <p className="text-muted-foreground">
                 Schedule focus sessions to protect your most productive times
-              </p>
-            </div>
-            <Button onClick={handleCreateNew}>
-              <Calendar className="w-4 h-4 mr-2" />
+                </p>
+              </div>
+              <Button onClick={handleCreateNew}>
+                <Calendar className="w-4 h-4 mr-2" />
               Create Schedule
-            </Button>
-          </div>
-
+              </Button>
+            </div>
+          )}
           <div className="space-y-4">
             {schedules && schedules.length > 0 ? (
               schedules.map((schedule) => (
