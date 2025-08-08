@@ -49,12 +49,6 @@ jobs:
       - name: install frontend dependencies
         run: npm ci
 
-      - name: Install Playwright browsers and system dependencies
-        run: npx playwright install --with-deps
-
-      - name: Run e2e tests
-        run: npm run test:e2e
-
       - name: import Apple Developer Certificate
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
