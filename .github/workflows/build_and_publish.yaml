@@ -47,7 +47,7 @@ jobs:
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
       - name: install frontend dependencies
-        run: yarn install
+        run: npm ci
 
       - name: import Apple Developer Certificate
         env:
