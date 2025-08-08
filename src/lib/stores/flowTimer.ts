@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { Duration } from 'luxon'
-import { FlowSessionApi } from '../../api/ebbApi/flowSessionApi'
+import { FlowSessionApi } from '@/api/ebbApi/flowSessionApi'
 
 interface FlowTimerStore {
   totalDuration: Duration | null

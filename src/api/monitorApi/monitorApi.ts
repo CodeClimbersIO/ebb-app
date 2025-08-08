@@ -1,7 +1,7 @@
 import { DateTime } from 'luxon'
 import { Tag, TagRepo, TagType } from '../../db/monitor/tagRepo'
 import { ActivityState, ActivityStateRepo } from '../../db/monitor/activityStateRepo'
-import { ActivityRating } from '../../lib/app-directory/apps-types'
+import { ActivityRating } from '@/lib/app-directory/apps-types'
 import { App, AppDb, AppRepo, AppTagJoined } from '../../db/monitor/appRepo'
 import { Activity, ActivityRepo } from '../../db/monitor/activityRepo'
 import { ActivityStateTagRepo } from '../../db/monitor/activityStateTagRepo'
@@ -457,3 +457,7 @@ export const MonitorApi = {
   getActivityStatesWithApps,
   getTimeByCategoryFromSummary,
 }
+
+// Re-export types that components/hooks need
+export type { Tag } from '../../db/monitor/tagRepo'
+export type { App } from '../../db/monitor/appRepo'

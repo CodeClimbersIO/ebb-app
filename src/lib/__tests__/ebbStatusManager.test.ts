@@ -2,7 +2,7 @@ import { describe, it, vi, expect } from 'vitest'
 
 import { calculateCurrentStatus } from '../ebbStatusManager'
 import { FlowSessionApi } from '@/api/ebbApi/flowSessionApi'
-import { MonitorApi } from '../../api/monitorApi/monitorApi'
+import { MonitorApi } from '@/api/monitorApi/monitorApi'
 import { ActivityType } from '../../db/monitor/activityRepo'
 import { DateTime, Settings } from 'luxon'
 

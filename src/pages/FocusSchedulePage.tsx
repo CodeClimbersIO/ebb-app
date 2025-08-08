@@ -76,7 +76,7 @@ export default function FocusSchedulePage() {
                 Schedule focus sessions to protect your most productive times
                 </p>
               </div>
-              <Button onClick={handleCreateNew}>
+              <Button onClick={handleCreateNew} variant="outline" className="border-primary">
                 <Calendar className="w-4 h-4 mr-2" />
               Create Schedule
               </Button>

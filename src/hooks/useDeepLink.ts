@@ -6,9 +6,9 @@ import supabase from '@/lib/integrations/supabase'
 import { SpotifyAuthService } from '@/lib/integrations/spotify/spotifyAuth'
 import { useLicenseStore } from '@/lib/stores/licenseStore'
 import { useAuth } from './useAuth'
-import { logAndToastError } from '../lib/utils/ebbError.util'
-import { useUpdateProfileLocation } from '../api/hooks/useProfile'
-import { OnboardingUtils } from '../lib/utils/onboarding.util'
+import { logAndToastError } from '@/lib/utils/ebbError.util'
+import { useUpdateProfileLocation } from '@/api/hooks/useProfile'
+import { OnboardingUtils } from '@/lib/utils/onboarding.util'
 
 const processedUrls = new Set<string>()
 

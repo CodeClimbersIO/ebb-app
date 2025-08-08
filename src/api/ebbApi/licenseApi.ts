@@ -1,6 +1,6 @@
 import { PostgrestError } from '@supabase/supabase-js'
-import { licenseRepo } from '../../db/supabase/licenseRepo'
-import { DeviceInfo } from '../hooks/useDevice'
+import { licenseRepo } from '@/db/supabase/licenseRepo'
+import { DeviceInfo } from '@/api/ebbApi/deviceApi'
 
 export type LicenseStatus = 'active' | 'expired'
 export type LicenseType = 'perpetual' | 'subscription'

@@ -1,6 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { DeviceProfileApi } from '../ebbApi/deviceProfileApi'
-import { DevicePreference } from '../../db/ebb/deviceProfileRepo'
+import { DeviceProfileApi, DevicePreference } from '@/api/ebbApi/deviceProfileApi'
 
 const deviceProfileKeys = {
   all: ['deviceProfile'] as const,

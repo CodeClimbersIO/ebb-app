@@ -1,4 +1,4 @@
-import supabase from '../../lib/integrations/supabase'
+import supabase from '@/lib/integrations/supabase'
 
 const LicenseTable = 'license'
 

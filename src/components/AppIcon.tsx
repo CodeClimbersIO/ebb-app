@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { App } from '../db/monitor/appRepo'
+import { App } from '../api/monitorApi/monitorApi'
 import { categoryEmojis, AppCategory } from '../lib/app-directory/apps-types'
 import { invoke } from '@tauri-apps/api/core'
 import { logAndToastError } from '@/lib/utils/ebbError.util'

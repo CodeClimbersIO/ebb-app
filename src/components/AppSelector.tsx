@@ -4,14 +4,12 @@ import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from '@
 import { cn } from '@/lib/utils/tailwind.util'
 import { AppCategory, categoryEmojis } from '@/lib/app-directory/apps-types'
 import { useEffect, useRef, useState } from 'react'
-import { MonitorApi } from '../api/monitorApi/monitorApi'
-import { App } from '../db/monitor/appRepo'
-import { AppIcon } from './AppIcon'
-import { Tag } from '../db/monitor/tagRepo'
+import { MonitorApi , App, Tag } from '@/api/monitorApi/monitorApi'
+import { AppIcon } from '@/components/AppIcon'
 import { Button } from '@/components/ui/button'
 import { DifficultySelector } from '@/components/difficulty-selector'
-import { CategoryTooltip } from './CategoryTooltip'
-import { PaywallDialog } from './PaywallDialog'
+import { CategoryTooltip } from '@/components/CategoryTooltip'
+import { PaywallDialog } from '@/components/PaywallDialog'
 import { usePermissions } from '@/hooks/usePermissions'
 
 interface CategoryOption {

@@ -1,5 +1,5 @@
 import supabase from '@/lib/integrations/supabase'
-import { useNetworkStore } from '../lib/stores/networkStore'
+import { useNetworkStore } from '@/lib/stores/networkStore'
 
 const BASE_URL = 'https://api.ebb.cool'
 // const BASE_URL = 'http://localhost:8001'

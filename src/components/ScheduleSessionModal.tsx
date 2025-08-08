@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useCreateFocusSchedule, useUpdateFocusSchedule, useFocusScheduleById } from '@/api/hooks/useFocusSchedule'
 import { useGetWorkflows } from '@/api/hooks/useWorkflow'
-import { RecurrenceSettings } from '@/db/ebb/focusScheduleRepo'
+import { RecurrenceSettings } from '@/api/ebbApi/focusScheduleApi'
 import { cn } from '@/lib/utils/tailwind.util'
 import { Workflow } from '@/api/ebbApi/workflowApi'
 

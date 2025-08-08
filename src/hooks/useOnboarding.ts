@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useEffect } from 'react'
-import { OnboardingUtils } from '../lib/utils/onboarding.util'
+import { OnboardingUtils } from '@/lib/utils/onboarding.util'
 
 export const useOnboarding = () => {
   const navigate = useNavigate()

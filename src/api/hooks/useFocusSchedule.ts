@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { FocusScheduleApi } from '../ebbApi/focusScheduleApi'
-import { RecurrenceSettings } from '@/db/ebb/focusScheduleRepo'
+import { FocusScheduleApi , RecurrenceSettings } from '../ebbApi/focusScheduleApi'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
 
 export const useFocusSchedules = () => {

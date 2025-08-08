@@ -8,7 +8,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
-import { useAuth } from '../hooks/useAuth'
+import { useAuth } from '@/hooks/useAuth'
 import { UsageSummary } from '@/components/UsageSummary'
 import { PermissionAlert } from '@/components/PermissionAlert'
 import { useUsageSummary } from './useUsageSummary'

@@ -11,7 +11,7 @@ import { useConnectedStore } from '@/lib/stores/connectedStore'
 import { useProfile } from '@/api/hooks/useProfile'
 import { useWorkerPolling } from '@/hooks/useWorkerPolling'
 import { useCreateNotification, useGetNotificationBySentId } from '@/api/hooks/useNotifications'
-import { isFocusScheduleFeatureEnabled } from '../lib/utils/environment.util'
+import { isFocusScheduleFeatureEnabled } from '@/lib/utils/environment.util'
 
 export const useInitializeAppState = () => {  
   useProfile()

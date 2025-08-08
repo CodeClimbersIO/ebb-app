@@ -5,7 +5,7 @@ import supabase from '@/lib/integrations/supabase'
 import { invoke } from '@tauri-apps/api/core'
 import { OnboardingUtils } from '@/lib/utils/onboarding.util'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
-import { isDev } from '../lib/utils/environment.util'
+import { isDev } from '@/lib/utils/environment.util'
 import { useNavigate } from 'react-router-dom'
 
 export const LoginPage = () => {

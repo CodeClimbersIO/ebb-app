@@ -1,13 +1,13 @@
 import { Layout } from '@/components/Layout'
 import { CommunityPreview } from '@/components/CommunityPreview'
-import { useConnectedStore } from '../lib/stores/connectedStore'
+import { useConnectedStore } from '@/lib/stores/connectedStore'
 import { Globe } from '@/components/ui/globe'
 import { useTheme } from '@/components/ThemeProvider'
-import { EbbLocation, useUserLocations } from '../api/hooks/useUsers'
+import { EbbLocation, useUserLocations } from '@/api/hooks/useUsers'
 import { Marker } from 'cobe'
-import { cn } from '../lib/utils/tailwind.util'
+import { cn } from '@/lib/utils/tailwind.util'
 import { useEffect, useState } from 'react'
-import { useAuth } from '../hooks/useAuth'
+import { useAuth } from '@/hooks/useAuth'
 
 const geLocationsAsMarkers = (userLocations?: EbbLocation[]): Marker[] => {
   if (!userLocations) return []

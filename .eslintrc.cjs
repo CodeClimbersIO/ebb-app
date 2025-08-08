@@ -19,11 +19,7 @@ module.exports = {
       typescript: {
         project: './tsconfig.json',
         alwaysTryTypes: true
-      },
-      alias: {
-        map: [["@", "./src"]],
-        extensions: ['.ts', '.tsx', '.js', '.jsx', '.json']
-      },
+      }
     },
   },
   rules: {
@@ -38,6 +34,31 @@ module.exports = {
     'quotes': ['error', 'single'],
     'eol-last': ['error', 'always'],
     'indent': ['error', 2],
+    // Prefer @/ alias over relative paths (not auto-fixable)
+    'no-restricted-imports': ['error', {
+      patterns: [
+        {
+          group: ['../components/**', '../../components/**', '../../../components/**'],
+          message: 'Use @/components/* instead of relative paths'
+        },
+        {
+          group: ['../api/**', '../../api/**', '../../../api/**'],
+          message: 'Use @/api/* instead of relative paths'
+        },
+        {
+          group: ['../lib/**', '../../lib/**', '../../../lib/**'],
+          message: 'Use @/lib/* instead of relative paths'
+        },
+        {
+          group: ['../hooks/**', '../../hooks/**', '../../../hooks/**'],
+          message: 'Use @/hooks/* instead of relative paths'
+        },
+        {
+          group: ['../pages/**', '../../pages/**', '../../../pages/**'],
+          message: 'Use @/pages/* instead of relative paths'
+        }
+      ]
+    }],
   },
   overrides: [
     {
@@ -46,5 +67,48 @@ module.exports = {
         'import/no-default-export': 'off',
       },
     },
+    {
+      files: ["src/components/**/*.{ts,tsx}"],
+      rules: {
+        "no-restricted-imports": ["error", {
+          "paths": [
+            {
+              "name": "@/db/ebb/notificationRepo",
+              "message": "Architecture: Components must not import repos (`@/db/**`). Use `@/api/hooks/useNotifications` (Layer 1) or `@/api/ebbApi/notificationApi` (Layer 2)."
+            }
+          ],
+          "patterns": [
+            {
+              "group": ["@/db/**"],
+              "message": "Architecture: Components cannot import repositories (`@/db/**`). Use hooks under `@/api/hooks` or APIs under `@/api/ebbApi`."
+            },
+            {
+              "group": ["../db/**", "../../db/**"],
+              "message": "Architecture: No direct DB imports from components. Import a hook/API instead."
+            }
+          ]
+        }]
+      }
+    },
+    {
+
+      files: ["src/api/hooks/**/*.{ts,tsx}"],
+      rules: {
+        "no-restricted-imports": ["error", {
+          "paths": [
+            {
+              "name": "@/db/ebb/notificationRepo",
+              "message": "Architecture: Hooks (Layer 1) must not import repos (Layer 3). Use `@/api/ebbApi/notificationApi` (Layer 2)."
+            }
+          ],
+          "patterns": [
+            {
+              "group": ["@/db/**", "../db/**", "../../db/**"],
+              "message": "Architecture: Hooks (Layer 1) must not import repos (Layer 3). Call APIs under `@/api/ebbApi` (Layer 2) instead."
+            }
+          ]
+        }]
+      }
+    }
   ],
 }

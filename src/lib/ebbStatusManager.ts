@@ -1,6 +1,6 @@
 import { EbbStatus } from '@/api/hooks/useProfile'
 import { FlowSessionApi } from '@/api/ebbApi/flowSessionApi'
-import { MonitorApi } from '../api/monitorApi/monitorApi'
+import { MonitorApi } from '@/api/monitorApi/monitorApi'
 import { DateTime } from 'luxon'
 import { Activity } from '../db/monitor/activityRepo'
 
