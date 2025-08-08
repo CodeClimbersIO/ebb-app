@@ -54,3 +54,6 @@ scripts/apps.csv
 # Supabase
 supabase/supabase/
 supabase/.branches
+
+# Test Results
+test-results

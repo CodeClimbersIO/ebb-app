@@ -7,6 +7,7 @@ declare global {
 
 window.__tauriCoreMockLoaded = true
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const invoke = async (cmd: string, args?: unknown): Promise<any> => {
   if (!window.__tauriMock) window.__tauriMock = { calls: [] }
   window.__tauriMock.calls.push({ cmd, args })
@@ -25,6 +26,8 @@ export const invoke = async (cmd: string, args?: unknown): Promise<any> => {
   case 'notify_add_time_event':
   case 'notify_start_flow_with_workflow':
     return
+  case 'is_monitoring_running':
+    return false
   case 'generate_timer_icon':
     return new Uint8Array([0])
   default:
