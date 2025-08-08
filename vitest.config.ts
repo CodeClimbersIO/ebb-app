@@ -19,6 +19,10 @@ export default defineConfig({
       reporter: ['text', 'json', 'html'],
     },
   },
+  define: {
+    'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(process.env.VITE_SUPABASE_URL || 'http://localhost'),
+    'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(process.env.VITE_SUPABASE_ANON_KEY || 'test-anon-key'),
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
