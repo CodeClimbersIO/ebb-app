@@ -4,7 +4,7 @@ import { ApiError, platformApiRequest } from '../platformRequest'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
 import { toast } from 'sonner'
 import { User } from '@supabase/supabase-js'
-import { useAuth } from '../../hooks/useAuth'
+import { useAuth } from '@/hooks/useAuth' 
 
 // --- Backend types ---
 export type FriendRequestStatus = 'pending' | 'accepted' | 'rejected' | 'cancelled'

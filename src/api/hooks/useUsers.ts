@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { platformApiRequest } from '../platformRequest'
-import { EbbStatus } from './useProfile'
-import { getRandomPoint } from '../../lib/utils/location.util'
+import { EbbStatus } from '@/api/hooks/useProfile'
+import { getRandomPoint } from '@/lib/utils/location.util'
 import { User } from '@supabase/supabase-js'
 
 const communityKeys = {

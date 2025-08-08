@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { defaultPermissions, License, licenseApi, LicensePermissions } from '@/api/ebbApi/licenseApi'
-import { useRegisterDevice, DeviceInfo, defaultDeviceInfo } from './useDevice'
+import { useRegisterDevice } from '@/api/hooks/useDevice'
+import { defaultDeviceInfo, DeviceInfo } from '@/api/ebbApi/deviceApi'
 
 export interface LicenseInfo {
   license: License | null

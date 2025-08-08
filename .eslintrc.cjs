@@ -34,7 +34,6 @@ module.exports = {
     'quotes': ['error', 'single'],
     'eol-last': ['error', 'always'],
     'indent': ['error', 2],
-    // Prefer @/ alias over relative paths (not auto-fixable)
     'no-restricted-imports': ['error', {
       patterns: [
         {
@@ -105,6 +104,26 @@ module.exports = {
             {
               "group": ["@/db/**", "../db/**", "../../db/**"],
               "message": "Architecture: Hooks (Layer 1) must not import repos (Layer 3). Call APIs under `@/api/ebbApi` (Layer 2) instead."
+            },
+            {
+              "group": ["../components/**", "../../components/**", "../../../components/**"],
+              "message": "Use @/components/* instead of relative paths"
+            },
+            {
+              "group": ["../api/**", "../../api/**", "../../../api/**"],
+              "message": "Use @/api/* instead of relative paths"
+            },
+            {
+              "group": ["../lib/**", "../../lib/**", "../../../lib/**"],
+              "message": "Use @/lib/* instead of relative paths"
+            },
+            {
+              "group": ["../hooks/**", "../../hooks/**", "../../../hooks/**", "./*"],
+              "message": "Use @/api/hooks/* instead of relative paths"
+            },
+            {
+              "group": ["../pages/**", "../../pages/**", "../../../pages/**"],
+              "message": "Use @/pages/* instead of relative paths"
             }
           ]
         }]
