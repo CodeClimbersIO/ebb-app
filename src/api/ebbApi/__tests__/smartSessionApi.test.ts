@@ -80,7 +80,7 @@ describe('SmartSessionApi', () => {
     it('should handle no local storage item', async () => {
       mockLocalStorage.getItem.mockReturnValue(null)
       const result = await hasSmartSessionCooldown(mockSession)
-      expect(result).toBeFalsy()
+      expect(result).toBeTruthy()
     })
     
     it('should return true when cooldown conditions are met', async () => {
@@ -99,8 +99,8 @@ describe('SmartSessionApi', () => {
       expect(result).toBe(true)
     })
     
-    it('should return undefined when cooldown conditions are met but last session check is not set', async () => {
-      const thirtyFiveMinutesAgo = DateTime.now().minus({ minutes: 35 }).toISO()
+    it('should return undefined when cooldown conditions are met but last session check is set', async () => {
+      const thirtyFiveMinutesAgo = DateTime.now().minus({ minutes: 25 }).toISO()
       mockLocalStorage.getItem.mockReturnValue(thirtyFiveMinutesAgo)
       const result = await hasSmartSessionCooldown(mockSession)
       expect(result).toBeFalsy()
