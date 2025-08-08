@@ -12,9 +12,11 @@ import { PaywallDialog } from '@/components/PaywallDialog'
 import { usePermissions } from '@/hooks/usePermissions'
 import { useFriendsWithInsights } from '@/api/hooks/useFriends'
 import { isFocusScheduleFeatureEnabled } from '../lib/utils/environment.util'
+import { useAuth } from '../hooks/useAuth'
 
 export function Sidebar() {
   const location = useLocation()
+  const { user } = useAuth()
   const { hasProAccess } = usePermissions()
   const { hasPendingInvitesReceived } = useFriendsWithInsights()
 
@@ -41,7 +43,7 @@ export function Sidebar() {
             <TooltipContent side="right" sideOffset={10}>Today</TooltipContent>
           </Tooltip>
 
-          {isFocusScheduleFeatureEnabled() && (
+          {isFocusScheduleFeatureEnabled(user?.email) && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button

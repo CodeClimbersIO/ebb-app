@@ -68,7 +68,7 @@ export const useInitializeAppState = () => {
 
   // Show notification about Focus Schedule feature to new users
   useEffect(() => {
-    if(!isFocusScheduleFeatureEnabled() || isFocusScheduleNotificationLoading) {
+    if(!isFocusScheduleFeatureEnabled(user?.email) || isFocusScheduleNotificationLoading) {
       return
     }
     if (user?.id && !focusScheduleNotification) {
