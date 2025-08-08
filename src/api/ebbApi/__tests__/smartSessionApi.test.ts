@@ -25,11 +25,15 @@ vi.mock('../../monitorApi/monitorApi', () => {
   }
 })
 
+const now = DateTime.now()
+const start = now.minus({ minutes: 10 })
+const end = now
+
 // Mock a recent session from 30 minutes ago
 const mockSession = {
   id: 'test-session',
-  start: DateTime.now().minus({ minutes: 60 }).toISO(),
-  end: DateTime.now().minus({ minutes: 30 }).toISO(),
+  start: start.toISO(),
+  end: end.toISO(),
   objective: 'Test objective',
   type: 'manual' as const
 }
@@ -40,9 +44,9 @@ describe('SmartSessionApi', () => {
       id: 15650,
       state: 'ACTIVE' as const,
       app_switches: 0,
-      start_time: DateTime.now().minus({ minutes: 60 }).toISO(),
-      end_time: DateTime.now().minus({ minutes: 30 }).toISO(),
-      created_at: DateTime.now().minus({ minutes: 60 }).toFormat('yyyy-MM-dd HH:mm:ss'),
+      start_time: now.minus({ minutes: 60 }).toISO(),
+      end_time: now.minus({ minutes: 30 }).toISO(),
+      created_at: now.minus({ minutes: 60 }).toFormat('yyyy-MM-dd HH:mm:ss'),
       tags_json: [
         {
           tag_id: '5ba10e13-d342-4262-a391-9b9aa95332cd',
@@ -70,7 +74,7 @@ describe('SmartSessionApi', () => {
 
     it('should return undefined when cooldown conditions are not met', async () => {
       // Mock stored lastSessionCheck from 20 minutes ago
-      const twentyMinutesAgo = DateTime.now().minus({ minutes: 20 }).toISO()
+      const twentyMinutesAgo = now.minus({ minutes: 20 }).toISO()
       mockLocalStorage.getItem.mockReturnValue(twentyMinutesAgo)
 
       const result = await hasSmartSessionCooldown(mockSession)
@@ -85,12 +89,12 @@ describe('SmartSessionApi', () => {
     
     it('should return true when cooldown conditions are met', async () => {
       // Mock stored lastSessionCheck from 20 minutes ago
-      const thirtyFiveMinutesAgo = DateTime.now().minus({ minutes: 35 }).toISO()
+      const thirtyFiveMinutesAgo = now.minus({ minutes: 35 }).toISO()
       mockLocalStorage.getItem.mockReturnValue(thirtyFiveMinutesAgo)
       const mockOldSession = {
         id: 'test-session',
-        start: DateTime.now().minus({ minutes: 120 }).toISO(),
-        end: DateTime.now().minus({ minutes: 90 }).toISO(),
+        start: now.minus({ minutes: 120 }).toISO(),
+        end: now.minus({ minutes: 90 }).toISO(),
         objective: 'Test objective',
         type: 'manual' as const
       }
@@ -99,8 +103,8 @@ describe('SmartSessionApi', () => {
       expect(result).toBe(true)
     })
     
-    it('should return undefined when cooldown conditions are met but last session check is not set', async () => {
-      const thirtyFiveMinutesAgo = DateTime.now().minus({ minutes: 35 }).toISO()
+    it('should return undefined when cooldown conditions are met but last session check is set', async () => {
+      const thirtyFiveMinutesAgo = now.minus({ minutes: 25 }).toISO()
       mockLocalStorage.getItem.mockReturnValue(thirtyFiveMinutesAgo)
       const result = await hasSmartSessionCooldown(mockSession)
       expect(result).toBeFalsy()
@@ -110,8 +114,8 @@ describe('SmartSessionApi', () => {
       mockLocalStorage.getItem.mockReturnValue(null)
       const mockOldSession = {
         id: 'test-session',
-        start: DateTime.now().minus({ minutes: 120 }).toISO(),
-        end: DateTime.now().minus({ minutes: 90 }).toISO(),
+        start: now.minus({ minutes: 120 }).toISO(),
+        end: now.minus({ minutes: 90 }).toISO(),
         objective: 'Test objective',
         type: 'manual' as const
       }
@@ -129,9 +133,9 @@ describe('SmartSessionApi', () => {
           id: 15650,
           state: 'ACTIVE' as const,
           app_switches: 0,
-          start_time: DateTime.now().minus({ minutes: 10 }).toISO(),
-          end_time: DateTime.now().toISO(), // Full 10 minutes of activity
-          created_at: DateTime.now().minus({ minutes: 10 }).toFormat('yyyy-MM-dd HH:mm:ss'),
+          start_time: start.toISO(),
+          end_time: end.toISO(), // Full 10 minutes of activity
+          created_at: start.toFormat('yyyy-MM-dd HH:mm:ss'),
           tags_json: [
             { tag_id: '1', name: 'creating' },
             { tag_id: '2', name: 'creating' },
@@ -143,8 +147,6 @@ describe('SmartSessionApi', () => {
 
       vi.mocked(MonitorApi.getActivityStatesByTimePeriod).mockResolvedValue(mockActivityStatesFor75Percent)
 
-      const start = DateTime.now().minus({ minutes: 10 })
-      const end = DateTime.now()
       const result = await SmartSessionApi.isCreatingFromTimePeriod(start, end)
       expect(result).toBe(true)
     })
@@ -157,9 +159,9 @@ describe('SmartSessionApi', () => {
           id: 15651,
           state: 'ACTIVE' as const,
           app_switches: 0,
-          start_time: DateTime.now().minus({ minutes: 10 }).toISO(),
-          end_time: DateTime.now().toISO(), // Full 10 minutes of activity
-          created_at: DateTime.now().minus({ minutes: 10 }).toFormat('yyyy-MM-dd HH:mm:ss'),
+          start_time: start.toISO(),
+          end_time: end.toISO(), // Full 10 minutes of activity
+          created_at: start.toFormat('yyyy-MM-dd HH:mm:ss'),
           tags_json: [
             { tag_id: '1', name: 'creating' },
             { tag_id: '2', name: 'creating' },
@@ -171,8 +173,6 @@ describe('SmartSessionApi', () => {
 
       vi.mocked(MonitorApi.getActivityStatesByTimePeriod).mockResolvedValue(mockActivityStatesFor50Percent)
 
-      const start = DateTime.now().minus({ minutes: 10 })
-      const end = DateTime.now()
       const result = await SmartSessionApi.isCreatingFromTimePeriod(start, end)
       expect(result).toBe(false)
     })
@@ -184,9 +184,9 @@ describe('SmartSessionApi', () => {
           id: 15652,
           state: 'ACTIVE' as const,
           app_switches: 0,
-          start_time: DateTime.now().minus({ minutes: 8 }).toISO(),
-          end_time: DateTime.now().minus({ minutes: 3 }).toISO(), // Only 5 minutes of activity
-          created_at: DateTime.now().minus({ minutes: 8 }).toFormat('yyyy-MM-dd HH:mm:ss'),
+          start_time: now.minus({ minutes: 8 }).toISO(),
+          end_time: now.minus({ minutes: 3 }).toISO(), // Only 5 minutes of activity
+          created_at: now.minus({ minutes: 8 }).toFormat('yyyy-MM-dd HH:mm:ss'),
           tags_json: [
             { tag_id: '1', name: 'creating' },
             { tag_id: '2', name: 'creating' },
@@ -198,8 +198,6 @@ describe('SmartSessionApi', () => {
 
       vi.mocked(MonitorApi.getActivityStatesByTimePeriod).mockResolvedValue(mockActivityStatesShortDuration)
 
-      const start = DateTime.now().minus({ minutes: 10 })
-      const end = DateTime.now()
       const result = await SmartSessionApi.isCreatingFromTimePeriod(start, end)
       expect(result).toBe(false)
     })
@@ -211,9 +209,9 @@ describe('SmartSessionApi', () => {
           id: 15653,
           state: 'ACTIVE' as const,
           app_switches: 0,
-          start_time: DateTime.now().minus({ minutes: 10 }).toISO(),
-          end_time: DateTime.now().toISO(), // Full 10 minutes of activity
-          created_at: DateTime.now().minus({ minutes: 10 }).toFormat('yyyy-MM-dd HH:mm:ss'),
+          start_time: start.toISO(),
+          end_time: end.toISO(), // Full 10 minutes of activity
+          created_at: start.toFormat('yyyy-MM-dd HH:mm:ss'),
           tags_json: [
             { tag_id: '1', name: 'creating' },
             { tag_id: '2', name: 'creating' },
@@ -225,8 +223,6 @@ describe('SmartSessionApi', () => {
 
       vi.mocked(MonitorApi.getActivityStatesByTimePeriod).mockResolvedValue(mockActivityStatesBothConditions)
 
-      const start = DateTime.now().minus({ minutes: 10 })
-      const end = DateTime.now()
       const result = await SmartSessionApi.isCreatingFromTimePeriod(start, end)
       expect(result).toBe(true)
     })
@@ -240,9 +236,9 @@ describe('SmartSessionApi', () => {
           id: 15654,
           state: 'ACTIVE' as const,
           app_switches: 0,
-          start_time: DateTime.now().minus({ minutes: 10 }).toISO(),
-          end_time: DateTime.now().toISO(),
-          created_at: DateTime.now().minus({ minutes: 10 }).toFormat('yyyy-MM-dd HH:mm:ss'),
+          start_time: start.toISO(),
+          end_time: end.toISO(),
+          created_at: start.toFormat('yyyy-MM-dd HH:mm:ss'),
           tags_json: [
             { tag_id: '1', name: 'consuming' },
             { tag_id: '2', name: 'consuming' },
@@ -254,8 +250,6 @@ describe('SmartSessionApi', () => {
 
       vi.mocked(MonitorApi.getActivityStatesByTimePeriod).mockResolvedValue(mockActivityStatesFor75PercentConsuming)
 
-      const start = DateTime.now().minus({ minutes: 10 })
-      const end = DateTime.now()
       const result = await SmartSessionApi.doomscrollDetectionForTimePeriod(start, end)
       expect(result).toBe(true)
     })
@@ -267,9 +261,9 @@ describe('SmartSessionApi', () => {
           id: 15655,
           state: 'ACTIVE' as const,
           app_switches: 0,
-          start_time: DateTime.now().minus({ minutes: 10 }).toISO(),
-          end_time: DateTime.now().toISO(),
-          created_at: DateTime.now().minus({ minutes: 10 }).toFormat('yyyy-MM-dd HH:mm:ss'),
+          start_time: start.toISO(),
+          end_time: end.toISO(),
+          created_at: start.toFormat('yyyy-MM-dd HH:mm:ss'),
           tags_json: [
             { tag_id: '1', name: 'consuming' },
             { tag_id: '2', name: 'consuming' },
@@ -281,8 +275,6 @@ describe('SmartSessionApi', () => {
 
       vi.mocked(MonitorApi.getActivityStatesByTimePeriod).mockResolvedValue(mockActivityStatesFor50PercentConsuming)
 
-      const start = DateTime.now().minus({ minutes: 10 })
-      const end = DateTime.now()
       const result = await SmartSessionApi.doomscrollDetectionForTimePeriod(start, end)
       expect(result).toBe(false)
     })
@@ -294,9 +286,9 @@ describe('SmartSessionApi', () => {
           id: 15656,
           state: 'ACTIVE' as const,
           app_switches: 0,
-          start_time: DateTime.now().minus({ minutes: 10 }).toISO(),
-          end_time: DateTime.now().toISO(),
-          created_at: DateTime.now().minus({ minutes: 10 }).toFormat('yyyy-MM-dd HH:mm:ss'),
+          start_time: start.toISO(),
+          end_time: end.toISO(),
+          created_at: start.toFormat('yyyy-MM-dd HH:mm:ss'),
           tags_json: [
             { tag_id: '1', name: 'consuming' },
             { tag_id: '2', name: 'consuming' },
@@ -308,8 +300,6 @@ describe('SmartSessionApi', () => {
 
       vi.mocked(MonitorApi.getActivityStatesByTimePeriod).mockResolvedValue(mockActivityStatesForExact75Percent)
 
-      const start = DateTime.now().minus({ minutes: 10 })
-      const end = DateTime.now()
       const result = await SmartSessionApi.doomscrollDetectionForTimePeriod(start, end)
       expect(result).toBe(true)
     })
@@ -321,17 +311,15 @@ describe('SmartSessionApi', () => {
           id: 15657,
           state: 'ACTIVE' as const,
           app_switches: 0,
-          start_time: DateTime.now().minus({ minutes: 10 }).toISO(),
-          end_time: DateTime.now().toISO(),
-          created_at: DateTime.now().minus({ minutes: 10 }).toFormat('yyyy-MM-dd HH:mm:ss'),
+          start_time: start.toISO(),
+          end_time: end.toISO(),
+          created_at: start.toFormat('yyyy-MM-dd HH:mm:ss'),
           tags_json: []
         }
       ] as ActivityState[]
 
       vi.mocked(MonitorApi.getActivityStatesByTimePeriod).mockResolvedValue(mockActivityStatesNoTags)
 
-      const start = DateTime.now().minus({ minutes: 10 })
-      const end = DateTime.now()
       const result = await SmartSessionApi.doomscrollDetectionForTimePeriod(start, end)
       expect(result).toBe(false)
     })

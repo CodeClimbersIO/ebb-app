@@ -6,6 +6,7 @@
   "author": "Paul Hovley <rphovley@gmail.com>",
   "scripts": {
     "dev": "tsc && vite",
+    "dev:e2e": "VITE_E2E=1 tsc && vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "monitor:update": "node scripts/os-monitor-update.js",
@@ -16,7 +17,10 @@
     "tauri:build:x86_64": "tauri build --target x86_64-apple-darwin",
     "lint": "eslint src --max-warnings=0",
     "format": "eslint --fix src",
-    "test": "vitest"
+    "test": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "npx playwright test e2e/ --headed --project=chromium"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -73,10 +77,11 @@
     "zustand": "^5.0.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.54.2",
     "@tauri-apps/cli": "^2.6.1",
     "@types/canvas-confetti": "^1.9.0",
     "@types/luxon": "^3.4.2",
-    "@types/node": "^22.10.2",
+    "@types/node": "^22.17.1",
     "@types/react": "^18.2.15",
     "@types/react-dom": "^18.2.7",
     "@typescript-eslint/eslint-plugin": "^8.19.1",
