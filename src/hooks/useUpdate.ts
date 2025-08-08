@@ -1,9 +1,9 @@
 import { check } from '@tauri-apps/plugin-updater'
 import { relaunch } from '@tauri-apps/plugin-process'
 import { info } from '@tauri-apps/plugin-log'
-import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
-import { isDev } from '../lib/utils/environment.util'
-import { logAndToastError } from '../lib/utils/ebbError.util'
+import { FlowSessionApi } from '@/api/ebbApi/flowSessionApi'
+import { isDev } from '@/lib/utils/environment.util'
+import { logAndToastError } from '@/lib/utils/ebbError.util'
 import { toast } from 'sonner'
 
 let consecutiveErrorCount = 0

@@ -10,8 +10,8 @@ import {
 import { logAndToastError } from '@/lib/utils/ebbError.util'
 import { info, error as logError } from '@tauri-apps/plugin-log'
 import { invoke } from '@tauri-apps/api/core'
-import { EbbWorker } from '../lib/ebbWorker'
-import { EbbListen } from '../lib/ebbListen'
+import { EbbWorker } from '@/lib/ebbWorker'
+import { EbbListen } from '@/lib/ebbListen'
 
 export function useGlobalShortcut() {
   const navigate = useNavigate()

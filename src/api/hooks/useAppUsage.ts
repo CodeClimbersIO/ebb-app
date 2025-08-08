@@ -1,8 +1,7 @@
 // hooks/useAppUsage.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query' // NEW: Import Tanstack Query hooks
-import { MonitorApi, AppsWithTime, GraphableTimeByHourBlock } from '@/api/monitorApi/monitorApi' // Adjust path as needed for types
+import { MonitorApi, AppsWithTime, GraphableTimeByHourBlock, Tag } from '@/api/monitorApi/monitorApi' // Adjust path as needed for types
 import { ActivityRating } from '@/lib/app-directory/apps-types' // Adjust path as needed for types
-import { Tag, TagRepo } from '@/db/monitor/tagRepo' // Adjust path as needed for types
 import { DateTime } from 'luxon'
 
 // Define query keys for React Query
@@ -59,7 +58,7 @@ export const useUpdateAppRatingMutation = () => {
 export const useTags = () => {
   return useQuery<Tag[]>({
     queryKey: appKanbanKeys.tags(),
-    queryFn: () => TagRepo.getTagsByType('default'),
+    queryFn: () => MonitorApi.getTagsByType('default'),
     staleTime: Infinity, 
     refetchOnWindowFocus: false,
   })

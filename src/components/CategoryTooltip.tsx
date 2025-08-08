@@ -3,7 +3,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { AppCategory, categoryEmojis } from '@/lib/app-directory/apps-types'
 import { Badge } from '@/components/ui/badge'
 import { X, Plus } from 'lucide-react'
-import { App } from '../db/monitor/appRepo'
+import { App } from '../api/monitorApi/monitorApi'
 import { AppIcon } from './AppIcon'
 import { SearchOption } from './AppSelector'
 

@@ -1,4 +1,4 @@
-import { toSqlBool, insert, update } from '../../lib/utils/sql.util'
+import { toSqlBool, insert, update } from '@/lib/utils/sql.util'
 import { getEbbDb } from './ebbDb'
 
 export interface NotificationSchema {

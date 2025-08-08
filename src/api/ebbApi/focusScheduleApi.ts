@@ -112,3 +112,6 @@ export const FocusScheduleApi = {
   deleteFocusSchedule,
   formatScheduleDisplay,
 }
+
+// Re-export types that components/hooks need
+export type { RecurrenceSettings } from '@/db/ebb/focusScheduleRepo'

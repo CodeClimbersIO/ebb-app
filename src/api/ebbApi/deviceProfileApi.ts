@@ -62,3 +62,6 @@ export const DeviceProfileApi = {
   updateDeviceProfilePreferences,
   getDeviceId
 }
+
+// Re-export types that components/hooks need
+export type { DevicePreference } from '../../db/ebb/deviceProfileRepo'

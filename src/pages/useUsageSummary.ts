@@ -1,8 +1,8 @@
 import { useEffect, useState, useRef } from 'react'
 import { DateTime } from 'luxon'
-import { MonitorApi, GraphableTimeByHourBlock } from '../api/monitorApi/monitorApi'
+import { MonitorApi, GraphableTimeByHourBlock } from '@/api/monitorApi/monitorApi'
 import { Tag } from '../db/monitor/tagRepo'
-import { useAppUsage, useGetChartData } from '../api/hooks/useAppUsage'
+import { useAppUsage, useGetChartData } from '@/api/hooks/useAppUsage'
 
 const buildTotalTimeTooltip = (rangeMode: 'day' | 'week' | 'month', showIdleTime: boolean) => {
   let message = 'Total time spent online'

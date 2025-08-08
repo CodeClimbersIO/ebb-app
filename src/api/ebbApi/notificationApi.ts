@@ -30,3 +30,6 @@ export const NotificationApi = {
   updateAppNotificationStatus,
   getNotificationBySentId,
 }
+
+// Re-export types that components/hooks need
+export type { CreateNotificationSchema } from '@/db/ebb/notificationRepo'

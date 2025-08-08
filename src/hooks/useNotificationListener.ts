@@ -2,11 +2,11 @@ import { listen, UnlistenFn } from '@tauri-apps/api/event'
 import { invoke } from '@tauri-apps/api/core'
 import { info } from '@tauri-apps/plugin-log'
 import { useEffect } from 'react'
-import { EbbWorker } from '../lib/ebbWorker'
+import { EbbWorker } from '@/lib/ebbWorker'
 import { useNavigate } from 'react-router-dom'
-import { SmartSessionApi } from '../api/ebbApi/smartSessionApi'
-import { useFlowTimer } from '../lib/stores/flowTimer'
-import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
+import { SmartSessionApi } from '@/api/ebbApi/smartSessionApi'
+import { useFlowTimer } from '@/lib/stores/flowTimer'
+import { FlowSessionApi } from '@/api/ebbApi/flowSessionApi'
 
 export const useNotificationListener = () => {
   const navigate = useNavigate()
@@ -20,17 +20,16 @@ export const useNotificationListener = () => {
     const setupListeners = async () => {
 
       unlistenStartFlow = await listen('start-flow', async (event: { payload: { workflow_id?: string } }) => {
-        info('App: starting flow')
         EbbWorker.debounceWork(async () => {
           let session
           if (event.payload?.workflow_id) {
-            info(`Starting session with workflow ID: ${event.payload.workflow_id}`)
+            console.log(`Starting session with workflow ID: ${event.payload.workflow_id}`)
             session = await SmartSessionApi.startSmartSessionWithWorkflow(event.payload.workflow_id)
           } else {
-            info('Starting smart session (no specific workflow)')
+            console.log('Starting smart session (no specific workflow)')
             session = await SmartSessionApi.startSmartSession()
           }
-          info(`session started: ${JSON.stringify(session)}`)
+          console.log(`session started: ${JSON.stringify(session)}`)
           navigate('/flow')
         })
       })
