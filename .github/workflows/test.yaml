@@ -19,6 +19,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install Playwright Browsers
+        uses: microsoft/playwright-github-action@v1
+
       - name: Run unit tests
         run: npm run test
 
