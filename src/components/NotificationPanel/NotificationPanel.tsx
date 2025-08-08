@@ -185,7 +185,7 @@ const createNotificationConfigs = (payload: NotificationPayload | null): Record<
   },
   'scheduled-session-reminder': {
     title: 'Focus Session Starting Soon',
-    description: () => payload?.workflowName ? `${payload.workflowName} session starts in 15 minutes` : 'Your scheduled focus session starts in 15 minutes',
+    description: () => payload?.workflowName ? `${payload.workflowName} starts in 15 min` : 'Your scheduled focus session starts in 15 minutes',
     icon: Calendar,
     iconColor: 'text-primary',
     progressColor: 'bg-primary',

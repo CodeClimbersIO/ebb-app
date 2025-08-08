@@ -21,13 +21,13 @@ export function DeveloperSettings() {
     else if(type === 'scheduled-session-start') {
       payload = {
         workflowId: '8d3501ea-4373-405a-9982-144607d5fd33',
-        workflowName: 'Focus Session',
+        workflowName: 'Lazer Focused',
       }
     }
     else if(type === 'scheduled-session-reminder') {
       payload = {
         workflowId: '8d3501ea-4373-405a-9982-144607d5fd33',
-        workflowName: 'Focus Session',
+        workflowName: 'Lazer Focused',
       }
     }
     invoke('show_notification', { notificationType: type, payload: JSON.stringify(payload) })
