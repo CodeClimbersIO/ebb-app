@@ -280,6 +280,29 @@ export default function FlowSessionList() {
 - Use generic types for repository patterns
 - Leverage discriminated unions for state management
 
+## Required Development Validation
+
+**CRITICAL: Always run these commands before considering development complete:**
+
+```bash
+# 1. REQUIRED: Run linting and fix any errors
+npm run lint
+
+# 2. REQUIRED: Fix any auto-fixable issues  
+npm run format
+
+# 3. REQUIRED: Ensure TypeScript compilation and build succeed
+npm run build
+
+# 4. RECOMMENDED: Run tests to validate functionality
+npm test
+```
+
+**All commands must pass without errors before:**
+- Committing code changes
+- Creating pull requests  
+- Considering a task complete
+
 ## Testing
 
 ### Testing Strategy
@@ -360,6 +383,108 @@ describe('formatScheduleDisplay', () => {
   it('should handle edge cases gracefully', () => {
     const invalidSchedule = { ...baseSchedule, recurrence: { type: 'weekly', daysOfWeek: [] } }
     expect(FocusScheduleApi.formatScheduleDisplay(invalidSchedule)).toBe('Invalid schedule')
+  })
+})
+```
+
+### Repository Layer Testing Patterns
+
+Repository tests focus on database operations and SQL query behavior. **Priority areas for testing:**
+
+**1. WHERE Conditions**
+Test filtering logic to ensure correct data is returned:
+
+```typescript
+it('should only return active records (is_active = 1)', async () => {
+  // Insert mix of active/inactive records
+  await testDb.execute(`
+    INSERT INTO focus_schedule (id, workflow_id, is_active)
+    VALUES ('active-1', 'workflow-1', 1), ('inactive-1', 'workflow-1', 0)
+  `)
+
+  const results = await FocusScheduleRepo.getFocusSchedules()
+  
+  expect(results.every(r => r.is_active === 1)).toBe(true)
+  expect(results.find(r => r.id === 'inactive-1')).toBeUndefined()
+})
+```
+
+**2. ORDER BY Clauses**
+Test sorting behavior by inserting data in non-sorted order:
+
+```typescript
+it('should order by scheduled_time ASC', async () => {
+  // Insert in non-chronological order
+  await testDb.execute(`
+    INSERT INTO focus_schedule (id, scheduled_time, workflow_id, is_active)
+    VALUES 
+      ('late', '2024-01-17T15:00:00Z', 'workflow-1', 1),
+      ('early', '2024-01-15T09:00:00Z', 'workflow-1', 1),
+      ('middle', '2024-01-16T12:00:00Z', 'workflow-1', 1)
+  `)
+
+  const results = await FocusScheduleRepo.getFocusSchedules()
+  
+  const times = results.map(r => r.scheduled_time)
+  expect(times).toEqual([...times].sort()) // Should be sorted
+})
+```
+
+**3. Data Transformations**
+Test field renaming, JSON parsing, and virtual field creation:
+
+```typescript
+it('should parse JSON and create virtual fields', async () => {
+  await testDb.execute(`
+    INSERT INTO focus_schedule (id, recurrence_settings, workflow_id, is_active)
+    VALUES ('test', '{"type":"daily","daysOfWeek":[1,2,3]}', 'workflow-1', 1)
+  `)
+
+  const result = await FocusScheduleRepo.getFocusScheduleById('test')
+  
+  // JSON parsed into virtual field
+  expect(result.recurrence).toEqual({ type: 'daily', daysOfWeek: [1,2,3] })
+})
+
+it('should add fields from JOINs', async () => {
+  await testDb.execute(`
+    INSERT INTO workflow (id, name, settings) VALUES ('wf-1', 'Deep Work', '{}');
+    INSERT INTO focus_schedule (id, workflow_id, is_active) VALUES ('fs-1', 'wf-1', 1);
+  `)
+
+  const results = await FocusScheduleRepo.getFocusSchedulesWithWorkflow()
+  
+  expect(results[0]).toHaveProperty('workflow_name', 'Deep Work')
+})
+```
+
+**Repository Test Setup Pattern:**
+
+```typescript
+import { createEbbTestDatabase } from '@/lib/utils/testDb.util'
+import { getEbbDb } from '../ebbDb'
+
+// Mock the database connection
+vi.mock('../ebbDb', () => ({
+  getEbbDb: vi.fn()
+}))
+
+// Mock UUID generation for consistent tests
+Object.defineProperty(globalThis, 'self', {
+  value: { crypto: { randomUUID: vi.fn(() => 'test-uuid-123') } }
+})
+
+describe('SomeRepo', () => {
+  let testDb: Database
+
+  beforeEach(async () => {
+    testDb = await createEbbTestDatabase() // Schema already applied
+    vi.mocked(getEbbDb).mockResolvedValue(testDb)
+  })
+
+  afterEach(async () => {
+    if (testDb) await testDb.close()
+    vi.clearAllMocks()
   })
 })
 ```
