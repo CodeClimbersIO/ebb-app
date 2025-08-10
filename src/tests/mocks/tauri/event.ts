@@ -13,5 +13,5 @@ export const emit = async (name: string, payload?: unknown) => {
   listeners.get(name)?.forEach((cb) => cb({ payload }))
 }
 
-;(window as any).__tauriMockEmit = (name: string, payload?: unknown) => emit(name, payload)
+;(window as unknown as Record<string, unknown>).__tauriMockEmit = (name: string, payload?: unknown) => emit(name, payload)
 

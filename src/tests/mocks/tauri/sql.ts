@@ -1,13 +1,13 @@
 export type QueryResult = { rowsAffected?: number }
 
 export default class Database {
-  static async load(_url: string) {
+  static async load() {
     return new Database()
   }
-  async select<T = unknown>(_query: string, _params?: unknown[]): Promise<T[]> {
+  async select<T = unknown>(): Promise<T[]> {
     return [] as T[]
   }
-  async execute(_query: string, _params?: unknown[]): Promise<QueryResult> {
+  async execute(): Promise<QueryResult> {
     return { rowsAffected: 0 }
   }
 }
