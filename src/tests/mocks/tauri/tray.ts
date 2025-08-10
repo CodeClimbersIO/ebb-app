@@ -1,12 +1,10 @@
-type MenuType = any
-
 class MockTray {
   id: string
   constructor(id: string) { this.id = id }
-  async setTitle(_t: string) {}
-  async setIcon(_i: any) {}
-  async setIconAsTemplate(_b: boolean) {}
-  async setMenu(_m: MenuType) {}
+  async setTitle() {}
+  async setIcon() {}
+  async setIconAsTemplate() {}
+  async setMenu() {}
 }
 
 const registry = new Map<string, MockTray>()

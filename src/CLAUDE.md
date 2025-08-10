@@ -280,14 +280,247 @@ export default function FlowSessionList() {
 - Use generic types for repository patterns
 - Leverage discriminated unions for state management
 
-## Testing
+## Required Development Validation
 
-Run tests with:
+**CRITICAL: Always run these commands before considering development complete:**
+
 ```bash
+# 1. REQUIRED: Run linting and fix any errors
+npm run lint
+
+# 2. REQUIRED: Fix any auto-fixable issues  
+npm run format
+
+# 3. REQUIRED: Ensure TypeScript compilation and build succeed
+npm run build
+
+# 4. RECOMMENDED: Run tests to validate functionality
 npm test
 ```
 
-Test files should be placed alongside the code they test with `.test.ts` or `.test.tsx` extensions.
+**All commands must pass without errors before:**
+- Committing code changes
+- Creating pull requests  
+- Considering a task complete
+
+## Testing
+
+### Testing Strategy
+
+Tests are written using Vitest and follow a layered approach matching our data architecture:
+
+**Test Categories:**
+- **Repository Layer**: Test database operations and SQL queries
+- **API Layer**: Test business logic and data transformations  
+- **Hooks Layer**: Generally not tested (see note below)
+
+### API Layer Testing Patterns
+
+When testing API functions, use this framework based on the function's complexity:
+
+**1. Passthrough Functions (Simple Success Test)**
+Functions that only call repository methods without logic:
+
+```typescript
+describe('getFocusSchedules', () => {
+  it('should return schedules successfully', async () => {
+    const mockSchedules = [{ id: '1', label: 'Test' }]
+    vi.mocked(FocusScheduleRepo.getFocusSchedules).mockResolvedValue(mockSchedules as any)
+
+    const result = await FocusScheduleApi.getFocusSchedules()
+
+    expect(result).toBe(mockSchedules)
+  })
+})
+```
+
+**2. Business Logic Functions**  
+Functions with conditional logic (if statements, loops, validations):
+
+```typescript
+// Test each logical branch
+it('should throw error when workflow not found', async () => {
+  vi.mocked(WorkflowApi.getWorkflowById).mockResolvedValue(null)
+
+  await expect(
+    FocusScheduleApi.createFocusSchedule('invalid-workflow', mockTime, mockRecurrence)
+  ).rejects.toThrow('Workflow not found')
+})
+```
+
+**3. Data Transformation Functions**
+Functions that reshape, aggregate, or transform data:
+
+```typescript
+// Test data shape and transformation accuracy
+it('should transform parameters correctly with all fields', async () => {
+  await FocusScheduleApi.createFocusSchedule('workflow-1', mockTime, mockRecurrence, 'Label')
+
+  expect(FocusScheduleRepo.createFocusSchedule).toHaveBeenCalledWith({
+    id: 'test-uuid-123',
+    label: 'Label',
+    scheduled_time: '2024-01-15T09:00:00.000Z',
+    workflow_id: 'workflow-1',
+    recurrence_settings: '{"type":"daily"}',
+    is_active: 1,
+  })
+})
+```
+
+**4. Complex Functions (Logic + Transformation)**
+Test both business logic flows AND data shape:
+
+```typescript
+describe('formatScheduleDisplay', () => {
+  // Test logic branches
+  it('should format daily recurring schedule', () => {
+    const schedule = { ...baseSchedule, recurrence: { type: 'daily' } }
+    const result = FocusScheduleApi.formatScheduleDisplay(schedule)
+    expect(result).toMatch(/Daily at \d{1,2}:\d{2} (AM|PM)/)
+  })
+  
+  // Test edge cases
+  it('should handle edge cases gracefully', () => {
+    const invalidSchedule = { ...baseSchedule, recurrence: { type: 'weekly', daysOfWeek: [] } }
+    expect(FocusScheduleApi.formatScheduleDisplay(invalidSchedule)).toBe('Invalid schedule')
+  })
+})
+```
+
+### Repository Layer Testing Patterns
+
+Repository tests focus on database operations and SQL query behavior. **Priority areas for testing:**
+
+**1. WHERE Conditions**
+Test filtering logic to ensure correct data is returned:
+
+```typescript
+it('should only return active records (is_active = 1)', async () => {
+  // Insert mix of active/inactive records
+  await testDb.execute(`
+    INSERT INTO focus_schedule (id, workflow_id, is_active)
+    VALUES ('active-1', 'workflow-1', 1), ('inactive-1', 'workflow-1', 0)
+  `)
+
+  const results = await FocusScheduleRepo.getFocusSchedules()
+  
+  expect(results.every(r => r.is_active === 1)).toBe(true)
+  expect(results.find(r => r.id === 'inactive-1')).toBeUndefined()
+})
+```
+
+**2. ORDER BY Clauses**
+Test sorting behavior by inserting data in non-sorted order:
+
+```typescript
+it('should order by scheduled_time ASC', async () => {
+  // Insert in non-chronological order
+  await testDb.execute(`
+    INSERT INTO focus_schedule (id, scheduled_time, workflow_id, is_active)
+    VALUES 
+      ('late', '2024-01-17T15:00:00Z', 'workflow-1', 1),
+      ('early', '2024-01-15T09:00:00Z', 'workflow-1', 1),
+      ('middle', '2024-01-16T12:00:00Z', 'workflow-1', 1)
+  `)
+
+  const results = await FocusScheduleRepo.getFocusSchedules()
+  
+  const times = results.map(r => r.scheduled_time)
+  expect(times).toEqual([...times].sort()) // Should be sorted
+})
+```
+
+**3. Data Transformations**
+Test field renaming, JSON parsing, and virtual field creation:
+
+```typescript
+it('should parse JSON and create virtual fields', async () => {
+  await testDb.execute(`
+    INSERT INTO focus_schedule (id, recurrence_settings, workflow_id, is_active)
+    VALUES ('test', '{"type":"daily","daysOfWeek":[1,2,3]}', 'workflow-1', 1)
+  `)
+
+  const result = await FocusScheduleRepo.getFocusScheduleById('test')
+  
+  // JSON parsed into virtual field
+  expect(result.recurrence).toEqual({ type: 'daily', daysOfWeek: [1,2,3] })
+})
+
+it('should add fields from JOINs', async () => {
+  await testDb.execute(`
+    INSERT INTO workflow (id, name, settings) VALUES ('wf-1', 'Deep Work', '{}');
+    INSERT INTO focus_schedule (id, workflow_id, is_active) VALUES ('fs-1', 'wf-1', 1);
+  `)
+
+  const results = await FocusScheduleRepo.getFocusSchedulesWithWorkflow()
+  
+  expect(results[0]).toHaveProperty('workflow_name', 'Deep Work')
+})
+```
+
+**Repository Test Setup Pattern:**
+
+```typescript
+import { createEbbTestDatabase } from '@/lib/utils/testDb.util'
+import { getEbbDb } from '../ebbDb'
+
+// Mock the database connection
+vi.mock('../ebbDb', () => ({
+  getEbbDb: vi.fn()
+}))
+
+// Mock UUID generation for consistent tests
+Object.defineProperty(globalThis, 'self', {
+  value: { crypto: { randomUUID: vi.fn(() => 'test-uuid-123') } }
+})
+
+describe('SomeRepo', () => {
+  let testDb: Database
+
+  beforeEach(async () => {
+    testDb = await createEbbTestDatabase() // Schema already applied
+    vi.mocked(getEbbDb).mockResolvedValue(testDb)
+  })
+
+  afterEach(async () => {
+    if (testDb) await testDb.close()
+    vi.clearAllMocks()
+  })
+})
+```
+
+### React Query Hooks Testing Policy
+
+**Generally, do not test React Query hooks** unless otherwise directed
+### Test File Organization
+
+```
+src/api/ebbApi/__tests__/
+├── focusScheduleApi.test.ts    # API layer tests
+└── ...
+
+src/db/ebb/__tests__/
+├── focusScheduleRepo.test.ts   # Repository layer tests
+└── ...
+
+# Note: src/api/hooks/ tests omitted per policy above
+```
+
+### Running Tests
+
+```bash
+# Run all tests
+npm test
+
+# Run specific test file
+npm test -- src/api/ebbApi/__tests__/focusScheduleApi.test.ts
+
+# Run tests in watch mode
+npm test -- --watch
+
+# Run tests with coverage
+npm test -- --coverage
+```
 
 
 ## Other preferences

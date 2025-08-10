@@ -6,7 +6,7 @@ export const onOpenUrl = (cb: OnOpenUrlHandler) => {
   handler = cb
 }
 
-;(window as any).__tauriMockOpenUrl = async (url: string) => {
+;(window as unknown as Record<string, unknown>).__tauriMockOpenUrl = async (url: string) => {
   if (handler) await handler([url])
 }
 
