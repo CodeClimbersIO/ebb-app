@@ -69,6 +69,7 @@ export const FlowSessionRepo = { createFlowSession, /* other methods */ }
 - Components → React Query Hooks → API Services → Repository Layer
 - Never skip layers or access repositories directly from hooks
 - Never call Tauri commands directly from hooks
+- **CRITICAL: Never call API services directly from components** - always use React Query hooks
 
 ### State Management Priority
 
@@ -86,8 +87,16 @@ const { data: flowSessions } = useGetFlowSessions()
 // ✅ Good: UI state with Zustand
 const { isMenuOpen, toggleMenu } = useUIStore()
 
+// ✅ Good: Mutations with React Query
+const updateMutation = useUpdatePreferences()
+updateMutation.mutate(data)
+
 // ❌ Bad: Database state with Zustand
 const { flowSessions, fetchFlowSessions } = useFlowSessionStore() // Don't do this
+
+// ❌ Bad: Direct API calls from components
+import { slackApi } from '@/api/ebbApi/slackApi'
+await slackApi.updatePreferences(data) // Don't do this - use React Query hook instead
 ```
 
 ## Tauri Command Patterns
@@ -238,13 +247,25 @@ export default function MyPage() {
 
 ### Data Fetching in Components
 
-Always use React Query hooks:
+Always use React Query hooks - never call API services directly:
 
 ```typescript
-import { useGetFlowSessions } from '../api/hooks/useFlowSession'
+import { useGetFlowSessions, useUpdateFlowSession } from '../api/hooks/useFlowSession'
 
 export default function FlowSessionList() {
   const { data: sessions, isLoading, error } = useGetFlowSessions()
+  const updateMutation = useUpdateFlowSession()
+  
+  const handleUpdate = (id: string, data: UpdateData) => {
+    updateMutation.mutate({ id, data }, {
+      onSuccess: () => {
+        toast.success('Updated successfully')
+      },
+      onError: (error) => {
+        logAndToastError('Update failed', error)
+      }
+    })
+  }
   
   if (isLoading) return <div>Loading...</div>
   if (error) return <div>Error loading sessions</div>
@@ -252,10 +273,28 @@ export default function FlowSessionList() {
   return (
     <div>
       {sessions?.map(session => (
-        <div key={session.id}>{session.objective}</div>
+        <div key={session.id}>
+          {session.objective}
+          <button 
+            onClick={() => handleUpdate(session.id, newData)}
+            disabled={updateMutation.isPending}
+          >
+            {updateMutation.isPending ? 'Updating...' : 'Update'}
+          </button>
+        </div>
       ))}
     </div>
   )
+}
+```
+
+**❌ Never do this in components:**
+```typescript
+// DON'T import and call API services directly
+import { FlowSessionApi } from '../api/ebbApi/flowSessionApi'
+
+const handleUpdate = async () => {
+  await FlowSessionApi.updateFlowSession(id, data) // Wrong - violates layer pattern
 }
 ```
 

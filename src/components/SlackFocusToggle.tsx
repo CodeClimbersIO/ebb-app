@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { SlackIcon } from '@/components/icons/SlackIcon'
 import { Switch } from '@/components/ui/switch'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import {
   Dialog,
   DialogContent,
@@ -9,7 +10,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { useSlackStatus } from '@/api/hooks/useSlack'
+import { useSlackStatus, useUpdateSlackPreferences } from '@/api/hooks/useSlack'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
 import { initiateSlackOAuth } from '@/lib/utils/slackAuth.util'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -29,7 +30,18 @@ export function SlackFocusToggle({ slackSettings, onSlackSettingsChange }: Slack
   const navigate = useNavigate()
 
   const [showDialog, setShowDialog] = useState(false)
+  const [customStatusText, setCustomStatusText] = useState('')
+  const [customStatusEmoji, setCustomStatusEmoji] = useState('')
   const { data: slackStatus, isLoading: slackStatusLoading } = useSlackStatus()
+  const updatePreferencesMutation = useUpdateSlackPreferences()
+
+  // Load current preferences when dialog opens
+  useEffect(() => {
+    if (showDialog && slackStatus?.preferences) {
+      setCustomStatusText(slackStatus.preferences.custom_status_text || '')
+      setCustomStatusEmoji(slackStatus.preferences.custom_status_emoji || '')
+    }
+  }, [showDialog, slackStatus?.preferences])
 
   const handleSlackToggle = async () => {
     if (!user) {
@@ -58,6 +70,31 @@ export function SlackFocusToggle({ slackSettings, onSlackSettingsChange }: Slack
     } catch (error) {
       logAndToastError('Failed to toggle Slack DND', error)
     }
+  }
+
+  const validateEmoji = (emoji: string): boolean => {
+    if (!emoji) return true // Empty is valid
+    return emoji.startsWith(':') && emoji.endsWith(':') && emoji.length > 2
+  }
+
+  const handleSavePreferences = async () => {
+    if (!validateEmoji(customStatusEmoji)) {
+      toast.error('Emoji must be in format :emoji_name: (e.g., :brain:)')
+      return
+    }
+
+    updatePreferencesMutation.mutate({
+      custom_status_text: customStatusText,
+      custom_status_emoji: customStatusEmoji
+    }, {
+      onSuccess: () => {
+        toast.success('Slack preferences updated')
+        setShowDialog(false)
+      },
+      onError: (error) => {
+        logAndToastError('Failed to update Slack preferences', error)
+      }
+    })
   }
 
   const navigateToSettings = () => {
@@ -126,6 +163,45 @@ export function SlackFocusToggle({ slackSettings, onSlackSettingsChange }: Slack
                 checked={slackSettings.dndEnabled}
                 onCheckedChange={handleDndToggle}
               />
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label htmlFor="custom-status-text" className="text-sm font-medium">Custom Status Text</label>
+                <Input
+                  id="custom-status-text"
+                  value={customStatusText}
+                  onChange={(e) => setCustomStatusText(e.target.value)}
+                  placeholder="e.g., In a focus session"
+                  maxLength={100}
+                />
+                <div className="text-xs text-muted-foreground">
+                  Status message shown during focus sessions
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="custom-status-emoji" className="text-sm font-medium">Custom Status Emoji</label>
+                <Input
+                  id="custom-status-emoji"
+                  value={customStatusEmoji}
+                  onChange={(e) => setCustomStatusEmoji(e.target.value)}
+                  placeholder="e.g., :brain:"
+                  maxLength={50}
+                  className={!validateEmoji(customStatusEmoji) ? 'border-red-500' : ''}
+                />
+                <div className="text-xs text-muted-foreground">
+                  Emoji in format :emoji_name: (e.g., :brain:, :rocket:)
+                </div>
+              </div>
+
+              <Button 
+                onClick={handleSavePreferences} 
+                className="w-full"
+                disabled={updatePreferencesMutation.isPending}
+              >
+                {updatePreferencesMutation.isPending ? 'Saving...' : 'Save Preferences'}
+              </Button>
             </div>
 
             <div className="pt-4 border-t">
