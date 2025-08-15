@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { Layout } from '@/components/Layout'
-import { Button } from '@/components/ui/button'
 import { AnalyticsButton } from '@/components/ui/analytics-button'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
@@ -149,10 +148,16 @@ export default function FocusSchedulePage() {
                 <p className="text-muted-foreground mb-6">
                   Create your first focus schedule to start protecting your productive time.
                 </p>
-                <Button onClick={handleCreateNew}>
+                <AnalyticsButton 
+                  onClick={handleCreateNew}
+                  analyticsEvent="create_schedule_clicked"
+                  analyticsProperties={{
+                    button_location: 'focus_schedule_page_empty_state'
+                  }}
+                >
                   <Calendar className="w-4 h-4 mr-2" />
                   Create Your First Schedule
-                </Button>
+                </AnalyticsButton>
               </div>
             )}
           </div>
@@ -183,8 +188,28 @@ export default function FocusSchedulePage() {
                 </DialogDescription>
               </DialogHeader>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>Cancel</Button>
-                <Button variant="destructive" onClick={confirmDelete}>Delete</Button>
+                <AnalyticsButton 
+                  variant="outline" 
+                  onClick={() => setShowDeleteDialog(false)}
+                  analyticsEvent="delete_schedule_clicked"
+                  analyticsProperties={{
+                    button_location: 'delete_dialog',
+                    context: 'cancel'
+                  }}
+                >
+                  Cancel
+                </AnalyticsButton>
+                <AnalyticsButton 
+                  variant="destructive" 
+                  onClick={confirmDelete}
+                  analyticsEvent="delete_schedule_clicked"
+                  analyticsProperties={{
+                    button_location: 'delete_dialog',
+                    context: 'confirm'
+                  }}
+                >
+                  Delete
+                </AnalyticsButton>
               </DialogFooter>
             </DialogContent>
           </Dialog>
