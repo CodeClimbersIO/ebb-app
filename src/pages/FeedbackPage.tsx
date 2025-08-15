@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
-import { Button } from '@/components/ui/button'
+import { AnalyticsButton } from '@/components/ui/analytics-button'
 import { Card } from '@/components/ui/card'
 import { Layout } from '@/components/Layout'
 import { CommunityCard } from '@/components/CommunityCard'
@@ -99,9 +99,14 @@ export default function FeedbackPage() {
                   style={{ resize: 'none', overflow: 'hidden' }}
                 />
                 <div className="flex justify-end">
-                  <Button type="submit" disabled={submitting || !feedback.trim()}>
+                  <AnalyticsButton 
+                    type="submit" 
+                    disabled={submitting || !feedback.trim()}
+                    analyticsEvent="top_nav_help_clicked"
+                    analyticsProperties={{ button_location: 'feedback_page' }}
+                  >
                     {submitting ? 'Submitting...' : 'Submit Feedback'}
-                  </Button>
+                  </AnalyticsButton>
                 </div>
               </form>
             )}

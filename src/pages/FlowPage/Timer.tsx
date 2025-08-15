@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react'
 import { FlowSession } from '@/db/ebb/flowSessionRepo'
 import { useFlowTimer } from '@/lib/stores/flowTimer'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
-import { Button } from '@/components/ui/button'
+import { AnalyticsButton } from '@/components/ui/analytics-button'
 
 const getDurationFormatFromSeconds = (seconds: number) => {
   const duration = Duration.fromMillis(seconds * 1000)
@@ -95,12 +95,17 @@ export const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
         {time}
       </div>
       {flowSession?.duration && (
-        <Button
+        <AnalyticsButton
           variant="outline"
           size="sm"
           onClick={handleAddTime}
           className="mt-2"
           disabled={isAddingTime || cooldown}
+          analyticsEvent="add_time_clicked"
+          analyticsProperties={{
+            context: 'add_time',
+            session_duration: totalDuration?.as('seconds') || 0
+          }}
         >
           {isAddingTime ? (
             <>
@@ -112,7 +117,7 @@ export const Timer = ({ flowSession }: { flowSession: FlowSession | null }) => {
           ) : (
             'Add 15 min'
           )}
-        </Button>
+        </AnalyticsButton>
       )}
     </>
   )

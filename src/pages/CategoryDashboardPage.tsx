@@ -1,6 +1,6 @@
 import { CSSProperties, useEffect, useState } from 'react'
 import { Layout } from '@/components/Layout'
-import { Button } from '@/components/ui/button'
+import { AnalyticsButton } from '@/components/ui/analytics-button'
 import { Progress } from '@/components/ui/progress'
 import { Calendar } from '@/components/ui/calendar'
 import { formatTime } from '@/components/UsageSummary'
@@ -215,9 +215,14 @@ export default function CategoryDashboardPage () {
             <RangeModeSelector value={rangeMode} onChange={setRangeMode} />
             <Popover>
               <PopoverTrigger asChild>
-                <Button
+                <AnalyticsButton
                   variant="outline"
                   className="justify-start text-left font-normal"
+                  analyticsEvent="date_picker_clicked"
+                  analyticsProperties={{
+                    destination: 'date_picker',
+                    source: 'category_dashboard_page'
+                  }}
                 >
                   <div className="flex items-center gap-2">
                     {date.toLocaleDateString() === new Date().toLocaleDateString()
@@ -225,7 +230,7 @@ export default function CategoryDashboardPage () {
                       : DateTime.fromJSDate(date).toFormat('LLL dd, yyyy')}
                     <ChevronDown className="h-4 w-4" />
                   </div>
-                </Button>
+                </AnalyticsButton>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">
                 <Calendar

@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/button'
+import { AnalyticsButton } from '@/components/ui/analytics-button'
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { Github, Lock, Loader2, CheckCircle2 } from 'lucide-react'
@@ -138,15 +138,17 @@ export const AccessibilityPage = () => {
 
         <div className="max-w-xs mx-auto w-full border-b mb-12" />
 
-        <Button
+        <AnalyticsButton
           size="lg"
           onClick={permissionStatus === 'granted' ?
             handleComplete :
             handleRequestPermissions}
           className="mb-4"
+          analyticsEvent="accessibility_enabled"
+          analyticsProperties={{ button_location: 'accessibility_page' }}
         >
           {permissionStatus === 'granted' ? 'Continue' : 'Enable Permissions'}
-        </Button>
+        </AnalyticsButton>
 
         <div className="flex items-center gap-2 mt-4">
           {(permissionStatus === 'checking' || permissionStatus === 'not_granted') && (

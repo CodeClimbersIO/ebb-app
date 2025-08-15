@@ -5,6 +5,7 @@ export type AnalyticsEvent =
   | 'start_focus_clicked'
   | 'end_early_clicked'
   | 'focus_session_completed'
+  | 'add_time_clicked'
   
   // Schedule Management Events
   | 'create_schedule_clicked'
@@ -29,6 +30,37 @@ export type AnalyticsEvent =
   // Upgrade/Pro Events
   | 'get_pro_clicked'
   | 'paywall_shown'
+
+  // Onboarding Events
+  | 'accessibility_enabled'
+  | 'shortcut_tutorial_completed'
+
+  // Category Dashboard Events
+  | 'date_picker_clicked'
+
+  // Login Events
+  | 'login_clicked'
+  | 'login_skipped'
+
+  // Slack Onboarding Events
+  | 'slack_connect_clicked'
+  | 'slack_connect_skipped'
+
+  // Settings Page Events
+  | 'delete_account_clicked'
+  | 'delete_account_clicked_canceled'
+  | 'delete_account_clicked_confirmed'
+
+  // Integration Settings Events
+  | 'spotify_disconnect_clicked'
+  | 'spotify_connect_clicked'
+  | 'slack_configure_clicked'
+  | 'music_disconnect_clicked_canceled'
+  | 'music_disconnect_clicked_confirmed'
+
+  // Friends Analytics Events
+  | 'offline_indicator_clicked'
+  | 'connect_to_friends_clicked'
 
 export interface AnalyticsEventProperties {
   // Focus session properties

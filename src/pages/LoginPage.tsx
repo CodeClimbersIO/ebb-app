@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
+import { AnalyticsButton } from '@/components/ui/analytics-button'
 import { Logo } from '@/components/ui/logo'
 import supabase from '@/lib/integrations/supabase'
 import { invoke } from '@tauri-apps/api/core'
@@ -65,13 +65,18 @@ export const LoginPage = () => {
       </div>
       <p className="text-lg mb-8 text-muted-foreground">Focus starts here.</p>
       {error && <p className="text-sm text-destructive mb-4">{error}</p>}
-      <Button 
+      <AnalyticsButton 
         type="button" 
         variant="outline" 
         size="lg"
         iconSize={5}
         className="flex items-center justify-center gap-2 min-w-[240px] mb-4"
         onClick={handleGoogleLogin}
+        analyticsEvent="login_clicked"
+        analyticsProperties={{
+          context: 'google_login',
+          button_location: 'login_page'
+        }}
       >
         <svg className="h-5 w-5" viewBox="0 0 24 24">
           <path
@@ -92,17 +97,22 @@ export const LoginPage = () => {
           />
         </svg>
         Continue with Google
-      </Button>
+      </AnalyticsButton>
       
-      <Button 
+      <AnalyticsButton 
         type="button" 
         variant="ghost" 
         size="lg"
         className="min-w-[240px] text-muted-foreground hover:text-foreground"
         onClick={handleSkipLogin}
+        analyticsEvent="login_skipped"
+        analyticsProperties={{
+          context: 'skip_login',
+          button_location: 'login_page'
+        }}
       >
         Do this later
-      </Button>
+      </AnalyticsButton>
       
       <div className="mt-6 max-w-[240px] w-full">
         <div className="h-px bg-border mb-6" />

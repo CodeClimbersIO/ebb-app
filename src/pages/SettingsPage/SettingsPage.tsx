@@ -1,7 +1,7 @@
 import { Layout } from '@/components/Layout'
 import { ModeToggle } from '@/components/ModeToggle'
 import { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
+import { AnalyticsButton } from '@/components/ui/analytics-button'
 
 import {
   Dialog,
@@ -198,12 +198,14 @@ export function SettingsPage() {
                     </div>
                   </div>
                   <div className="flex-shrink-0">
-                    <Button
+                    <AnalyticsButton
                       variant="destructive"
                       onClick={() => setShowDeleteAccountDialog(true)}
+                      analyticsEvent="delete_account_clicked"
+                      analyticsProperties={{ button_location: 'settings_page' }}
                     >
                         Delete Account
-                    </Button>
+                    </AnalyticsButton>
                   </div>
                 </div>
               </div>
@@ -255,20 +257,24 @@ export function SettingsPage() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button
+            <AnalyticsButton
               variant="outline"
               onClick={() => setShowDeleteAccountDialog(false)}
               disabled={isDeleting}
+              analyticsEvent="delete_account_clicked_canceled"
+              analyticsProperties={{ button_location: 'settings_page' }}
             >
                 Cancel
-            </Button>
-            <Button
+            </AnalyticsButton>
+            <AnalyticsButton
               variant="destructive"
               onClick={handleDeleteAccount}
               disabled={isDeleting}
+              analyticsEvent="delete_account_clicked_confirmed"
+              analyticsProperties={{ button_location: 'settings_page' }}
             >
               {isDeleting ? 'Deleting...' : 'Delete Account'}
-            </Button>
+            </AnalyticsButton>
           </DialogFooter>
         </DialogContent>
       </Dialog>

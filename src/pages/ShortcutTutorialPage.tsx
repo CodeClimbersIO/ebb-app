@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/button'
+import { AnalyticsButton } from '@/components/ui/analytics-button'
 import { useNavigate } from 'react-router-dom'
 import { OnboardingUtils } from '@/lib/utils/onboarding.util'
 import { ShortcutInput } from '@/components/ShortcutInput'
@@ -52,13 +52,18 @@ export const ShortcutTutorialPage = () => {
         </p>
       </div>
 
-      <Button
+      <AnalyticsButton
         size='lg'
         onClick={handleComplete}
         className='min-w-[200px]'
+        analyticsEvent="shortcut_tutorial_completed"
+        analyticsProperties={{
+          destination: 'onboarding_continue',
+          source: 'shortcut_tutorial_page'
+        }}
       >
         Continue
-      </Button>
+      </AnalyticsButton>
     </div>
   )
 }
