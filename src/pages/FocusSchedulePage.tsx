@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Layout } from '@/components/Layout'
 import { Button } from '@/components/ui/button'
+import { AnalyticsButton } from '@/components/ui/analytics-button'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { useFocusSchedulesWithWorkflow, useDeleteFocusSchedule } from '@/api/hooks/useFocusSchedule'
@@ -76,10 +77,18 @@ export default function FocusSchedulePage() {
                 Schedule focus sessions to protect your most productive times
                 </p>
               </div>
-              <Button onClick={handleCreateNew} variant="outline" className="border-primary">
+              <AnalyticsButton 
+                onClick={handleCreateNew} 
+                variant="outline" 
+                className="border-primary"
+                analyticsEvent="create_schedule_clicked"
+                analyticsProperties={{
+                  button_location: 'focus_schedule_page'
+                }}
+              >
                 <Calendar className="w-4 h-4 mr-2" />
               Create Schedule
-              </Button>
+              </AnalyticsButton>
             </div>
           )}
           <div className="space-y-4">
@@ -104,20 +113,30 @@ export default function FocusSchedulePage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Button 
+                        <AnalyticsButton 
                           variant="outline" 
                           size="sm"
                           onClick={() => handleEditSchedule(schedule.id)}
+                          analyticsEvent="edit_schedule_clicked"
+                          analyticsProperties={{
+                            schedule_type: schedule.recurrence?.type ? 'recurring' : 'one_time',
+                            button_location: 'focus_schedule_page'
+                          }}
                         >
                           Edit
-                        </Button>
-                        <Button 
+                        </AnalyticsButton>
+                        <AnalyticsButton 
                           variant="outline" 
                           size="sm"
                           onClick={() => handleDeleteSchedule(schedule.id)}
+                          analyticsEvent="delete_schedule_clicked"
+                          analyticsProperties={{
+                            schedule_type: schedule.recurrence?.type ? 'recurring' : 'one_time',
+                            button_location: 'focus_schedule_page'
+                          }}
                         >
                           <Trash2 className="w-4 h-4" />
-                        </Button>
+                        </AnalyticsButton>
                       </div>
                     </div>
                   </CardHeader>
