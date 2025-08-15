@@ -2,7 +2,7 @@
 
 Ebb is a desktop app for builders and creatives who seek more undistracted deep work. Quickly get into focus, block distracting apps, track your time, incorporate music into your workflow, and stay accountable with friends.
 
-To start using Ebb, simply download the application from the [releases page](https://github.com/ebb-app/ebb/releases)
+To start using Ebb, simply download the application from the [releases page](https://github.com/CodeClimbersIO/ebb-app/releases)
 
 ## How it works
 
