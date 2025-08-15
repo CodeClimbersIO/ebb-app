@@ -1,7 +1,7 @@
 import { ActiveDevicesSettings } from '@/components/ActiveDevicesSettings'
 import { Layout } from '@/components/Layout'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Button } from '@/components/ui/button'
+import { AnalyticsButton } from '@/components/ui/analytics-button'
 import { PaywallDialog } from '@/components/PaywallDialog'
 import { AlertCircle } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
@@ -25,7 +25,17 @@ export function DeviceLimitPage() {
                        You have reached the max of 1 active devices for free accounts.
                        Please deactivate an existing one or{' '}
                   <PaywallDialog>
-                    <Button variant="link" className="p-0 h-auto text-yellow-700 underline font-semibold">upgrade to Ebb Pro</Button>
+                    <AnalyticsButton 
+                      variant="link" 
+                      className="p-0 h-auto text-yellow-700 underline font-semibold"
+                      analyticsEvent="get_pro_clicked"
+                      analyticsProperties={{
+                        context: 'device_limit',
+                        button_location: 'device_limit_page'
+                      }}
+                    >
+                      upgrade to Ebb Pro
+                    </AnalyticsButton>
                   </PaywallDialog>{' '}
                        for up to 3 macOS devices. The first registered device is always active and free.
                 </>

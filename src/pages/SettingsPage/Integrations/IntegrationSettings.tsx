@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { SpotifyIcon } from '@/components/icons/SpotifyIcon'
-import { Button } from '@/components/ui/button'
+import { AnalyticsButton } from '@/components/ui/analytics-button'
 import { SpotifyAuthService } from '@/lib/integrations/spotify/spotifyAuth'
 import { SpotifyApiService } from '@/lib/integrations/spotify/spotifyApi'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
@@ -121,25 +121,35 @@ export const IntegrationSettings = () => {
             </div>
             <div>
               {activeService === 'spotify' ? (
-                <Button
+                <AnalyticsButton
                   variant="outline"
                   size="sm"
                   onClick={() => handleUnlink('spotify')}
+                  analyticsEvent="spotify_disconnect_clicked"
+                  analyticsProperties={{
+                    context: 'spotify_disconnect',
+                    button_location: 'integration_settings'
+                  }}
                 >
               Disconnect
-                </Button>
+                </AnalyticsButton>
               ) : (
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <span>
-                      <Button
+                      <AnalyticsButton
                         variant="outline"
                         size="sm"
                         disabled={activeService === 'apple' || isLoading}
                         onClick={handleSpotifyConnect}
+                        analyticsEvent="spotify_connect_clicked"
+                        analyticsProperties={{
+                          context: 'spotify_connect',
+                          button_location: 'integration_settings'
+                        }}
                       >
                     Connect
-                      </Button>
+                      </AnalyticsButton>
                     </span>
                   </TooltipTrigger>
                   {activeService === 'apple' && (
@@ -165,8 +175,28 @@ export const IntegrationSettings = () => {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowUnlinkDialog(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={confirmUnlink}>Disconnect</Button>
+            <AnalyticsButton 
+              variant="outline" 
+              onClick={() => setShowUnlinkDialog(false)}
+              analyticsEvent="music_disconnect_clicked_canceled"
+              analyticsProperties={{
+                destination: 'cancel_disconnect',
+                source: 'integration_settings'
+              }}
+            >
+              Cancel
+            </AnalyticsButton>
+            <AnalyticsButton 
+              variant="destructive" 
+              onClick={confirmUnlink}
+              analyticsEvent="music_disconnect_clicked_confirmed"
+              analyticsProperties={{
+                context: 'confirm_disconnect',
+                button_location: 'integration_settings'
+              }}
+            >
+              Disconnect
+            </AnalyticsButton>
           </DialogFooter>
         </DialogContent>
       </Dialog>

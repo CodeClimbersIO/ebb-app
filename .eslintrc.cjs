@@ -55,7 +55,7 @@ module.exports = {
         {
           group: ['../pages/**', '../../pages/**', '../../../pages/**'],
           message: 'Use @/pages/* instead of relative paths'
-        }
+        },
       ]
     }],
   },
@@ -84,7 +84,7 @@ module.exports = {
             {
               "group": ["../db/**", "../../db/**"],
               "message": "Architecture: No direct DB imports from components. Import a hook/API instead."
-            }
+            },
           ]
         }]
       }
@@ -124,6 +124,19 @@ module.exports = {
             {
               "group": ["../pages/**", "../../pages/**", "../../../pages/**"],
               "message": "Use @/pages/* instead of relative paths"
+            }
+          ]
+        }]
+      }
+    },
+    {
+      files: ["src/pages/**/*.{ts,tsx}"],
+      rules: {
+        "no-restricted-imports": ["error", {
+          "patterns": [
+            {
+              "group": ["@/components/ui/button"],
+              "message": "Pages should use AnalyticsButton from @/components/ui/analytics-button instead of Button to ensure proper user action tracking"
             }
           ]
         }]

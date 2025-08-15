@@ -1,0 +1,103 @@
+import { default as posthog } from 'posthog-js'
+
+export type AnalyticsEvent = 
+  // Focus Session Events
+  | 'start_focus_clicked'
+  | 'end_early_clicked'
+  | 'focus_session_completed'
+  | 'add_time_clicked'
+  
+  // Schedule Management Events
+  | 'create_schedule_clicked'
+  | 'edit_schedule_clicked'
+  | 'delete_schedule_clicked'
+  
+  // Navigation Events
+  | 'sidebar_nav_clicked'
+  | 'top_nav_help_clicked'
+  
+  // Workflow Events
+  | 'workflow_selected'
+  | 'workflow_edited'
+  | 'workflow_deleted'
+  
+  // Media Control Events
+  | 'music_play_clicked'
+  | 'music_pause_clicked'
+  | 'music_next_clicked'
+  | 'music_previous_clicked'
+  
+  // Upgrade/Pro Events
+  | 'get_pro_clicked'
+  | 'paywall_shown'
+
+  // Onboarding Events
+  | 'accessibility_enabled'
+  | 'shortcut_tutorial_completed'
+
+  // Category Dashboard Events
+  | 'date_picker_clicked'
+
+  // Login Events
+  | 'login_clicked'
+  | 'login_skipped'
+
+  // Slack Onboarding Events
+  | 'slack_connect_clicked'
+  | 'slack_connect_skipped'
+
+  // Settings Page Events
+  | 'delete_account_clicked'
+  | 'delete_account_clicked_canceled'
+  | 'delete_account_clicked_confirmed'
+
+  // Integration Settings Events
+  | 'spotify_disconnect_clicked'
+  | 'spotify_connect_clicked'
+  | 'slack_configure_clicked'
+  | 'music_disconnect_clicked_canceled'
+  | 'music_disconnect_clicked_confirmed'
+
+  // Friends Analytics Events
+  | 'offline_indicator_clicked'
+  | 'connect_to_friends_clicked'
+
+export interface AnalyticsEventProperties {
+  // Focus session properties
+  difficulty?: 'easy' | 'medium' | 'hard'
+  session_duration?: number
+  workflow_id?: string
+  workflow_name?: string
+  
+  // Navigation properties
+  destination?: string
+  source?: string
+  
+  // Schedule properties
+  schedule_type?: 'one_time' | 'recurring'
+  recurrence_type?: 'daily' | 'weekly' | 'monthly'
+  
+  // General properties
+  button_location?: string
+  keyboard_shortcut_used?: boolean
+  context?: string
+}
+
+const trackEvent = (
+  event: AnalyticsEvent, 
+  properties?: AnalyticsEventProperties
+): void => {
+  try {
+    posthog.capture(event, {
+      ...properties,
+      timestamp: new Date().toISOString(),
+      app_version: '0.4.7',
+    })
+  } catch (error) {
+    console.warn('Failed to track analytics event:', event, error)
+  }
+}
+
+export const AnalyticsService = {
+  trackEvent,
+}

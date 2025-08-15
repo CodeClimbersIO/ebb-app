@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Layout } from '@/components/Layout'
-import { Button } from '@/components/ui/button'
+import { AnalyticsButton } from '@/components/ui/analytics-button'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { useFocusSchedulesWithWorkflow, useDeleteFocusSchedule } from '@/api/hooks/useFocusSchedule'
@@ -76,10 +76,18 @@ export default function FocusSchedulePage() {
                 Schedule focus sessions to protect your most productive times
                 </p>
               </div>
-              <Button onClick={handleCreateNew} variant="outline" className="border-primary">
+              <AnalyticsButton 
+                onClick={handleCreateNew} 
+                variant="outline" 
+                className="border-primary"
+                analyticsEvent="create_schedule_clicked"
+                analyticsProperties={{
+                  button_location: 'focus_schedule_page'
+                }}
+              >
                 <Calendar className="w-4 h-4 mr-2" />
               Create Schedule
-              </Button>
+              </AnalyticsButton>
             </div>
           )}
           <div className="space-y-4">
@@ -104,20 +112,30 @@ export default function FocusSchedulePage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Button 
+                        <AnalyticsButton 
                           variant="outline" 
                           size="sm"
                           onClick={() => handleEditSchedule(schedule.id)}
+                          analyticsEvent="edit_schedule_clicked"
+                          analyticsProperties={{
+                            schedule_type: schedule.recurrence?.type ? 'recurring' : 'one_time',
+                            button_location: 'focus_schedule_page'
+                          }}
                         >
                           Edit
-                        </Button>
-                        <Button 
+                        </AnalyticsButton>
+                        <AnalyticsButton 
                           variant="outline" 
                           size="sm"
                           onClick={() => handleDeleteSchedule(schedule.id)}
+                          analyticsEvent="delete_schedule_clicked"
+                          analyticsProperties={{
+                            schedule_type: schedule.recurrence?.type ? 'recurring' : 'one_time',
+                            button_location: 'focus_schedule_page'
+                          }}
                         >
                           <Trash2 className="w-4 h-4" />
-                        </Button>
+                        </AnalyticsButton>
                       </div>
                     </div>
                   </CardHeader>
@@ -130,10 +148,16 @@ export default function FocusSchedulePage() {
                 <p className="text-muted-foreground mb-6">
                   Create your first focus schedule to start protecting your productive time.
                 </p>
-                <Button onClick={handleCreateNew}>
+                <AnalyticsButton 
+                  onClick={handleCreateNew}
+                  analyticsEvent="create_schedule_clicked"
+                  analyticsProperties={{
+                    button_location: 'focus_schedule_page_empty_state'
+                  }}
+                >
                   <Calendar className="w-4 h-4 mr-2" />
                   Create Your First Schedule
-                </Button>
+                </AnalyticsButton>
               </div>
             )}
           </div>
@@ -164,8 +188,28 @@ export default function FocusSchedulePage() {
                 </DialogDescription>
               </DialogHeader>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>Cancel</Button>
-                <Button variant="destructive" onClick={confirmDelete}>Delete</Button>
+                <AnalyticsButton 
+                  variant="outline" 
+                  onClick={() => setShowDeleteDialog(false)}
+                  analyticsEvent="delete_schedule_clicked"
+                  analyticsProperties={{
+                    button_location: 'delete_dialog',
+                    context: 'cancel'
+                  }}
+                >
+                  Cancel
+                </AnalyticsButton>
+                <AnalyticsButton 
+                  variant="destructive" 
+                  onClick={confirmDelete}
+                  analyticsEvent="delete_schedule_clicked"
+                  analyticsProperties={{
+                    button_location: 'delete_dialog',
+                    context: 'confirm'
+                  }}
+                >
+                  Delete
+                </AnalyticsButton>
               </DialogFooter>
             </DialogContent>
           </Dialog>

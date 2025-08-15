@@ -8,7 +8,7 @@ import { useNetworkStore } from '@/lib/stores/networkStore'
 import { useUpdateProfileLocation, useProfile } from '@/api/hooks/useProfile'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
 import { ConnectIcon } from '@/components/icons/ConnectIcon'
-import { Button } from '@/components/ui/button'
+import { AnalyticsButton } from '@/components/ui/analytics-button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { DateTime } from 'luxon'
 
@@ -349,15 +349,20 @@ export const FriendsAnalyticsPreview = () => {
                 <p className="text-muted-foreground mb-6">
                   Check your internet connection to connect with friends and see detailed analytics.
                 </p>
-                <Button 
+                <AnalyticsButton 
                   disabled
                   className="gap-2 w-full"
                   size="lg"
                   variant="secondary"
+                  analyticsEvent="offline_indicator_clicked"
+                  analyticsProperties={{
+                    destination: 'offline_indicator',
+                    source: 'friends_analytics_preview'
+                  }}
                 >
                   Offline
                   <div className="h-2 w-2 rounded-full bg-red-500" />
-                </Button>
+                </AnalyticsButton>
               </>
             ) : (
               <>
@@ -365,15 +370,20 @@ export const FriendsAnalyticsPreview = () => {
                 <p className="text-muted-foreground mb-6">
                   Connect with the community to unlock detailed analytics, compare with friends, and track your progress!
                 </p>
-                <Button 
+                <AnalyticsButton 
                   onClick={handleConnect}
                   disabled={isUpdatingProfileLocation}
                   className="gap-2 w-full"
                   size="lg"
+                  analyticsEvent="connect_to_friends_clicked"
+                  analyticsProperties={{
+                    context: 'friends_connect',
+                    button_location: 'friends_analytics_preview'
+                  }}
                 >
                   {isUpdatingProfileLocation ? 'Connecting...' : 'Connect'}
                   <ConnectIcon size={20} />
-                </Button>
+                </AnalyticsButton>
               </>
             )}
           </motion.div>

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { Button } from '@/components/ui/button'
+import { AnalyticsButton } from '@/components/ui/analytics-button'
 import { Card, CardContent } from '@/components/ui/card'
 import { TopNav } from '@/components/TopNav'
 import { TimeSelector } from '@/components/TimeSelector'
@@ -17,6 +17,7 @@ import { logAndToastError } from '@/lib/utils/ebbError.util'
 import { error as logError } from '@tauri-apps/plugin-log'
 import { BlockingPreferenceApi } from '@/api/ebbApi/blockingPreferenceApi'
 import { usePostHog } from 'posthog-js/react'
+import { AnalyticsService } from '@/lib/analytics'
 import { Input } from '@/components/ui/input'
 import { FlowSessionApi } from '@/api/ebbApi/flowSessionApi'
 import { SmartFocusSelector } from '@/pages/StartFlowPage/SmartFocusSelector'
@@ -274,13 +275,20 @@ export const StartFlowPage = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
         e.preventDefault()
+        // Track keyboard shortcut usage
+        AnalyticsService.trackEvent('start_focus_clicked', {
+          workflow_id: selectedWorkflowId || undefined,
+          workflow_name: selectedWorkflow?.name,
+          button_location: 'start_flow_page',
+          keyboard_shortcut_used: true,
+        })
         handleBegin()
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [handleBegin])
+  }, [handleBegin, selectedWorkflowId, selectedWorkflow?.name])
 
   return (
     <div className="flex flex-col h-screen">
@@ -373,16 +381,23 @@ export const StartFlowPage = () => {
             </div>
 
 
-            <Button
+            <AnalyticsButton
               className="w-full"
               onClick={handleBegin}
+              analyticsEvent="start_focus_clicked"
+              analyticsProperties={{
+                workflow_id: selectedWorkflowId || undefined,
+                workflow_name: selectedWorkflow?.name,
+                button_location: 'start_flow_page',
+                keyboard_shortcut_used: false,
+              }}
             >
               Start Focus
               <div className="ml-2 flex items-center gap-1">
                 <kbd className="rounded bg-violet-900 px-1.5 font-mono text-sm">⌘</kbd>
                 <kbd className="rounded bg-violet-900 px-1.5 font-mono text-sm">↵</kbd>
               </div>
-            </Button>
+            </AnalyticsButton>
           </CardContent>
         </Card>
       </div>
