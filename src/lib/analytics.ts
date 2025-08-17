@@ -1,4 +1,5 @@
 import { default as posthog } from 'posthog-js'
+import { NotificationType } from '@/components/NotificationPanel/NotificationPanel'
 
 export type AnalyticsEvent = 
   // Focus Session Events
@@ -6,6 +7,8 @@ export type AnalyticsEvent =
   | 'end_early_clicked'
   | 'focus_session_completed'
   | 'add_time_clicked'
+  | 'allow_list_clicked'
+  | 'block_list_clicked'
   
   // Schedule Management Events
   | 'create_schedule_clicked'
@@ -61,6 +64,34 @@ export type AnalyticsEvent =
   // Friends Analytics Events
   | 'offline_indicator_clicked'
   | 'connect_to_friends_clicked'
+  | 'accept_friend_request_clicked'
+  | 'decline_friend_request_clicked'
+  | 'load_more_received_invites_clicked'
+  | 'load_more_sent_invites_clicked'
+  | 'invite_friends_clicked'
+  | 'invite_friends_canceled'
+  | 'invite_friends_sent'
+
+  // Active Devices Settings Events
+  | 'deactivate_device_clicked'
+
+  // Mode Toggle Events
+  | 'mode_toggle_clicked'
+
+  // Notification Banner Events
+  | 'notification_dismissed'
+  | NotificationType
+
+  // Range Mode Events
+  | 'range_mode_selector_clicked'
+  | 'range_mode_clicked'
+
+  // Schedule Session Modal Events
+  | 'schedule_session_modal_clicked'
+  | 'schedule_session_modal_canceled'
+  | 'schedule_session_modal_created'
+  | 'schedule_session_modal_updated'
+  | 'schedule_session_modal_deleted'
 
 export interface AnalyticsEventProperties {
   // Focus session properties
@@ -87,6 +118,7 @@ const trackEvent = (
   event: AnalyticsEvent, 
   properties?: AnalyticsEventProperties
 ): void => {
+  console.log('Tracking event:', event, properties)
   try {
     posthog.capture(event, {
       ...properties,

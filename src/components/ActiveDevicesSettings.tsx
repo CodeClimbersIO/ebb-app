@@ -1,5 +1,5 @@
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { AnalyticsButton } from '@/components/ui/analytics-button'
 import { useEffect, useState } from 'react'
 import { hostname } from '@tauri-apps/plugin-os'
 import { User } from '@supabase/supabase-js'
@@ -149,13 +149,18 @@ export function ActiveDevicesSettings({ user, maxDevices }: ActiveDevicesSetting
                     This Device
                   </Badge>
                 ) : (
-                  <Button
+                  <AnalyticsButton
                     variant="destructive"
                     size="sm"
                     onClick={() => handleDeviceLogout(device.id)}
+                    analyticsEvent="deactivate_device_clicked"
+                    analyticsProperties={{
+                      context: 'deactivate_device',
+                      button_location: 'active_devices_settings'
+                    }}
                   >
                     Deactivate
-                  </Button>
+                  </AnalyticsButton>
                 )}
               </div>
             </div>

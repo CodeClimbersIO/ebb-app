@@ -1,6 +1,7 @@
-import { Button } from '@/components/ui/button'
+import { AnalyticsButton } from '@/components/ui/analytics-button'
 import { Hotkey } from '@/components/ui/hotkey'
 import { cn } from '@/lib/utils/tailwind.util'
+import { AnalyticsEvent } from '../../lib/analytics'
 
 interface ActionButtonProps {
   buttonText: string
@@ -10,6 +11,7 @@ interface ActionButtonProps {
   shortcutParts: string[]
   pressedKeys: Set<string>
   onClick: () => void
+  analyticsEvent: AnalyticsEvent
 }
 
 const getHotkeyColor = (iconColor: string): string => {
@@ -27,10 +29,11 @@ export const ActionButton = ({
   iconColor,
   shortcutParts,
   pressedKeys,
-  onClick
+  onClick,
+  analyticsEvent
 }: ActionButtonProps) => {
   return (
-    <Button
+    <AnalyticsButton
       variant="outline"
       size="sm"
       className={cn(
@@ -40,6 +43,7 @@ export const ActionButton = ({
       )}
       onClick={onClick}
       disabled={buttonState !== 'idle' || isDisabled}
+      analyticsEvent={analyticsEvent}
     >
       <span>
         {buttonState === 'idle' && buttonText}
@@ -76,6 +80,6 @@ export const ActionButton = ({
           })}
         </div>
       )}
-    </Button>
+    </AnalyticsButton>
   )
 }

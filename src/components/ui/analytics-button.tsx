@@ -10,6 +10,7 @@ export interface AnalyticsButtonProps extends ButtonProps {
 const AnalyticsButton = React.forwardRef<HTMLButtonElement, AnalyticsButtonProps>(
   ({ analyticsEvent, analyticsProperties, onClick, ...props }, ref) => {
     const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+      console.log('AnalyticsButton clicked:', { analyticsEvent, analyticsProperties })
       // Track the analytics event
       AnalyticsService.trackEvent(analyticsEvent, analyticsProperties)
       
