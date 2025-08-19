@@ -122,6 +122,9 @@ export type AnalyticsEvent =
   // Difficulty Selector Events
   | 'difficulty_selector_clicked'
 
+  // App Kanban Board Events
+  | 'app_dragged'
+
 export interface AnalyticsEventProperties {
   // Focus session properties
   difficulty?: 'easy' | 'medium' | 'hard'
