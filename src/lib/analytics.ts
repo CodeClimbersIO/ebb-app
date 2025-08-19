@@ -9,6 +9,7 @@ export type AnalyticsEvent =
   | 'add_time_clicked'
   | 'allow_list_clicked'
   | 'block_list_clicked'
+  | 'focus_session_duration_selector_clicked'
   
   // Schedule Management Events
   | 'create_schedule_clicked'
@@ -92,6 +93,34 @@ export type AnalyticsEvent =
   | 'schedule_session_modal_created'
   | 'schedule_session_modal_updated'
   | 'schedule_session_modal_deleted'
+
+  // Customize Shortcut Events
+  | 'shortcut_input_clicked'
+
+  // Slack Focus Toggle Events
+  | 'slack_focus_settings_save_clicked'
+  | 'slack_focus_settings_more_settings_clicked'
+
+  // Social Status Summary Events
+  | 'connect_to_friends_clicked'
+
+  // Top Nav Events
+  | 'top_nav_feedback_clicked'
+  | 'top_nav_start_focus_clicked'
+
+  // Usage Summary Events
+  | 'usage_summary_top_apps_clicked'
+
+  // User Profile Settings Events
+  | 'user_profile_settings_login_with_google_clicked'
+  | 'user_profile_settings_manage_subscription_clicked'
+  | 'user_profile_settings_logout_clicked'
+
+  // Paywall Dialog Events
+  | 'paywall_dialog_hard_clicked'
+
+  // Difficulty Selector Events
+  | 'difficulty_selector_clicked'
 
 export interface AnalyticsEventProperties {
   // Focus session properties

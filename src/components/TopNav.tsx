@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/button'
+import { AnalyticsButton } from '@/components/ui/analytics-button'
 import { X } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
@@ -8,6 +8,7 @@ import { useShortcutStore } from '@/lib/stores/shortcutStore'
 import { CircleHelpIcon } from './icons/CircleHelpIcon'
 import { Tooltip, TooltipContent , TooltipTrigger } from './ui/tooltip'
 import { SocialStatusSummary } from './SocialStatusSummary'
+import { NoAnalyticsButton } from './ui/no-analytics-button'
 
 interface TopNavProps {
   variant?: 'default' | 'modal'
@@ -44,7 +45,8 @@ export function TopNav({ variant = 'default' }: TopNavProps) {
           <div className="flex items-center gap-2">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button 
+                <AnalyticsButton 
+                  analyticsEvent='top_nav_feedback_clicked'
                   variant="ghost" 
                   iconSize={5}
                   className={`w-9 h-9 p-2 ${location.pathname === '/feedback' ? 'text-foreground [&>svg]:text-foreground' : 'text-muted-foreground [&>svg]:text-muted-foreground'}`}
@@ -53,12 +55,13 @@ export function TopNav({ variant = 'default' }: TopNavProps) {
                   <Link to="/feedback">
                     <CircleHelpIcon size={20} />
                   </Link>
-                </Button>
+                </AnalyticsButton>
               </TooltipTrigger>
               <TooltipContent side="bottom" sideOffset={10}>Feedback</TooltipContent>
             </Tooltip>
             {variant === 'default' ? (
-              <Button  
+              <AnalyticsButton  
+                analyticsEvent='top_nav_start_focus_clicked'
                 size="sm" 
                 onClick={handleStartFlowSession}
               >
@@ -70,11 +73,15 @@ export function TopNav({ variant = 'default' }: TopNavProps) {
                     ))}
                   </div>
                 )}
-              </Button>
+              </AnalyticsButton>
             ) : (
-              <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
+              <NoAnalyticsButton 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => navigate('/')}
+              >
                 <X className="h-6 w-6" />
-              </Button>
+              </NoAnalyticsButton>
             )}
           </div>
         </div>

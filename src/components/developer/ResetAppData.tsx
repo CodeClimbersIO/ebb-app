@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { Button } from '@/components/ui/button'
 import { invoke } from '@tauri-apps/api/core'
 import { StorageUtils } from '@/lib/utils/storage.util'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
 import { useAuth } from '../../hooks/useAuth'
+import { NoAnalyticsButton } from '../ui/no-analytics-button'
 
 export const ResetAppData = () => {
   const [isResetting, setIsResetting] = useState(false)
@@ -52,21 +52,21 @@ export const ResetAppData = () => {
         This will reset all app data to simulate a first-time experience. Your existing data will be backed up.
       </p>
       <div className="flex space-x-4">
-        <Button
+        <NoAnalyticsButton
           variant="destructive"
           onClick={handleResetAppData}
           disabled={isResetting}
         >
           {isResetting ? 'Resetting...' : 'Reset App Data'}
-        </Button>
+        </NoAnalyticsButton>
 
-        <Button
+        <NoAnalyticsButton
           variant="outline"
           onClick={handleRestoreAppData}
           disabled={isRestoring}
         >
           {isRestoring ? 'Restoring...' : 'Restore Last Backup'}
-        </Button>
+        </NoAnalyticsButton>
       </div>
     </div>
   )

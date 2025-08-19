@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { SlackIcon } from '@/components/icons/SlackIcon'
 import { Switch } from '@/components/ui/switch'
-import { Button } from '@/components/ui/button'
+import { AnalyticsButton } from '@/components/ui/analytics-button'
 import { Input } from '@/components/ui/input'
 import {
   Dialog,
@@ -195,24 +195,26 @@ export function SlackFocusToggle({ slackSettings, onSlackSettingsChange }: Slack
                 </div>
               </div>
 
-              <Button 
+              <AnalyticsButton 
+                analyticsEvent='slack_focus_settings_save_clicked'
                 onClick={handleSavePreferences} 
                 className="w-full"
                 disabled={updatePreferencesMutation.isPending}
               >
                 {updatePreferencesMutation.isPending ? 'Saving...' : 'Save Preferences'}
-              </Button>
+              </AnalyticsButton>
             </div>
 
             <div className="pt-4 border-t">
-              <Button 
+              <AnalyticsButton 
+                analyticsEvent='slack_focus_settings_more_settings_clicked'
                 variant="outline" 
                 onClick={navigateToSettings}
                 className="w-full"
               >
                 <ExternalLink className="h-4 w-4 mr-2" />
                 More Slack Settings
-              </Button>
+              </AnalyticsButton>
             </div>
           </div>
         </DialogContent>

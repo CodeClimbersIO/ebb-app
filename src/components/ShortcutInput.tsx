@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
+import { AnalyticsButton } from '@/components/ui/analytics-button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Hotkey } from '@/components/ui/hotkey'
 import { X, Check } from 'lucide-react'
@@ -166,7 +166,8 @@ export function ShortcutInput({ popoverAlign = 'center' }: ShortcutInputProps) {
   return (
     <Popover open={isOpen} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
-        <Button 
+        <AnalyticsButton 
+          analyticsEvent='shortcut_input_clicked'
           variant='outline' 
           className='min-w-[140px] h-12 text-lg font-mono flex items-center gap-2 group relative'
         >
@@ -185,7 +186,7 @@ export function ShortcutInput({ popoverAlign = 'center' }: ShortcutInputProps) {
           ) : (
             <span className='text-muted-foreground text-sm'>Click to set</span>
           )}
-        </Button>
+        </AnalyticsButton>
       </PopoverTrigger>
       <PopoverContent className='w-64 relative' align={popoverAlign}>
         {snapshot?.isClosing && (
