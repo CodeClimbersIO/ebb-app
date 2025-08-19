@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button } from '@/components/ui/button'
+import { AnalyticsButton } from '@/components/ui/analytics-button'
 import { FlowSession } from '@/db/ebb/flowSessionRepo'
 import { DateTime, Duration } from 'luxon'
 import { FlowSessionApi } from '@/api/ebbApi/flowSessionApi'
@@ -399,33 +399,36 @@ export const FlowPage = () => {
       </div>
 
       <div className="flex items-center space-x-4">
-        <Button
+        <AnalyticsButton
           variant="ghost"
           size="icon"
           onClick={handlePrevious}
           className={clickedButton === 'prev' ? 'scale-90 transition-transform' : 'transition-transform'}
+          analyticsEvent="music_previous_clicked"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="19 20 9 12 19 4 19 20"></polygon><line x1="5" y1="19" x2="5" y2="5"></line></svg>
-        </Button>
-        <Button
+        </AnalyticsButton>
+        <AnalyticsButton
           size="icon"
           className={`h-12 w-12 ${clickedButton === 'play' ? 'scale-90 transition-transform' : 'transition-transform'}`}
           onClick={handlePlayPause}
+          analyticsEvent={isPlaying ? 'music_pause_clicked' : 'music_play_clicked'}
         >
           {isPlaying ? (
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
           ) : (
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
           )}
-        </Button>
-        <Button
+        </AnalyticsButton>
+        <AnalyticsButton
           variant="ghost"
           size="icon"
           onClick={handleNext}
           className={clickedButton === 'next' ? 'scale-90 transition-transform' : 'transition-transform'}
+          analyticsEvent="music_next_clicked"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg>
-        </Button>
+        </AnalyticsButton>
       </div>
     </div>
   )

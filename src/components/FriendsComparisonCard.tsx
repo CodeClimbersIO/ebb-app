@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
-import { Button } from '@/components/ui/button'
+import { AnalyticsButton } from '@/components/ui/analytics-button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Users, UserPlus, Mail, Send, Check, X } from 'lucide-react'
@@ -173,7 +173,8 @@ const PendingInvitesTab = () => {
                   <div className="text-xs text-muted-foreground">Email: {invite.from_auth_user_email || invite.to_email}</div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button
+                  <AnalyticsButton
+                    analyticsEvent="accept_friend_request_clicked"
                     size="sm"
                     onClick={() => handleAcceptInviteWithLoading(invite.id)}
                     className="h-8 px-3"
@@ -181,8 +182,9 @@ const PendingInvitesTab = () => {
                     icon={<Check className="h-3 w-3" />}
                   >
                     Accept
-                  </Button>
-                  <Button
+                  </AnalyticsButton>
+                  <AnalyticsButton
+                    analyticsEvent="decline_friend_request_clicked"
                     size="sm"
                     variant="outline"
                     onClick={() => handleDeclineInviteWithLoading(invite.id)}
@@ -191,21 +193,22 @@ const PendingInvitesTab = () => {
                     icon={<X className="h-3 w-3" />}
                   >
                     Decline
-                  </Button>
+                  </AnalyticsButton>
                 </div>
               </div>
             ))}
           </div>
           {receivedRequests.length > visibleReceived && (
             <div className="text-center mt-4">
-              <Button 
+              <AnalyticsButton 
+                analyticsEvent="load_more_received_invites_clicked"
                 variant="outline" 
                 size="sm" 
                 onClick={handleLoadMoreReceived}
                 className="text-xs"
               >
                 Load More ({receivedRequests.length - visibleReceived} remaining)
-              </Button>
+              </AnalyticsButton>
             </div>
           )}
         </div>
@@ -232,14 +235,15 @@ const PendingInvitesTab = () => {
           </div>
           {sentRequests.length > visibleSent && (
             <div className="text-center mt-4">
-              <Button 
+              <AnalyticsButton 
+                analyticsEvent="load_more_sent_invites_clicked"
                 variant="outline" 
                 size="sm" 
                 onClick={handleLoadMoreSent}
                 className="text-xs"
               >
                 Load More ({sentRequests.length - visibleSent} remaining)
-              </Button>
+              </AnalyticsButton>
             </div>
           )}
         </div>
@@ -295,9 +299,16 @@ const EmptyFriendsState = () => {
             required
             disabled={isInviting}
           />
-          <Button type="submit" size="lg" className="flex items-center gap-2" loading={isInviting} icon={<Send className="h-5 w-5" />}>
+          <AnalyticsButton 
+            analyticsEvent="invite_friends_clicked"
+            type="submit" 
+            size="lg" 
+            className="flex items-center gap-2" 
+            loading={isInviting} 
+            icon={<Send className="h-5 w-5" />}
+          >
             Invite
-          </Button>
+          </AnalyticsButton>
         </div>
       </form>
     </div>
@@ -358,10 +369,16 @@ export const FriendsComparisonCard = ({
               }
             </p>
           </div>
-          <Button variant="outline" size="sm" className="flex items-center gap-1" onClick={handleInviteClick}>
+          <AnalyticsButton 
+            analyticsEvent="invite_friends_clicked"
+            variant="outline" 
+            size="sm" 
+            className="flex items-center gap-1" 
+            onClick={handleInviteClick}
+          >
             <UserPlus className="h-4 w-4" />
             Invite Friends
-          </Button>
+          </AnalyticsButton>
         </div>
       </CardHeader>
       <CardContent>
@@ -429,17 +446,23 @@ export const FriendsComparisonCard = ({
                   />
                 </div>
                 <div className="flex justify-end gap-2">
-                  <Button
+                  <AnalyticsButton
+                    analyticsEvent="invite_friends_canceled"
                     type="button"
                     variant="outline"
                     onClick={() => setShowInviteModal(false)}
                     disabled={isInviting}
                   >
                     Cancel
-                  </Button>
-                  <Button type="submit" loading={isInviting} icon={<Send className="h-5 w-5" />}>
+                  </AnalyticsButton>
+                  <AnalyticsButton 
+                    analyticsEvent="invite_friends_sent"
+                    type="submit" 
+                    loading={isInviting} 
+                    icon={<Send className="h-5 w-5" />}
+                  >
                     Send Invite
-                  </Button>
+                  </AnalyticsButton>
                 </div>
               </div>
             </form>

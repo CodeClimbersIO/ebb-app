@@ -16,7 +16,7 @@ import {
 import { Skeleton } from './ui/skeleton'
 import { GraphableTimeByHourBlock, AppsWithTime } from '@/api/monitorApi/monitorApi'
 import { AppIcon } from '@/components/AppIcon'
-import { Button } from '@/components/ui/button'
+import { AnalyticsButton } from '@/components/ui/analytics-button'
 import { useRef, useEffect, useState } from 'react'
 import { Switch } from '@/components/ui/switch'
 import { useCreateNotification, useGetNotificationBySentId } from '@/api/hooks/useNotifications'
@@ -236,14 +236,15 @@ export const UsageSummary = ({
             <CardContent>
               <div className="flex items-center space-x-2">
                 {sortedAppUsage.slice(0, 3).map((app, index) => (
-                  <Button
+                  <AnalyticsButton
+                    analyticsEvent='usage_summary_top_apps_clicked'
                     key={index}
                     variant="ghost"
                     className="w-8 h-8 p-0"
                     onClick={showTopAppsButton ? scrollToAppUsage : undefined}
                   >
                     <AppIcon app={app} />
-                  </Button>
+                  </AnalyticsButton>
                 ))}
               </div>
             </CardContent>

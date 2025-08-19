@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { SlackIcon } from '@/components/icons/SlackIcon'
-import { Button } from '@/components/ui/button'
+import { AnalyticsButton } from '@/components/ui/analytics-button'
 import { SlackDisconnectModal } from '@/components/SlackDisconnectModal'
 
 import { useSlackStatus } from '@/api/hooks/useSlack'
@@ -73,26 +73,36 @@ export const SlackSettings = () => {
         </div>
         <div>
           {slackStatus?.workspaces?.length || 0 > 0 ? (
-            <Button
+            <AnalyticsButton
               variant="outline"
               size="sm"
               onClick={handleDisconnect}
               disabled={!slackStatus?.workspaces?.length}
+              analyticsEvent="slack_configure_clicked"
+              analyticsProperties={{
+                context: 'slack_configure',
+                button_location: 'slack_settings'
+              }}
             >
               Configure
-            </Button>
+            </AnalyticsButton>
           ) : (
             <Tooltip>
               <TooltipTrigger asChild>
                 <span>
-                  <Button
+                  <AnalyticsButton
                     variant="outline"
                     size="sm"
                     onClick={handleConnect}
                     disabled={!slackStatus?.workspaces?.length}
+                    analyticsEvent="slack_connect_clicked"
+                    analyticsProperties={{
+                      context: 'slack_connect',
+                      button_location: 'slack_settings'
+                    }}
                   >
                     Connect
-                  </Button>
+                  </AnalyticsButton>
                 </span>
               </TooltipTrigger>
             </Tooltip>

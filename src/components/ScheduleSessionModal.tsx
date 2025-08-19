@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
+import { AnalyticsButton } from '@/components/ui/analytics-button'
 import { DialogFooter } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -8,6 +8,7 @@ import { useGetWorkflows } from '@/api/hooks/useWorkflow'
 import { RecurrenceSettings } from '@/api/ebbApi/focusScheduleApi'
 import { cn } from '@/lib/utils/tailwind.util'
 import { Workflow } from '@/api/ebbApi/workflowApi'
+import { NoAnalyticsButton } from './ui/no-analytics-button'
 
 interface ScheduleSessionModalProps {
   scheduleId?: string
@@ -151,7 +152,7 @@ export function ScheduleSessionModal({ scheduleId, onClose }: ScheduleSessionMod
       <div className="space-y-4">
         <label className="text-sm font-medium">Recurrence</label>
         <div className="flex gap-2">
-          <Button
+          <NoAnalyticsButton
             type="button"
             variant={recurrenceType === 'daily' ? 'default' : 'outline'}
             size="sm"
@@ -161,8 +162,8 @@ export function ScheduleSessionModal({ scheduleId, onClose }: ScheduleSessionMod
             }}
           >
             Daily
-          </Button>
-          <Button
+          </NoAnalyticsButton>
+          <NoAnalyticsButton
             type="button"
             variant={recurrenceType === 'weekly' ? 'default' : 'outline'}
             size="sm"
@@ -172,7 +173,7 @@ export function ScheduleSessionModal({ scheduleId, onClose }: ScheduleSessionMod
             }}
           >
             Weekly
-          </Button>
+          </NoAnalyticsButton>
         </div>
 
         {recurrenceType === 'weekly' && (
@@ -180,7 +181,7 @@ export function ScheduleSessionModal({ scheduleId, onClose }: ScheduleSessionMod
             <label className="text-sm font-medium">Select Days</label>
             <div className="flex gap-1">
               {dayNames.map((day, index) => (
-                <Button
+                <NoAnalyticsButton
                   key={day}
                   type="button"
                   variant={selectedDays.includes(index) ? 'default' : 'outline'}
@@ -189,7 +190,7 @@ export function ScheduleSessionModal({ scheduleId, onClose }: ScheduleSessionMod
                   onClick={() => handleDayToggle(index)}
                 >
                   {day}
-                </Button>
+                </NoAnalyticsButton>
               ))}
             </div>
           </div>
@@ -207,19 +208,20 @@ export function ScheduleSessionModal({ scheduleId, onClose }: ScheduleSessionMod
       </div>
 
       <DialogFooter>
-        <Button
+        <NoAnalyticsButton
           variant="outline"
           onClick={onClose}
           disabled={isSubmitting}
         >
           Cancel
-        </Button>
-        <Button
+        </NoAnalyticsButton>
+        <AnalyticsButton
+          analyticsEvent={scheduleId ? 'schedule_session_modal_updated' : 'schedule_session_modal_created'}
           onClick={handleSubmit}
           disabled={isSubmitting || !selectedWorkflowId || selectedDays.length === 0}
         >
           {isSubmitting ? 'Saving...' : scheduleId ? 'Update Schedule' : 'Create Schedule'}
-        </Button>
+        </AnalyticsButton>
       </DialogFooter>
     </div>
   )

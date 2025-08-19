@@ -4,6 +4,7 @@ import { DragEndEvent } from '@dnd-kit/core'
 import { AppsWithTime } from '@/api/monitorApi/monitorApi' // Adjust path as needed for types
 import { ActivityRating } from '@/lib/app-directory/apps-types' // Adjust path as needed for types
 import { useAppUsage, useTags, useUpdateAppRatingMutation } from '@/api/hooks/useAppUsage'
+import { AnalyticsService } from '@/lib/analytics'
 
 
 // --- Type Definitions for Kanban Board ---
@@ -101,6 +102,7 @@ export const useKanbanBoard = ({ rangeMode, date }: { rangeMode: 'day' | 'week' 
         updatedColumns[targetColumnId].push(app)
         updatedColumns[targetColumnId].sort((a, b) => b.duration - a.duration)
       }
+      AnalyticsService.trackEvent('app_dragged')
       return updatedColumns
     })
     updateAppRatingMutation.mutate({ appTagId, rating: rating as ActivityRating })

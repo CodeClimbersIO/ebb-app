@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/button'
+import { AnalyticsButton } from '@/components/ui/analytics-button'
 import { cn } from '@/lib/utils/tailwind.util'
 import { KeyRound } from 'lucide-react'
 import { PaywallDialog } from '../PaywallDialog'
@@ -23,7 +23,8 @@ export function DifficultyButton({
       key={difficulty.value}
       className="relative"
     >
-      <Button
+      <AnalyticsButton
+        analyticsEvent='difficulty_selector_clicked'
         variant={isSelected ? 'secondary' : 'ghost'}
         className={cn(
           'flex flex-col items-start h-auto px-2 py-1.5 text-sm gap-0.5 w-full',
@@ -47,17 +48,18 @@ export function DifficultyButton({
         <span className="text-xs text-muted-foreground pl-6">
           {difficulty.description}
         </span>
-      </Button>
+      </AnalyticsButton>
       {difficulty.value === 'hard' && isDisabled && (
         <div className="absolute right-2 top-1/2 -translate-y-1/2">
           <PaywallDialog>
-            <Button
+            <AnalyticsButton
+              analyticsEvent='paywall_dialog_hard_clicked'
               variant="ghost"
               size="icon"
               className="h-4 w-4 p-0 hover:bg-transparent"
             >
               <KeyRound className="h-3 w-3 text-yellow-500" />
-            </Button>
+            </AnalyticsButton>
           </PaywallDialog>
         </div>
       )}

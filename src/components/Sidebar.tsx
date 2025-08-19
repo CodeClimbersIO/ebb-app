@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/button'
+import { NoAnalyticsButton } from '@/components/ui/no-analytics-button'
 import { Link, useLocation } from 'react-router-dom'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { SettingsGearIcon } from '@/components/icons/GearIcon'
@@ -29,7 +29,7 @@ export function Sidebar() {
           {/* Category dashboard link */}
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
+              <NoAnalyticsButton
                 variant="ghost"
                 iconSize={5}
                 className={`w-9 h-9 p-2 ${location.pathname === '/' ? 'text-foreground [&>svg]:text-foreground' : 'text-muted-foreground [&>svg]:text-muted-foreground'}`}
@@ -38,7 +38,7 @@ export function Sidebar() {
                 <Link to="/">
                   <HomeIcon size={20} />
                 </Link>
-              </Button>
+              </NoAnalyticsButton>
             </TooltipTrigger>
             <TooltipContent side="right" sideOffset={10}>Today</TooltipContent>
           </Tooltip>
@@ -46,7 +46,7 @@ export function Sidebar() {
           {isFocusScheduleFeatureEnabled(user?.email) && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button
+                <NoAnalyticsButton
                   variant="ghost"
                   iconSize={5}
                   className={`w-9 h-9 p-2 ${location.pathname === '/focus-schedule' ? 'text-foreground [&>svg]:text-foreground' : 'text-muted-foreground [&>svg]:text-muted-foreground'}`}
@@ -55,14 +55,14 @@ export function Sidebar() {
                   <Link to="/focus-schedule">
                     <CalendarDaysIcon size={20} />
                   </Link>
-                </Button>
+                </NoAnalyticsButton>
               </TooltipTrigger>
               <TooltipContent side="right" sideOffset={10}>Focus Schedule</TooltipContent>
             </Tooltip>
           )}
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
+              <NoAnalyticsButton
                 variant="ghost"
                 iconSize={5}
                 className={`w-9 h-9 p-2 relative ${location.pathname === '/category-dashboard' ? 'text-foreground [&>svg]:text-foreground' : 'text-muted-foreground [&>svg]:text-muted-foreground'}`}
@@ -71,14 +71,14 @@ export function Sidebar() {
                 <Link to="/category-dashboard">
                   <ChartIcon size={20} />
                 </Link>
-              </Button>
+              </NoAnalyticsButton>
             </TooltipTrigger>
             <TooltipContent side="right" sideOffset={10}>Categories</TooltipContent>
           </Tooltip>
 
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
+              <NoAnalyticsButton
                 variant="ghost"
                 iconSize={5}
                 className={`w-9 h-9 p-2 relative ${location.pathname === '/friends-analytics' ? 'text-foreground [&>svg]:text-foreground' : 'text-muted-foreground [&>svg]:text-muted-foreground'}`}
@@ -90,7 +90,7 @@ export function Sidebar() {
                     <div className="absolute w-3 h-3 bg-red-500 rounded-full border border-background" style={{ top: '4px', right: '4px' }}/>
                   )}
                 </Link>
-              </Button>
+              </NoAnalyticsButton>
             </TooltipTrigger>
             <TooltipContent side="right" sideOffset={10}>Friends</TooltipContent>
           </Tooltip>
@@ -98,7 +98,7 @@ export function Sidebar() {
 
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
+              <NoAnalyticsButton
                 variant="ghost"
                 iconSize={5}
                 className={`w-9 h-9 p-2 ${location.pathname === '/community' ? 'text-foreground [&>svg]:text-foreground' : 'text-muted-foreground [&>svg]:text-muted-foreground'}`}
@@ -107,7 +107,7 @@ export function Sidebar() {
                 <Link to="/community">
                   <GlobeIcon size={20} />
                 </Link>
-              </Button>
+              </NoAnalyticsButton>
             </TooltipTrigger>
             <TooltipContent side="right" sideOffset={10}>Community</TooltipContent>
           </Tooltip>
@@ -116,9 +116,9 @@ export function Sidebar() {
         {!hasProAccess && (
           <div className="p-2 border-t flex justify-center">
             <PaywallDialog>
-              <Button variant="ghost" iconSize={5} className="w-9 h-9 p-2">
+              <NoAnalyticsButton variant="ghost" iconSize={5} className="w-9 h-9 p-2">
                 <KeyIcon size={20} className="text-yellow-500" />
-              </Button>
+              </NoAnalyticsButton>
             </PaywallDialog>
           </div>
         )}
@@ -126,7 +126,7 @@ export function Sidebar() {
         <div className="p-2 border-t flex justify-center">
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
+              <NoAnalyticsButton
                 variant="ghost"
                 iconSize={5}
                 className={`w-9 h-9 p-2 ${location.pathname === '/settings' ? 'text-foreground [&>svg]:text-foreground' : 'text-muted-foreground [&>svg]:text-muted-foreground'}`}
@@ -135,7 +135,7 @@ export function Sidebar() {
                 <Link to="/settings">
                   <SettingsGearIcon size={20} />
                 </Link>
-              </Button>
+              </NoAnalyticsButton>
             </TooltipTrigger>
             <TooltipContent side="right" sideOffset={10}>Settings</TooltipContent>
           </Tooltip>

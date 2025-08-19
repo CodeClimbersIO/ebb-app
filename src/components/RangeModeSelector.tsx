@@ -3,7 +3,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
-import { Button } from '@/components/ui/button'
+import { AnalyticsButton } from '@/components/ui/analytics-button'
 import { cn } from '@/lib/utils/tailwind.util'
 
 export type RangeMode = 'day' | 'week' | 'month'
@@ -31,7 +31,8 @@ export function RangeModeSelector({ value, onChange, className }: RangeModeSelec
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button
+        <AnalyticsButton
+          analyticsEvent="range_mode_selector_clicked"
           variant="outline"
           className={cn(
             'justify-start text-left font-normal',
@@ -41,20 +42,21 @@ export function RangeModeSelector({ value, onChange, className }: RangeModeSelec
           <div className="flex items-center gap-2">
             {selectedOption.label}
           </div>
-        </Button>
+        </AnalyticsButton>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-1" align="end" sideOffset={4}>
         <div className="flex flex-col">
           {rangeOptions.map((option) => (
-            <Button
+            <AnalyticsButton
               key={option.value}
               variant={value === option.value ? 'default' : 'ghost'}
               size="sm"
               className="justify-start px-3 py-1 text-xs font-medium rounded-lg"
               onClick={() => onChange(option.value)}
+              analyticsEvent={'range_mode_clicked'}
             >
               {option.label}
-            </Button>
+            </AnalyticsButton>
           ))}
         </div>
       </PopoverContent>

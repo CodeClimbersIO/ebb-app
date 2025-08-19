@@ -6,7 +6,7 @@ import { AppCategory, categoryEmojis } from '@/lib/app-directory/apps-types'
 import { useEffect, useRef, useState } from 'react'
 import { MonitorApi , App, Tag } from '@/api/monitorApi/monitorApi'
 import { AppIcon } from '@/components/AppIcon'
-import { Button } from '@/components/ui/button'
+import { AnalyticsButton } from '@/components/ui/analytics-button'
 import { DifficultySelector } from '@/components/difficulty-selector'
 import { CategoryTooltip } from '@/components/CategoryTooltip'
 import { PaywallDialog } from '@/components/PaywallDialog'
@@ -514,7 +514,7 @@ export function AppSelector({
           
           {onIsAllowListChange && (
             <div className="flex items-center gap-1">
-              <Button
+              <AnalyticsButton
                 variant="ghost"
                 size="sm"
                 className={cn(
@@ -525,25 +525,35 @@ export function AppSelector({
                   e.stopPropagation()
                   handleAllowListChange(false)
                 }}
+                analyticsEvent="block_list_clicked"
+                analyticsProperties={{
+                  context: 'block_list',
+                  button_location: 'app_selector'
+                }}
               >
                 Block
-              </Button>
+              </AnalyticsButton>
 
               {!canUseAllowList ? (
                 <PaywallDialog>
-                  <Button
+                  <AnalyticsButton
                     variant="ghost"
                     size="sm"
                     className={cn(
                       'h-6 px-2 text-xs text-muted-foreground/80 hover:text-foreground',
                       isAllowList && 'bg-muted/50'
                     )}
+                    analyticsEvent="allow_list_clicked"
+                    analyticsProperties={{
+                      context: 'allow_list',
+                      button_location: 'app_selector'
+                    }}
                   >
                     Allow
-                  </Button>
+                  </AnalyticsButton>
                 </PaywallDialog>
               ) : (
-                <Button
+                <AnalyticsButton
                   variant="ghost"
                   size="sm"
                   className={cn(
@@ -554,9 +564,14 @@ export function AppSelector({
                     e.stopPropagation()
                     handleAllowListChange(true)
                   }}
+                  analyticsEvent="allow_list_clicked"
+                  analyticsProperties={{
+                    context: 'allow_list',
+                    button_location: 'app_selector'
+                  }}
                 >
                   Allow
-                </Button>
+                </AnalyticsButton>
               )}
             </div>
           )}

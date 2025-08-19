@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/button'
+import { AnalyticsButton } from '@/components/ui/analytics-button'
 import { useNavigate } from 'react-router-dom'
 import { SlackIcon } from '@/components/icons/SlackIcon'
 import { OnboardingUtils } from '@/lib/utils/onboarding.util'
@@ -35,22 +35,32 @@ export const SlackOnboardingPage = () => {
         <div className="max-w-xs mx-auto w-full border-b mb-12" />
 
         <div className="flex flex-col gap-3 w-full max-w-xs">
-          <Button
+          <AnalyticsButton
             size="lg"
             onClick={handleConnect}
             disabled={!user}
             className="mb-2"
+            analyticsEvent="slack_connect_clicked"
+            analyticsProperties={{
+              context: 'slack_connect',
+              button_location: 'slack_onboarding_page'
+            }}
           >
             {!user ? 'Login Required' : 'Connect Slack'}
-          </Button>
+          </AnalyticsButton>
           
-          <Button
+          <AnalyticsButton
             variant="outline"
             size="lg"
             onClick={handleSkip}
+            analyticsEvent="slack_connect_skipped"
+            analyticsProperties={{
+              destination: 'skip_slack',
+              source: 'slack_onboarding_page'
+            }}
           >
             Skip for Now
-          </Button>
+          </AnalyticsButton>
         </div>
 
         {!user && (

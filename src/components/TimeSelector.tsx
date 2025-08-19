@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { Check, ChevronsUpDown } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { AnalyticsButton } from '@/components/ui/analytics-button'
 import {
   Command,
   CommandEmpty,
@@ -195,7 +195,8 @@ export function TimeSelector({ value: externalValue, onChange }: TimeSelectorPro
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button
+        <AnalyticsButton
+          analyticsEvent='focus_session_duration_selector_clicked'
           variant='outline'
           role='combobox'
           aria-expanded={open}
@@ -206,7 +207,7 @@ export function TimeSelector({ value: externalValue, onChange }: TimeSelectorPro
               (customOption?.value === value ? customOption.label : 'Select duration')
             : 'Select duration'}
           <ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
-        </Button>
+        </AnalyticsButton>
       </PopoverTrigger>
       <PopoverContent className='w-[--radix-popover-trigger-width] p-0'>
         <Command shouldFilter={false}>

@@ -14,8 +14,9 @@ import { EbbListen } from '@/lib/ebbListen'
 import { useShortcutStore } from '@/lib/stores/shortcutStore'
 import { useShortcutKeyDetection } from '../../hooks/useShortcutKeyDetection'
 import { EbbWorker } from '../../lib/ebbWorker'
+import { AnalyticsEvent } from '../../lib/analytics'
 
-type NotificationType = 'session-start' | 'quick-start' | 'smart-start-suggestion' | 'doomscroll-start-suggestion' | 'blocked-app' | 'blocked-app-hard' | 'session-end' | 'session-warning' | 'end-session' | 'scheduled-session-reminder' | 'scheduled-session-start'  
+export type NotificationType = 'session-start' | 'quick-start' | 'smart-start-suggestion' | 'doomscroll-start-suggestion' | 'blocked-app' | 'blocked-app-hard' | 'session-end' | 'session-warning' | 'end-session' | 'scheduled-session-reminder' | 'scheduled-session-start'  
 
 interface NotificationPayload {
   timeCreating?: number
@@ -485,6 +486,7 @@ export const NotificationPanel = () => {
             shortcutParts={shortcutParts}
             pressedKeys={pressedKeys}
             onClick={handleButtonClick}
+            analyticsEvent={`notification_${notificationType}_button_clicked` as AnalyticsEvent}
           />
         )}
 

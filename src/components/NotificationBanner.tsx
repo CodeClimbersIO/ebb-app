@@ -2,7 +2,7 @@ import * as React from 'react'
 import { useGetActiveNotification, useUpdateNotificationStatus } from '@/api/hooks/useNotifications'
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button } from '@/components/ui/button'
+import { AnalyticsButton } from './ui/analytics-button'
 
 interface NotificationAction {
   label: string
@@ -51,14 +51,15 @@ export const NotificationBanner: React.FC = () => {
       <span className="font-medium">{activeNotification.content}</span>
       <div className="flex items-center gap-2">
         {notificationAction && (
-          <Button
+          <AnalyticsButton
+            analyticsEvent="notification_dismissed"
             variant="outline"
             size="sm"
             className="border-white/30 text-white hover:bg-white/10 hover:text-white"
             onClick={notificationAction.action}
           >
             {notificationAction.label}
-          </Button>
+          </AnalyticsButton>
         )}
         <button 
           className="p-1 rounded hover:bg-primary/80 transition-colors" 

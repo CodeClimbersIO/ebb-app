@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button } from '@/components/ui/button'
+import { AnalyticsButton } from '@/components/ui/analytics-button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ConnectIcon } from '@/components/icons/ConnectIcon'
 import { useConnectedStore } from '@/lib/stores/connectedStore'
@@ -82,7 +82,8 @@ const StatusButton = ()=> {
   if(!connected) {
     return (
       <div className="relative">
-        <Button 
+        <AnalyticsButton 
+          analyticsEvent='connect_to_friends_clicked'
           variant="outline" 
           size="sm" 
           onClick={handleClick} 
@@ -91,7 +92,7 @@ const StatusButton = ()=> {
         >
           {isOffline ? 'Offline' : 'Connect '}
           <ConnectIcon size={20} />
-        </Button>
+        </AnalyticsButton>
         <div className="absolute inset-0 border border-primary/50 rounded-md animate-ping opacity-75" style={{animationDuration: '3s'}}></div>
       </div>
     )

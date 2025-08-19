@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/button'
+import { AnalyticsButton } from '@/components/ui/analytics-button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { PaywallDialog } from '@/components/PaywallDialog'
@@ -99,7 +99,8 @@ export function UserProfileSettings({ user }: UserProfileSettingsProps) {
           </div>
 
           <div className="flex items-center gap-3">
-            <Button 
+            <AnalyticsButton 
+              analyticsEvent='user_profile_settings_login_with_google_clicked'
               variant="outline" 
               size="sm" 
               onClick={handleGoogleLogin}
@@ -124,7 +125,7 @@ export function UserProfileSettings({ user }: UserProfileSettingsProps) {
                 />
               </svg>
               Login with Google
-            </Button>
+            </AnalyticsButton>
           </div>
         </div>
       </div>
@@ -157,7 +158,13 @@ export function UserProfileSettings({ user }: UserProfileSettingsProps) {
                       {license?.licenseType && <p>Type: {license.licenseType}</p>}
                       {license?.expirationDate && <p>Updates until: {format(new Date(license.expirationDate), 'PP')}</p>}
                       {license?.licenseType === 'subscription' && (
-                        <Button size="sm" variant="outline" onClick={handleManageSubscription} className="mt-2 w-full">Manage Subscription</Button>
+                        <AnalyticsButton 
+                          analyticsEvent='user_profile_settings_manage_subscription_clicked'
+                          size="sm" 
+                          variant="outline" 
+                          onClick={handleManageSubscription} 
+                          className="mt-2 w-full"
+                        >Manage Subscription</AnalyticsButton>
                       )}
                     </TooltipContent>
                   </Tooltip>
@@ -181,10 +188,15 @@ export function UserProfileSettings({ user }: UserProfileSettingsProps) {
         </div>
 
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" onClick={handleLogout}>
+          <AnalyticsButton 
+            analyticsEvent='user_profile_settings_logout_clicked'
+            variant="outline" 
+            size="sm" 
+            onClick={handleLogout}
+          >
             <LogOut className="h-4 w-4 mr-2" />
              Logout
-          </Button>
+          </AnalyticsButton>
         </div>
       </div>
     </div>
