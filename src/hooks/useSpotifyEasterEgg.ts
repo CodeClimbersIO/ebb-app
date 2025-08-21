@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 
-const SEQUENCE = 'spotify'
+const SEQUENCE = 'flow'
 const RESET_TIMEOUT = 3000 // Reset sequence after 3 seconds of inactivity
 
 // Original purple theme colors
