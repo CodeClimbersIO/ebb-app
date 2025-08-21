@@ -36,7 +36,7 @@ export function SpotifyConfetti({ show, isSpotifyTheme }: SpotifyConfettiProps) 
           <span style={{ color: SPOTIFY_GREEN, fontSize: '24px' }}>♪</span>
           <span>
             {isSpotifyTheme 
-              ? 'Spotify theme activated! 🎧 Type \'spotify\' again to switch back'
+              ? 'Let\'s flow! Spotify theme activated! 🎧 Type \'flow\' again to switch back'
               : 'Thanks for being a part of Ebb!'
             }
           </span>
