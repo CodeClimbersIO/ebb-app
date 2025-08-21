@@ -50,6 +50,8 @@ export const IntegrationSettings = () => {
             setActiveService('spotify')
           }
         }
+
+        setIsLoading(false)
       } catch (error) {
         logAndToastError(`Error handling Spotify callback: ${error}`, error)
         setIsLoading(false)
@@ -140,7 +142,7 @@ export const IntegrationSettings = () => {
                       <AnalyticsButton
                         variant="outline"
                         size="sm"
-                        disabled={activeService === 'apple' || isLoading}
+                        disabled={isLoading}
                         onClick={handleSpotifyConnect}
                         analyticsEvent="spotify_connect_clicked"
                         analyticsProperties={{

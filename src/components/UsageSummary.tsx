@@ -38,7 +38,7 @@ type ChartConfig = {
 const defaultChartConfig: ChartConfig = {
   creating: {
     label: 'Creating',
-    color: 'rgb(124,58,237)', // Purple
+    color: 'hsl(var(--primary))', // Uses primary theme color
   },
   neutral: {
     label: 'Neutral',
@@ -281,10 +281,6 @@ export const UsageSummary = ({
               <ChartContainer config={chartConfigState} className="h-[280px] aspect-auto w-full">
                 <BarChart height={200} data={chartDataState}>
                   <defs>
-                    <linearGradient id="creatingGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="rgb(124 58 237)" stopOpacity={1} />
-                      <stop offset="100%" stopColor="rgb(124 58 237)" stopOpacity={0.8} />
-                    </linearGradient>
                     <linearGradient id="neutralGradient" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="rgb(82 82 91)" stopOpacity={1} />
                       <stop offset="100%" stopColor="rgb(82 82 91)" stopOpacity={0.8} />
@@ -332,7 +328,7 @@ export const UsageSummary = ({
                         <div className="rounded-lg border bg-background p-2 shadow-md">
                           <div className="mb-1 font-medium">{data.timeRange}</div>
                           <div className="space-y-0.5">
-                            <div className="text-[rgb(124,58,237)]">Creating: {formatTimeToDecimalHours(data.creating)}</div>
+                            <div className="text-primary">Creating: {formatTimeToDecimalHours(data.creating)}</div>
                             <div className="text-gray-500">Neutral: {formatTimeToDecimalHours(data.neutral)}</div>
                             <div className="text-[rgb(239,68,68)]">Consuming: {formatTimeToDecimalHours(data.consuming)}</div>
                             <div className="text-[rgb(156,163,175)]">Idle: {formatTimeToDecimalHours(data.idle)}</div>

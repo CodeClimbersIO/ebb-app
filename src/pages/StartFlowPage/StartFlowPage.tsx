@@ -394,8 +394,8 @@ export const StartFlowPage = () => {
             >
               Start Focus
               <div className="ml-2 flex items-center gap-1">
-                <kbd className="rounded bg-violet-900 px-1.5 font-mono text-sm">⌘</kbd>
-                <kbd className="rounded bg-violet-900 px-1.5 font-mono text-sm">↵</kbd>
+                <kbd className="rounded bg-primary-700 px-1.5 font-mono text-sm">⌘</kbd>
+                <kbd className="rounded bg-primary-700 px-1.5 font-mono text-sm">↵</kbd>
               </div>
             </AnalyticsButton>
           </CardContent>

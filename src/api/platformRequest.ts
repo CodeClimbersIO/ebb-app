@@ -110,7 +110,6 @@ const requestFn = () => {
           if (res) {
             try {
               const json = JSON.parse(res)
-              console.log('json', json)
               return json as PlatformApiResponse
             } catch {
               return { data: res }

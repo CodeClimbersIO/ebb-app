@@ -284,10 +284,10 @@ export function MusicSelector({ selectedPlaylist, onPlaylistSelect }: MusicSelec
           <DialogHeader>
             <DialogTitle className="text-lg font-normal mb-4">Connect your music</DialogTitle>
           </DialogHeader>
-          <Alert className="mb-4 border-yellow-500 text-yellow-600">
-            <AlertCircle className="h-4 w-4 !text-yellow-600" />
+          <Alert className="mb-4 border-primary-500 text-primary-600">
+            <AlertCircle className="h-4 w-4 !text-primary-600" />
             <AlertDescription>
-              The Spotify integration is still in beta and only works for permitted users. If you would like to try it, please email paul@ebb.cool
+              The Spotify integration is still in beta! Email paul@ebb.cool if you have any issues
             </AlertDescription>
           </Alert>
           <div className="grid grid-cols-2 gap-4">
