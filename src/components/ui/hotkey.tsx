@@ -24,13 +24,13 @@ const textSizeClasses = (isModifier: boolean): Record<HotkeySize, string> => ({
 })
 
 const variantClasses: Record<HotkeyVariant, string> = {
-  selected: 'bg-primary border-primary text-primary-foreground',
+  selected: 'bg-primary-700 border-primary-700 text-primary-foreground',
   unselected: 'bg-muted border-muted text-muted-foreground'
 }
 
 const pressedClasses: Record<HotkeyVariant, string> = {
-  selected: 'bg-primary/80 border-primary/80 shadow-inner transform scale-95 text-primary-foreground',
-  unselected: 'bg-muted/80 border-muted/80 shadow-inner transform scale-95'
+  selected: 'bg-primary-900 border-primary-900 shadow-inner transform scale-95 text-primary-foreground',
+  unselected: 'bg-muted-foreground/20 border-muted-foreground/30 shadow-inner transform scale-95'
 }
 
 // Color mappings for different notification types

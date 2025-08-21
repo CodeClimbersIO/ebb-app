@@ -5,14 +5,70 @@ const RESET_TIMEOUT = 3000 // Reset sequence after 3 seconds of inactivity
 
 // Original purple theme colors
 const ORIGINAL_THEME = {
-  light: { primary: '262.1 83.3% 57.8%', ring: '262.1 83.3% 57.8%' },
-  dark: { primary: '263.4 70% 50.4%', ring: '263.4 70% 50.4%' }
+  light: { 
+    primary: '262.1 83.3% 57.8%', 
+    ring: '262.1 83.3% 57.8%',
+    'primary-50': '262.1 83.3% 97%',
+    'primary-100': '262.1 83.3% 92%',
+    'primary-200': '262.1 83.3% 86%',
+    'primary-300': '262.1 83.3% 77%',
+    'primary-400': '262.1 83.3% 67%',
+    'primary-500': '262.1 83.3% 57.8%',
+    'primary-600': '262.1 83.3% 48%',
+    'primary-700': '262.1 83.3% 38%',
+    'primary-800': '262.1 83.3% 28%',
+    'primary-900': '262.1 83.3% 18%',
+    'primary-950': '262.1 83.3% 8%'
+  },
+  dark: { 
+    primary: '263.4 70% 50.4%', 
+    ring: '263.4 70% 50.4%',
+    'primary-50': '263.4 70% 95%',
+    'primary-100': '263.4 70% 88%',
+    'primary-200': '263.4 70% 80%',
+    'primary-300': '263.4 70% 70%',
+    'primary-400': '263.4 70% 60%',
+    'primary-500': '263.4 70% 50.4%',
+    'primary-600': '263.4 70% 40%',
+    'primary-700': '263.4 70% 30%',
+    'primary-800': '263.4 70% 20%',
+    'primary-900': '263.4 70% 12%',
+    'primary-950': '263.4 70% 6%'
+  }
 }
 
 // Spotify green theme colors  
 const SPOTIFY_THEME = {
-  light: { primary: '141 73% 42%', ring: '141 73% 42%' },
-  dark: { primary: '141 73% 45%', ring: '141 73% 45%' }
+  light: { 
+    primary: '141 73% 42%', 
+    ring: '141 73% 42%',
+    'primary-50': '141 73% 97%',
+    'primary-100': '141 73% 92%',
+    'primary-200': '141 73% 86%',
+    'primary-300': '141 73% 77%',
+    'primary-400': '141 73% 57%',
+    'primary-500': '141 73% 42%',
+    'primary-600': '141 73% 32%',
+    'primary-700': '141 73% 22%',
+    'primary-800': '141 73% 15%',
+    'primary-900': '141 73% 10%',
+    'primary-950': '141 73% 5%'
+  },
+  dark: { 
+    primary: '141 73% 45%', 
+    ring: '141 73% 45%',
+    'primary-50': '141 73% 95%',
+    'primary-100': '141 73% 88%',
+    'primary-200': '141 73% 80%',
+    'primary-300': '141 73% 70%',
+    'primary-400': '141 73% 60%',
+    'primary-500': '141 73% 45%',
+    'primary-600': '141 73% 35%',
+    'primary-700': '141 73% 25%',
+    'primary-800': '141 73% 18%',
+    'primary-900': '141 73% 12%',
+    'primary-950': '141 73% 6%'
+  }
 }
 
 export const useSpotifyEasterEgg = () => {
@@ -37,8 +93,10 @@ export const useSpotifyEasterEgg = () => {
     const colors = isDarkMode ? theme.dark : theme.light
     
     const root = document.documentElement
-    root.style.setProperty('--primary', colors.primary)
-    root.style.setProperty('--ring', colors.ring)
+    // Apply all primary color variations
+    Object.entries(colors).forEach(([key, value]) => {
+      root.style.setProperty(`--${key}`, value)
+    })
   }, [])
 
   const toggleSpotifyTheme = useCallback(() => {
