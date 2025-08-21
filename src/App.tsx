@@ -6,6 +6,8 @@ import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@radix-ui/react-tooltip'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useInitializeAppState } from './hooks/useInitializeAppState'
+import { SpotifyConfetti } from '@/components/SpotifyConfetti'
+import { useSpotifyEasterEgg } from '@/hooks/useSpotifyEasterEgg'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -18,8 +20,14 @@ const queryClient = new QueryClient({
 
 const AppRouterWrapper = () => {
   useInitializeAppState()
+  const { showConfetti, isSpotifyTheme } = useSpotifyEasterEgg()
 
-  return <AppRouter />
+  return (
+    <>
+      <AppRouter />
+      <SpotifyConfetti show={showConfetti} isSpotifyTheme={isSpotifyTheme} />
+    </>
+  )
 }
 
 const App = () => {

@@ -24,12 +24,12 @@ const textSizeClasses = (isModifier: boolean): Record<HotkeySize, string> => ({
 })
 
 const variantClasses: Record<HotkeyVariant, string> = {
-  selected: 'bg-violet-900 border-violet-900 text-primary-foreground',
+  selected: 'bg-primary border-primary text-primary-foreground',
   unselected: 'bg-muted border-muted text-muted-foreground'
 }
 
 const pressedClasses: Record<HotkeyVariant, string> = {
-  selected: 'bg-violet-950 border-violet-950 shadow-inner transform scale-95',
+  selected: 'bg-primary/80 border-primary/80 shadow-inner transform scale-95 text-primary-foreground',
   unselected: 'bg-muted/80 border-muted/80 shadow-inner transform scale-95'
 }
 
