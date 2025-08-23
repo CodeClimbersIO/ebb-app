@@ -9,7 +9,6 @@ import { usePostHog } from 'posthog-js/react'
 import { useShortcutStore } from '@/lib/stores/shortcutStore'
 import { useConnectedStore } from '@/lib/stores/connectedStore'
 import { useProfile } from '@/api/hooks/useProfile'
-import { useLicenseWithDevices } from '@/api/hooks/useLicense'
 import { useWorkerPolling } from '@/hooks/useWorkerPolling'
 import { useCreateNotification, useGetNotificationBySentId } from '@/api/hooks/useNotifications'
 import { isFocusScheduleFeatureEnabled } from '@/lib/utils/environment.util'
@@ -24,7 +23,6 @@ export const useInitializeAppState = () => {
   const { beginCheckForUpdates } = useUpdate()
   const { user } = useAuth()
   const { profile } = useProfile()
-  const { data: licenseData } = useLicenseWithDevices(user?.id || null)
   const { setConnected } = useConnectedStore()
   const { loadShortcutFromStorage } = useShortcutStore()
   const { mutate: createNotification } = useCreateNotification()
@@ -61,12 +59,11 @@ export const useInitializeAppState = () => {
       posthog.identify(user.id, {
         email: user.email,
         created_at: user.created_at,
-        subscription_status: licenseData?.license?.status || 'free',
         last_check_in: profile.last_check_in, 
         full_name: user.user_metadata?.full_name 
       })
     } 
-  }, [user, posthog, profile, licenseData])
+  }, [user, posthog, profile])
 
 
 
