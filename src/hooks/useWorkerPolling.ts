@@ -10,6 +10,7 @@ import { invoke } from '@tauri-apps/api/core'
 import { SmartSessionApi } from '@/api/ebbApi/smartSessionApi'
 import { ScheduledSessionExecutionApi } from '@/api/ebbApi/scheduledSessionExecutionApi'
 import { useAuth } from './useAuth'
+import { debug } from '@tauri-apps/plugin-log'
 
 type OnlinePingEvent = {
   event: string
@@ -90,7 +91,11 @@ export const useWorkerPolling = () => {
     setupListener()
 
     return () => {
-      unlisten?.()
+      try {
+        unlisten?.()
+      } catch (error) {
+        debug(`[useWorkerPolling] Failed to unlisten online-ping event: ${error}`)
+      }
     }
   }, [profile, isLoading, updateRollupForUser, deviceId, user]) 
 

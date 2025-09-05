@@ -24,7 +24,7 @@ const checkForUpdate = async () => {
         logAndToastError('Failed to install update: Make sure your app has been installed to the applications folder and the app is opened from there. If you continue to have trouble, reach out to paul@ebb.cool', error)
       } else {
         logAndToastError('Failed to check for updates', error)
-        throw error
+        // Don't throw - just log and continue to prevent unhandled rejections
       }
     }
     return null
