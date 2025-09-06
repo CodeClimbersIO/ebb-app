@@ -267,6 +267,8 @@ pub fn get_migrations() -> Vec<Migration> {
                 id TEXT PRIMARY KEY NOT NULL,
                 metrics_type TEXT NOT NULL,
                 tide_frequency TEXT NOT NULL,
+                first_tide DATETIME NOT NULL,
+                day_of_week TEXT,
                 goal_amount REAL NOT NULL,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -282,6 +284,7 @@ pub fn get_migrations() -> Vec<Migration> {
                 id TEXT PRIMARY KEY NOT NULL,
                 start DATETIME NOT NULL,
                 end DATETIME,
+                completed_at DATETIME,
                 metrics_type TEXT NOT NULL,
                 tide_frequency TEXT NOT NULL,
                 goal_amount REAL NOT NULL,

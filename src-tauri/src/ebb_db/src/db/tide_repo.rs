@@ -16,12 +16,13 @@ impl TideRepo {
 
     pub async fn create_tide(&self, tide: &Tide) -> Result<()> {
         sqlx::query(
-            "INSERT INTO tide (id, start, end, metrics_type, tide_frequency, goal_amount, actual_amount, tide_template_id, created_at, updated_at) 
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)"
+            "INSERT INTO tide (id, start, end, completed_at, metrics_type, tide_frequency, goal_amount, actual_amount, tide_template_id, created_at, updated_at) 
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)"
         )
         .bind(&tide.id)
         .bind(&tide.start)
         .bind(&tide.end)
+        .bind(&tide.completed_at)
         .bind(&tide.metrics_type)
         .bind(&tide.tide_frequency)
         .bind(tide.goal_amount)
@@ -53,9 +54,13 @@ impl TideRepo {
     }
 
     pub async fn get_active_tides(&self) -> Result<Vec<Tide>> {
-        let tides = sqlx::query_as::<_, Tide>("SELECT * FROM tide WHERE end IS NULL ORDER BY start DESC")
-            .fetch_all(&self.pool)
-            .await?;
+        let now = OffsetDateTime::now_utc();
+        let tides = sqlx::query_as::<_, Tide>(
+            "SELECT * FROM tide WHERE start <= ?1 AND (end IS NULL OR end >= ?1) ORDER BY start DESC"
+        )
+        .bind(now)
+        .fetch_all(&self.pool)
+        .await?;
 
         Ok(tides)
     }
@@ -90,13 +95,14 @@ impl TideRepo {
     pub async fn update_tide(&self, tide: &Tide) -> Result<()> {
         sqlx::query(
             "UPDATE tide 
-             SET start = ?2, end = ?3, metrics_type = ?4, tide_frequency = ?5, 
-                 goal_amount = ?6, actual_amount = ?7, tide_template_id = ?8, updated_at = ?9
+             SET start = ?2, end = ?3, completed_at = ?4, metrics_type = ?5, tide_frequency = ?6, 
+                 goal_amount = ?7, actual_amount = ?8, tide_template_id = ?9, updated_at = ?10
              WHERE id = ?1"
         )
         .bind(&tide.id)
         .bind(&tide.start)
         .bind(&tide.end)
+        .bind(&tide.completed_at)
         .bind(&tide.metrics_type)
         .bind(&tide.tide_frequency)
         .bind(tide.goal_amount)
@@ -135,6 +141,20 @@ impl TideRepo {
         Ok(())
     }
 
+    pub async fn complete_tide(&self, id: &str) -> Result<()> {
+        let now = OffsetDateTime::now_utc();
+        sqlx::query(
+            "UPDATE tide SET completed_at = ?2, updated_at = ?3 WHERE id = ?1"
+        )
+        .bind(id)
+        .bind(now)
+        .bind(now)
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
     pub async fn delete_tide(&self, id: &str) -> Result<()> {
         sqlx::query("DELETE FROM tide WHERE id = ?1")
             .bind(id)
@@ -150,8 +170,20 @@ mod tests {
     use crate::db_manager;
     use crate::db::models::tide_template::TideTemplate;
     use crate::db::tide_template_repo::TideTemplateRepo;
+    use time::macros::datetime;
 
     use super::*;
+
+    fn create_test_template() -> TideTemplate {
+        let first_tide = datetime!(2025-01-01 0:00 UTC);
+        TideTemplate::new(
+            "creating".to_string(),
+            "daily".to_string(),
+            100.0,
+            first_tide,
+            None,
+        )
+    }
 
     #[tokio::test]
     async fn test_create_and_get_tide() -> Result<()> {
@@ -159,7 +191,7 @@ mod tests {
         let tide_repo = TideRepo::new(pool.clone());
         let template_repo = TideTemplateRepo::new(pool);
         
-        let template = TideTemplate::new("creating".to_string(), "daily".to_string(), 100.0);
+        let template = create_test_template();
         template_repo.create_tide_template(&template).await?;
         
         let tide = Tide::from_template(&template, OffsetDateTime::now_utc());
@@ -183,7 +215,7 @@ mod tests {
         let tide_repo = TideRepo::new(pool.clone());
         let template_repo = TideTemplateRepo::new(pool);
         
-        let template = TideTemplate::new("creating".to_string(), "daily".to_string(), 100.0);
+        let template = create_test_template();
         template_repo.create_tide_template(&template).await?;
         
         let mut tide1 = Tide::from_template(&template, OffsetDateTime::now_utc());
@@ -208,7 +240,7 @@ mod tests {
         let tide_repo = TideRepo::new(pool.clone());
         let template_repo = TideTemplateRepo::new(pool);
         
-        let template = TideTemplate::new("creating".to_string(), "daily".to_string(), 100.0);
+        let template = create_test_template();
         template_repo.create_tide_template(&template).await?;
         
         let tide = Tide::from_template(&template, OffsetDateTime::now_utc());
@@ -229,7 +261,7 @@ mod tests {
         let tide_repo = TideRepo::new(pool.clone());
         let template_repo = TideTemplateRepo::new(pool);
         
-        let template = TideTemplate::new("creating".to_string(), "daily".to_string(), 100.0);
+        let template = create_test_template();
         template_repo.create_tide_template(&template).await?;
         
         let tide = Tide::from_template(&template, OffsetDateTime::now_utc());
@@ -251,8 +283,9 @@ mod tests {
         let tide_repo = TideRepo::new(pool.clone());
         let template_repo = TideTemplateRepo::new(pool);
         
-        let template1 = TideTemplate::new("creating".to_string(), "daily".to_string(), 100.0);
-        let template2 = TideTemplate::new("learning".to_string(), "weekly".to_string(), 500.0);
+        let first_tide = datetime!(2025-01-01 0:00 UTC);
+        let template1 = TideTemplate::new("creating".to_string(), "daily".to_string(), 100.0, first_tide, None);
+        let template2 = TideTemplate::new("learning".to_string(), "weekly".to_string(), 500.0, first_tide, None);
         
         template_repo.create_tide_template(&template1).await?;
         template_repo.create_tide_template(&template2).await?;

@@ -15,12 +15,14 @@ impl TideTemplateRepo {
 
     pub async fn create_tide_template(&self, template: &TideTemplate) -> Result<()> {
         sqlx::query(
-            "INSERT INTO tide_template (id, metrics_type, tide_frequency, goal_amount, created_at, updated_at) 
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6)"
+            "INSERT INTO tide_template (id, metrics_type, tide_frequency, first_tide, day_of_week, goal_amount, created_at, updated_at) 
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)"
         )
         .bind(&template.id)
         .bind(&template.metrics_type)
         .bind(&template.tide_frequency)
+        .bind(&template.first_tide)
+        .bind(&template.day_of_week)
         .bind(template.goal_amount)
         .bind(&template.created_at)
         .bind(&template.updated_at)
@@ -52,12 +54,14 @@ impl TideTemplateRepo {
     pub async fn update_tide_template(&self, template: &TideTemplate) -> Result<()> {
         sqlx::query(
             "UPDATE tide_template 
-             SET metrics_type = ?2, tide_frequency = ?3, goal_amount = ?4, updated_at = ?5
+             SET metrics_type = ?2, tide_frequency = ?3, first_tide = ?4, day_of_week = ?5, goal_amount = ?6, updated_at = ?7
              WHERE id = ?1"
         )
         .bind(&template.id)
         .bind(&template.metrics_type)
         .bind(&template.tide_frequency)
+        .bind(&template.first_tide)
+        .bind(&template.day_of_week)
         .bind(template.goal_amount)
         .bind(&template.updated_at)
         .execute(&self.pool)
@@ -79,15 +83,27 @@ impl TideTemplateRepo {
 #[cfg(test)]
 mod tests {
     use crate::db_manager;
+    use time::macros::datetime;
 
     use super::*;
+
+    fn create_test_template() -> TideTemplate {
+        let first_tide = datetime!(2025-01-01 0:00 UTC);
+        TideTemplate::new(
+            "creating".to_string(),
+            "daily".to_string(),
+            100.0,
+            first_tide,
+            None,
+        )
+    }
 
     #[tokio::test]
     async fn test_create_and_get_tide_template() -> Result<()> {
         let pool = db_manager::create_test_db().await;
         let repo = TideTemplateRepo::new(pool);
         
-        let template = TideTemplate::new("creating".to_string(), "daily".to_string(), 100.0);
+        let template = create_test_template();
         repo.create_tide_template(&template).await?;
         
         let retrieved = repo.get_tide_template(&template.id).await?;
@@ -106,8 +122,9 @@ mod tests {
         let pool = db_manager::create_test_db().await;
         let repo = TideTemplateRepo::new(pool);
         
-        let template1 = TideTemplate::new("creating".to_string(), "daily".to_string(), 100.0);
-        let template2 = TideTemplate::new("learning".to_string(), "weekly".to_string(), 500.0);
+        let first_tide = datetime!(2025-01-01 0:00 UTC);
+        let template1 = TideTemplate::new("creating".to_string(), "daily".to_string(), 100.0, first_tide, None);
+        let template2 = TideTemplate::new("learning".to_string(), "weekly".to_string(), 500.0, first_tide, None);
         
         repo.create_tide_template(&template1).await?;
         repo.create_tide_template(&template2).await?;
@@ -123,7 +140,7 @@ mod tests {
         let pool = db_manager::create_test_db().await;
         let repo = TideTemplateRepo::new(pool);
         
-        let mut template = TideTemplate::new("creating".to_string(), "daily".to_string(), 100.0);
+        let mut template = create_test_template();
         repo.create_tide_template(&template).await?;
         
         template.goal_amount = 150.0;
@@ -142,7 +159,7 @@ mod tests {
         let pool = db_manager::create_test_db().await;
         let repo = TideTemplateRepo::new(pool);
         
-        let template = TideTemplate::new("creating".to_string(), "daily".to_string(), 100.0);
+        let template = create_test_template();
         repo.create_tide_template(&template).await?;
         
         repo.delete_tide_template(&template.id).await?;
