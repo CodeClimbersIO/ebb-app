@@ -259,6 +259,41 @@ pub fn get_migrations() -> Vec<Migration> {
             "#,
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 18,
+            description: "create_tide_template",
+            sql: r#"
+            CREATE TABLE IF NOT EXISTS tide_template (
+                id TEXT PRIMARY KEY NOT NULL,
+                metrics_type TEXT NOT NULL,
+                tide_frequency TEXT NOT NULL,
+                goal_amount REAL NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+            "#,
+            kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 19,
+            description: "create_tide",
+            sql: r#"
+            CREATE TABLE IF NOT EXISTS tide (
+                id TEXT PRIMARY KEY NOT NULL,
+                start DATETIME NOT NULL,
+                end DATETIME,
+                metrics_type TEXT NOT NULL,
+                tide_frequency TEXT NOT NULL,
+                goal_amount REAL NOT NULL,
+                actual_amount REAL NOT NULL DEFAULT 0.0,
+                tide_template_id TEXT NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (tide_template_id) REFERENCES tide_template (id)
+            );
+            "#,
+            kind: MigrationKind::Up,
+        },
     ]
 }
 
@@ -310,6 +345,8 @@ mod tests {
             "workflow",
             "device_profile", // renamed from user_profile in migration 14
             "user_notification",
+            "tide_template",
+            "tide",
         ];
 
         for table_name in tables_to_check {
