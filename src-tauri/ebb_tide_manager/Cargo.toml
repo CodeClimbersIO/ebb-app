@@ -1,0 +1,14 @@
+[package]
+name = "ebb_tide_manager"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+ebb-db = { path = "../src/ebb_db" }
+time = { version = "0.3", features = ["serde"] }
+tokio = { version = "1.42", features = ["full"] }
+thiserror = "2.0"
+uuid = { version = "1.17", features = ["v4"] }
+
+[dev-dependencies]
+sqlx = { version = "0.8.6", features = ["sqlite", "runtime-tokio"] }
