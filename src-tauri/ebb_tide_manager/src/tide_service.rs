@@ -33,7 +33,6 @@ pub struct TideService {
 }
 
 impl TideService {
-    /// Create a new TideService using the shared connection pool
     pub async fn new() -> Result<Self> {
         let db_manager = db_manager::DbManager::get_shared_ebb().await
             .map_err(|e| TideServiceError::Database(Box::new(e)))?;
@@ -45,7 +44,6 @@ impl TideService {
         })
     }
 
-    /// Create a new TideService with a specific database manager (useful for testing)
     pub fn new_with_manager(db_manager: Arc<DbManager>) -> Self {
         Self {
             tide_repo: TideRepo::new(db_manager.pool.clone()),
@@ -54,13 +52,11 @@ impl TideService {
         }
     }
 
-    /// Create a new tide from an existing template
     pub async fn create_tide_from_template(
         &self,
         template_id: &str,
         start_time: Option<OffsetDateTime>,
     ) -> Result<Tide> {
-        // Validate template exists
         let template = self
             .tide_template_repo
             .get_tide_template(template_id)
@@ -69,35 +65,29 @@ impl TideService {
                 template_id: template_id.to_string(),
             })?;
 
-        // Create tide with current time or specified start time
         let start = start_time.unwrap_or_else(OffsetDateTime::now_utc);
         let tide = Tide::from_template(&template, start);
 
-        // Save to database
         self.tide_repo.create_tide(&tide).await?;
 
         Ok(tide)
     }
 
-    /// Get all active tides (tides within their time window)
     pub async fn get_active_tides(&self) -> Result<Vec<Tide>> {
         let tides = self.tide_repo.get_active_tides().await?;
         Ok(tides)
     }
 
-    /// Get a specific tide by ID
     pub async fn get_tide(&self, tide_id: &str) -> Result<Option<Tide>> {
         let tide = self.tide_repo.get_tide(tide_id).await?;
         Ok(tide)
     }
 
-    /// Get all available tide templates
     pub async fn get_all_templates(&self) -> Result<Vec<TideTemplate>> {
         let templates = self.tide_template_repo.get_all_tide_templates().await?;
         Ok(templates)
     }
 
-    /// Create a new tide template
     pub async fn create_template(&self, template: &TideTemplate) -> Result<()> {
         self.tide_template_repo.create_tide_template(template).await?;
         Ok(())
@@ -109,37 +99,31 @@ impl TideService {
         Ok(template)
     }
 
-    /// Update an existing template
     pub async fn update_template(&self, template: &TideTemplate) -> Result<()> {
         self.tide_template_repo.update_tide_template(template).await?;
         Ok(())
     }
 
-    /// Delete a template
     pub async fn delete_template(&self, template_id: &str) -> Result<()> {
         self.tide_template_repo.delete_tide_template(template_id).await?;
         Ok(())
     }
 
-    /// Update a tide's progress (actual_amount)
     pub async fn update_tide_progress(&self, tide_id: &str, actual_amount: f64) -> Result<()> {
         self.tide_repo.update_actual_amount(tide_id, actual_amount).await?;
         Ok(())
     }
 
-    /// Complete a tide (sets completed_at)
     pub async fn complete_tide(&self, tide_id: &str) -> Result<()> {
         self.tide_repo.complete_tide(tide_id).await?;
         Ok(())
     }
 
-    /// Get tides by template ID
     pub async fn get_tides_by_template(&self, template_id: &str) -> Result<Vec<Tide>> {
         let tides = self.tide_repo.get_tides_by_template(template_id).await?;
         Ok(tides)
     }
 
-    /// Get tides in a date range
     pub async fn get_tides_in_date_range(
         &self,
         start: OffsetDateTime,
@@ -149,7 +133,6 @@ impl TideService {
         Ok(tides)
     }
 
-    /// Get all tides
     pub async fn get_all_tides(&self) -> Result<Vec<Tide>> {
         let tides = self.tide_repo.get_all_tides().await?;
         Ok(tides)
@@ -195,7 +178,6 @@ mod tests {
         let db_manager = create_test_db_manager().await;
         let _tide_service = TideService::new_with_manager(db_manager);
         
-        // If we get here without panicking, service creation works
         Ok(())
     }
 

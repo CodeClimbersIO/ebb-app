@@ -13,8 +13,6 @@ pub enum TideManagerError {
 
 pub type Result<T> = std::result::Result<T, TideManagerError>;
 
-/// TideManager handles lifecycle management activities for tides
-/// This includes scheduling, automatic generation, and complex business workflows
 pub struct TideManager {
     // Will be populated with lifecycle management functionality later
 }
