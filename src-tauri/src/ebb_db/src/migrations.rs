@@ -297,6 +297,43 @@ pub fn get_migrations() -> Vec<Migration> {
             "#,
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 20,
+            description: "seed_default_tide_templates",
+            sql: r#"
+            INSERT INTO tide_template (
+                id, 
+                metrics_type, 
+                tide_frequency, 
+                first_tide, 
+                day_of_week, 
+                goal_amount, 
+                created_at, 
+                updated_at
+            ) VALUES 
+            (
+                'default-daily-template', 
+                'creating', 
+                'daily', 
+                datetime('now'), 
+                '1,2,3,4,5', 
+                180.0, 
+                datetime('now'), 
+                datetime('now')
+            ),
+            (
+                'default-weekly-template', 
+                'learning', 
+                'weekly', 
+                datetime('now'), 
+                '0,1,2,3,4,5,6', 
+                600.0, 
+                datetime('now'), 
+                datetime('now')
+            );
+            "#,
+            kind: MigrationKind::Up,
+        },
     ]
 }
 

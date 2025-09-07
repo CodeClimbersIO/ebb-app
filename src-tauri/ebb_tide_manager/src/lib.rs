@@ -107,13 +107,6 @@ impl TideManager {
 
     /// Perform tide lifecycle checks (placeholder implementation)
     async fn perform_tide_check(_service: &TideService) -> Result<()> {
-        // TODO: Implement tide lifecycle operations:
-        // - Check for expired tides
-        // - Generate new tides from templates
-        // - Calculate progress
-        // - Send notifications
-        // - etc.
-        
         println!("Performing tide check...");
         Ok(())
     }
