@@ -465,3 +465,42 @@ Essential crates used in this project:
 4. **Platform Integration**: Native system APIs for enhanced functionality
 5. **Event-Driven**: Tauri events for real-time communication with frontend
 6. **Testing**: Comprehensive unit and integration tests
+
+## Development Process
+
+### Incremental Development Pattern
+
+When implementing new functionality, follow this pattern:
+
+1. **One Function at a Time**: Implement a single function completely before moving to the next
+2. **Test Each Function**: Write comprehensive tests for each function before proceeding
+3. **Validate Functionality**: Run tests to ensure the function works correctly
+4. **Iterate**: Only after tests pass, move to the next function
+
+**Example workflow:**
+```rust
+// Step 1: Implement single function
+pub async fn get_or_create_active_tides_for_period(&self, evaluation_time: OffsetDateTime) -> Result<Vec<Tide>> {
+    // Implementation
+}
+
+// Step 2: Write tests for this function
+#[tokio::test]
+async fn test_get_or_create_active_tides_basic() -> Result<()> {
+    // Test implementation
+}
+
+// Step 3: Run tests and validate
+// Step 4: Only then implement next function
+```
+
+**Benefits:**
+- **Easier Review**: Smaller, focused changes are easier to validate
+- **Better Debugging**: Issues are isolated to single functions
+- **Incremental Progress**: Each step provides working functionality
+- **Reduced Complexity**: Avoid overwhelming changes
+
+**Avoid:**
+- Implementing multiple complex functions simultaneously
+- Large code changes without intermediate testing
+- Adding many functions before validating any work

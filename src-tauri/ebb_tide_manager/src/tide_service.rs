@@ -73,11 +73,6 @@ impl TideService {
         Ok(tide)
     }
 
-    pub async fn get_active_tides(&self) -> Result<Vec<Tide>> {
-        let tides = self.tide_repo.get_active_tides().await?;
-        Ok(tides)
-    }
-
     pub async fn get_tide(&self, tide_id: &str) -> Result<Option<Tide>> {
         let tide = self.tide_repo.get_tide(tide_id).await?;
         Ok(tide)
@@ -137,6 +132,53 @@ impl TideService {
         let tides = self.tide_repo.get_all_tides().await?;
         Ok(tides)
     }
+
+    /// Get or create active tides for the current period based on templates
+    /// This method ensures that all templates have appropriate active tides for the evaluation time
+    /// Currently only creates tides for the current evaluation time (no backfill)
+    pub async fn get_or_create_active_tides_for_period(&self, evaluation_time: OffsetDateTime) -> Result<Vec<Tide>> {
+        // Get all templates and active tides (2 efficient queries)
+        let templates = self.get_all_templates().await?;
+        let mut active_tides = self.tide_repo.get_active_tides_at(evaluation_time).await?;
+        
+        // Create a set of template IDs that already have active tides
+        let active_template_ids: std::collections::HashSet<String> = active_tides
+            .iter()
+            .map(|tide| tide.tide_template_id.clone())
+            .collect();
+        
+        // Find templates that don't have active tides
+        let templates_needing_evaluation: Vec<&TideTemplate> = templates
+            .iter()
+            .filter(|template| !active_template_ids.contains(&template.id))
+            .collect();
+        
+        // For each template without an active tide, check if we should create one
+        for template in templates_needing_evaluation {
+            if self.should_create_tide_now(template, evaluation_time) {
+                let new_tide = self.create_tide_from_template(&template.id, Some(evaluation_time)).await?;
+                active_tides.push(new_tide);
+            }
+        }
+        
+        Ok(active_tides)
+    }
+
+    /// Determine if we should create a new tide for a template at the given time
+    fn should_create_tide_now(&self, template: &TideTemplate, evaluation_time: OffsetDateTime) -> bool {
+        match template.tide_frequency.as_str() {
+            "indefinite" => true, // Always create if no active tide exists
+            "daily" => {
+                // Only create if evaluation day matches the template's day_of_week pattern
+                let current_weekday = evaluation_time.weekday().number_days_from_sunday() as u8;
+                let allowed_days = template.get_days_of_week();
+                allowed_days.contains(&current_weekday)
+            },
+            "weekly" => true, // Always create if no active tide exists
+            "monthly" => true, // Always create if no active tide exists
+            _ => false, // Unknown frequency
+        }
+    }
 }
 
 #[cfg(test)]
@@ -144,6 +186,12 @@ mod tests {
     use super::*;
     use sqlx::sqlite::SqlitePoolOptions;
     use time::macros::datetime;
+
+    // NOTE: The database migrations create 2 default templates that affect test expectations:
+    // 1. 'default-daily-template' - daily, weekdays only (Mon-Fri), creating, 180.0 goal
+    // 2. 'default-weekly-template' - weekly, all days, learning, 600.0 goal
+    // Tests running on Monday (evaluation_time) will create tides for both default templates,
+    // so expected counts should account for these 2 additional tides.
 
     async fn create_test_db_manager() -> Arc<DbManager> {
         use ebb_db::migrations::get_migrations;
@@ -242,6 +290,459 @@ mod tests {
         assert!(completed_tide.is_some());
         let completed_tide = completed_tide.unwrap();
         assert!(completed_tide.completed_at.is_some());
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_should_create_tide_now_indefinite_always_true() -> Result<()> {
+        let db_manager = create_test_db_manager().await;
+        let tide_service = TideService::new_with_manager(db_manager);
+
+        let first_tide = datetime!(2025-01-01 0:00 UTC);
+        let indefinite_template = TideTemplate::new(
+            "project".to_string(),
+            "indefinite".to_string(),
+            1000.0,
+            first_tide,
+            None,
+        );
+
+        let test_time = datetime!(2025-01-06 10:00 UTC); // Monday
+        assert!(tide_service.should_create_tide_now(&indefinite_template, test_time));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_should_create_tide_now_weekly_always_true() -> Result<()> {
+        let db_manager = create_test_db_manager().await;
+        let tide_service = TideService::new_with_manager(db_manager);
+
+        let first_tide = datetime!(2025-01-01 0:00 UTC);
+        let weekly_template = TideTemplate::new(
+            "learning".to_string(),
+            "weekly".to_string(),
+            500.0,
+            first_tide,
+            None,
+        );
+
+        let test_time = datetime!(2025-01-06 10:00 UTC); // Monday
+        assert!(tide_service.should_create_tide_now(&weekly_template, test_time));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_should_create_tide_now_monthly_always_true() -> Result<()> {
+        let db_manager = create_test_db_manager().await;
+        let tide_service = TideService::new_with_manager(db_manager);
+
+        let first_tide = datetime!(2025-01-01 0:00 UTC);
+        let monthly_template = TideTemplate::new(
+            "fitness".to_string(),
+            "monthly".to_string(),
+            2000.0,
+            first_tide,
+            None,
+        );
+
+        let test_time = datetime!(2025-01-06 10:00 UTC); // Monday
+        assert!(tide_service.should_create_tide_now(&monthly_template, test_time));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_should_create_tide_now_daily_weekdays_only() -> Result<()> {
+        let db_manager = create_test_db_manager().await;
+        let tide_service = TideService::new_with_manager(db_manager);
+
+        let first_tide = datetime!(2025-01-01 0:00 UTC);
+        let weekday_template = TideTemplate::new(
+            "creating".to_string(),
+            "daily".to_string(),
+            100.0,
+            first_tide,
+            Some("1,2,3,4,5".to_string()), // Monday through Friday
+        );
+
+        // Test Monday (1) - should be true
+        let monday = datetime!(2025-01-06 10:00 UTC); // This is a Monday
+        assert!(tide_service.should_create_tide_now(&weekday_template, monday));
+
+        // Test Tuesday (2) - should be true
+        let tuesday = datetime!(2025-01-07 10:00 UTC); // This is a Tuesday
+        assert!(tide_service.should_create_tide_now(&weekday_template, tuesday));
+
+        // Test Friday (5) - should be true
+        let friday = datetime!(2025-01-03 10:00 UTC); // This is a Friday
+        assert!(tide_service.should_create_tide_now(&weekday_template, friday));
+
+        // Test Sunday (0) - should be false
+        let sunday = datetime!(2025-01-05 10:00 UTC); // This is a Sunday
+        assert!(!tide_service.should_create_tide_now(&weekday_template, sunday));
+
+        // Test Saturday (6) - should be false
+        let saturday = datetime!(2025-01-04 10:00 UTC); // This is a Saturday
+        assert!(!tide_service.should_create_tide_now(&weekday_template, saturday));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_should_create_tide_now_daily_all_days() -> Result<()> {
+        let db_manager = create_test_db_manager().await;
+        let tide_service = TideService::new_with_manager(db_manager);
+
+        let first_tide = datetime!(2025-01-01 0:00 UTC);
+        let all_days_template = TideTemplate::new(
+            "creating".to_string(),
+            "daily".to_string(),
+            100.0,
+            first_tide,
+            None, // All days (default)
+        );
+
+        // Test various days - all should be true
+        let monday = datetime!(2025-01-06 10:00 UTC); // Monday
+        assert!(tide_service.should_create_tide_now(&all_days_template, monday));
+
+        let sunday = datetime!(2025-01-05 10:00 UTC); // Sunday
+        assert!(tide_service.should_create_tide_now(&all_days_template, sunday));
+
+        let saturday = datetime!(2025-01-04 10:00 UTC); // Saturday
+        assert!(tide_service.should_create_tide_now(&all_days_template, saturday));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_should_create_tide_now_daily_specific_days() -> Result<()> {
+        let db_manager = create_test_db_manager().await;
+        let tide_service = TideService::new_with_manager(db_manager);
+
+        let first_tide = datetime!(2025-01-01 0:00 UTC);
+        let specific_days_template = TideTemplate::new(
+            "creating".to_string(),
+            "daily".to_string(),
+            100.0,
+            first_tide,
+            Some("1,3,5".to_string()), // Monday, Wednesday, Friday
+        );
+
+        // Test Monday (1) - should be true
+        let monday = datetime!(2025-01-06 10:00 UTC);
+        assert!(tide_service.should_create_tide_now(&specific_days_template, monday));
+
+        // Test Wednesday (3) - should be true
+        let wednesday = datetime!(2025-01-08 10:00 UTC);
+        assert!(tide_service.should_create_tide_now(&specific_days_template, wednesday));
+
+        // Test Friday (5) - should be true
+        let friday = datetime!(2025-01-03 10:00 UTC);
+        assert!(tide_service.should_create_tide_now(&specific_days_template, friday));
+
+        // Test Tuesday (2) - should be false
+        let tuesday = datetime!(2025-01-07 10:00 UTC);
+        assert!(!tide_service.should_create_tide_now(&specific_days_template, tuesday));
+
+        // Test Sunday (0) - should be false
+        let sunday = datetime!(2025-01-05 10:00 UTC);
+        assert!(!tide_service.should_create_tide_now(&specific_days_template, sunday));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_should_create_tide_now_unknown_frequency() -> Result<()> {
+        let db_manager = create_test_db_manager().await;
+        let tide_service = TideService::new_with_manager(db_manager);
+
+        let first_tide = datetime!(2025-01-01 0:00 UTC);
+        let unknown_template = TideTemplate::new(
+            "unknown".to_string(),
+            "yearly".to_string(), // Unknown frequency
+            1000.0,
+            first_tide,
+            None,
+        );
+
+        let test_time = datetime!(2025-01-06 10:00 UTC);
+        assert!(!tide_service.should_create_tide_now(&unknown_template, test_time));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_get_or_create_active_tides_for_period_no_templates() -> Result<()> {
+        let db_manager = create_test_db_manager().await;
+        let tide_service = TideService::new_with_manager(db_manager);
+
+        let evaluation_time = datetime!(2025-01-06 10:00 UTC); // Monday
+        
+        // Should have 2 default templates: daily (weekdays) and weekly (all days)
+        // Both should create tides on Monday
+        let active_tides = tide_service.get_or_create_active_tides_for_period(evaluation_time).await?;
+        assert_eq!(active_tides.len(), 2);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_get_or_create_active_tides_for_period_indefinite_template() -> Result<()> {
+        let db_manager = create_test_db_manager().await;
+        let tide_service = TideService::new_with_manager(db_manager);
+
+        // Create an indefinite template
+        let first_tide = datetime!(2025-01-01 0:00 UTC);
+        let template = TideTemplate::new(
+            "project".to_string(),
+            "indefinite".to_string(),
+            1000.0,
+            first_tide,
+            None,
+        );
+        tide_service.create_template(&template).await?;
+
+        let evaluation_time = datetime!(2025-01-06 10:00 UTC); // Monday
+
+        // Should create a tide since indefinite templates always get one
+        // Plus 2 default templates (daily weekdays + weekly all days) = 3 total
+        let active_tides = tide_service.get_or_create_active_tides_for_period(evaluation_time).await?;
+        assert_eq!(active_tides.len(), 3);
+        assert_eq!(active_tides[0].tide_template_id, template.id);
+        assert_eq!(active_tides[0].tide_frequency, "indefinite");
+
+        // Call again - should not create another tide (should return existing active tide)
+        let active_tides_2 = tide_service.get_or_create_active_tides_for_period(evaluation_time).await?;
+        assert_eq!(active_tides_2.len(), 3);
+        assert_eq!(active_tides_2[0].id, active_tides[0].id);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_get_or_create_active_tides_for_period_daily_weekdays_monday() -> Result<()> {
+        let db_manager = create_test_db_manager().await;
+        let tide_service = TideService::new_with_manager(db_manager);
+
+        // Create a daily template for weekdays only (Monday-Friday: 1,2,3,4,5)
+        let first_tide = datetime!(2025-01-01 0:00 UTC);
+        let template = TideTemplate::new(
+            "creating".to_string(),
+            "daily".to_string(),
+            100.0,
+            first_tide,
+            Some("1,2,3,4,5".to_string()), // Monday through Friday
+        );
+        tide_service.create_template(&template).await?;
+
+        // Test on Monday (day 1) - should create tide
+        // Plus 2 default templates = 3 total
+        let monday_time = datetime!(2025-01-06 10:00 UTC); // Monday
+        let active_tides = tide_service.get_or_create_active_tides_for_period(monday_time).await?;
+        assert_eq!(active_tides.len(), 3);
+        assert_eq!(active_tides[0].tide_template_id, template.id);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_get_or_create_active_tides_for_period_daily_weekdays_sunday() -> Result<()> {
+        let db_manager = create_test_db_manager().await;
+        let tide_service = TideService::new_with_manager(db_manager);
+
+        // Create a daily template for weekdays only (Monday-Friday: 1,2,3,4,5)
+        let first_tide = datetime!(2025-01-01 0:00 UTC);
+        let template = TideTemplate::new(
+            "creating".to_string(),
+            "daily".to_string(),
+            100.0,
+            first_tide,
+            Some("1,2,3,4,5".to_string()), // Monday through Friday
+        );
+        tide_service.create_template(&template).await?;
+
+        // Test on Sunday (day 0) - should NOT create tide for weekdays-only template
+        // But default weekly template should create = 1 total tide
+        let sunday_time = datetime!(2025-01-05 10:00 UTC); // Sunday
+        let active_tides = tide_service.get_or_create_active_tides_for_period(sunday_time).await?;
+        assert_eq!(active_tides.len(), 1); // Only weekly template creates on Sunday
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_get_or_create_active_tides_for_period_weekly_template() -> Result<()> {
+        let db_manager = create_test_db_manager().await;
+        let tide_service = TideService::new_with_manager(db_manager);
+
+        // Create a weekly template
+        let first_tide = datetime!(2025-01-01 0:00 UTC);
+        let template = TideTemplate::new(
+            "learning".to_string(),
+            "weekly".to_string(),
+            500.0,
+            first_tide,
+            None,
+        );
+        tide_service.create_template(&template).await?;
+
+        let evaluation_time = datetime!(2025-01-06 10:00 UTC); // Monday
+
+        // Should create a tide since weekly templates always get one if none exists
+        // Plus 2 default templates = 3 total
+        let active_tides = tide_service.get_or_create_active_tides_for_period(evaluation_time).await?;
+        assert_eq!(active_tides.len(), 3);
+        assert_eq!(active_tides[0].tide_template_id, template.id);
+        assert_eq!(active_tides[0].tide_frequency, "weekly");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_get_or_create_active_tides_for_period_multiple_templates() -> Result<()> {
+        let db_manager = create_test_db_manager().await;
+        let tide_service = TideService::new_with_manager(db_manager);
+
+        let first_tide = datetime!(2025-01-01 0:00 UTC);
+        let evaluation_time = datetime!(2025-01-06 10:00 UTC); // Monday
+
+        // Create multiple templates
+        let indefinite_template = TideTemplate::new(
+            "project".to_string(),
+            "indefinite".to_string(),
+            1000.0,
+            first_tide,
+            None,
+        );
+        let weekly_template = TideTemplate::new(
+            "learning".to_string(),
+            "weekly".to_string(),
+            500.0,
+            first_tide,
+            None,
+        );
+        let daily_template = TideTemplate::new(
+            "creating".to_string(),
+            "daily".to_string(),
+            100.0,
+            first_tide,
+            None, // All days
+        );
+
+        tide_service.create_template(&indefinite_template).await?;
+        tide_service.create_template(&weekly_template).await?;
+        tide_service.create_template(&daily_template).await?;
+
+        // Should create tides for all templates (3 custom + 2 default = 5 total)
+        let active_tides = tide_service.get_or_create_active_tides_for_period(evaluation_time).await?;
+        assert_eq!(active_tides.len(), 5);
+
+        // Verify all template IDs are represented
+        let template_ids: std::collections::HashSet<String> = active_tides
+            .iter()
+            .map(|tide| tide.tide_template_id.clone())
+            .collect();
+        
+        assert!(template_ids.contains(&indefinite_template.id));
+        assert!(template_ids.contains(&weekly_template.id));
+        assert!(template_ids.contains(&daily_template.id));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_get_or_create_active_tides_for_period_existing_active_tide() -> Result<()> {
+        let db_manager = create_test_db_manager().await;
+        let tide_service = TideService::new_with_manager(db_manager);
+
+        // Create template and manually create a tide
+        let first_tide = datetime!(2025-01-01 0:00 UTC);
+        let template = TideTemplate::new(
+            "creating".to_string(),
+            "daily".to_string(),
+            100.0,
+            first_tide,
+            None,
+        );
+        tide_service.create_template(&template).await?;
+
+        let evaluation_time = datetime!(2025-01-06 10:00 UTC); // Monday
+
+        // Manually create an active tide
+        let existing_tide = tide_service
+            .create_tide_from_template(&template.id, Some(evaluation_time))
+            .await?;
+
+        // Should return the existing tide, not create a new one (1 custom + 2 default = 3 total)
+        let active_tides = tide_service.get_or_create_active_tides_for_period(evaluation_time).await?;
+        assert_eq!(active_tides.len(), 3);
+        assert!(active_tides.iter().any(|t| t.id == existing_tide.id));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_get_or_create_active_tides_for_period_mixed_scenario() -> Result<()> {
+        let db_manager = create_test_db_manager().await;
+        let tide_service = TideService::new_with_manager(db_manager);
+
+        let first_tide = datetime!(2025-01-01 0:00 UTC);
+        let evaluation_time = datetime!(2025-01-06 10:00 UTC); // Monday
+
+        // Create templates with different scenarios
+        let template_with_active = TideTemplate::new(
+            "existing".to_string(),
+            "daily".to_string(),
+            100.0,
+            first_tide,
+            None,
+        );
+        let template_should_create = TideTemplate::new(
+            "should_create".to_string(),
+            "weekly".to_string(),
+            200.0,
+            first_tide,
+            None,
+        );
+        let template_weekdays_only = TideTemplate::new(
+            "weekdays".to_string(),
+            "daily".to_string(),
+            300.0,
+            first_tide,
+            Some("1,2,3,4,5".to_string()), // Weekdays only
+        );
+
+        tide_service.create_template(&template_with_active).await?;
+        tide_service.create_template(&template_should_create).await?;
+        tide_service.create_template(&template_weekdays_only).await?;
+
+        // Pre-create a tide for the first template
+        let existing_tide = tide_service
+            .create_tide_from_template(&template_with_active.id, Some(evaluation_time))
+            .await?;
+
+        // Run the function
+        let active_tides = tide_service.get_or_create_active_tides_for_period(evaluation_time).await?;
+        
+        // Should have 5 tides: 1 existing + 2 newly created + 2 default templates
+        assert_eq!(active_tides.len(), 5);
+
+        // Verify existing tide is included
+        assert!(active_tides.iter().any(|t| t.id == existing_tide.id));
+        
+        // Verify new tides were created for the other templates
+        let new_template_ids: std::collections::HashSet<String> = active_tides
+            .iter()
+            .filter(|t| t.id != existing_tide.id)
+            .map(|t| t.tide_template_id.clone())
+            .collect();
+        
+        assert!(new_template_ids.contains(&template_should_create.id));
+        assert!(new_template_ids.contains(&template_weekdays_only.id));
 
         Ok(())
     }

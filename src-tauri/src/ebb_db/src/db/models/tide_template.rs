@@ -189,4 +189,4 @@ mod tests {
         let parsed_days = template.get_days_of_week();
         assert_eq!(parsed_days, original_days);
     }
-}
+} 
