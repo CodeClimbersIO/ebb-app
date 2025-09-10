@@ -35,10 +35,12 @@ import { CommunityCard } from '@/components/CommunityCard'
 import { useDeviceProfile, useUpdateDeviceProfilePreferences } from '@/api/hooks/useDeviceProfile'
 import { version } from '../../../package.json'
 import { IntegrationSettings } from './Integrations/IntegrationSettings'
+import { StorageUtils } from '@/lib/utils/storage.util'
 
 export function SettingsPage() {
   const [autostartEnabled, setAutostartEnabled] = useState(false)
   const [idleSensitivityChanged, setIdleSensitivityChanged] = useState(false)
+  const [showSessionStartNotification, setShowSessionStartNotification] = useState(true)
 
   const navigate = useNavigate()
   const [showDeleteAccountDialog, setShowDeleteAccountDialog] = useState(false)
@@ -64,6 +66,9 @@ export function SettingsPage() {
       setAutostartEnabled(enabled)
     }
     checkAutostart()
+    
+    // Initialize session start notification setting from localStorage
+    setShowSessionStartNotification(StorageUtils.getShowSessionStartNotification())
   }, [])
 
   const handleDeleteAccount = async () => {
@@ -106,6 +111,12 @@ export function SettingsPage() {
       logAndToastError(`Error setting idle sensitivity: ${error}`, error)
     }
   }
+
+  const handleSessionStartNotificationToggle = () => {
+    const newValue = !showSessionStartNotification
+    setShowSessionStartNotification(newValue)
+    StorageUtils.setShowSessionStartNotification(newValue)
+  }
   
   const idleSensitivity = deviceProfile?.preferences_json?.idle_sensitivity || 60
 
@@ -147,6 +158,7 @@ export function SettingsPage() {
                 </div>
                 <ShortcutInput popoverAlign="end" />
               </div>
+
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <div className="font-medium">Idle Sensitivity</div>
@@ -180,6 +192,18 @@ export function SettingsPage() {
                 <Switch
                   checked={autostartEnabled}
                   onCheckedChange={handleAutostartToggle}
+                />
+              </div>
+              <div className="flex items-center justify-between mt-6">
+                <div>
+                  <div className="font-medium">Session Start Notification</div>
+                  <div className="text-sm text-muted-foreground">
+                      Show notification popup when starting a session via shortcut
+                  </div>
+                </div>
+                <Switch
+                  checked={showSessionStartNotification}
+                  onCheckedChange={handleSessionStartNotificationToggle}
                 />
               </div>
             </div>

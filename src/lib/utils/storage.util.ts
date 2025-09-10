@@ -9,7 +9,8 @@ const STORAGE_KEYS = {
   SPOTIFY_REFRESH_TOKEN: 'spotify_refresh_token',
   SPOTIFY_EXPIRES_AT: 'spotify_expires_at',
   SPOTIFY_CODE_VERIFIER: 'spotify_code_verifier',
-  THEME: 'vite-ui-theme'
+  THEME: 'vite-ui-theme',
+  SHOW_SESSION_START_NOTIFICATION: 'show_session_start_notification'
 }
 
 export const StorageUtils = {
@@ -30,5 +31,16 @@ export const StorageUtils = {
     localStorage.removeItem(STORAGE_KEYS.SPOTIFY_REFRESH_TOKEN)
     localStorage.removeItem(STORAGE_KEYS.SPOTIFY_EXPIRES_AT)
     localStorage.removeItem(STORAGE_KEYS.SPOTIFY_CODE_VERIFIER)
+  },
+  
+  // Session start notification preference
+  getShowSessionStartNotification: (): boolean => {
+    const stored = localStorage.getItem(STORAGE_KEYS.SHOW_SESSION_START_NOTIFICATION)
+    // Default to true if not set (notifications enabled by default)
+    return stored !== null ? stored === 'true' : true
+  },
+  
+  setShowSessionStartNotification: (show: boolean): void => {
+    localStorage.setItem(STORAGE_KEYS.SHOW_SESSION_START_NOTIFICATION, show.toString())
   }
 } 

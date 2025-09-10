@@ -31,6 +31,7 @@ import { BlockingPreferenceApi } from '@/api/ebbApi/blockingPreferenceApi'
 import { EbbWorker } from '@/lib/ebbWorker'
 import { Timer } from './Timer'
 import { MonitorApi } from '@/api/monitorApi/monitorApi'
+import { StorageUtils } from '../../lib/utils/storage.util'
 
 type CurrentTrack = {
   song: {
@@ -110,9 +111,11 @@ export const FlowPage = () => {
       await startBlocking(workflow)
       await startTimer(flowSession)
 
-      invoke('show_notification', {
-        notificationType: 'session-start',
-      })
+      if (StorageUtils.getShowSessionStartNotification()) {
+        invoke('show_notification', {
+          notificationType: 'session-start',
+        })
+      }
     }
     init()
   }, [])
