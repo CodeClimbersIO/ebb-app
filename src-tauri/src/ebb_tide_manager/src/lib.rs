@@ -1,5 +1,6 @@
 pub mod tide_scheduler;
 pub mod tide_service;
+pub mod tide_progress;
 pub mod time_helpers;
 
 use std::sync::Arc;

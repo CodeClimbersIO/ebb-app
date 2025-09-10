@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-ebb-db = { path = "../src/ebb_db" }
+ebb-db = { path = "../ebb_db" }
 time = { version = "0.3", features = ["serde"] }
 tokio = { version = "1.42", features = ["full"] }
 thiserror = "2.0"
