@@ -323,7 +323,7 @@ pub fn get_migrations() -> Vec<Migration> {
             ),
             (
                 'default-weekly-template', 
-                'learning', 
+                'creating', 
                 'weekly', 
                 datetime('now'), 
                 '0,1,2,3,4,5,6', 

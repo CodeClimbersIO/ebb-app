@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 ebb-db = { path = "../ebb_db" }
-time = { version = "0.3", features = ["serde"] }
+time = { version = "0.3", features = ["serde", "local-offset"] }
 tokio = { version = "1.42", features = ["full"] }
 thiserror = "2.0"
 uuid = { version = "1.17", features = ["v4"] }

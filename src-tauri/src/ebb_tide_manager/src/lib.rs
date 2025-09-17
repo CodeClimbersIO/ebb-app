@@ -39,11 +39,12 @@ pub struct TideManager {
 impl TideManager {
     /// Create a new TideManager with default configuration (60 second intervals)
     pub async fn new() -> Result<Self> {
-        Self::new_with_interval(60).await
+        Self::new_with_interval(15).await
     }
 
     /// Create a new TideManager with custom interval
     pub async fn new_with_interval(interval_seconds: u64) -> Result<Self> {
+        println!("Creating TideManager with interval: {} seconds", interval_seconds);
         let scheduler = Arc::new(TideScheduler::new(interval_seconds)?);
         let service = Arc::new(TideService::new().await?);
         let progress = Arc::new(TideProgress::new().await?);
@@ -53,6 +54,7 @@ impl TideManager {
 
     /// Start the TideManager - begins listening to scheduler events
     pub async fn start(&self) -> Result<()> {
+        println!("Starting TideManager");
         // Start the scheduler (it manages its own running state)
         self.scheduler.start().await?;
 
@@ -118,6 +120,7 @@ impl TideManager {
 
         // Get or create active tides for current period
         let active_tides = service.get_or_create_active_tides_for_period(evaluation_time).await?;
+        println!("Active tides: {:?}", active_tides);
 
         for mut tide in active_tides {
             // Update progress

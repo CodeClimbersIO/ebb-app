@@ -156,7 +156,9 @@ impl TideService {
         // For each template without an active tide, check if we should create one
         for template in templates_needing_evaluation {
             if self.should_create_tide_now(template, evaluation_time) {
-                let new_tide = self.create_tide_from_template(&template.id, Some(evaluation_time)).await?;
+                // Calculate the appropriate start time based on tide frequency
+                let tide_start_time = self.calculate_tide_start_time(template, evaluation_time);
+                let new_tide = self.create_tide_from_template(&template.id, Some(tide_start_time)).await?;
                 active_tides.push(new_tide);
             }
         }
@@ -177,6 +179,19 @@ impl TideService {
             "weekly" => true, // Always create if no active tide exists
             "monthly" => true, // Always create if no active tide exists
             _ => false, // Unknown frequency
+        }
+    }
+
+    /// Calculate the appropriate start time for a new tide based on the template frequency
+    fn calculate_tide_start_time(&self, template: &TideTemplate, evaluation_time: OffsetDateTime) -> OffsetDateTime {
+        use crate::time_helpers::{get_day_start, get_week_start, get_month_start};
+
+        match template.tide_frequency.as_str() {
+            "daily" => get_day_start(evaluation_time),  // Start of the current day
+            "weekly" => get_week_start(evaluation_time), // Start of the current week
+            "monthly" => get_month_start(evaluation_time), // Start of the current month
+            "indefinite" => get_day_start(evaluation_time), // Default to start of day for indefinite
+            _ => evaluation_time, // Fallback to current time for unknown frequencies
         }
     }
 }
@@ -743,6 +758,52 @@ mod tests {
         
         assert!(new_template_ids.contains(&template_should_create.id));
         assert!(new_template_ids.contains(&template_weekdays_only.id));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_tide_starts_at_beginning_of_day() -> Result<()> {
+        let db_manager = create_test_db_manager().await;
+        let tide_service = TideService::new_with_manager(db_manager.clone());
+
+        // Create a daily template
+        let template = TideTemplate::new(
+            "creating".to_string(),
+            "daily".to_string(),
+            180.0,
+            datetime!(2025-01-06 00:00 UTC),
+            Some("1,2,3,4,5".to_string()),
+        );
+        tide_service.create_template(&template).await?;
+
+        // Test evaluation time in the middle of the day (2:30 PM)
+        let evaluation_time = datetime!(2025-01-06 14:30 UTC);
+
+        let active_tides = tide_service.get_or_create_active_tides_for_period(evaluation_time).await?;
+
+        // Should create tides (including from seeded templates), find our specific one
+        assert!(active_tides.len() == 3);
+
+        // Find the tide created from our template
+        let our_tide = active_tides.iter()
+            .find(|t| t.tide_template_id == template.id)
+            .expect("Should find our tide");
+
+        // The tide should start at the beginning of the day (midnight) in local timezone
+        assert_eq!(our_tide.start.hour(), 0);
+        assert_eq!(our_tide.start.minute(), 0);
+        assert_eq!(our_tide.start.second(), 0);
+
+        // Verify the date in local timezone matches expected date
+        let evaluation_local = evaluation_time.to_offset(our_tide.start.offset());
+        assert_eq!(our_tide.start.date(), evaluation_local.date());
+
+        // The tide should end at the end of the day (for daily tides) in local timezone
+        let end_time = our_tide.end.expect("Daily tide should have an end time");
+        assert_eq!(end_time.hour(), 0);
+        assert_eq!(end_time.minute(), 0);
+        assert_eq!(end_time.second(), 0);
 
         Ok(())
     }

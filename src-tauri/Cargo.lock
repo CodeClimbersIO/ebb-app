@@ -1453,6 +1453,7 @@ dependencies = [
  "chrono",
  "dirs 6.0.0",
  "ebb-db",
+ "ebb_tide_manager",
  "log",
  "monitor",
  "objc2-app-kit",
@@ -1496,6 +1497,17 @@ dependencies = [
  "tauri",
  "tauri-plugin-sql",
  "thiserror 1.0.69",
+ "time",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
+name = "ebb_tide_manager"
+version = "0.1.0"
+dependencies = [
+ "ebb-db",
+ "thiserror 2.0.12",
  "time",
  "tokio",
  "uuid",

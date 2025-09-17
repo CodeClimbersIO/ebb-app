@@ -1,4 +1,7 @@
 use ebb_db::{db_manager, migrations, services::device_service::DeviceService, shared_sql_plugin};
+use ebb_tide_manager::TideManager;
+use once_cell::sync::OnceCell;
+use std::sync::Arc;
 use tauri::Manager;
 use tokio;
 
@@ -10,6 +13,9 @@ mod tray_icon_gen;
 mod window;
 
 use autostart::{change_autostart, enable_autostart};
+
+// Global TideManager instance
+static TIDE_MANAGER: OnceCell<Arc<TideManager>> = OnceCell::new();
 
 async fn initialize_device_profile() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     log::info!("Starting device profile initialization...");
@@ -30,6 +36,27 @@ async fn initialize_device_profile() -> Result<(), Box<dyn std::error::Error + S
             return Err(e.into());
         }
     }
+    Ok(())
+}
+
+async fn initialize_tide_manager() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    log::info!("Starting TideManager initialization...");
+
+    // Create TideManager with default 60-second intervals
+    let tide_manager = Arc::new(TideManager::new().await?);
+
+    // Store in global static
+    TIDE_MANAGER.set(tide_manager.clone()).map_err(|_| {
+        Box::new(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            "Failed to set TideManager - already initialized",
+        )) as Box<dyn std::error::Error + Send + Sync>
+    })?;
+
+    // Start the tide manager
+    tide_manager.start().await?;
+
+    log::info!("TideManager started successfully");
     Ok(())
 }
 
@@ -57,6 +84,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         if migration_rx.recv().await.is_ok() {
             if let Err(e) = initialize_device_profile().await {
                 log::error!("Failed to initialize device profile: {}", e);
+            }
+
+            // Initialize TideManager after device profile is set up
+            if let Err(e) = initialize_tide_manager().await {
+                log::error!("Failed to initialize TideManager: {}", e);
             }
         } else {
             log::warn!("Migration notification channel closed without receiving signal");
@@ -151,6 +183,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     if let Some(window) = app.get_webview_window("main") {
                         window.show().unwrap();
                         window.set_focus().unwrap();
+                    }
+                }
+                tauri::RunEvent::ExitRequested { .. } => {
+                    // Stop TideManager on app shutdown
+                    if let Some(tide_manager) = TIDE_MANAGER.get() {
+                        log::info!("Stopping TideManager...");
+                        if let Err(e) = tide_manager.stop() {
+                            log::error!("Error stopping TideManager: {}", e);
+                        } else {
+                            log::info!("TideManager stopped successfully");
+                        }
                     }
                 }
                 _ => {}
