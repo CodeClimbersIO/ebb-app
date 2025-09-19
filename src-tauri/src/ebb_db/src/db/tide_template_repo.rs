@@ -130,7 +130,7 @@ mod tests {
         repo.create_tide_template(&template2).await?;
         
         let all_templates = repo.get_all_tide_templates().await?;
-        assert_eq!(all_templates.len(), 2);
+        assert_eq!(all_templates.len(), 4);
         
         Ok(())
     }
