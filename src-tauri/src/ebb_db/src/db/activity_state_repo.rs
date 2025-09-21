@@ -63,108 +63,151 @@ impl ActivityStateRepo {
     }
 
     /// Calculate total duration in minutes for activity states with specific tag in date range
+    /// Uses application-side aggregation for better performance
     pub async fn calculate_tagged_duration_in_range(
         &self,
         tag_name: &str,
         start_time: OffsetDateTime,
         end_time: OffsetDateTime,
     ) -> Result<f64> {
+        let function_start = std::time::Instant::now();
         log::debug!("Calculating tagged duration for tag '{}' from {} to {}", tag_name, start_time, end_time);
 
         // First, get the tag_type for the requested tag_name
+        let query_start = std::time::Instant::now();
         let tag_type: Option<String> = sqlx::query_scalar(
             "SELECT tag_type FROM tag WHERE name = ?1"
         )
         .bind(tag_name)
         .fetch_optional(&self.pool)
         .await?;
+        let tag_type_query_duration = query_start.elapsed();
+        println!("Tag type query took: {:?}", tag_type_query_duration);
 
         let tag_type = match tag_type {
             Some(t) => t,
             None => return Ok(0.0), // Tag doesn't exist, return 0
         };
 
-        let total_minutes: Option<f64> = sqlx::query_scalar(
+        // Fetch all relevant activity state data in a single query
+        #[derive(Debug)]
+        struct ActivityStateData {
+            id: i64,
+            start_time: OffsetDateTime,
+            end_time: OffsetDateTime,
+            tag_name: String,
+            tag_type: String,
+        }
+
+        let main_query_start = std::time::Instant::now();
+        let raw_data: Vec<(i64, OffsetDateTime, OffsetDateTime, String, String)> = sqlx::query_as(
             "SELECT
-                COALESCE(SUM(split_minutes), 0.0) as total_minutes
-            FROM (
-                SELECT
-                    ROUND((julianday(
-                        CASE
-                            WHEN activity_state.end_time > ?2 THEN ?2
-                            ELSE activity_state.end_time
-                        END
-                    ) - julianday(
-                        CASE
-                            WHEN activity_state.start_time < ?3 THEN ?3
-                            ELSE activity_state.start_time
-                        END
-                    )) * 24 * 60 / (
-                        SELECT COUNT(*)
-                        FROM activity_state_tag ast2
-                        LEFT JOIN tag t
-                            ON t.id = ast2.tag_id
-                        WHERE ast2.activity_state_id = activity_state.id
-                            AND t.tag_type = ?4
-                    )) as split_minutes
-                FROM activity_state
-                JOIN activity_state_tag ON activity_state.id = activity_state_tag.activity_state_id
-                JOIN tag ON activity_state_tag.tag_id = tag.id
-                WHERE tag.name = ?1
-                    AND activity_state.start_time < ?2
-                    AND activity_state.end_time > ?3
-            ) as time_split_activities"
+                activity_state.id,
+                activity_state.start_time,
+                activity_state.end_time,
+                tag.name as tag_name,
+                tag.tag_type
+            FROM activity_state
+            JOIN activity_state_tag ON activity_state.id = activity_state_tag.activity_state_id
+            JOIN tag ON activity_state_tag.tag_id = tag.id
+            WHERE activity_state.start_time < ?1
+              AND activity_state.end_time > ?2
+            ORDER BY activity_state.id"
         )
-        .bind(tag_name)
         .bind(end_time)
         .bind(start_time)
-        .bind(&tag_type)
-        .fetch_one(&self.pool)
+        .fetch_all(&self.pool)
         .await?;
+        let main_query_duration = main_query_start.elapsed();
+        println!("Main data query took: {:?} and returned {} records", main_query_duration, raw_data.len());
 
-        // Debug: Print the actual SQL query with substituted parameters
-        let debug_sql = format!(
-            "SELECT
-                COALESCE(SUM(split_minutes), 0.0) as total_minutes
-            FROM (
-                SELECT
-                    activity_state.id,
-                    ROUND((julianday(
-                        CASE
-                            WHEN activity_state.end_time > '{}' THEN '{}'
-                            ELSE activity_state.end_time
-                        END
-                    ) - julianday(
-                        CASE
-                            WHEN activity_state.start_time < '{}' THEN '{}'
-                            ELSE activity_state.start_time
-                        END
-                    )) * 24 * 60 / (
-                        SELECT COUNT(*)
-                        FROM activity_state_tag ast2
-                        LEFT JOIN tag t 
-                            ON t.id = ast2.tag_id
-                        WHERE ast2.activity_state_id = activity_state.id
-                            AND t.tag_type = '{}'
-                    )) as split_minutes
-                FROM activity_state
-                JOIN activity_state_tag ON activity_state.id = activity_state_tag.activity_state_id
-                JOIN tag ON activity_state_tag.tag_id = tag.id
-                WHERE tag.name = '{}'
-                    AND activity_state.start_time < '{}'
-                    AND activity_state.end_time > '{}'
-                GROUP BY activity_state.id
-            ) as time_split_activities;",
-            end_time, end_time, start_time, start_time, tag_type, tag_name, end_time, start_time
-        );
+        // Convert to structured data
+        let processing_start = std::time::Instant::now();
+        let activity_data: Vec<ActivityStateData> = raw_data
+            .into_iter()
+            .map(|(id, start, end, tag_name, tag_type)| ActivityStateData {
+                id,
+                start_time: start,
+                end_time: end,
+                tag_name,
+                tag_type,
+            })
+            .collect();
+        let data_conversion_duration = processing_start.elapsed();
+        println!("Data conversion took: {:?}", data_conversion_duration);
 
-        println!("=== DEBUG SQL QUERY ===");
-        println!("{}", debug_sql);
-        println!("Query parameters: tag_name='{}', end_time={}, start_time={}, tag_type='{}'", tag_name, end_time, start_time, tag_type);
-        println!("Total minutes result: {:?}", total_minutes);
-        println!("=======================");
+        // Group by activity_state_id and calculate tag counts per tag_type
+        use std::collections::HashMap;
 
-        Ok(total_minutes.unwrap_or(0.0))
+        let mut activity_states: HashMap<i64, (OffsetDateTime, OffsetDateTime, HashMap<String, i32>)> = HashMap::new();
+        let mut target_tag_records: Vec<i64> = Vec::new(); // Each record for the target tag
+
+        for data in activity_data {
+            let entry = activity_states.entry(data.id).or_insert_with(|| {
+                (data.start_time, data.end_time, HashMap::new())
+            });
+
+            // Count tags by tag_type (each record counts as one tag)
+            *entry.2.entry(data.tag_type.clone()).or_insert(0) += 1;
+
+            // Track each individual record that has our target tag
+            if data.tag_name == tag_name {
+                target_tag_records.push(data.id);
+            }
+        }
+
+        // print out activity_states
+        println!("Activity states: {:?}", activity_states);
+
+        // print out target_tag_records
+        println!("Target tag records: {:?}", target_tag_records);
+
+        // Calculate the total duration
+        let mut total_minutes = 0.0;
+        let target_record_count = target_tag_records.len();
+
+        // For each record of the target tag, calculate its contribution
+        for activity_state_id in &target_tag_records {
+            if let Some((activity_start, activity_end, tag_counts)) = activity_states.get(&activity_state_id) {
+                // Calculate the overlapping duration for this activity state
+                let effective_start = if *activity_start < start_time { start_time } else { *activity_start };
+                let effective_end = if *activity_end > end_time { end_time } else { *activity_end };
+
+                // Skip if there's no actual overlap (effective_end <= effective_start)
+                if effective_end <= effective_start {
+                    println!("Skipping activity state {} - no overlap: effective range {} to {}",
+                        activity_state_id, effective_start, effective_end);
+                    continue;
+                }
+
+                let duration_minutes = (effective_end - effective_start).whole_minutes() as f64;
+
+                // Get the count of tags for the target tag_type
+                let tag_count = tag_counts.get(&tag_type).unwrap_or(&0);
+
+                if *tag_count > 0 {
+                    // Each individual record gets: duration / total_tags_of_same_type
+                    let split_minutes = duration_minutes / (*tag_count as f64);
+                    total_minutes += split_minutes;
+
+                    println!("State {} record: {:.2} minutes ÷ {} tags = {:.2} minutes",
+                        activity_state_id, duration_minutes, tag_count, split_minutes);
+                }
+            }
+        }
+
+        let total_function_duration = function_start.elapsed();
+
+        println!("=== APPLICATION-SIDE CALCULATION ===");
+        println!("Target tag: '{}' (type: '{}')", tag_name, tag_type);
+        println!("Time range: {} to {}", start_time, end_time);
+        println!("Processed {} activity states", activity_states.len());
+        println!("Found {} records with target tag", target_record_count);
+        println!("Total minutes: {:.2}", total_minutes);
+        println!("TOTAL FUNCTION TIME: {:?}", total_function_duration);
+        println!("=====================================");
+
+        Ok(total_minutes)
     }
 
     /// Debug helper: Get raw activity states for a tag to manually verify calculation
@@ -570,15 +613,15 @@ mod tests {
         //   - State 3: 7 minutes (2 tags, gets ROUND(15/2) = ROUND(7.5) = 8, but banker's rounding gives 7)
         //   - State 4: 5 minutes (3 tags, gets ROUND(15/3) = ROUND(5.0) = 5)
         //   - Total: 0 + 15 + 7 + 5 = 27 minutes
-        assert_eq!(creating_minutes, 27.0, "Creating should get sum from states 2, 3, and 4: 15 + 7 + 5 = 27 (SQLite banker's rounding)");
+        assert_eq!(creating_minutes, 27.5, "Creating should get sum from states 2, 3, and 4: 15 + 7.5 + 5 = 27.5 (application-side precision)");
 
         // "neutral":
         //   - State 1: 0 minutes (no tags)
         //   - State 2: 0 minutes (doesn't have neutral tag)
-        //   - State 3: 7 minutes (2 tags, gets ROUND(15/2) = ROUND(7.5) = 7 with banker's rounding)
-        //   - State 4: 5 minutes (3 tags, gets ROUND(15/3) = ROUND(5.0) = 5)
-        //   - Total: 0 + 0 + 7 + 5 = 12 minutes
-        assert_eq!(neutral_minutes, 12.0, "Neutral should get sum from states 3 and 4: 7 + 5 = 12 (SQLite banker's rounding)");
+        //   - State 3: 7.5 minutes (2 tags, gets 15/2 = 7.5)
+        //   - State 4: 5 minutes (3 tags, gets 15/3 = 5)
+        //   - Total: 0 + 0 + 7.5 + 5 = 12.5 minutes
+        assert_eq!(neutral_minutes, 12.5, "Neutral should get sum from states 3 and 4: 7.5 + 5 = 12.5 (application-side precision)");
 
         // "consuming":
         //   - State 1: 0 minutes (no tags)
@@ -708,7 +751,7 @@ mod tests {
             datetime!(2025-01-05 10:15:00 UTC),
             datetime!(2025-01-05 10:45:00 UTC),
         ).await?;
-        assert_eq!(overlapping_states_result, 37.0, "Query 10:15-10:45 overlapping both states should get 37 minutes for creating");
+        assert_eq!(overlapping_states_result, 37.5, "Query 10:15-10:45 overlapping both states should get 37.5 minutes for creating");
 
         Ok(())
     }

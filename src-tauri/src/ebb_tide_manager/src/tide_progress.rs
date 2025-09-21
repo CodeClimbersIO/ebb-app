@@ -78,6 +78,7 @@ impl TideProgress {
         
         if let Some(cached) = cached_data {
             // Cache hit - calculate incremental progress
+            println!("Cache hit for tide: incremental progress for tide with start and end times: {:?}, {:?}", cached.last_evaluation_time, evaluation_time);
             let delta_minutes = self
                 .activity_state_repo
                 .calculate_tagged_duration_in_range(
@@ -100,6 +101,7 @@ impl TideProgress {
         }
         
         // Cache miss - calculate full range from tide start
+        println!("Cache miss for tide: calculating full range for tide with start and end times: {:?}, {:?}", tide.start, tide.end);
         let total_minutes = self.calculate_tide_progress(tide, evaluation_time).await?;
         
         // Store in cache

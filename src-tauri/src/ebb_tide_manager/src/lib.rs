@@ -39,7 +39,7 @@ pub struct TideManager {
 impl TideManager {
     /// Create a new TideManager with default configuration (60 second intervals)
     pub async fn new() -> Result<Self> {
-        Self::new_with_interval(15).await
+        Self::new_with_interval(120).await
     }
 
     /// Create a new TideManager with custom interval
@@ -132,7 +132,6 @@ impl TideManager {
             if progress.should_complete_tide(&tide, evaluation_time).await? {
                 println!("Completing tide {}", tide.id);
                 service.complete_tide(&tide.id).await?;
-                progress.clear_tide_cache(&tide.id).await; // Clear cache for completed tide
             }
         }
 
