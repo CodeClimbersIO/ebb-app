@@ -1,4 +1,4 @@
-import React from 'react'
+import { type FC } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 interface CircularProgressProps {
@@ -8,11 +8,11 @@ interface CircularProgressProps {
   className?: string
 }
 
-export const CircularProgress: React.FC<CircularProgressProps> = ({
+export const CircularProgress: FC<CircularProgressProps> = ({
   title,
   currentValue,
   goalValue,
-  className = ""
+  className = ''
 }) => {
   // Calculate progress percentages
   const stretchGoal = goalValue * 1.33 // 133% of base goal for stretch

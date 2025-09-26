@@ -1,8 +1,7 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
@@ -14,14 +13,12 @@ import {
 } from '@/components/ui/chart'
 import { Skeleton } from './ui/skeleton'
 import { GraphableTimeByHourBlock, AppsWithTime } from '@/api/monitorApi/monitorApi'
-import { AppIcon } from '@/components/AppIcon'
-import { AnalyticsButton } from '@/components/ui/analytics-button'
 import { useRef, useEffect, useState } from 'react'
 import { Switch } from '@/components/ui/switch'
 import { useCreateNotification, useGetNotificationBySentId } from '@/api/hooks/useNotifications'
 import { useAuth } from '@/hooks/useAuth'
 import { AppKanbanBoard } from './AppKanbanBoard'
-import { CircularProgress } from './ui/circular-progress'
+import { TideGoalsCard } from './TideGoalsCard'
 
 type ChartLabel = {
   label: string
@@ -79,7 +76,6 @@ export const formatTimeToDecimalHours = (minutes: number) => {
 export interface UsageSummaryWithTidesProps {
   chartData: GraphableTimeByHourBlock[];
   appUsage: AppsWithTime[];
-  showTopAppsButton?: boolean;
   showIdleTime?: boolean;
   setShowIdleTime?: (showIdleTime: boolean) => void;
   isLoading?: boolean;
@@ -89,24 +85,10 @@ export interface UsageSummaryWithTidesProps {
   lastUpdated?: Date | null;
 }
 
-// Mock tide data - replace with actual API calls later
-const getMockTideData = () => {
-  return {
-    dailyGoal: {
-      current: 194, // 3h 14m current progress
-      goal: 180,    // 3h goal (will show as complete + stretch progress)
-    },
-    weeklyGoal: {
-      current: 420, // 7h current progress
-      goal: 600,    // 10h goal
-    }
-  }
-}
 
 export const UsageSummaryWithTides = ({
   chartData,
   appUsage,
-  showTopAppsButton = false,
   isLoading = false,
   yAxisMax,
   showIdleTime,
@@ -120,11 +102,7 @@ export const UsageSummaryWithTides = ({
   const { data: notificationBySentId } = useGetNotificationBySentId('firefox_not_supported')
   const [chartDataState, setChartDataState] = useState(chartData)
   const [chartConfigState, setChartConfigState] = useState(defaultChartConfig)
-  const sortedAppUsage = [...appUsage || []].sort((a, b) => b.duration - a.duration)
   const appUsageRef = useRef<HTMLDivElement>(null)
-
-  // Get mock tide data
-  const tideData = getMockTideData()
 
   useEffect(() => {
     if(!appUsage) return
@@ -153,10 +131,6 @@ export const UsageSummaryWithTides = ({
     }
   }, [showIdleTime, chartData])
 
-  const scrollToAppUsage = () => {
-    appUsageRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
-
   const formatLastUpdated = (date: Date | null) => {
     if (!date) return null
     const now = new Date()
@@ -177,182 +151,148 @@ export const UsageSummaryWithTides = ({
 
   return (
     <>
+      {/* Two-column layout: Goals card on left, Chart on right */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-        <TooltipProvider>
-          {/* Daily Creating Goal Card */}
-          <CircularProgress
-            title="Daily Creating Goal"
-            currentValue={tideData.dailyGoal.current}
-            goalValue={tideData.dailyGoal.goal}
-          />
+        {/* Tide Goals Card */}
+        <TideGoalsCard />
 
-          {/* Weekly Creating Goal Card */}
-          <CircularProgress
-            title="Weekly Creating Goal"
-            currentValue={tideData.weeklyGoal.current}
-            goalValue={tideData.weeklyGoal.goal}
-          />
-
-          {/* Keep the Top Apps/Websites card as-is */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Top Apps/Websites</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center space-x-2">
-                {sortedAppUsage.slice(0, 3).map((app, index) => (
-                  <AnalyticsButton
-                    analyticsEvent='usage_summary_top_apps_clicked'
-                    key={index}
-                    variant="ghost"
-                    className="w-8 h-8 p-0"
-                    onClick={showTopAppsButton ? scrollToAppUsage : undefined}
-                  >
-                    <AppIcon app={app} />
-                  </AnalyticsButton>
-                ))}
+        {/* Chart Card - spans 2 columns */}
+        <Card className="md:col-span-2">
+          <CardContent className="p-0">
+            {isLoading ? (
+              <div className="pt-6 h-[200px]">
+                <Skeleton className="h-full w-full" />
               </div>
-            </CardContent>
-          </Card>
-        </TooltipProvider>
-      </div>
-
-      {/* Keep the rest of the component exactly as it was */}
-      <Card>
-        <CardContent className="p-0">
-          {isLoading ? (
-            <div className="pt-6 h-[200px]">
-              <Skeleton className="h-full w-full" />
-            </div>
-          ) : (
-            <div className="relative p-6 pb-2">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="absolute top-4 right-4 z-10 flex items-center space-x-2 bg-background/80 backdrop-blur-sm rounded-md px-3 py-2 border">
-                    <label htmlFor="show-idle-time" className="text-sm font-medium opacity-50 cursor-pointer">
+            ) : (
+              <div className="relative p-6 pb-2">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="absolute top-4 right-4 z-10 flex items-center space-x-2 bg-background/80 backdrop-blur-sm rounded-md px-3 py-2 border">
+                      <label htmlFor="show-idle-time" className="text-sm font-medium opacity-50 cursor-pointer">
                       Idle Time
-                    </label>
-                    <Switch
-                      id="show-idle-time"
-                      checked={showIdleTime}
-                      onCheckedChange={setShowIdleTime}
+                      </label>
+                      <Switch
+                        id="show-idle-time"
+                        checked={showIdleTime}
+                        onCheckedChange={setShowIdleTime}
+                      />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>When Ebb is online and no keyboard, mouse, or window events occur</p>
+                  </TooltipContent>
+                </Tooltip>
+
+                <ChartContainer config={chartConfigState} className="h-[280px] aspect-auto w-full">
+                  <BarChart height={200} data={chartDataState}>
+                    <defs>
+                      <linearGradient id="neutralGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="rgb(82 82 91)" stopOpacity={1} />
+                        <stop offset="100%" stopColor="rgb(82 82 91)" stopOpacity={0.8} />
+                      </linearGradient>
+                      <linearGradient id="consumingGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="rgb(239 68 68)" stopOpacity={1} />
+                        <stop offset="100%" stopColor="rgb(239 68 68)" stopOpacity={0.8} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid
+                      vertical={false}
+                      stroke="hsl(var(--border))"
+                      strokeOpacity={0.8}
                     />
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>When Ebb is online and no keyboard, mouse, or window events occur</p>
-                </TooltipContent>
-              </Tooltip>
+                    <XAxis
+                      dataKey="xAxisLabel"
+                      tickLine={false}
+                      tickMargin={10}
+                      axisLine={false}
+                      interval={0}
+                    />
+                    <YAxis
+                      type="number"
+                      domain={[0, yAxisMax || 60]}
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      width={40}
+                      allowDataOverflow={true}
+                      tickFormatter={value => {
+                        // Show hours/minutes for week view, minutes for today
+                        if (yAxisMax && yAxisMax > 60) {
+                          const hours = Math.round(value / 60 * 10) / 10
+                          return hours > 0 ? `${hours}h` : `${value}m`
+                        }
+                        return ''
+                      }}
+                    />
+                    <ChartTooltip
+                      content={({ active, payload }) => {
+                        if (!active || !payload?.length) return null
 
-              <ChartContainer config={chartConfigState} className="h-[280px] aspect-auto w-full">
-                <BarChart height={200} data={chartDataState}>
-                  <defs>
-                    <linearGradient id="neutralGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="rgb(82 82 91)" stopOpacity={1} />
-                      <stop offset="100%" stopColor="rgb(82 82 91)" stopOpacity={0.8} />
-                    </linearGradient>
-                    <linearGradient id="consumingGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="rgb(239 68 68)" stopOpacity={1} />
-                      <stop offset="100%" stopColor="rgb(239 68 68)" stopOpacity={0.8} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid
-                    vertical={false}
-                    stroke="hsl(var(--border))"
-                    strokeOpacity={0.8}
-                  />
-                  <XAxis
-                    dataKey="xAxisLabel"
-                    tickLine={false}
-                    tickMargin={10}
-                    axisLine={false}
-                    interval={0}
-                  />
-                  <YAxis
-                    type="number"
-                    domain={[0, yAxisMax || 60]}
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={8}
-                    width={40}
-                    allowDataOverflow={true}
-                    tickFormatter={value => {
-                    // Show hours/minutes for week view, minutes for today
-                      if (yAxisMax && yAxisMax > 60) {
-                        const hours = Math.round(value / 60 * 10) / 10
-                        return hours > 0 ? `${hours}h` : `${value}m`
-                      }
-                      return ''
-                    }}
-                  />
-                  <ChartTooltip
-                    content={({ active, payload }) => {
-                      if (!active || !payload?.length) return null
-
-                      const data = payload[0].payload
-                      return (
-                        <div className="rounded-lg border bg-background p-2 shadow-md">
-                          <div className="mb-1 font-medium">{data.timeRange}</div>
-                          <div className="space-y-0.5">
-                            <div className="text-primary">Creating: {formatTimeToDecimalHours(data.creating)}</div>
-                            <div className="text-gray-500">Neutral: {formatTimeToDecimalHours(data.neutral)}</div>
-                            <div className="text-[rgb(239,68,68)]">Consuming: {formatTimeToDecimalHours(data.consuming)}</div>
-                            <div className="text-[rgb(156,163,175)]">Idle: {formatTimeToDecimalHours(data.idle)}</div>
-                            <div className="text-gray-600">Offline: {formatTimeToDecimalHours(data.offline)}</div>
+                        const data = payload[0].payload
+                        return (
+                          <div className="rounded-lg border bg-background p-2 shadow-md">
+                            <div className="mb-1 font-medium">{data.timeRange}</div>
+                            <div className="space-y-0.5">
+                              <div className="text-primary">Creating: {formatTimeToDecimalHours(data.creating)}</div>
+                              <div className="text-gray-500">Neutral: {formatTimeToDecimalHours(data.neutral)}</div>
+                              <div className="text-[rgb(239,68,68)]">Consuming: {formatTimeToDecimalHours(data.consuming)}</div>
+                              <div className="text-[rgb(156,163,175)]">Idle: {formatTimeToDecimalHours(data.idle)}</div>
+                              <div className="text-gray-600">Offline: {formatTimeToDecimalHours(data.offline)}</div>
+                            </div>
                           </div>
-                        </div>
-                      )
-                    }}
-                  />
-                  <ChartLegend content={<ChartLegendContent />} />
-                  <Bar
-                    dataKey="idle"
-                    stackId="a"
-                    fill={chartConfigState.idle?.color}
-                    radius={[0, 0, 4, 4]}
-                    barSize={20}
-                  />
-                  <Bar
-                    dataKey="consuming"
-                    stackId="a"
-                    fill={chartConfigState.consuming.color}
-                    radius={showIdleTime ? [0, 0, 0, 0] : [0, 0, 4, 4]}
-                    barSize={20}
-                  />
-                  <Bar
-                    dataKey="neutral"
-                    stackId="a"
-                    fill={chartConfigState.neutral.color}
-                    radius={[0, 0, 0, 0]}
-                    barSize={20}
-                  />
-                  <Bar
-                    dataKey="creating"
-                    stackId="a"
-                    fill={chartConfigState.creating.color}
-                    radius={[4, 4, 0, 0]}
-                    barSize={20}
-                  />
-                  <Bar
-                    dataKey="offline"
-                    stackId="a"
-                    fill="transparent"
-                    radius={[4, 4, 0, 0]}
-                    barSize={20}
-                  />
-                </BarChart>
-              </ChartContainer>
+                        )
+                      }}
+                    />
+                    <ChartLegend content={<ChartLegendContent />} />
+                    <Bar
+                      dataKey="idle"
+                      stackId="a"
+                      fill={chartConfigState.idle?.color}
+                      radius={[0, 0, 4, 4]}
+                      barSize={20}
+                    />
+                    <Bar
+                      dataKey="consuming"
+                      stackId="a"
+                      fill={chartConfigState.consuming.color}
+                      radius={showIdleTime ? [0, 0, 0, 0] : [0, 0, 4, 4]}
+                      barSize={20}
+                    />
+                    <Bar
+                      dataKey="neutral"
+                      stackId="a"
+                      fill={chartConfigState.neutral.color}
+                      radius={[0, 0, 0, 0]}
+                      barSize={20}
+                    />
+                    <Bar
+                      dataKey="creating"
+                      stackId="a"
+                      fill={chartConfigState.creating.color}
+                      radius={[4, 4, 0, 0]}
+                      barSize={20}
+                    />
+                    <Bar
+                      dataKey="offline"
+                      stackId="a"
+                      fill="transparent"
+                      radius={[4, 4, 0, 0]}
+                      barSize={20}
+                    />
+                  </BarChart>
+                </ChartContainer>
+              </div>
+            )}
+          </CardContent>
+          {lastUpdated && (
+            <div className="px-6 pb-4">
+              <div className="text-xs text-muted-foreground text-right">
+              Last updated: {formatLastUpdated(lastUpdated)}
+              </div>
             </div>
           )}
-        </CardContent>
-        {lastUpdated && (
-          <div className="px-6 pb-4">
-            <div className="text-xs text-muted-foreground text-right">
-              Last updated: {formatLastUpdated(lastUpdated)}
-            </div>
-          </div>
-        )}
-      </Card>
+        </Card>
+      </div>
 
       <div ref={appUsageRef}>
         <AppKanbanBoard rangeMode={rangeMode} date={date} />

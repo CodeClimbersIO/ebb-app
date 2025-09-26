@@ -87,7 +87,6 @@ export const HomePage = () => {
           <UsageSummaryWithTides
             chartData={chartData || []}
             appUsage={appUsage || []}
-            showTopAppsButton={true}
             isLoading={isLoading}
             yAxisMax={yAxisMax}
             showIdleTime={showIdleTime}
