@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
 import { useAuth } from '@/hooks/useAuth'
-import { UsageSummary } from '@/components/UsageSummary'
+import { UsageSummaryWithTides } from '@/components/UsageSummaryWithTides'
 import { PermissionAlert } from '@/components/PermissionAlert'
 import { useUsageSummary } from './useUsageSummary'
 import { RangeModeSelector } from '@/components/RangeModeSelector'
@@ -27,15 +27,11 @@ export const HomePage = () => {
     rangeMode,
     appUsage,
     setRangeMode,
-    totalCreating,
-    totalTime,
     chartData,
     isLoading,
     yAxisMax,
     showIdleTime,
     setShowIdleTime,
-    totalTimeTooltip,
-    totalTimeLabel,
     lastUpdated,
   } = useUsageSummary()
 
@@ -88,11 +84,7 @@ export const HomePage = () => {
               </Popover>
             </div>
           </div>
-          <UsageSummary
-            totalTimeLabel={totalTimeLabel}
-            totalTimeTooltip={totalTimeTooltip}
-            totalTime={totalTime}
-            totalCreating={totalCreating}
+          <UsageSummaryWithTides
             chartData={chartData || []}
             appUsage={appUsage || []}
             showTopAppsButton={true}
