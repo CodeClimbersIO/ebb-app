@@ -53,6 +53,7 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({ className = '' }) => {
     const stretchGoal = goal * 1.33 // 33% more than goal
     const stretchHours = stretchGoal / 60 // Total hours including stretch
     const currentHours = current / 60 // Current progress in exact hours
+    const isGoalComplete = current >= goal // Check if goal is completed
 
     // Total segments include both goal and stretch portions
     const goalSegments = Math.ceil(goalHours) // Number of goal hour segments
@@ -143,8 +144,14 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({ className = '' }) => {
               paddingAngle={0}
               dataKey="value"
             >
-              <Cell key="goalTrack" fill="hsl(var(--muted))" style={{ opacity: 0.5 }} />
-              <Cell key="stretchTrack" fill="hsl(var(--muted))" style={{ opacity: 0.1 }} />
+              <Cell
+                key="goalTrack"
+                fill={isGoalComplete ? 'hsl(var(--primary))' : 'hsl(var(--muted))'}
+                style={{ opacity: 0 }}
+                className={isGoalComplete ? 'animate-pulse' : ''}
+                
+              />
+              <Cell key="stretchTrack" fill="hsl(var(--muted))" style={{ opacity: 0 }} />
             </Pie>
 
             {/* Progress overlay */}
@@ -183,7 +190,9 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({ className = '' }) => {
                   <Cell
                     key={`cell-${index}`}
                     fill={fillValue}
-                    style={{ opacity }}
+                    style={{
+                      opacity,
+                    }}
                   />
                 )
               })}
