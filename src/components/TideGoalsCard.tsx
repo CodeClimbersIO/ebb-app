@@ -14,7 +14,7 @@ const getMockTideData = () => {
       goal: 180,    // 3h goal (will show as complete + stretch progress)
     },
     weeklyGoal: {
-      current: 420, // 7h current progress
+      current: 280, // 7h current progress
       goal: 600,    // 10h goal
     }
   }
@@ -34,68 +34,159 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({ className = '' }) => {
   }
 
   const renderGoalProgress = (current: number, goal: number) => {
-    // Calculate progress percentages
-    const stretchGoal = goal * 1.33 // 133% of base goal for stretch
-    const baseProgress = Math.min(current / goal, 1) // 0-1 for base goal
     const remainingToGoal = Math.max(goal - current, 0)
 
     // Chart dimensions
-    const size = 140
+    const size = 160  // Increased from 140 to 160 (20px larger)
     const strokeWidth = 12
 
-    // Prepare data for pie chart
-    const baseGoalPortion = 75 // Base goal takes 75% of circle
-    const stretchPortion = 25 // Stretch goal takes 25% of circle
+    // Hour-based segments with stretch goal:
+    // 1. Circle divided into hour-long segments
+    // 2. Full circle = goal + stretch (133% of goal total)
+    // 3. Fill starting from top, counterclockwise
+    // 4. Remaining time partially fills next available segment
+    // 5. If goal isn't even hours, final segment won't be full sized
+    // 6. All segments together = 360 degrees
+    // 7. Stretch portion is additional 33% beyond goal
 
-    // Calculate filled portions
-    const baseFilledPortion = baseProgress * baseGoalPortion
-    const baseEmptyPortion = baseGoalPortion - baseFilledPortion
+    const goalHours = goal / 60 // Goal in exact hours (can be decimal)
+    const stretchGoal = goal * 1.33 // 33% more than goal
+    const stretchHours = stretchGoal / 60 // Total hours including stretch
+    const currentHours = current / 60 // Current progress in exact hours
 
-    let stretchFilledPortion = 0
-    let stretchEmptyPortion = stretchPortion
+    // Total segments include both goal and stretch portions
+    const goalSegments = Math.ceil(goalHours) // Number of goal hour segments
+    const totalSegments = Math.ceil(stretchHours) // Total segments including stretch
 
-    if (current > goal) {
-      const stretchProgress = Math.min((current - goal) / (stretchGoal - goal), 1)
-      stretchFilledPortion = stretchProgress * stretchPortion
-      stretchEmptyPortion = stretchPortion - stretchFilledPortion
+
+    const chartData = []
+
+    for (let segmentIndex = 0; segmentIndex < totalSegments; segmentIndex++) {
+      const segmentStartHour = segmentIndex
+      const segmentEndHour = Math.min(segmentIndex + 1, stretchHours)
+      const segmentHours = segmentEndHour - segmentStartHour // Usually 1, but final segment might be partial
+
+      // Determine if this is a stretch segment (beyond the goal)
+      const isStretchSegment = segmentIndex >= goalSegments
+
+      // How much of this segment should be filled?
+      const segmentProgress = Math.max(0, Math.min(1, (currentHours - segmentStartHour) / segmentHours))
+
+      // Each segment gets proportional value based on its size
+      const segmentValue = segmentHours * 100 // Scale up for better precision
+
+      if (segmentProgress > 0) {
+        // Filled portion of this segment
+        chartData.push({
+          name: `segment${segmentIndex}Filled`,
+          value: segmentValue * segmentProgress,
+          color: 'hsl(var(--primary))',
+          isFilled: true,
+          isStretch: isStretchSegment
+        })
+      }
+
+      if (segmentProgress < 1) {
+        // Empty portion of this segment
+        chartData.push({
+          name: `segment${segmentIndex}Empty`,
+          value: segmentValue * (1 - segmentProgress),
+          color: 'hsl(var(--muted))',
+          isFilled: false,
+          isStretch: isStretchSegment
+        })
+      }
     }
-
-    const chartData = [
-      // Base goal progress (filled)
-      { name: 'baseFilled', value: baseFilledPortion, color: 'hsl(var(--primary))' },
-      // Stretch goal progress (filled) - only if there's progress beyond base goal
-      ...(stretchFilledPortion > 0 ? [{ name: 'stretchFilled', value: stretchFilledPortion, color: 'hsl(var(--primary))' }] : []),
-      // Empty base goal portion
-      ...(baseEmptyPortion > 0 ? [{ name: 'baseEmpty', value: baseEmptyPortion, color: 'hsl(var(--muted))' }] : []),
-      // Empty stretch portion
-      ...(stretchEmptyPortion > 0 ? [{ name: 'stretchEmpty', value: stretchEmptyPortion, color: 'hsl(var(--muted))' }] : []),
-    ]
 
     return (
       <div className="flex flex-col items-center justify-center py-4 pb-0">
         <div className="relative mb-3">
           <PieChart width={size + 20} height={size + 20}>
+            <defs>
+              {/* Diagonal stripe pattern for stretch segments */}
+              <pattern
+                id="stretchPattern"
+                patternUnits="userSpaceOnUse"
+                width="8"
+                height="8"
+                patternTransform="rotate(45)"
+              >
+                <rect width="8" height="8" fill="hsl(var(--primary))" />
+                <rect width="4" height="8" fill="hsl(var(--primary))" fillOpacity="0.3" />
+              </pattern>
+
+              {/* Dotted pattern for empty stretch segments */}
+              <pattern
+                id="stretchEmptyPattern"
+                patternUnits="userSpaceOnUse"
+                width="6"
+                height="6"
+              >
+                <rect width="6" height="6" fill="hsl(var(--muted))" fillOpacity="0.25" />
+                <circle cx="3" cy="3" r="1" fill="hsl(var(--muted))" fillOpacity="0.7" />
+              </pattern>
+            </defs>
+
+            {/* Background track showing goal vs stretch portions */}
+            <Pie
+              data={[
+                { name: 'goalTrack', value: goalHours, color: 'hsl(var(--muted))' },
+                { name: 'stretchTrack', value: stretchHours - goalHours, color: 'hsl(var(--muted))' }
+              ]}
+              cx='50%'
+              cy='50%'
+              startAngle={90}
+              endAngle={-270}
+              innerRadius={(size - strokeWidth) / 2 - strokeWidth / 2 - 4}
+              outerRadius={(size - strokeWidth) / 2 + strokeWidth / 2 + 4}
+              strokeWidth={0}
+              paddingAngle={0}
+              dataKey="value"
+            >
+              <Cell key="goalTrack" fill="hsl(var(--muted))" style={{ opacity: 0.5 }} />
+              <Cell key="stretchTrack" fill="hsl(var(--muted))" style={{ opacity: 0.1 }} />
+            </Pie>
+
+            {/* Progress overlay */}
             <Pie
               data={chartData}
-              cx={(size + 20) / 2}
-              cy={(size + 20) / 2}
+              cx='50%'
+              cy='50%'
               startAngle={90}
               endAngle={-270}
               innerRadius={(size - strokeWidth) / 2 - strokeWidth / 2}
               outerRadius={(size - strokeWidth) / 2 + strokeWidth / 2}
               strokeWidth={0}
+              paddingAngle={2}
               dataKey="value"
             >
-              {chartData.map((entry, index) => (
-                <Cell
-                  key={`cell-${index}`}
-                  fill={entry.color}
-                  className={entry.name === 'stretchFilled' ? 'opacity-60' : 'opacity-100'}
-                  style={{
-                    filter: entry.name.includes('Empty') ? 'opacity(0.2)' : 'none'
-                  }}
-                />
-              ))}
+              {chartData.map((entry, index) => {
+                let fillValue = entry.color
+                let opacity = 1
+
+                if (entry.isStretch) {
+                  if (entry.isFilled) {
+                    // Filled stretch segments get diagonal stripes
+                    fillValue = 'url(#stretchPattern)'
+                    opacity = 0.8
+                  } else {
+                    // Empty stretch segments get dotted pattern
+                    fillValue = 'url(#stretchEmptyPattern)'
+                    opacity = 1
+                  }
+                } else {
+                  // Regular goal segments
+                  opacity = entry.isFilled ? 1.0 : 0.9  // Increased from 0.4 to 0.7 for better contrast
+                }
+
+                return (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={fillValue}
+                    style={{ opacity }}
+                  />
+                )
+              })}
             </Pie>
           </PieChart>
 
@@ -105,7 +196,7 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({ className = '' }) => {
               {formatTime(current)}
             </div>
             {remainingToGoal > 0 && (
-              <div className="text-sm text-muted-foreground mt-1">
+              <div className="text-xs text-muted-foreground mt-1">
                 {formatTime(remainingToGoal)} until target
               </div>
             )}
@@ -157,7 +248,7 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({ className = '' }) => {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="px-6 pt-0 pb-2">
+      <CardContent className="px-0 pt-0 pb-2">
 
         {/* Content */}
         {activeTab === 'daily' && (
