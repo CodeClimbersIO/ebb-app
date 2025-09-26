@@ -14,7 +14,7 @@ const getMockTideData = () => {
       goal: 180,    // 3h goal (will show as complete + stretch progress)
     },
     weeklyGoal: {
-      current: 280, // 7h current progress
+      current: 780, // 7h current progress
       goal: 600,    // 10h goal
     }
   }
@@ -25,11 +25,11 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({ className = '' }) => {
   const tideData = getMockTideData()
 
   // Format time helper
-  const formatTime = (minutes: number) => {
+  const formatTime = (minutes: number, options: { overrideShowHours: boolean } = { overrideShowHours: false }) => {
     const hours = Math.floor(minutes / 60)
     const remainingMinutes = Math.round(minutes % 60)
     if (hours === 0) return `${remainingMinutes}m`
-    if (remainingMinutes === 0) return `${hours}h`
+    if (remainingMinutes === 0 && !options.overrideShowHours) return `${hours}h`
     return `${hours}h ${remainingMinutes}m`
   }
 
@@ -202,7 +202,7 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({ className = '' }) => {
           {/* Center content */}
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
             <div className="text-2xl font-bold">
-              {formatTime(current)}
+              {formatTime(current, { overrideShowHours: true })}
             </div>
             {remainingToGoal > 0 && (
               <div className="text-xs text-muted-foreground mt-1">
@@ -210,9 +210,11 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({ className = '' }) => {
               </div>
             )}
             {current >= goal && remainingToGoal === 0 && (
-              <div className="text-sm text-green-600 dark:text-green-400 mt-1">
-                Tide reached!
+              <div className="text-xs mt-1">
+                <div>Tide reached!</div>
+                <div className="text-primary-600 dark:text-primary-400 pt-1">+{formatTime(current - goal)}</div>
               </div>
+              
             )}
           </div>
         </div>
