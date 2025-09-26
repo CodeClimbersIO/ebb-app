@@ -74,13 +74,13 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({ className = '' }) => {
     return (
       <div className="flex flex-col items-center justify-center py-4 pb-0">
         <div className="relative mb-3">
-          <PieChart width={size} height={size}>
+          <PieChart width={size + 20} height={size + 20}>
             <Pie
               data={chartData}
-              cx={size / 2}
-              cy={size / 2}
+              cx={(size + 20) / 2}
+              cy={(size + 20) / 2}
               startAngle={90}
-              endAngle={450}
+              endAngle={-270}
               innerRadius={(size - strokeWidth) / 2 - strokeWidth / 2}
               outerRadius={(size - strokeWidth) / 2 + strokeWidth / 2}
               strokeWidth={0}
