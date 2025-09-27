@@ -174,14 +174,14 @@ impl TideProgress {
         tide: &Tide,
         evaluation_time: OffsetDateTime,
     ) -> Result<bool> {
-        let current_progress = self
-            .get_tide_progress_cached(tide, evaluation_time, true)
-            .await?;
-
         // if tide is completed, return true
         if tide.is_completed() {
             return Ok(false);
         }
+
+        let current_progress = self
+            .get_tide_progress_cached(tide, evaluation_time, true)
+            .await?;
 
         // If progress meets or exceeds goal, force refresh validation to ensure accuracy
         if current_progress >= tide.goal_amount {
@@ -442,25 +442,25 @@ mod tests {
             tide_start,
         );
 
-        // Test evaluation at 09:30 - should only capture half of first activity (30 minutes)
+        // Test evaluation at 09:30 - should capture the full 60 minutes
         let partial_evaluation = datetime!(2025-01-06 09:30 UTC);
         let progress = tide_progress
             .calculate_tide_progress(&tide, partial_evaluation)
             .await?;
         assert!(
-            (progress - 30.0).abs() < 0.01,
-            "Expected ~30 minutes, got {}",
+            (progress - 60.0).abs() < 0.01,
+            "Expected ~60 minutes, got {}",
             progress
         );
 
-        // Test evaluation at 10:30 - should capture first activity + half of second (90 minutes)
+        // Test evaluation at 10:30 - should capture the full 120 minutes
         let mid_evaluation = datetime!(2025-01-06 10:30 UTC);
         let progress = tide_progress
             .calculate_tide_progress(&tide, mid_evaluation)
             .await?;
         assert!(
-            (progress - 90.0).abs() < 0.01,
-            "Expected ~90 minutes, got {}",
+            (progress - 120.0).abs() < 0.01,
+            "Expected ~120 minutes, got {}",
             progress
         );
 
@@ -1559,10 +1559,10 @@ mod tests {
             .await?;
 
         // Should use cached value (100.0) plus any incremental progress since 09:30
-        // activity from 09:30 to 10:00 is 30 minutes
+        // activity from 09:00 to 10:00 is 60 minutes
         assert!(
-            (progress_cached - 130.0).abs() < 0.01,
-            "Expected ~130 minutes from cache, got {}",
+            (progress_cached - 160.0).abs() < 0.01,
+            "Expected ~160 minutes from cache, got {}",
             progress_cached
         );
 
@@ -1870,6 +1870,104 @@ mod tests {
         assert!(
             (progress_skip_true - progress_skip_false).abs() < 0.01,
             "Results should be identical when no cache exists"
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_incremental_cache_overlap_scenario() -> Result<()> {
+        let db_manager = create_test_db_manager().await;
+        let tide_progress = TideProgress::new_with_db_manager(db_manager.clone());
+
+        // Create test tag - "creating" with "default" type
+        let tag_id = "test-creating-tag";
+        let now = OffsetDateTime::now_utc();
+        sqlx::query(
+            "INSERT INTO tag (id, name, tag_type, is_blocked, is_default, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+        )
+        .bind(tag_id)
+        .bind("creating")
+        .bind("default")
+        .bind(false)
+        .bind(false)
+        .bind(now)
+        .bind(now)
+        .execute(&db_manager.pool)
+        .await
+        .map_err(|e| TideProgressError::Database(Box::new(e)))?;
+
+        // Create activity state that matches the log scenario:
+        // Activity runs from 20:02:06.977351 to 20:04:06.977351 (2 minutes)
+        // Query range is 20:04:04.760153 to 20:06:04.759916 (overlap of ~2.2 seconds)
+        let activity_start = time::OffsetDateTime::parse(
+            "2025-09-27T20:02:06.977351+00:00",
+            &time::format_description::well_known::Rfc3339,
+        )
+        .unwrap();
+        let activity_end = time::OffsetDateTime::parse(
+            "2025-09-27T20:04:06.977351+00:00",
+            &time::format_description::well_known::Rfc3339,
+        )
+        .unwrap();
+
+        sqlx::query(
+            "INSERT INTO activity_state (id, state, app_switches, start_time, end_time, created_at)
+             VALUES (111267, 'ACTIVE', 0, ?1, ?2, ?3)",
+        )
+        .bind(activity_start)
+        .bind(activity_end)
+        .bind(now)
+        .execute(&db_manager.pool)
+        .await
+        .map_err(|e| TideProgressError::Database(Box::new(e)))?;
+
+        // Link activity state to the creating tag
+        sqlx::query(
+            "INSERT INTO activity_state_tag (activity_state_id, tag_id, created_at, updated_at)
+             VALUES ('111267', ?1, ?2, ?3)",
+        )
+        .bind(tag_id)
+        .bind(now)
+        .bind(now)
+        .execute(&db_manager.pool)
+        .await
+        .map_err(|e| TideProgressError::Database(Box::new(e)))?;
+
+        // Set up cache scenario - previous evaluation time
+        let cached_time = time::OffsetDateTime::parse(
+            "2025-09-27T20:04:04.760153+00:00",
+            &time::format_description::well_known::Rfc3339,
+        )
+        .unwrap();
+        let eval_time = time::OffsetDateTime::parse(
+            "2025-09-27T20:06:04.759916+00:00",
+            &time::format_description::well_known::Rfc3339,
+        )
+        .unwrap();
+
+        // Test the incremental calculation that matches the logs
+        // This should find the overlap between the activity and the query range
+        let progress = tide_progress
+            .activity_state_repo
+            .calculate_tagged_duration_in_range("creating", cached_time, eval_time)
+            .await
+            .map_err(|e| TideProgressError::Database(e))?;
+
+        // Expected calculation:
+        // Activity: 20:02:06.977351 to 20:04:06.977351 (2 minutes total)
+        // Query range: 20:04:04.760153 to 20:06:04.759916
+        // Since the activity state hasn't been recorded yet in the cache,
+        // it should count the whole duration of the activity state = 2 minutes
+        // This reproduces the user's scenario where they expect 2 minutes but get 0
+
+        println!("Calculated progress: {} minutes", progress);
+
+        assert!(
+            (progress - 2.0).abs() < 0.01,
+            "Expected 2 minutes (full activity duration), got {} minutes",
+            progress
         );
 
         Ok(())

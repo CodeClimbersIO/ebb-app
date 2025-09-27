@@ -86,7 +86,7 @@ impl ActivityStateRepo {
                 .fetch_optional(&self.pool)
                 .await?;
         let tag_type_query_duration = query_start.elapsed();
-        println!("Tag type query took: {:?}", tag_type_query_duration);
+        log::debug!("Tag type query took: {:?}", tag_type_query_duration);
 
         let tag_type = match tag_type {
             Some(t) => t,
@@ -123,7 +123,7 @@ impl ActivityStateRepo {
         .fetch_all(&self.pool)
         .await?;
         let main_query_duration = main_query_start.elapsed();
-        println!(
+        log::debug!(
             "Main data query took: {:?} and returned {} records",
             main_query_duration,
             raw_data.len()
@@ -142,7 +142,7 @@ impl ActivityStateRepo {
             })
             .collect();
         let data_conversion_duration = processing_start.elapsed();
-        println!("Data conversion took: {:?}", data_conversion_duration);
+        log::debug!("Data conversion took: {:?}", data_conversion_duration);
 
         // Group by activity_state_id and calculate tag counts per tag_type
         use std::collections::HashMap;
@@ -167,11 +167,7 @@ impl ActivityStateRepo {
             }
         }
 
-        // print out activity_states
-        // println!("Activity states: {:?}", activity_states);
 
-        // print out target_tag_records
-        // println!("Target tag records: {:?}", target_tag_records);
 
         // Calculate the total duration
         let mut total_minutes = 0.0;
@@ -182,28 +178,9 @@ impl ActivityStateRepo {
             if let Some((activity_start, activity_end, tag_counts)) =
                 activity_states.get(&activity_state_id)
             {
-                // Calculate the overlapping duration for this activity state
-                let effective_start = if *activity_start < start_time {
-                    start_time
-                } else {
-                    *activity_start
-                };
-                let effective_end = if *activity_end > end_time {
-                    end_time
-                } else {
-                    *activity_end
-                };
-
-                // Skip if there's no actual overlap (effective_end <= effective_start)
-                if effective_end <= effective_start {
-                    println!(
-                        "Skipping activity state {} - no overlap: effective range {} to {}",
-                        activity_state_id, effective_start, effective_end
-                    );
-                    continue;
-                }
-
-                let duration_minutes = (effective_end - effective_start).whole_minutes() as f64;
+                // Calculate the full duration of the activity state (not just overlap)
+                // This ensures activities discovered late due to recording timing still get full credit
+                let duration_minutes = (*activity_end - *activity_start).as_seconds_f64() / 60.0;
 
                 // Get the count of tags for the target tag_type
                 let tag_count = tag_counts.get(&tag_type).unwrap_or(&0);
@@ -213,8 +190,6 @@ impl ActivityStateRepo {
                     let split_minutes = duration_minutes / (*tag_count as f64);
                     total_minutes += split_minutes;
 
-                    // println!("State {} record: {:.2} minutes ÷ {} tags = {:.2} minutes",
-                    // activity_state_id, duration_minutes, tag_count, split_minutes);
                 }
             }
         }
@@ -765,128 +740,6 @@ mod tests {
         Ok(())
     }
 
-    #[tokio::test]
-    async fn test_calculate_tagged_duration_time_range_clipping() -> Result<()> {
-        let repo = setup_test_repo().await?;
-
-        // Test that activity states are properly clipped to the queried time range
-        // Only the overlapping portion should contribute to the total
-
-        // Create custom test data for clipping scenarios
-        let pool = &repo.pool;
-
-        // Create test activity states with specific times for clipping tests
-        // State A: 10:00-11:00 (1 hour, "creating" tag)
-        // State B: 10:30-11:30 (1 hour, "creating" + "neutral" tags)
-        let state_a_start = datetime!(2025-01-05 10:00:00 UTC);
-        let state_a_end = datetime!(2025-01-05 11:00:00 UTC);
-        let state_b_start = datetime!(2025-01-05 10:30:00 UTC);
-        let state_b_end = datetime!(2025-01-05 11:30:00 UTC);
-
-        // Insert State A (1 tag: creating)
-        sqlx::query(
-            "INSERT INTO activity_state (id, state, activity_type, start_time, end_time, created_at)
-             VALUES (999100, 'ACTIVE', 1, ?1, ?2, ?3)"
-        )
-        .bind(state_a_start)
-        .bind(state_a_end)
-        .bind(state_a_start)
-        .execute(pool)
-        .await?;
-
-        sqlx::query(
-            "INSERT INTO activity_state_tag (activity_state_id, tag_id, app_tag_id, created_at, updated_at)
-             VALUES (999100, 'creating-tag-id', NULL, datetime('now'), datetime('now'))"
-        )
-        .execute(pool)
-        .await?;
-
-        // Insert State B (2 tags: creating + neutral)
-        sqlx::query(
-            "INSERT INTO activity_state (id, state, activity_type, start_time, end_time, created_at)
-             VALUES (999101, 'ACTIVE', 1, ?1, ?2, ?3)"
-        )
-        .bind(state_b_start)
-        .bind(state_b_end)
-        .bind(state_b_start)
-        .execute(pool)
-        .await?;
-
-        sqlx::query(
-            "INSERT INTO activity_state_tag (activity_state_id, tag_id, app_tag_id, created_at, updated_at)
-             VALUES (999101, 'creating-tag-id', NULL, datetime('now'), datetime('now')),
-                    (999101, 'neutral-tag-id', NULL, datetime('now'), datetime('now'))"
-        )
-        .execute(pool)
-        .await?;
-
-        // Scenario 1: Query starts before State A and ends during State A
-        // Query 9:30-10:30 should overlap with State A for 10:00-10:30 = 30 minutes
-        let clip_start_result = repo
-            .calculate_tagged_duration_in_range(
-                "creating",
-                datetime!(2025-01-05 9:30:00 UTC),
-                datetime!(2025-01-05 10:30:00 UTC),
-            )
-            .await?;
-        assert_eq!(
-            clip_start_result, 30.0,
-            "Query 9:30-10:30 should clip State A to get 30 minutes for creating"
-        );
-
-        // Scenario 2: Query starts during State A and ends after State A
-        // Query 10:45-11:15 should overlap with:
-        // - State A: 10:45-11:00 = 15 minutes (1 tag, gets full 15 minutes)
-        // - State B: 10:45-11:15 = 30 minutes (2 tags, gets 30/2 = 15 minutes)
-        // Expected: 15 + 15 = 30 minutes
-        let clip_end_result = repo
-            .calculate_tagged_duration_in_range(
-                "creating",
-                datetime!(2025-01-05 10:45:00 UTC),
-                datetime!(2025-01-05 11:15:00 UTC),
-            )
-            .await?;
-        assert_eq!(
-            clip_end_result, 30.0,
-            "Query 10:45-11:15 should clip states to get 30 minutes for creating"
-        );
-
-        // Scenario 3: Query fully contains State A
-        // Query 9:30-11:30 should overlap with:
-        // - State A: 10:00-11:00 = 60 minutes (1 tag, gets full 60 minutes)
-        // - State B: 10:30-11:30 = 60 minutes (2 tags, gets 60/2 = 30 minutes)
-        // Expected: 60 + 30 = 90 minutes
-        let fully_contains_result = repo
-            .calculate_tagged_duration_in_range(
-                "creating",
-                datetime!(2025-01-05 9:30:00 UTC),
-                datetime!(2025-01-05 11:30:00 UTC),
-            )
-            .await?;
-        assert_eq!(
-            fully_contains_result, 90.0,
-            "Query 9:30-11:30 should fully contain states and get 90 minutes for creating"
-        );
-
-        // Scenario 4: Query range overlaps with both states
-        // Query 10:15-10:45 should overlap with:
-        // - State A: 10:15-10:45 = 30 minutes (1 tag, gets full 30 minutes)
-        // - State B: 10:30-10:45 = 15 minutes (2 tags, gets 15/2 = 7.5 minutes, rounded to 8)
-        // Expected: 30 + 8 = 38 minutes
-        let overlapping_states_result = repo
-            .calculate_tagged_duration_in_range(
-                "creating",
-                datetime!(2025-01-05 10:15:00 UTC),
-                datetime!(2025-01-05 10:45:00 UTC),
-            )
-            .await?;
-        assert_eq!(
-            overlapping_states_result, 37.5,
-            "Query 10:15-10:45 overlapping both states should get 37.5 minutes for creating"
-        );
-
-        Ok(())
-    }
 
     #[tokio::test]
     async fn test_calculate_tagged_duration_empty_result() -> Result<()> {
