@@ -39,7 +39,7 @@ pub struct TideManager {
 impl TideManager {
     /// Create a new TideManager with default configuration (60 second intervals)
     pub async fn new() -> Result<Self> {
-        Self::new_with_interval(120).await
+        Self::new_with_interval(30).await
     }
 
     /// Create a new TideManager with custom interval
