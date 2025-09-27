@@ -31,7 +31,43 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({
     return `${hours}h ${remainingMinutes}m`
   }
 
+  const renderNoGoalProgress = (current: number) => {
+    return (
+      <div className="flex flex-col items-center justify-center py-4 pb-0">
+        <div className="relative mb-3">
+          {/* Simple circle background for no-goal state */}
+          <div
+            className="rounded-full border-4 border-muted flex items-center justify-center"
+            style={{ width: '160px', height: '160px' }}
+          >
+            {/* Center content */}
+            <div className="flex flex-col items-center justify-center text-center">
+              <div className="text-2xl font-bold">
+                {formatTime(current, { overrideShowHours: true })}
+              </div>
+              <div className="text-xs text-muted-foreground mt-1 max-w-24 leading-tight">
+                Today's creating time
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Goal information - fixed height container */}
+        <div className="text-center" style={{ minHeight: '60px' }}>
+          <div className="text-sm text-muted-foreground">
+            Enjoy your day off!
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   const renderGoalProgress = (current: number, goal: number) => {
+    // Handle the case when there's no goal set (goal = 0)
+    if (goal === 0) {
+      return renderNoGoalProgress(current)
+    }
+
     const remainingToGoal = Math.max(goal - current, 0)
 
     // Chart dimensions

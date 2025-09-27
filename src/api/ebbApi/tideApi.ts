@@ -7,6 +7,8 @@ import {
   TideTemplateSchema,
   TideWithTemplate
 } from '@/db/ebb/tideRepo'
+import { MonitorApi } from '@/api/monitorApi/monitorApi'
+import { DateTime } from 'luxon'
 
 export type { Tide, TideTemplate, TideWithTemplate }
 
@@ -148,6 +150,10 @@ const getCurrentDailyTide = async (metricsType = 'creating'): Promise<DailyTideD
     new Date(tide.start) < endOfDay
   )
 
+  // If there's no tide, we still want to get today's activity time
+  // For now, we'll return 0 but this could be enhanced to query actual activity data
+  const actualTimeToday = dailyTide ? dailyTide.actual_amount : await getTodaysActivityTime(metricsType)
+
   const progress: TideProgress = dailyTide ? {
     current: dailyTide.actual_amount,
     goal: dailyTide.goal_amount,
@@ -157,7 +163,7 @@ const getCurrentDailyTide = async (metricsType = 'creating'): Promise<DailyTideD
       ? dailyTide.actual_amount - dailyTide.goal_amount
       : undefined
   } : {
-    current: 0,
+    current: actualTimeToday,
     goal: 0,
     isCompleted: false,
     progressPercentage: 0
@@ -225,6 +231,29 @@ const getTidesWithTemplates = async (limit = 10): Promise<TideWithTemplate[]> =>
 }
 
 // Helper Functions
+
+const getTodaysActivityTime = async (metricsType: string): Promise<number> => {
+  try {
+    const today = DateTime.now()
+    const start = today.startOf('day')
+    const end = today.endOf('day')
+
+    const chartData = await MonitorApi.getTimeCreatingByHour(start, end)
+
+    if (metricsType === 'creating') {
+      return chartData.reduce((acc, curr) => acc + curr.creating, 0)
+    } else if (metricsType === 'neutral') {
+      return chartData.reduce((acc, curr) => acc + curr.neutral, 0)
+    } else if (metricsType === 'consuming') {
+      return chartData.reduce((acc, curr) => acc + curr.consuming, 0)
+    }
+
+    return 0
+  } catch (error) {
+    console.error(`Error getting today's activity time for ${metricsType}:`, error)
+    return 0
+  }
+}
 
 const formatTime = (minutes: number): string => {
   const hours = Math.floor(minutes / 60)
