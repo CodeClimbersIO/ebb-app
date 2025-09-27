@@ -1,28 +1,26 @@
 import { type FC, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { PieChart, Pie, Cell } from 'recharts'
+import { useGetCurrentDailyTide, useGetCurrentWeeklyTide } from '@/api/hooks/useTides'
+import { Skeleton } from '@/components/ui/skeleton'
 
 interface TideGoalsCardProps {
   className?: string
+  metricsType?: string
 }
 
-// Mock tide data - replace with actual API calls later
-const getMockTideData = () => {
-  return {
-    dailyGoal: {
-      current: 194, // 3h 14m current progress
-      goal: 180,    // 3h goal (will show as complete + stretch progress)
-    },
-    weeklyGoal: {
-      current: 780, // 7h current progress
-      goal: 600,    // 10h goal
-    }
-  }
-}
-
-export const TideGoalsCard: FC<TideGoalsCardProps> = ({ className = '' }) => {
+export const TideGoalsCard: FC<TideGoalsCardProps> = ({
+  className = '',
+  metricsType = 'creating'
+}) => {
   const [activeTab, setActiveTab] = useState<'daily' | 'weekly'>('daily')
-  const tideData = getMockTideData()
+
+  // Fetch real tide data
+  const { data: dailyTideData, isLoading: isDailyLoading, error: dailyError } = useGetCurrentDailyTide(metricsType)
+  const { data: weeklyTideData, isLoading: isWeeklyLoading, error: weeklyError } = useGetCurrentWeeklyTide(metricsType)
+
+  const isLoading = isDailyLoading || isWeeklyLoading
+  const hasError = dailyError || weeklyError
 
   // Format time helper
   const formatTime = (minutes: number, options: { overrideShowHours: boolean } = { overrideShowHours: false }) => {
@@ -262,15 +260,30 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({ className = '' }) => {
       <CardContent className="px-0 pt-0 pb-2">
 
         {/* Content */}
-        {activeTab === 'daily' && (
-          <div>
-            {renderGoalProgress(tideData.dailyGoal.current, tideData.dailyGoal.goal)}
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-4">
+            <Skeleton className="w-32 h-32 rounded-full mb-3" />
+            <Skeleton className="w-20 h-4" />
           </div>
-        )}
-        {activeTab === 'weekly' && (
-          <div>
-            {renderGoalProgress(tideData.weeklyGoal.current, tideData.weeklyGoal.goal)}
+        ) : hasError ? (
+          <div className="flex flex-col items-center justify-center py-4 text-center">
+            <div className="text-sm text-muted-foreground">
+              Unable to load tide data
+            </div>
           </div>
+        ) : (
+          <>
+            {activeTab === 'daily' && dailyTideData && (
+              <div>
+                {renderGoalProgress(dailyTideData.progress.current, dailyTideData.progress.goal)}
+              </div>
+            )}
+            {activeTab === 'weekly' && weeklyTideData && (
+              <div>
+                {renderGoalProgress(weeklyTideData.progress.current, weeklyTideData.progress.goal)}
+              </div>
+            )}
+          </>
         )}
       </CardContent>
     </Card>
