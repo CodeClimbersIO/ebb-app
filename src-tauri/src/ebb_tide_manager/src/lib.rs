@@ -120,6 +120,7 @@ impl TideManager {
 
         // Get or create active tides for current period
         let active_tides = service.get_or_create_active_tides_for_period(evaluation_time).await?;
+        println!("Processing {} tides at evaluation_time: {:?}", active_tides.len(), evaluation_time);
         println!("Active tides: {:?}", active_tides);
 
         for mut tide in active_tides {

@@ -1,15 +1,12 @@
-use ebb_db::{
-    db_manager::{self, DbManager},
-    db::{
-        activity_state_repo::ActivityStateRepo,
-        models::tide::Tide,
-    },
-};
 use crate::tide_service::{TideService, TideServiceError};
+use ebb_db::{
+    db::{activity_state_repo::ActivityStateRepo, models::tide::Tide},
+    db_manager::{self, DbManager},
+};
 use std::collections::HashMap;
 use std::sync::Arc;
-use time::OffsetDateTime;
 use thiserror::Error;
+use time::OffsetDateTime;
 use tokio::sync::Mutex;
 
 #[derive(Error, Debug)]
@@ -49,9 +46,10 @@ pub struct TideProgress {
 impl TideProgress {
     /// Create a new TideProgress instance
     pub async fn new() -> Result<Self> {
-        let codeclimbers_db = db_manager::DbManager::get_shared_codeclimbers().await
+        let codeclimbers_db = db_manager::DbManager::get_shared_codeclimbers()
+            .await
             .map_err(|e| TideProgressError::Database(Box::new(e)))?;
-        
+
         Ok(Self {
             activity_state_repo: ActivityStateRepo::new(codeclimbers_db.pool.clone()),
             progress_cache: Arc::new(Mutex::new(HashMap::new())),
@@ -67,55 +65,87 @@ impl TideProgress {
     }
 
     /// Get the current progress for a tide, using cache with incremental calculation
-    pub async fn get_tide_progress_cached(&self, tide: &Tide, evaluation_time: OffsetDateTime) -> Result<f64> {
+    pub async fn get_tide_progress_cached(
+        &self,
+        tide: &Tide,
+        evaluation_time: OffsetDateTime,
+        skip_cache: bool,
+    ) -> Result<f64> {
         let tide_id = &tide.id;
-        
+
         // Check cache first and clone the data if found
         let cached_data = {
             let cache = self.progress_cache.lock().await;
             cache.get(tide_id).cloned()
         };
-        
+
         if let Some(cached) = cached_data {
-            // Cache hit - calculate incremental progress
-            println!("Cache hit for tide: incremental progress for tide with start and end times: {:?}, {:?}", cached.last_evaluation_time, evaluation_time);
-            let delta_minutes = self
-                .activity_state_repo
-                .calculate_tagged_duration_in_range(
-                    &tide.metrics_type, 
-                    cached.last_evaluation_time, 
-                    evaluation_time
-                )
-                .await
-                .map_err(|e| TideProgressError::Database(e))?;
-            
-            let new_total = cached.amount + delta_minutes;
-            
-            // Update cache with new values
-            {
-                let mut cache = self.progress_cache.lock().await;
-                cache.insert(tide_id.clone(), CachedProgress::new(new_total, evaluation_time));
+            if !skip_cache {
+                // Cache hit - calculate incremental progress
+                let time_diff = evaluation_time - cached.last_evaluation_time;
+                println!(
+                    "Cache check: tide_id={}, cached_time={:?}, eval_time={:?}, diff={:?} ({} seconds)",
+                    tide_id,
+                    cached.last_evaluation_time,
+                    evaluation_time,
+                    time_diff,
+                    time_diff.whole_seconds()
+                );
+                println!(
+                    "Cache hit for tide: incremental progress for tide with start and end times: {:?}, {:?}",
+                    cached.last_evaluation_time, evaluation_time
+                );
+                let delta_minutes = self
+                    .activity_state_repo
+                    .calculate_tagged_duration_in_range(
+                        &tide.metrics_type,
+                        cached.last_evaluation_time,
+                        evaluation_time,
+                    )
+                    .await
+                    .map_err(|e| TideProgressError::Database(e))?;
+
+                let new_total = cached.amount + delta_minutes;
+
+                // Update cache with new values
+                {
+                    let mut cache = self.progress_cache.lock().await;
+                    cache.insert(
+                        tide_id.clone(),
+                        CachedProgress::new(new_total, evaluation_time),
+                    );
+                }
+
+                return Ok(new_total);
             }
-            
-            return Ok(new_total);
         }
-        
+
         // Cache miss - calculate full range from tide start
-        println!("Cache miss for tide: calculating full range for tide with start and end times: {:?}, {:?}", tide.start, tide.end);
+        println!(
+            "Cache miss for tide: calculating full range for tide with start and end times: {:?}, {:?}",
+            tide.start, tide.end
+        );
         let total_minutes = self.calculate_tide_progress(tide, evaluation_time).await?;
-        
+
         // Store in cache
         {
             let mut cache = self.progress_cache.lock().await;
-            cache.insert(tide_id.clone(), CachedProgress::new(total_minutes, evaluation_time));
+            cache.insert(
+                tide_id.clone(),
+                CachedProgress::new(total_minutes, evaluation_time),
+            );
         }
-        
+
         Ok(total_minutes)
     }
 
     /// Calculate the current progress for a tide by querying the database
     /// Progress is calculated from tide start time to the evaluation time
-    pub async fn calculate_tide_progress(&self, tide: &Tide, evaluation_time: OffsetDateTime) -> Result<f64> {
+    pub async fn calculate_tide_progress(
+        &self,
+        tide: &Tide,
+        evaluation_time: OffsetDateTime,
+    ) -> Result<f64> {
         // Use the repository to calculate the tagged duration from tide start to evaluation time
         let total_minutes = self
             .activity_state_repo
@@ -139,8 +169,19 @@ impl TideProgress {
     }
 
     /// Check if a tide should be marked as complete
-    pub async fn should_complete_tide(&self, tide: &Tide, evaluation_time: OffsetDateTime) -> Result<bool> {
-        let current_progress = self.get_tide_progress_cached(tide, evaluation_time).await?;
+    pub async fn should_complete_tide(
+        &self,
+        tide: &Tide,
+        evaluation_time: OffsetDateTime,
+    ) -> Result<bool> {
+        let current_progress = self
+            .get_tide_progress_cached(tide, evaluation_time, true)
+            .await?;
+
+        // if tide is completed, return true
+        if tide.is_completed() {
+            return Ok(false);
+        }
 
         // If progress meets or exceeds goal, force refresh validation to ensure accuracy
         if current_progress >= tide.goal_amount {
@@ -152,11 +193,20 @@ impl TideProgress {
     }
 
     /// Update a tide's progress in the database and cache
-    pub async fn update_tide_progress(&self, tide: &mut Tide, tide_service: &TideService, evaluation_time: OffsetDateTime) -> Result<f64> {
-        let current_progress = self.get_tide_progress_cached(tide, evaluation_time).await?;
+    pub async fn update_tide_progress(
+        &self,
+        tide: &mut Tide,
+        tide_service: &TideService,
+        evaluation_time: OffsetDateTime,
+    ) -> Result<f64> {
+        let current_progress = self
+            .get_tide_progress_cached(tide, evaluation_time, false)
+            .await?;
 
         // Update the database through TideService
-        tide_service.update_tide_progress(&tide.id, current_progress).await?;
+        tide_service
+            .update_tide_progress(&tide.id, current_progress)
+            .await?;
 
         // Update the local tide object
         tide.actual_amount = current_progress;
@@ -177,10 +227,10 @@ mod tests {
     async fn test_cached_progress_creation() -> Result<()> {
         let evaluation_time = datetime!(2025-01-06 10:00 UTC);
         let cached = CachedProgress::new(120.0, evaluation_time);
-        
+
         assert_eq!(cached.amount, 120.0);
         assert_eq!(cached.last_evaluation_time, evaluation_time);
-        
+
         Ok(())
     }
 
@@ -189,10 +239,10 @@ mod tests {
         let evaluation_time = datetime!(2025-01-06 10:00 UTC);
         let cached = CachedProgress::new(60.0, evaluation_time);
         let cloned = cached.clone();
-        
+
         assert_eq!(cloned.amount, 60.0);
         assert_eq!(cloned.last_evaluation_time, evaluation_time);
-        
+
         Ok(())
     }
 
@@ -200,7 +250,7 @@ mod tests {
     async fn test_tide_progress_creation() -> Result<()> {
         let db_manager = create_test_db_manager().await;
         let _tide_progress = TideProgress::new_with_db_manager(db_manager);
-        
+
         Ok(())
     }
 
@@ -214,7 +264,7 @@ mod tests {
         let now = OffsetDateTime::now_utc();
         sqlx::query(
             "INSERT INTO tag (id, name, tag_type, is_blocked, is_default, created_at, updated_at) 
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)"
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
         )
         .bind(tag_id)
         .bind("creating")
@@ -259,7 +309,7 @@ mod tests {
         // Link activity states to tag
         sqlx::query(
             "INSERT INTO activity_state_tag (activity_state_id, tag_id, created_at, updated_at) 
-             VALUES ('1', ?1, ?2, ?3)"
+             VALUES ('1', ?1, ?2, ?3)",
         )
         .bind(tag_id)
         .bind(now)
@@ -270,7 +320,7 @@ mod tests {
 
         sqlx::query(
             "INSERT INTO activity_state_tag (activity_state_id, tag_id, created_at, updated_at) 
-             VALUES ('2', ?1, ?2, ?3)"
+             VALUES ('2', ?1, ?2, ?3)",
         )
         .bind(tag_id)
         .bind(now)
@@ -294,10 +344,16 @@ mod tests {
 
         // Evaluate progress at 12:00 UTC (4 hours after tide start, covering our 2-hour activity window)
         let evaluation_time = datetime!(2025-01-06 12:00 UTC);
-        let progress = tide_progress.calculate_tide_progress(&tide, evaluation_time).await?;
-        
+        let progress = tide_progress
+            .calculate_tide_progress(&tide, evaluation_time)
+            .await?;
+
         // Use approximate equality due to floating point precision
-        assert!((progress - 120.0).abs() < 0.01, "Expected ~120 minutes, got {}", progress);
+        assert!(
+            (progress - 120.0).abs() < 0.01,
+            "Expected ~120 minutes, got {}",
+            progress
+        );
 
         Ok(())
     }
@@ -312,7 +368,7 @@ mod tests {
         let now = OffsetDateTime::now_utc();
         sqlx::query(
             "INSERT INTO tag (id, name, tag_type, is_blocked, is_default, created_at, updated_at) 
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)"
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
         )
         .bind(tag_id)
         .bind("creating")
@@ -354,7 +410,7 @@ mod tests {
 
         sqlx::query(
             "INSERT INTO activity_state_tag (activity_state_id, tag_id, created_at, updated_at) 
-             VALUES ('1', ?1, ?2, ?3)"
+             VALUES ('1', ?1, ?2, ?3)",
         )
         .bind(tag_id)
         .bind(now)
@@ -365,7 +421,7 @@ mod tests {
 
         sqlx::query(
             "INSERT INTO activity_state_tag (activity_state_id, tag_id, created_at, updated_at) 
-             VALUES ('2', ?1, ?2, ?3)"
+             VALUES ('2', ?1, ?2, ?3)",
         )
         .bind(tag_id)
         .bind(now)
@@ -388,13 +444,25 @@ mod tests {
 
         // Test evaluation at 09:30 - should only capture half of first activity (30 minutes)
         let partial_evaluation = datetime!(2025-01-06 09:30 UTC);
-        let progress = tide_progress.calculate_tide_progress(&tide, partial_evaluation).await?;
-        assert!((progress - 30.0).abs() < 0.01, "Expected ~30 minutes, got {}", progress);
+        let progress = tide_progress
+            .calculate_tide_progress(&tide, partial_evaluation)
+            .await?;
+        assert!(
+            (progress - 30.0).abs() < 0.01,
+            "Expected ~30 minutes, got {}",
+            progress
+        );
 
         // Test evaluation at 10:30 - should capture first activity + half of second (90 minutes)
         let mid_evaluation = datetime!(2025-01-06 10:30 UTC);
-        let progress = tide_progress.calculate_tide_progress(&tide, mid_evaluation).await?;
-        assert!((progress - 90.0).abs() < 0.01, "Expected ~90 minutes, got {}", progress);
+        let progress = tide_progress
+            .calculate_tide_progress(&tide, mid_evaluation)
+            .await?;
+        assert!(
+            (progress - 90.0).abs() < 0.01,
+            "Expected ~90 minutes, got {}",
+            progress
+        );
 
         Ok(())
     }
@@ -409,7 +477,7 @@ mod tests {
         let now = OffsetDateTime::now_utc();
         sqlx::query(
             "INSERT INTO tag (id, name, tag_type, is_blocked, is_default, created_at, updated_at) 
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)"
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
         )
         .bind(tag_id)
         .bind("creating")
@@ -425,7 +493,7 @@ mod tests {
         // Create 1 hour of activity: 09:00-10:00
         let start_time = datetime!(2025-01-06 09:00 UTC);
         let end_time = datetime!(2025-01-06 10:00 UTC);
-        
+
         sqlx::query(
             "INSERT INTO activity_state (id, state, app_switches, start_time, end_time, created_at) 
              VALUES (1, 'ACTIVE', 0, ?1, ?2, ?3)"
@@ -439,7 +507,7 @@ mod tests {
 
         sqlx::query(
             "INSERT INTO activity_state_tag (activity_state_id, tag_id, created_at, updated_at) 
-             VALUES ('1', ?1, ?2, ?3)"
+             VALUES ('1', ?1, ?2, ?3)",
         )
         .bind(tag_id)
         .bind(now)
@@ -461,10 +529,16 @@ mod tests {
         );
 
         let evaluation_time = datetime!(2025-01-06 12:00 UTC);
-        let progress = tide_progress.get_tide_progress_cached(&tide, evaluation_time).await?;
-        
+        let progress = tide_progress
+            .get_tide_progress_cached(&tide, evaluation_time, false)
+            .await?;
+
         // Should be 60 minutes and now cached
-        assert!((progress - 60.0).abs() < 0.01, "Expected ~60 minutes, got {}", progress);
+        assert!(
+            (progress - 60.0).abs() < 0.01,
+            "Expected ~60 minutes, got {}",
+            progress
+        );
 
         Ok(())
     }
@@ -479,7 +553,7 @@ mod tests {
         let now = OffsetDateTime::now_utc();
         sqlx::query(
             "INSERT INTO tag (id, name, tag_type, is_blocked, is_default, created_at, updated_at) 
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)"
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
         )
         .bind(tag_id)
         .bind("creating")
@@ -506,7 +580,7 @@ mod tests {
 
         sqlx::query(
             "INSERT INTO activity_state_tag (activity_state_id, tag_id, created_at, updated_at) 
-             VALUES ('1', ?1, ?2, ?3)"
+             VALUES ('1', ?1, ?2, ?3)",
         )
         .bind(tag_id)
         .bind(now)
@@ -529,8 +603,14 @@ mod tests {
 
         // First call at 10:30 - should cache 60 minutes
         let first_evaluation = datetime!(2025-01-06 10:30 UTC);
-        let progress1 = tide_progress.get_tide_progress_cached(&tide, first_evaluation).await?;
-        assert!((progress1 - 60.0).abs() < 0.01, "Expected ~60 minutes, got {}", progress1);
+        let progress1 = tide_progress
+            .get_tide_progress_cached(&tide, first_evaluation, false)
+            .await?;
+        assert!(
+            (progress1 - 60.0).abs() < 0.01,
+            "Expected ~60 minutes, got {}",
+            progress1
+        );
 
         // Add more activity for the incremental test: 11:00-12:00 (another hour)
         sqlx::query(
@@ -546,7 +626,7 @@ mod tests {
 
         sqlx::query(
             "INSERT INTO activity_state_tag (activity_state_id, tag_id, created_at, updated_at) 
-             VALUES ('2', ?1, ?2, ?3)"
+             VALUES ('2', ?1, ?2, ?3)",
         )
         .bind(tag_id)
         .bind(now)
@@ -557,8 +637,14 @@ mod tests {
 
         // Second call at 12:30 - should use cache and add incremental (60 minutes delta)
         let second_evaluation = datetime!(2025-01-06 12:30 UTC);
-        let progress2 = tide_progress.get_tide_progress_cached(&tide, second_evaluation).await?;
-        assert!((progress2 - 120.0).abs() < 0.01, "Expected ~120 minutes, got {}", progress2);
+        let progress2 = tide_progress
+            .get_tide_progress_cached(&tide, second_evaluation, false)
+            .await?;
+        assert!(
+            (progress2 - 120.0).abs() < 0.01,
+            "Expected ~120 minutes, got {}",
+            progress2
+        );
 
         Ok(())
     }
@@ -573,7 +659,7 @@ mod tests {
         let now = OffsetDateTime::now_utc();
         sqlx::query(
             "INSERT INTO tag (id, name, tag_type, is_blocked, is_default, created_at, updated_at) 
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)"
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
         )
         .bind(tag_id)
         .bind("creating")
@@ -599,7 +685,7 @@ mod tests {
 
         sqlx::query(
             "INSERT INTO activity_state_tag (activity_state_id, tag_id, created_at, updated_at) 
-             VALUES ('1', ?1, ?2, ?3)"
+             VALUES ('1', ?1, ?2, ?3)",
         )
         .bind(tag_id)
         .bind(now)
@@ -621,7 +707,9 @@ mod tests {
 
         // First call to populate cache
         let evaluation_time = datetime!(2025-01-06 12:00 UTC);
-        let progress1 = tide_progress.get_tide_progress_cached(&tide, evaluation_time).await?;
+        let progress1 = tide_progress
+            .get_tide_progress_cached(&tide, evaluation_time, false)
+            .await?;
         assert!((progress1 - 60.0).abs() < 0.01);
 
         // Verify cache has the value
@@ -640,7 +728,9 @@ mod tests {
         }
 
         // Next call should recalculate (cache miss)
-        let progress2 = tide_progress.get_tide_progress_cached(&tide, evaluation_time).await?;
+        let progress2 = tide_progress
+            .get_tide_progress_cached(&tide, evaluation_time, false)
+            .await?;
         assert!((progress2 - 60.0).abs() < 0.01);
 
         Ok(())
@@ -667,7 +757,7 @@ mod tests {
         let now = OffsetDateTime::now_utc();
         sqlx::query(
             "INSERT INTO tag (id, name, tag_type, is_blocked, is_default, created_at, updated_at) 
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)"
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
         )
         .bind(tag_id)
         .bind("creating")
@@ -693,7 +783,7 @@ mod tests {
 
         sqlx::query(
             "INSERT INTO activity_state_tag (activity_state_id, tag_id, created_at, updated_at) 
-             VALUES ('1', ?1, ?2, ?3)"
+             VALUES ('1', ?1, ?2, ?3)",
         )
         .bind(tag_id)
         .bind(now)
@@ -726,10 +816,14 @@ mod tests {
         );
 
         let evaluation_time = datetime!(2025-01-06 12:00 UTC);
-        
+
         // Populate cache for both tides
-        let _progress1 = tide_progress.get_tide_progress_cached(&tide1, evaluation_time).await?;
-        let _progress2 = tide_progress.get_tide_progress_cached(&tide2, evaluation_time).await?;
+        let _progress1 = tide_progress
+            .get_tide_progress_cached(&tide1, evaluation_time, false)
+            .await?;
+        let _progress2 = tide_progress
+            .get_tide_progress_cached(&tide2, evaluation_time, false)
+            .await?;
 
         // Verify both are cached
         {
@@ -760,7 +854,7 @@ mod tests {
 
         // Clearing an empty cache should not error
         tide_progress.clear_all_cache().await;
-        
+
         // Verify it's still empty
         {
             let cache = tide_progress.progress_cache.lock().await;
@@ -792,12 +886,14 @@ mod tests {
             let mut cache = tide_progress.progress_cache.lock().await;
             cache.insert(
                 tide.id.clone(),
-                CachedProgress::new(60.0, datetime!(2025-01-06 10:00 UTC))
+                CachedProgress::new(60.0, datetime!(2025-01-06 10:00 UTC)),
             );
         }
 
         let evaluation_time = datetime!(2025-01-06 12:00 UTC);
-        let should_complete = tide_progress.should_complete_tide(&tide, evaluation_time).await?;
+        let should_complete = tide_progress
+            .should_complete_tide(&tide, evaluation_time)
+            .await?;
 
         // Should return false because cached progress (60) < goal (120)
         assert!(!should_complete);
@@ -815,7 +911,7 @@ mod tests {
         let now = OffsetDateTime::now_utc();
         sqlx::query(
             "INSERT INTO tag (id, name, tag_type, is_blocked, is_default, created_at, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)"
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
         )
         .bind(tag_id)
         .bind("creating")
@@ -831,7 +927,7 @@ mod tests {
         // Create only 1 hour of actual activity data (insufficient for 120-minute goal)
         sqlx::query(
             "INSERT INTO activity_state (id, state, app_switches, start_time, end_time, created_at)
-             VALUES (1, 'ACTIVE', 0, ?1, ?2, ?3)"
+             VALUES (1, 'ACTIVE', 0, ?1, ?2, ?3)",
         )
         .bind(datetime!(2025-01-06 09:00 UTC))
         .bind(datetime!(2025-01-06 10:00 UTC))
@@ -842,7 +938,7 @@ mod tests {
 
         sqlx::query(
             "INSERT INTO activity_state_tag (activity_state_id, tag_id, created_at, updated_at)
-             VALUES ('1', ?1, ?2, ?3)"
+             VALUES ('1', ?1, ?2, ?3)",
         )
         .bind(tag_id)
         .bind(now)
@@ -867,12 +963,14 @@ mod tests {
             let mut cache = tide_progress.progress_cache.lock().await;
             cache.insert(
                 tide.id.clone(),
-                CachedProgress::new(125.0, datetime!(2025-01-06 10:00 UTC))
+                CachedProgress::new(125.0, datetime!(2025-01-06 10:00 UTC)),
             );
         }
 
         let evaluation_time = datetime!(2025-01-06 12:00 UTC);
-        let should_complete = tide_progress.should_complete_tide(&tide, evaluation_time).await?;
+        let should_complete = tide_progress
+            .should_complete_tide(&tide, evaluation_time)
+            .await?;
 
         // Should return false because validated progress (60) < goal (120)
         // even though cached showed 125 >= 120
@@ -891,7 +989,7 @@ mod tests {
         let now = OffsetDateTime::now_utc();
         sqlx::query(
             "INSERT INTO tag (id, name, tag_type, is_blocked, is_default, created_at, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)"
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
         )
         .bind(tag_id)
         .bind("creating")
@@ -907,7 +1005,7 @@ mod tests {
         // Create 2.5 hours of activity data (150 minutes > 120 goal)
         sqlx::query(
             "INSERT INTO activity_state (id, state, app_switches, start_time, end_time, created_at)
-             VALUES (1, 'ACTIVE', 0, ?1, ?2, ?3)"
+             VALUES (1, 'ACTIVE', 0, ?1, ?2, ?3)",
         )
         .bind(datetime!(2025-01-06 09:00 UTC))
         .bind(datetime!(2025-01-06 11:30 UTC))
@@ -918,7 +1016,7 @@ mod tests {
 
         sqlx::query(
             "INSERT INTO activity_state_tag (activity_state_id, tag_id, created_at, updated_at)
-             VALUES ('1', ?1, ?2, ?3)"
+             VALUES ('1', ?1, ?2, ?3)",
         )
         .bind(tag_id)
         .bind(now)
@@ -943,12 +1041,14 @@ mod tests {
             let mut cache = tide_progress.progress_cache.lock().await;
             cache.insert(
                 tide.id.clone(),
-                CachedProgress::new(140.0, datetime!(2025-01-06 11:00 UTC))
+                CachedProgress::new(140.0, datetime!(2025-01-06 11:00 UTC)),
             );
         }
 
         let evaluation_time = datetime!(2025-01-06 12:00 UTC);
-        let should_complete = tide_progress.should_complete_tide(&tide, evaluation_time).await?;
+        let should_complete = tide_progress
+            .should_complete_tide(&tide, evaluation_time)
+            .await?;
 
         // Should return true because both cached (140) >= goal (120) AND validated (150) >= goal (120)
         assert!(should_complete);
@@ -966,7 +1066,7 @@ mod tests {
         let now = OffsetDateTime::now_utc();
         sqlx::query(
             "INSERT INTO tag (id, name, tag_type, is_blocked, is_default, created_at, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)"
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
         )
         .bind(tag_id)
         .bind("creating")
@@ -982,7 +1082,7 @@ mod tests {
         // Create 1.5 hours of activity data
         sqlx::query(
             "INSERT INTO activity_state (id, state, app_switches, start_time, end_time, created_at)
-             VALUES (1, 'ACTIVE', 0, ?1, ?2, ?3)"
+             VALUES (1, 'ACTIVE', 0, ?1, ?2, ?3)",
         )
         .bind(datetime!(2025-01-06 09:00 UTC))
         .bind(datetime!(2025-01-06 10:30 UTC))
@@ -993,7 +1093,7 @@ mod tests {
 
         sqlx::query(
             "INSERT INTO activity_state_tag (activity_state_id, tag_id, created_at, updated_at)
-             VALUES ('1', ?1, ?2, ?3)"
+             VALUES ('1', ?1, ?2, ?3)",
         )
         .bind(tag_id)
         .bind(now)
@@ -1040,14 +1140,27 @@ mod tests {
         let initial_actual = tide.actual_amount; // Should be 0.0
 
         let evaluation_time = datetime!(2025-01-06 12:00 UTC);
-        let returned_progress = tide_progress.update_tide_progress(&mut tide, &tide_service, evaluation_time).await?;
+        let returned_progress = tide_progress
+            .update_tide_progress(&mut tide, &tide_service, evaluation_time)
+            .await?;
 
         // Should return 90 minutes (1.5 hours)
-        assert!((returned_progress - 90.0).abs() < 0.01, "Expected ~90 minutes, got {}", returned_progress);
+        assert!(
+            (returned_progress - 90.0).abs() < 0.01,
+            "Expected ~90 minutes, got {}",
+            returned_progress
+        );
 
         // Local tide object should be updated
-        assert!((tide.actual_amount - 90.0).abs() < 0.01, "Tide actual_amount should be ~90, got {}", tide.actual_amount);
-        assert_ne!(tide.actual_amount, initial_actual, "Tide actual_amount should have changed from initial value");
+        assert!(
+            (tide.actual_amount - 90.0).abs() < 0.01,
+            "Tide actual_amount should be ~90, got {}",
+            tide.actual_amount
+        );
+        assert_ne!(
+            tide.actual_amount, initial_actual,
+            "Tide actual_amount should have changed from initial value"
+        );
 
         Ok(())
     }
@@ -1096,18 +1209,278 @@ mod tests {
             let mut cache = tide_progress.progress_cache.lock().await;
             cache.insert(
                 tide.id.clone(),
-                CachedProgress::new(75.0, datetime!(2025-01-06 10:00 UTC))
+                CachedProgress::new(75.0, datetime!(2025-01-06 10:00 UTC)),
             );
         }
 
         let evaluation_time = datetime!(2025-01-06 12:00 UTC);
-        let returned_progress = tide_progress.update_tide_progress(&mut tide, &tide_service, evaluation_time).await?;
+        let returned_progress = tide_progress
+            .update_tide_progress(&mut tide, &tide_service, evaluation_time)
+            .await?;
 
         // Should return the cached value (since no additional activity data exists)
-        assert!((returned_progress - 75.0).abs() < 0.01, "Expected ~75 minutes from cache, got {}", returned_progress);
+        assert!(
+            (returned_progress - 75.0).abs() < 0.01,
+            "Expected ~75 minutes from cache, got {}",
+            returned_progress
+        );
 
         // Local tide object should be updated with cached value
-        assert!((tide.actual_amount - 75.0).abs() < 0.01, "Tide actual_amount should be ~75, got {}", tide.actual_amount);
+        assert!(
+            (tide.actual_amount - 75.0).abs() < 0.01,
+            "Tide actual_amount should be ~75, got {}",
+            tide.actual_amount
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_should_complete_tide_already_completed() -> Result<()> {
+        let db_manager = create_test_db_manager().await;
+        let tide_progress = TideProgress::new_with_db_manager(db_manager);
+
+        // Create a tide that is already completed
+        let mut tide = Tide::from_template(
+            &TideTemplate::new(
+                "creating".to_string(),
+                "daily".to_string(),
+                120.0, // Goal is 120 minutes
+                datetime!(2025-01-06 08:00 UTC),
+                None,
+            ),
+            datetime!(2025-01-06 08:00 UTC),
+        );
+
+        // Mark the tide as completed
+        tide.completed_at = Some(datetime!(2025-01-06 10:00 UTC));
+
+        let evaluation_time = datetime!(2025-01-06 12:00 UTC);
+        let should_complete = tide_progress
+            .should_complete_tide(&tide, evaluation_time)
+            .await?;
+
+        // Should return false because tide is already completed
+        assert!(!should_complete);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_should_complete_tide_not_completed_but_progress_exceeds_goal() -> Result<()> {
+        let db_manager = create_test_db_manager().await;
+        let tide_progress = TideProgress::new_with_db_manager(db_manager.clone());
+
+        // Create test tag
+        let tag_id = "test-creating-tag";
+        let now = OffsetDateTime::now_utc();
+        sqlx::query(
+            "INSERT INTO tag (id, name, tag_type, is_blocked, is_default, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)"
+        )
+        .bind(tag_id)
+        .bind("creating")
+        .bind("activity")
+        .bind(false)
+        .bind(false)
+        .bind(now)
+        .bind(now)
+        .execute(&db_manager.pool)
+        .await
+        .map_err(|e| TideProgressError::Database(Box::new(e)))?;
+
+        // Create 2.5 hours of activity data (150 minutes > 120 goal)
+        sqlx::query(
+            "INSERT INTO activity_state (id, state, app_switches, start_time, end_time, created_at)
+             VALUES (1, 'ACTIVE', 0, ?1, ?2, ?3)"
+        )
+        .bind(datetime!(2025-01-06 09:00 UTC))
+        .bind(datetime!(2025-01-06 11:30 UTC))
+        .bind(now)
+        .execute(&db_manager.pool)
+        .await
+        .map_err(|e| TideProgressError::Database(Box::new(e)))?;
+
+        sqlx::query(
+            "INSERT INTO activity_state_tag (activity_state_id, tag_id, created_at, updated_at)
+             VALUES ('1', ?1, ?2, ?3)"
+        )
+        .bind(tag_id)
+        .bind(now)
+        .bind(now)
+        .execute(&db_manager.pool)
+        .await
+        .map_err(|e| TideProgressError::Database(Box::new(e)))?;
+
+        // Create a tide that is NOT completed but has sufficient progress
+        let tide = Tide::from_template(
+            &TideTemplate::new(
+                "creating".to_string(),
+                "daily".to_string(),
+                120.0, // Goal is 120 minutes
+                datetime!(2025-01-06 08:00 UTC),
+                None,
+            ),
+            datetime!(2025-01-06 08:00 UTC),
+        );
+
+        // Verify tide is not completed
+        assert!(!tide.is_completed());
+
+        let evaluation_time = datetime!(2025-01-06 12:00 UTC);
+        let should_complete = tide_progress
+            .should_complete_tide(&tide, evaluation_time)
+            .await?;
+
+        // Should return true because tide is not completed AND progress (150) >= goal (120)
+        assert!(should_complete);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_should_complete_tide_not_completed_and_progress_below_goal() -> Result<()> {
+        let db_manager = create_test_db_manager().await;
+        let tide_progress = TideProgress::new_with_db_manager(db_manager.clone());
+
+        // Create test tag
+        let tag_id = "test-creating-tag";
+        let now = OffsetDateTime::now_utc();
+        sqlx::query(
+            "INSERT INTO tag (id, name, tag_type, is_blocked, is_default, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)"
+        )
+        .bind(tag_id)
+        .bind("creating")
+        .bind("activity")
+        .bind(false)
+        .bind(false)
+        .bind(now)
+        .bind(now)
+        .execute(&db_manager.pool)
+        .await
+        .map_err(|e| TideProgressError::Database(Box::new(e)))?;
+
+        // Create only 1 hour of activity data (60 minutes < 120 goal)
+        sqlx::query(
+            "INSERT INTO activity_state (id, state, app_switches, start_time, end_time, created_at)
+             VALUES (1, 'ACTIVE', 0, ?1, ?2, ?3)"
+        )
+        .bind(datetime!(2025-01-06 09:00 UTC))
+        .bind(datetime!(2025-01-06 10:00 UTC))
+        .bind(now)
+        .execute(&db_manager.pool)
+        .await
+        .map_err(|e| TideProgressError::Database(Box::new(e)))?;
+
+        sqlx::query(
+            "INSERT INTO activity_state_tag (activity_state_id, tag_id, created_at, updated_at)
+             VALUES ('1', ?1, ?2, ?3)"
+        )
+        .bind(tag_id)
+        .bind(now)
+        .bind(now)
+        .execute(&db_manager.pool)
+        .await
+        .map_err(|e| TideProgressError::Database(Box::new(e)))?;
+
+        // Create a tide that is NOT completed with insufficient progress
+        let tide = Tide::from_template(
+            &TideTemplate::new(
+                "creating".to_string(),
+                "daily".to_string(),
+                120.0, // Goal is 120 minutes
+                datetime!(2025-01-06 08:00 UTC),
+                None,
+            ),
+            datetime!(2025-01-06 08:00 UTC),
+        );
+
+        // Verify tide is not completed
+        assert!(!tide.is_completed());
+
+        let evaluation_time = datetime!(2025-01-06 12:00 UTC);
+        let should_complete = tide_progress
+            .should_complete_tide(&tide, evaluation_time)
+            .await?;
+
+        // Should return false because progress (60) < goal (120)
+        assert!(!should_complete);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_should_complete_tide_completed_with_high_progress() -> Result<()> {
+        let db_manager = create_test_db_manager().await;
+        let tide_progress = TideProgress::new_with_db_manager(db_manager.clone());
+
+        // Create test tag
+        let tag_id = "test-creating-tag";
+        let now = OffsetDateTime::now_utc();
+        sqlx::query(
+            "INSERT INTO tag (id, name, tag_type, is_blocked, is_default, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)"
+        )
+        .bind(tag_id)
+        .bind("creating")
+        .bind("activity")
+        .bind(false)
+        .bind(false)
+        .bind(now)
+        .bind(now)
+        .execute(&db_manager.pool)
+        .await
+        .map_err(|e| TideProgressError::Database(Box::new(e)))?;
+
+        // Create 3 hours of activity data (180 minutes > 120 goal)
+        sqlx::query(
+            "INSERT INTO activity_state (id, state, app_switches, start_time, end_time, created_at)
+             VALUES (1, 'ACTIVE', 0, ?1, ?2, ?3)"
+        )
+        .bind(datetime!(2025-01-06 09:00 UTC))
+        .bind(datetime!(2025-01-06 12:00 UTC))
+        .bind(now)
+        .execute(&db_manager.pool)
+        .await
+        .map_err(|e| TideProgressError::Database(Box::new(e)))?;
+
+        sqlx::query(
+            "INSERT INTO activity_state_tag (activity_state_id, tag_id, created_at, updated_at)
+             VALUES ('1', ?1, ?2, ?3)"
+        )
+        .bind(tag_id)
+        .bind(now)
+        .bind(now)
+        .execute(&db_manager.pool)
+        .await
+        .map_err(|e| TideProgressError::Database(Box::new(e)))?;
+
+        // Create a tide that is ALREADY completed with high progress
+        let mut tide = Tide::from_template(
+            &TideTemplate::new(
+                "creating".to_string(),
+                "daily".to_string(),
+                120.0, // Goal is 120 minutes
+                datetime!(2025-01-06 08:00 UTC),
+                None,
+            ),
+            datetime!(2025-01-06 08:00 UTC),
+        );
+
+        // Mark the tide as completed
+        tide.completed_at = Some(datetime!(2025-01-06 11:00 UTC));
+
+        // Verify tide is completed
+        assert!(tide.is_completed());
+
+        let evaluation_time = datetime!(2025-01-06 13:00 UTC);
+        let should_complete = tide_progress
+            .should_complete_tide(&tide, evaluation_time)
+            .await?;
+
+        // Should return false because tide is already completed (even though progress would exceed goal)
+        assert!(!should_complete);
 
         Ok(())
     }

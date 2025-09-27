@@ -25,7 +25,7 @@ impl ActivityStateRepo {
              WHERE state = 'ACTIVE' 
                AND start_time < ?1 
                AND end_time > ?2
-             ORDER BY start_time ASC"
+             ORDER BY start_time ASC",
         )
         .bind(end_time)
         .bind(start_time)
@@ -51,7 +51,7 @@ impl ActivityStateRepo {
                AND tag.name = ?1
                AND activity_state.start_time < ?2
                AND activity_state.end_time > ?3
-             ORDER BY activity_state.start_time ASC"
+             ORDER BY activity_state.start_time ASC",
         )
         .bind(tag_name)
         .bind(end_time)
@@ -71,16 +71,20 @@ impl ActivityStateRepo {
         end_time: OffsetDateTime,
     ) -> Result<f64> {
         let function_start = std::time::Instant::now();
-        log::debug!("Calculating tagged duration for tag '{}' from {} to {}", tag_name, start_time, end_time);
+        log::debug!(
+            "Calculating tagged duration for tag '{}' from {} to {}",
+            tag_name,
+            start_time,
+            end_time
+        );
 
         // First, get the tag_type for the requested tag_name
         let query_start = std::time::Instant::now();
-        let tag_type: Option<String> = sqlx::query_scalar(
-            "SELECT tag_type FROM tag WHERE name = ?1"
-        )
-        .bind(tag_name)
-        .fetch_optional(&self.pool)
-        .await?;
+        let tag_type: Option<String> =
+            sqlx::query_scalar("SELECT tag_type FROM tag WHERE name = ?1")
+                .bind(tag_name)
+                .fetch_optional(&self.pool)
+                .await?;
         let tag_type_query_duration = query_start.elapsed();
         println!("Tag type query took: {:?}", tag_type_query_duration);
 
@@ -112,14 +116,18 @@ impl ActivityStateRepo {
             JOIN tag ON activity_state_tag.tag_id = tag.id
             WHERE activity_state.start_time < ?1
               AND activity_state.end_time > ?2
-            ORDER BY activity_state.id"
+            ORDER BY activity_state.id",
         )
         .bind(end_time)
         .bind(start_time)
         .fetch_all(&self.pool)
         .await?;
         let main_query_duration = main_query_start.elapsed();
-        println!("Main data query took: {:?} and returned {} records", main_query_duration, raw_data.len());
+        println!(
+            "Main data query took: {:?} and returned {} records",
+            main_query_duration,
+            raw_data.len()
+        );
 
         // Convert to structured data
         let processing_start = std::time::Instant::now();
@@ -139,13 +147,16 @@ impl ActivityStateRepo {
         // Group by activity_state_id and calculate tag counts per tag_type
         use std::collections::HashMap;
 
-        let mut activity_states: HashMap<i64, (OffsetDateTime, OffsetDateTime, HashMap<String, i32>)> = HashMap::new();
+        let mut activity_states: HashMap<
+            i64,
+            (OffsetDateTime, OffsetDateTime, HashMap<String, i32>),
+        > = HashMap::new();
         let mut target_tag_records: Vec<i64> = Vec::new(); // Each record for the target tag
 
         for data in activity_data {
-            let entry = activity_states.entry(data.id).or_insert_with(|| {
-                (data.start_time, data.end_time, HashMap::new())
-            });
+            let entry = activity_states
+                .entry(data.id)
+                .or_insert_with(|| (data.start_time, data.end_time, HashMap::new()));
 
             // Count tags by tag_type (each record counts as one tag)
             *entry.2.entry(data.tag_type.clone()).or_insert(0) += 1;
@@ -157,10 +168,10 @@ impl ActivityStateRepo {
         }
 
         // print out activity_states
-        println!("Activity states: {:?}", activity_states);
+        // println!("Activity states: {:?}", activity_states);
 
         // print out target_tag_records
-        println!("Target tag records: {:?}", target_tag_records);
+        // println!("Target tag records: {:?}", target_tag_records);
 
         // Calculate the total duration
         let mut total_minutes = 0.0;
@@ -168,15 +179,27 @@ impl ActivityStateRepo {
 
         // For each record of the target tag, calculate its contribution
         for activity_state_id in &target_tag_records {
-            if let Some((activity_start, activity_end, tag_counts)) = activity_states.get(&activity_state_id) {
+            if let Some((activity_start, activity_end, tag_counts)) =
+                activity_states.get(&activity_state_id)
+            {
                 // Calculate the overlapping duration for this activity state
-                let effective_start = if *activity_start < start_time { start_time } else { *activity_start };
-                let effective_end = if *activity_end > end_time { end_time } else { *activity_end };
+                let effective_start = if *activity_start < start_time {
+                    start_time
+                } else {
+                    *activity_start
+                };
+                let effective_end = if *activity_end > end_time {
+                    end_time
+                } else {
+                    *activity_end
+                };
 
                 // Skip if there's no actual overlap (effective_end <= effective_start)
                 if effective_end <= effective_start {
-                    println!("Skipping activity state {} - no overlap: effective range {} to {}",
-                        activity_state_id, effective_start, effective_end);
+                    println!(
+                        "Skipping activity state {} - no overlap: effective range {} to {}",
+                        activity_state_id, effective_start, effective_end
+                    );
                     continue;
                 }
 
@@ -190,8 +213,8 @@ impl ActivityStateRepo {
                     let split_minutes = duration_minutes / (*tag_count as f64);
                     total_minutes += split_minutes;
 
-                    println!("State {} record: {:.2} minutes ÷ {} tags = {:.2} minutes",
-                        activity_state_id, duration_minutes, tag_count, split_minutes);
+                    // println!("State {} record: {:.2} minutes ÷ {} tags = {:.2} minutes",
+                    // activity_state_id, duration_minutes, tag_count, split_minutes);
                 }
             }
         }
@@ -225,7 +248,7 @@ impl ActivityStateRepo {
             WHERE tag.name = ?1
                 AND activity_state.start_time < ?2
                 AND activity_state.end_time > ?3
-            ORDER BY activity_state.start_time"
+            ORDER BY activity_state.start_time",
         )
         .bind(tag_name)
         .bind(end_time)
@@ -241,12 +264,18 @@ impl ActivityStateRepo {
         for (id, start, end_opt) in states {
             if let Some(end) = end_opt {
                 // Calculate overlap manually
-                let actual_start = if start < start_time { start_time } else { start };
+                let actual_start = if start < start_time {
+                    start_time
+                } else {
+                    start
+                };
                 let actual_end = if end > end_time { end_time } else { end };
                 let duration = (actual_end - actual_start).whole_minutes() as f64;
 
-                println!("  ID: {}, Original: {} to {}, Clipped: {} to {}, Duration: {:.2} min",
-                    id, start, end, actual_start, actual_end, duration);
+                println!(
+                    "  ID: {}, Original: {} to {}, Clipped: {} to {}, Duration: {:.2} min",
+                    id, start, end, actual_start, actual_end, duration
+                );
                 total_manual += duration;
             }
         }
@@ -258,12 +287,11 @@ impl ActivityStateRepo {
 
     /// Get a single activity state by ID
     pub async fn get_activity_state(&self, id: i64) -> Result<Option<ActivityState>> {
-        let state = sqlx::query_as::<_, ActivityState>(
-            "SELECT * FROM activity_state WHERE id = ?1"
-        )
-        .bind(id)
-        .fetch_optional(&self.pool)
-        .await?;
+        let state =
+            sqlx::query_as::<_, ActivityState>("SELECT * FROM activity_state WHERE id = ?1")
+                .bind(id)
+                .fetch_optional(&self.pool)
+                .await?;
 
         Ok(state)
     }
@@ -272,18 +300,24 @@ impl ActivityStateRepo {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::db_manager;
     use sqlx::{Pool, Sqlite};
     use time::macros::datetime;
-    use crate::db_manager;
     /// Clean all activity state related data for testing
     pub async fn cleanup_activity_state_data(pool: &Pool<Sqlite>) -> Result<()> {
         // Delete in reverse dependency order to avoid foreign key constraints
-        sqlx::query("DELETE FROM activity_state_tag").execute(pool).await?;
-        sqlx::query("DELETE FROM activity_state").execute(pool).await?;
+        sqlx::query("DELETE FROM activity_state_tag")
+            .execute(pool)
+            .await?;
+        sqlx::query("DELETE FROM activity_state")
+            .execute(pool)
+            .await?;
         sqlx::query("DELETE FROM tag").execute(pool).await?;
 
         // Reset auto-increment counters
-        sqlx::query("DELETE FROM sqlite_sequence WHERE name IN ('activity_state', 'tag')").execute(pool).await?;
+        sqlx::query("DELETE FROM sqlite_sequence WHERE name IN ('activity_state', 'tag')")
+            .execute(pool)
+            .await?;
 
         Ok(())
     }
@@ -316,7 +350,6 @@ mod tests {
         Ok(())
     }
 
-
     /// Create just the tables we need for testing
     async fn create_test_tables(pool: &Pool<Sqlite>) -> Result<()> {
         // Create the minimal tables needed for our tests
@@ -325,8 +358,10 @@ mod tests {
                 id TEXT PRIMARY KEY NOT NULL,
                 tag_type TEXT NOT NULL,
                 name TEXT NOT NULL
-            )"
-        ).execute(pool).await?;
+            )",
+        )
+        .execute(pool)
+        .await?;
 
         sqlx::query(
             "CREATE TABLE IF NOT EXISTS activity_state (
@@ -337,8 +372,10 @@ mod tests {
                 start_time DATETIME NOT NULL,
                 end_time DATETIME,
                 created_at DATETIME NOT NULL
-            )"
-        ).execute(pool).await?;
+            )",
+        )
+        .execute(pool)
+        .await?;
 
         sqlx::query(
             "CREATE TABLE IF NOT EXISTS activity_state_tag (
@@ -350,8 +387,10 @@ mod tests {
                 PRIMARY KEY (activity_state_id, tag_id, app_tag_id),
                 FOREIGN KEY (activity_state_id) REFERENCES activity_state (id),
                 FOREIGN KEY (tag_id) REFERENCES tag (id)
-            )"
-        ).execute(pool).await?;
+            )",
+        )
+        .execute(pool)
+        .await?;
 
         Ok(())
     }
@@ -400,14 +439,29 @@ mod tests {
         let query_start = datetime!(2025-01-01 09:00:00 UTC);
         let query_end = datetime!(2025-01-01 12:00:00 UTC);
 
-        let creating_minutes = repo.calculate_tagged_duration_in_range("creating", query_start, query_end).await?;
-        let idle_minutes = repo.calculate_tagged_duration_in_range("idle", query_start, query_end).await?;
-        let neutral_minutes = repo.calculate_tagged_duration_in_range("neutral", query_start, query_end).await?;
+        let creating_minutes = repo
+            .calculate_tagged_duration_in_range("creating", query_start, query_end)
+            .await?;
+        let idle_minutes = repo
+            .calculate_tagged_duration_in_range("idle", query_start, query_end)
+            .await?;
+        let neutral_minutes = repo
+            .calculate_tagged_duration_in_range("neutral", query_start, query_end)
+            .await?;
 
         // All should return 0 since the activity state has no tags
-        assert_eq!(creating_minutes, 0.0, "Activity with no tags should contribute 0 minutes to 'creating'");
-        assert_eq!(idle_minutes, 0.0, "Activity with no tags should contribute 0 minutes to 'idle'");
-        assert_eq!(neutral_minutes, 0.0, "Activity with no tags should contribute 0 minutes to 'neutral'");
+        assert_eq!(
+            creating_minutes, 0.0,
+            "Activity with no tags should contribute 0 minutes to 'creating'"
+        );
+        assert_eq!(
+            idle_minutes, 0.0,
+            "Activity with no tags should contribute 0 minutes to 'idle'"
+        );
+        assert_eq!(
+            neutral_minutes, 0.0,
+            "Activity with no tags should contribute 0 minutes to 'neutral'"
+        );
 
         Ok(())
     }
@@ -448,16 +502,31 @@ mod tests {
         let query_end = datetime!(2025-01-02 12:00:00 UTC);
 
         // Query for "creating" - should get full 60 minutes
-        let creating_minutes = repo.calculate_tagged_duration_in_range("creating", query_start, query_end).await?;
+        let creating_minutes = repo
+            .calculate_tagged_duration_in_range("creating", query_start, query_end)
+            .await?;
 
         // Query for other tags - should get 0 minutes
-        let idle_minutes = repo.calculate_tagged_duration_in_range("idle", query_start, query_end).await?;
-        let neutral_minutes = repo.calculate_tagged_duration_in_range("neutral", query_start, query_end).await?;
+        let idle_minutes = repo
+            .calculate_tagged_duration_in_range("idle", query_start, query_end)
+            .await?;
+        let neutral_minutes = repo
+            .calculate_tagged_duration_in_range("neutral", query_start, query_end)
+            .await?;
 
         // Assertions
-        assert_eq!(creating_minutes, 60.0, "Activity with 1 'creating' tag should contribute full 60 minutes to 'creating'");
-        assert_eq!(idle_minutes, 0.0, "Activity with only 'creating' tag should contribute 0 minutes to 'idle'");
-        assert_eq!(neutral_minutes, 0.0, "Activity with only 'creating' tag should contribute 0 minutes to 'neutral'");
+        assert_eq!(
+            creating_minutes, 60.0,
+            "Activity with 1 'creating' tag should contribute full 60 minutes to 'creating'"
+        );
+        assert_eq!(
+            idle_minutes, 0.0,
+            "Activity with only 'creating' tag should contribute 0 minutes to 'idle'"
+        );
+        assert_eq!(
+            neutral_minutes, 0.0,
+            "Activity with only 'creating' tag should contribute 0 minutes to 'neutral'"
+        );
 
         Ok(())
     }
@@ -489,7 +558,7 @@ mod tests {
         let tags = [
             ("creating-tag-id", "creating"),
             ("consuming-tag-id", "consuming"),
-            ("neutral-tag-id", "neutral")
+            ("neutral-tag-id", "neutral"),
         ];
 
         for (tag_id, _tag_name) in tags {
@@ -507,22 +576,45 @@ mod tests {
         let query_end = datetime!(2025-01-03 12:00:00 UTC);
 
         // Query for each of the 3 tags - should get 20 minutes each (60/3)
-        let creating_minutes = repo.calculate_tagged_duration_in_range("creating", query_start, query_end).await?;
-        let consuming_minutes = repo.calculate_tagged_duration_in_range("consuming", query_start, query_end).await?;
-        let neutral_minutes = repo.calculate_tagged_duration_in_range("neutral", query_start, query_end).await?;
+        let creating_minutes = repo
+            .calculate_tagged_duration_in_range("creating", query_start, query_end)
+            .await?;
+        let consuming_minutes = repo
+            .calculate_tagged_duration_in_range("consuming", query_start, query_end)
+            .await?;
+        let neutral_minutes = repo
+            .calculate_tagged_duration_in_range("neutral", query_start, query_end)
+            .await?;
 
         // Query for tag not on this activity - should get 0 minutes
-        let idle_minutes = repo.calculate_tagged_duration_in_range("idle", query_start, query_end).await?;
+        let idle_minutes = repo
+            .calculate_tagged_duration_in_range("idle", query_start, query_end)
+            .await?;
 
         // Assertions - each of the 3 tags should get 20 minutes (60/3)
-        assert_eq!(creating_minutes, 20.0, "Activity with 3 tags should contribute 20 minutes (60/3) to 'creating'");
-        assert_eq!(consuming_minutes, 20.0, "Activity with 3 tags should contribute 20 minutes (60/3) to 'consuming'");
-        assert_eq!(neutral_minutes, 20.0, "Activity with 3 tags should contribute 20 minutes (60/3) to 'neutral'");
-        assert_eq!(idle_minutes, 0.0, "Activity without 'idle' tag should contribute 0 minutes to 'idle'");
+        assert_eq!(
+            creating_minutes, 20.0,
+            "Activity with 3 tags should contribute 20 minutes (60/3) to 'creating'"
+        );
+        assert_eq!(
+            consuming_minutes, 20.0,
+            "Activity with 3 tags should contribute 20 minutes (60/3) to 'consuming'"
+        );
+        assert_eq!(
+            neutral_minutes, 20.0,
+            "Activity with 3 tags should contribute 20 minutes (60/3) to 'neutral'"
+        );
+        assert_eq!(
+            idle_minutes, 0.0,
+            "Activity without 'idle' tag should contribute 0 minutes to 'idle'"
+        );
 
         // Verify total adds up correctly
         let total = creating_minutes + consuming_minutes + neutral_minutes;
-        assert_eq!(total, 60.0, "Sum of all tag times should equal original duration");
+        assert_eq!(
+            total, 60.0,
+            "Sum of all tag times should equal original duration"
+        );
 
         Ok(())
     }
@@ -601,10 +693,18 @@ mod tests {
         let query_end = datetime!(2025-01-04 12:00:00 UTC);
 
         // Query for each tag and verify expected summation
-        let creating_minutes = repo.calculate_tagged_duration_in_range("creating", query_start, query_end).await?;
-        let neutral_minutes = repo.calculate_tagged_duration_in_range("neutral", query_start, query_end).await?;
-        let consuming_minutes = repo.calculate_tagged_duration_in_range("consuming", query_start, query_end).await?;
-        let idle_minutes = repo.calculate_tagged_duration_in_range("idle", query_start, query_end).await?;
+        let creating_minutes = repo
+            .calculate_tagged_duration_in_range("creating", query_start, query_end)
+            .await?;
+        let neutral_minutes = repo
+            .calculate_tagged_duration_in_range("neutral", query_start, query_end)
+            .await?;
+        let consuming_minutes = repo
+            .calculate_tagged_duration_in_range("consuming", query_start, query_end)
+            .await?;
+        let idle_minutes = repo
+            .calculate_tagged_duration_in_range("idle", query_start, query_end)
+            .await?;
 
         // Expected calculations (accounting for SQLite ROUND behavior with banker's rounding):
         // "creating":
@@ -613,7 +713,10 @@ mod tests {
         //   - State 3: 7 minutes (2 tags, gets ROUND(15/2) = ROUND(7.5) = 8, but banker's rounding gives 7)
         //   - State 4: 5 minutes (3 tags, gets ROUND(15/3) = ROUND(5.0) = 5)
         //   - Total: 0 + 15 + 7 + 5 = 27 minutes
-        assert_eq!(creating_minutes, 27.5, "Creating should get sum from states 2, 3, and 4: 15 + 7.5 + 5 = 27.5 (application-side precision)");
+        assert_eq!(
+            creating_minutes, 27.5,
+            "Creating should get sum from states 2, 3, and 4: 15 + 7.5 + 5 = 27.5 (application-side precision)"
+        );
 
         // "neutral":
         //   - State 1: 0 minutes (no tags)
@@ -621,7 +724,10 @@ mod tests {
         //   - State 3: 7.5 minutes (2 tags, gets 15/2 = 7.5)
         //   - State 4: 5 minutes (3 tags, gets 15/3 = 5)
         //   - Total: 0 + 0 + 7.5 + 5 = 12.5 minutes
-        assert_eq!(neutral_minutes, 12.5, "Neutral should get sum from states 3 and 4: 7.5 + 5 = 12.5 (application-side precision)");
+        assert_eq!(
+            neutral_minutes, 12.5,
+            "Neutral should get sum from states 3 and 4: 7.5 + 5 = 12.5 (application-side precision)"
+        );
 
         // "consuming":
         //   - State 1: 0 minutes (no tags)
@@ -629,12 +735,18 @@ mod tests {
         //   - State 3: 0 minutes (doesn't have consuming tag)
         //   - State 4: 5 minutes (3 tags, gets 15/3)
         //   - Total: 0 + 0 + 0 + 5 = 5 minutes
-        assert_eq!(consuming_minutes, 5.0, "Consuming should get sum from state 4 only: 5");
+        assert_eq!(
+            consuming_minutes, 5.0,
+            "Consuming should get sum from state 4 only: 5"
+        );
 
         // "idle":
         //   - No activity states have idle tag
         //   - Total: 0 minutes
-        assert_eq!(idle_minutes, 0.0, "Idle should get 0 minutes as no activity states have idle tag");
+        assert_eq!(
+            idle_minutes, 0.0,
+            "Idle should get 0 minutes as no activity states have idle tag"
+        );
 
         // Verify that the original 60 minutes is properly distributed
         // Note: Time can be counted multiple times across different tags for the same activity
@@ -710,48 +822,68 @@ mod tests {
 
         // Scenario 1: Query starts before State A and ends during State A
         // Query 9:30-10:30 should overlap with State A for 10:00-10:30 = 30 minutes
-        let clip_start_result = repo.calculate_tagged_duration_in_range(
-            "creating",
-            datetime!(2025-01-05 9:30:00 UTC),
-            datetime!(2025-01-05 10:30:00 UTC),
-        ).await?;
-        assert_eq!(clip_start_result, 30.0, "Query 9:30-10:30 should clip State A to get 30 minutes for creating");
+        let clip_start_result = repo
+            .calculate_tagged_duration_in_range(
+                "creating",
+                datetime!(2025-01-05 9:30:00 UTC),
+                datetime!(2025-01-05 10:30:00 UTC),
+            )
+            .await?;
+        assert_eq!(
+            clip_start_result, 30.0,
+            "Query 9:30-10:30 should clip State A to get 30 minutes for creating"
+        );
 
         // Scenario 2: Query starts during State A and ends after State A
         // Query 10:45-11:15 should overlap with:
         // - State A: 10:45-11:00 = 15 minutes (1 tag, gets full 15 minutes)
         // - State B: 10:45-11:15 = 30 minutes (2 tags, gets 30/2 = 15 minutes)
         // Expected: 15 + 15 = 30 minutes
-        let clip_end_result = repo.calculate_tagged_duration_in_range(
-            "creating",
-            datetime!(2025-01-05 10:45:00 UTC),
-            datetime!(2025-01-05 11:15:00 UTC),
-        ).await?;
-        assert_eq!(clip_end_result, 30.0, "Query 10:45-11:15 should clip states to get 30 minutes for creating");
+        let clip_end_result = repo
+            .calculate_tagged_duration_in_range(
+                "creating",
+                datetime!(2025-01-05 10:45:00 UTC),
+                datetime!(2025-01-05 11:15:00 UTC),
+            )
+            .await?;
+        assert_eq!(
+            clip_end_result, 30.0,
+            "Query 10:45-11:15 should clip states to get 30 minutes for creating"
+        );
 
         // Scenario 3: Query fully contains State A
         // Query 9:30-11:30 should overlap with:
         // - State A: 10:00-11:00 = 60 minutes (1 tag, gets full 60 minutes)
         // - State B: 10:30-11:30 = 60 minutes (2 tags, gets 60/2 = 30 minutes)
         // Expected: 60 + 30 = 90 minutes
-        let fully_contains_result = repo.calculate_tagged_duration_in_range(
-            "creating",
-            datetime!(2025-01-05 9:30:00 UTC),
-            datetime!(2025-01-05 11:30:00 UTC),
-        ).await?;
-        assert_eq!(fully_contains_result, 90.0, "Query 9:30-11:30 should fully contain states and get 90 minutes for creating");
+        let fully_contains_result = repo
+            .calculate_tagged_duration_in_range(
+                "creating",
+                datetime!(2025-01-05 9:30:00 UTC),
+                datetime!(2025-01-05 11:30:00 UTC),
+            )
+            .await?;
+        assert_eq!(
+            fully_contains_result, 90.0,
+            "Query 9:30-11:30 should fully contain states and get 90 minutes for creating"
+        );
 
         // Scenario 4: Query range overlaps with both states
         // Query 10:15-10:45 should overlap with:
         // - State A: 10:15-10:45 = 30 minutes (1 tag, gets full 30 minutes)
         // - State B: 10:30-10:45 = 15 minutes (2 tags, gets 15/2 = 7.5 minutes, rounded to 8)
         // Expected: 30 + 8 = 38 minutes
-        let overlapping_states_result = repo.calculate_tagged_duration_in_range(
-            "creating",
-            datetime!(2025-01-05 10:15:00 UTC),
-            datetime!(2025-01-05 10:45:00 UTC),
-        ).await?;
-        assert_eq!(overlapping_states_result, 37.5, "Query 10:15-10:45 overlapping both states should get 37.5 minutes for creating");
+        let overlapping_states_result = repo
+            .calculate_tagged_duration_in_range(
+                "creating",
+                datetime!(2025-01-05 10:15:00 UTC),
+                datetime!(2025-01-05 10:45:00 UTC),
+            )
+            .await?;
+        assert_eq!(
+            overlapping_states_result, 37.5,
+            "Query 10:15-10:45 overlapping both states should get 37.5 minutes for creating"
+        );
 
         Ok(())
     }
@@ -763,38 +895,58 @@ mod tests {
         // Test scenarios that should return 0 minutes
 
         // Scenario 1: Query for tag that doesn't exist on any activity states
-        let nonexistent_tag_result = repo.calculate_tagged_duration_in_range(
-            "nonexistent_tag",
-            datetime!(2025-01-04 9:00:00.0 +00:00:00),
-            datetime!(2025-01-04 12:00:00.0 +00:00:00),
-        ).await?;
-        assert_eq!(nonexistent_tag_result, 0.0, "Nonexistent tag should return 0 minutes");
+        let nonexistent_tag_result = repo
+            .calculate_tagged_duration_in_range(
+                "nonexistent_tag",
+                datetime!(2025-01-04 9:00:00.0 +00:00:00),
+                datetime!(2025-01-04 12:00:00.0 +00:00:00),
+            )
+            .await?;
+        assert_eq!(
+            nonexistent_tag_result, 0.0,
+            "Nonexistent tag should return 0 minutes"
+        );
 
         // Scenario 2: Query for time range completely outside all activity states (before)
-        let before_range_result = repo.calculate_tagged_duration_in_range(
-            "creating",
-            datetime!(2025-01-04 6:00:00.0 +00:00:00),  // 6:00-7:00 (before our 9:00-12:00 data)
-            datetime!(2025-01-04 7:00:00.0 +00:00:00),
-        ).await?;
-        assert_eq!(before_range_result, 0.0, "Time range before all activity states should return 0 minutes");
+        let before_range_result = repo
+            .calculate_tagged_duration_in_range(
+                "creating",
+                datetime!(2025-01-04 6:00:00.0 +00:00:00), // 6:00-7:00 (before our 9:00-12:00 data)
+                datetime!(2025-01-04 7:00:00.0 +00:00:00),
+            )
+            .await?;
+        assert_eq!(
+            before_range_result, 0.0,
+            "Time range before all activity states should return 0 minutes"
+        );
 
         // Scenario 3: Query for time range completely outside all activity states (after)
-        let after_range_result = repo.calculate_tagged_duration_in_range(
-            "creating",
-            datetime!(2025-01-04 15:00:00.0 +00:00:00), // 15:00-16:00 (after our 9:00-12:00 data)
-            datetime!(2025-01-04 16:00:00.0 +00:00:00),
-        ).await?;
-        assert_eq!(after_range_result, 0.0, "Time range after all activity states should return 0 minutes");
+        let after_range_result = repo
+            .calculate_tagged_duration_in_range(
+                "creating",
+                datetime!(2025-01-04 15:00:00.0 +00:00:00), // 15:00-16:00 (after our 9:00-12:00 data)
+                datetime!(2025-01-04 16:00:00.0 +00:00:00),
+            )
+            .await?;
+        assert_eq!(
+            after_range_result, 0.0,
+            "Time range after all activity states should return 0 minutes"
+        );
 
         // Scenario 4: Query for time range with no activity states (gap between states)
         // Our current test data has 4 contiguous 15-minute states from 9:00-12:00
         // Let's query a gap that could exist between activities
-        let gap_range_result = repo.calculate_tagged_duration_in_range(
-            "creating",
-            datetime!(2025-01-04 12:30:00.0 +00:00:00), // 12:30-13:30 (gap after our data)
-            datetime!(2025-01-04 13:30:00.0 +00:00:00),
-        ).await?;
-        assert_eq!(gap_range_result, 0.0, "Time range in gap between activity states should return 0 minutes");
+        let gap_range_result = repo
+            .calculate_tagged_duration_in_range(
+                "creating",
+                datetime!(2025-01-04 12:30:00.0 +00:00:00), // 12:30-13:30 (gap after our data)
+                datetime!(2025-01-04 13:30:00.0 +00:00:00),
+            )
+            .await?;
+        assert_eq!(
+            gap_range_result, 0.0,
+            "Time range in gap between activity states should return 0 minutes"
+        );
 
         Ok(())
     }
@@ -837,20 +989,40 @@ mod tests {
         let query_end = datetime!(2025-01-03 12:00:00 UTC);
 
         // Query for "coding" (category type) - should get full 60 minutes
-        let coding_minutes = repo.calculate_tagged_duration_in_range("coding", query_start, query_end).await?;
+        let coding_minutes = repo
+            .calculate_tagged_duration_in_range("coding", query_start, query_end)
+            .await?;
 
         // Query for default type tags - should get 0 minutes since this activity only has category tags
-        let creating_minutes = repo.calculate_tagged_duration_in_range("creating", query_start, query_end).await?;
-        let neutral_minutes = repo.calculate_tagged_duration_in_range("neutral", query_start, query_end).await?;
+        let creating_minutes = repo
+            .calculate_tagged_duration_in_range("creating", query_start, query_end)
+            .await?;
+        let neutral_minutes = repo
+            .calculate_tagged_duration_in_range("neutral", query_start, query_end)
+            .await?;
 
         // Query for other category tags - should get 0 minutes
-        let browsing_minutes = repo.calculate_tagged_duration_in_range("browsing", query_start, query_end).await?;
+        let browsing_minutes = repo
+            .calculate_tagged_duration_in_range("browsing", query_start, query_end)
+            .await?;
 
         // Assertions
-        assert_eq!(coding_minutes, 60.0, "Activity with 1 'coding' category tag should contribute full 60 minutes to 'coding'");
-        assert_eq!(creating_minutes, 0.0, "Activity with only category tags should contribute 0 minutes to default 'creating' tag");
-        assert_eq!(neutral_minutes, 0.0, "Activity with only category tags should contribute 0 minutes to default 'neutral' tag");
-        assert_eq!(browsing_minutes, 0.0, "Activity with only 'coding' tag should contribute 0 minutes to 'browsing'");
+        assert_eq!(
+            coding_minutes, 60.0,
+            "Activity with 1 'coding' category tag should contribute full 60 minutes to 'coding'"
+        );
+        assert_eq!(
+            creating_minutes, 0.0,
+            "Activity with only category tags should contribute 0 minutes to default 'creating' tag"
+        );
+        assert_eq!(
+            neutral_minutes, 0.0,
+            "Activity with only category tags should contribute 0 minutes to default 'neutral' tag"
+        );
+        assert_eq!(
+            browsing_minutes, 0.0,
+            "Activity with only 'coding' tag should contribute 0 minutes to 'browsing'"
+        );
 
         Ok(())
     }
@@ -891,20 +1063,40 @@ mod tests {
         let query_end = datetime!(2025-01-03 16:00:00 UTC);
 
         // Query for each category tag - should get 60/2 = 30 minutes each
-        let coding_minutes = repo.calculate_tagged_duration_in_range("coding", query_start, query_end).await?;
-        let browsing_minutes = repo.calculate_tagged_duration_in_range("browsing", query_start, query_end).await?;
+        let coding_minutes = repo
+            .calculate_tagged_duration_in_range("coding", query_start, query_end)
+            .await?;
+        let browsing_minutes = repo
+            .calculate_tagged_duration_in_range("browsing", query_start, query_end)
+            .await?;
 
         // Query for default type tags - should get 0 minutes since this activity only has category tags
-        let creating_minutes = repo.calculate_tagged_duration_in_range("creating", query_start, query_end).await?;
+        let creating_minutes = repo
+            .calculate_tagged_duration_in_range("creating", query_start, query_end)
+            .await?;
 
         // Query for other category tags - should get 0 minutes
-        let writing_minutes = repo.calculate_tagged_duration_in_range("writing", query_start, query_end).await?;
+        let writing_minutes = repo
+            .calculate_tagged_duration_in_range("writing", query_start, query_end)
+            .await?;
 
         // Assertions
-        assert_eq!(coding_minutes, 30.0, "Activity with 2 category tags should contribute 30 minutes to 'coding'");
-        assert_eq!(browsing_minutes, 30.0, "Activity with 2 category tags should contribute 30 minutes to 'browsing'");
-        assert_eq!(creating_minutes, 0.0, "Activity with only category tags should contribute 0 minutes to default 'creating' tag");
-        assert_eq!(writing_minutes, 0.0, "Activity without 'writing' tag should contribute 0 minutes to 'writing'");
+        assert_eq!(
+            coding_minutes, 30.0,
+            "Activity with 2 category tags should contribute 30 minutes to 'coding'"
+        );
+        assert_eq!(
+            browsing_minutes, 30.0,
+            "Activity with 2 category tags should contribute 30 minutes to 'browsing'"
+        );
+        assert_eq!(
+            creating_minutes, 0.0,
+            "Activity with only category tags should contribute 0 minutes to default 'creating' tag"
+        );
+        assert_eq!(
+            writing_minutes, 0.0,
+            "Activity without 'writing' tag should contribute 0 minutes to 'writing'"
+        );
 
         Ok(())
     }
@@ -948,28 +1140,54 @@ mod tests {
         let query_end = datetime!(2025-01-03 20:00:00 UTC);
 
         // Query for default tags - should split among 2 default tags: 60/2 = 30 minutes each
-        let creating_minutes = repo.calculate_tagged_duration_in_range("creating", query_start, query_end).await?;
-        let neutral_minutes = repo.calculate_tagged_duration_in_range("neutral", query_start, query_end).await?;
+        let creating_minutes = repo
+            .calculate_tagged_duration_in_range("creating", query_start, query_end)
+            .await?;
+        let neutral_minutes = repo
+            .calculate_tagged_duration_in_range("neutral", query_start, query_end)
+            .await?;
 
         // Query for category tag - should get full 60 minutes since it's the only category tag
-        let coding_minutes = repo.calculate_tagged_duration_in_range("coding", query_start, query_end).await?;
+        let coding_minutes = repo
+            .calculate_tagged_duration_in_range("coding", query_start, query_end)
+            .await?;
 
         // Query for other tags - should get 0 minutes
-        let consuming_minutes = repo.calculate_tagged_duration_in_range("consuming", query_start, query_end).await?;
-        let browsing_minutes = repo.calculate_tagged_duration_in_range("browsing", query_start, query_end).await?;
+        let consuming_minutes = repo
+            .calculate_tagged_duration_in_range("consuming", query_start, query_end)
+            .await?;
+        let browsing_minutes = repo
+            .calculate_tagged_duration_in_range("browsing", query_start, query_end)
+            .await?;
 
         // Assertions
-        assert_eq!(creating_minutes, 30.0, "Activity with mixed tags should contribute 30 minutes to 'creating' (split among 2 default tags)");
-        assert_eq!(neutral_minutes, 30.0, "Activity with mixed tags should contribute 30 minutes to 'neutral' (split among 2 default tags)");
-        assert_eq!(coding_minutes, 60.0, "Activity with mixed tags should contribute full 60 minutes to 'coding' (only category tag)");
-        assert_eq!(consuming_minutes, 0.0, "Activity without 'consuming' tag should contribute 0 minutes");
-        assert_eq!(browsing_minutes, 0.0, "Activity without 'browsing' tag should contribute 0 minutes");
+        assert_eq!(
+            creating_minutes, 30.0,
+            "Activity with mixed tags should contribute 30 minutes to 'creating' (split among 2 default tags)"
+        );
+        assert_eq!(
+            neutral_minutes, 30.0,
+            "Activity with mixed tags should contribute 30 minutes to 'neutral' (split among 2 default tags)"
+        );
+        assert_eq!(
+            coding_minutes, 60.0,
+            "Activity with mixed tags should contribute full 60 minutes to 'coding' (only category tag)"
+        );
+        assert_eq!(
+            consuming_minutes, 0.0,
+            "Activity without 'consuming' tag should contribute 0 minutes"
+        );
+        assert_eq!(
+            browsing_minutes, 0.0,
+            "Activity without 'browsing' tag should contribute 0 minutes"
+        );
 
         Ok(())
     }
 
     #[tokio::test]
-    async fn test_calculate_tagged_duration_multiple_default_and_multiple_category_tags() -> Result<()> {
+    async fn test_calculate_tagged_duration_multiple_default_and_multiple_category_tags()
+    -> Result<()> {
         let repo = setup_test_repo().await?;
 
         // Test 1-hour period with one activity state that has multiple tags of both types
@@ -1009,30 +1227,65 @@ mod tests {
         let query_end = datetime!(2025-01-04 00:00:00 UTC);
 
         // Query for default tags - should split among 3 default tags: 60/3 = 20 minutes each
-        let creating_minutes = repo.calculate_tagged_duration_in_range("creating", query_start, query_end).await?;
-        let consuming_minutes = repo.calculate_tagged_duration_in_range("consuming", query_start, query_end).await?;
-        let neutral_minutes = repo.calculate_tagged_duration_in_range("neutral", query_start, query_end).await?;
+        let creating_minutes = repo
+            .calculate_tagged_duration_in_range("creating", query_start, query_end)
+            .await?;
+        let consuming_minutes = repo
+            .calculate_tagged_duration_in_range("consuming", query_start, query_end)
+            .await?;
+        let neutral_minutes = repo
+            .calculate_tagged_duration_in_range("neutral", query_start, query_end)
+            .await?;
 
         // Query for category tags - should split among 2 category tags: 60/2 = 30 minutes each
-        let coding_minutes = repo.calculate_tagged_duration_in_range("coding", query_start, query_end).await?;
-        let writing_minutes = repo.calculate_tagged_duration_in_range("writing", query_start, query_end).await?;
+        let coding_minutes = repo
+            .calculate_tagged_duration_in_range("coding", query_start, query_end)
+            .await?;
+        let writing_minutes = repo
+            .calculate_tagged_duration_in_range("writing", query_start, query_end)
+            .await?;
 
         // Query for other tags - should get 0 minutes
-        let idle_minutes = repo.calculate_tagged_duration_in_range("idle", query_start, query_end).await?;
-        let browsing_minutes = repo.calculate_tagged_duration_in_range("browsing", query_start, query_end).await?;
+        let idle_minutes = repo
+            .calculate_tagged_duration_in_range("idle", query_start, query_end)
+            .await?;
+        let browsing_minutes = repo
+            .calculate_tagged_duration_in_range("browsing", query_start, query_end)
+            .await?;
 
         // Assertions for default tags (split among 3)
-        assert_eq!(creating_minutes, 20.0, "Activity should contribute 20 minutes to 'creating' (split among 3 default tags)");
-        assert_eq!(consuming_minutes, 20.0, "Activity should contribute 20 minutes to 'consuming' (split among 3 default tags)");
-        assert_eq!(neutral_minutes, 20.0, "Activity should contribute 20 minutes to 'neutral' (split among 3 default tags)");
+        assert_eq!(
+            creating_minutes, 20.0,
+            "Activity should contribute 20 minutes to 'creating' (split among 3 default tags)"
+        );
+        assert_eq!(
+            consuming_minutes, 20.0,
+            "Activity should contribute 20 minutes to 'consuming' (split among 3 default tags)"
+        );
+        assert_eq!(
+            neutral_minutes, 20.0,
+            "Activity should contribute 20 minutes to 'neutral' (split among 3 default tags)"
+        );
 
         // Assertions for category tags (split among 2)
-        assert_eq!(coding_minutes, 30.0, "Activity should contribute 30 minutes to 'coding' (split among 2 category tags)");
-        assert_eq!(writing_minutes, 30.0, "Activity should contribute 30 minutes to 'writing' (split among 2 category tags)");
+        assert_eq!(
+            coding_minutes, 30.0,
+            "Activity should contribute 30 minutes to 'coding' (split among 2 category tags)"
+        );
+        assert_eq!(
+            writing_minutes, 30.0,
+            "Activity should contribute 30 minutes to 'writing' (split among 2 category tags)"
+        );
 
         // Assertions for tags not present
-        assert_eq!(idle_minutes, 0.0, "Activity without 'idle' tag should contribute 0 minutes");
-        assert_eq!(browsing_minutes, 0.0, "Activity without 'browsing' tag should contribute 0 minutes");
+        assert_eq!(
+            idle_minutes, 0.0,
+            "Activity without 'idle' tag should contribute 0 minutes"
+        );
+        assert_eq!(
+            browsing_minutes, 0.0,
+            "Activity without 'browsing' tag should contribute 0 minutes"
+        );
 
         Ok(())
     }
@@ -1080,30 +1333,52 @@ mod tests {
         let query_end = datetime!(2025-01-04 10:00:00 UTC);
 
         // Query for tags - should split proportionally among the number of records of the same tag_type
-        let creating_minutes = repo.calculate_tagged_duration_in_range("creating", query_start, query_end).await?;
-        let neutral_minutes = repo.calculate_tagged_duration_in_range("neutral", query_start, query_end).await?;
+        let creating_minutes = repo
+            .calculate_tagged_duration_in_range("creating", query_start, query_end)
+            .await?;
+        let neutral_minutes = repo
+            .calculate_tagged_duration_in_range("neutral", query_start, query_end)
+            .await?;
 
         // Query for tags not present - should get 0 minutes
-        let consuming_minutes = repo.calculate_tagged_duration_in_range("consuming", query_start, query_end).await?;
-        let idle_minutes = repo.calculate_tagged_duration_in_range("idle", query_start, query_end).await?;
+        let consuming_minutes = repo
+            .calculate_tagged_duration_in_range("consuming", query_start, query_end)
+            .await?;
+        let idle_minutes = repo
+            .calculate_tagged_duration_in_range("idle", query_start, query_end)
+            .await?;
 
         // Assertions
         // Total default tag records: 3 creating + 2 neutral = 5 records
         // Each record gets: 60 minutes ÷ 5 records = 12 minutes per record
         // Creating total: 3 records × 12 minutes = 36 minutes
         // Neutral total: 2 records × 12 minutes = 24 minutes
-        assert_eq!(creating_minutes, 36.0, "Creating should get 3/5ths of total time: 3 × 12 = 36 minutes");
-        assert_eq!(neutral_minutes, 24.0, "Neutral should get 2/5ths of total time: 2 × 12 = 24 minutes");
-        assert_eq!(consuming_minutes, 0.0, "Activity without 'consuming' tag should contribute 0 minutes");
-        assert_eq!(idle_minutes, 0.0, "Activity without 'idle' tag should contribute 0 minutes");
+        assert_eq!(
+            creating_minutes, 36.0,
+            "Creating should get 3/5ths of total time: 3 × 12 = 36 minutes"
+        );
+        assert_eq!(
+            neutral_minutes, 24.0,
+            "Neutral should get 2/5ths of total time: 2 × 12 = 24 minutes"
+        );
+        assert_eq!(
+            consuming_minutes, 0.0,
+            "Activity without 'consuming' tag should contribute 0 minutes"
+        );
+        assert_eq!(
+            idle_minutes, 0.0,
+            "Activity without 'idle' tag should contribute 0 minutes"
+        );
 
         // Verify total adds up correctly
         let total = creating_minutes + neutral_minutes;
-        assert_eq!(total, 60.0, "Sum of all tag times should equal original duration");
+        assert_eq!(
+            total, 60.0,
+            "Sum of all tag times should equal original duration"
+        );
 
         Ok(())
     }
-
 
     // ===== OTHER REPOSITORY TESTS =====
 
@@ -1130,7 +1405,7 @@ mod tests {
         .bind(test_start)
         .execute(pool)
         .await?;
-    
+
         // Test retrieval of existing activity state from seeded data
         let result = repo.get_activity_state(999003).await?;
         assert!(result.is_some());
