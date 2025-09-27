@@ -15,3 +15,7 @@ export const isCanaryUser = (email?: string) => {
 export const isFocusScheduleFeatureEnabled = (email?: string) => {
   return isCanaryUser(email)
 }
+
+export const isTideGoalsFeatureEnabled = (email?: string) => {
+  return isCanaryUser(email)
+}

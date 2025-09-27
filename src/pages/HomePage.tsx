@@ -9,10 +9,12 @@ import {
 } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
 import { useAuth } from '@/hooks/useAuth'
+import { UsageSummary } from '@/components/UsageSummary'
 import { UsageSummaryWithTides } from '@/components/UsageSummaryWithTides'
 import { PermissionAlert } from '@/components/PermissionAlert'
 import { useUsageSummary } from './useUsageSummary'
 import { RangeModeSelector } from '@/components/RangeModeSelector'
+import { isTideGoalsFeatureEnabled } from '@/lib/utils/environment.util'
 
 export const HomePage = () => {
   const { user } = useAuth()
@@ -33,7 +35,13 @@ export const HomePage = () => {
     showIdleTime,
     setShowIdleTime,
     lastUpdated,
+    totalCreating,
+    totalTime,
+    totalTimeTooltip,
+    totalTimeLabel,
   } = useUsageSummary()
+
+  const isTideGoalsEnabled = isTideGoalsFeatureEnabled(user?.email)
 
 
   return (
@@ -84,17 +92,36 @@ export const HomePage = () => {
               </Popover>
             </div>
           </div>
-          <UsageSummaryWithTides
-            chartData={chartData || []}
-            appUsage={appUsage || []}
-            isLoading={isLoading}
-            yAxisMax={yAxisMax}
-            showIdleTime={showIdleTime}
-            setShowIdleTime={setShowIdleTime}
-            rangeMode={rangeMode}
-            date={date}
-            lastUpdated={lastUpdated}
-          />
+          {isTideGoalsEnabled ? (
+            <UsageSummaryWithTides
+              chartData={chartData || []}
+              appUsage={appUsage || []}
+              isLoading={isLoading}
+              yAxisMax={yAxisMax}
+              showIdleTime={showIdleTime}
+              setShowIdleTime={setShowIdleTime}
+              rangeMode={rangeMode}
+              date={date}
+              lastUpdated={lastUpdated}
+            />
+          ) : (
+            <UsageSummary
+              totalTimeLabel={totalTimeLabel}
+              totalTimeTooltip={totalTimeTooltip}
+              totalTime={totalTime}
+              totalCreating={totalCreating}
+              chartData={chartData || []}
+              appUsage={appUsage || []}
+              showTopAppsButton={true}
+              showIdleTime={showIdleTime}
+              setShowIdleTime={setShowIdleTime}
+              isLoading={isLoading}
+              yAxisMax={yAxisMax}
+              rangeMode={rangeMode}
+              date={date}
+              lastUpdated={lastUpdated}
+            />
+          )}
         </div>
       </div>
     </Layout>
