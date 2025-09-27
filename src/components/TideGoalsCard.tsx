@@ -15,7 +15,6 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'daily' | 'weekly'>('daily')
 
-  // Fetch real tide data
   const { data: dailyTideData, isLoading: isDailyLoading, error: dailyError } = useGetCurrentDailyTide(metricsType)
   const { data: weeklyTideData, isLoading: isWeeklyLoading, error: weeklyError } = useGetCurrentWeeklyTide(metricsType)
 

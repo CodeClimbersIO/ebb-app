@@ -28,7 +28,8 @@ export const useGetCurrentDailyTide = (metricsType = 'creating') => {
     queryKey: tideKeys.daily(metricsType),
     queryFn: () => TideApi.getCurrentDailyTide(metricsType),
     staleTime: 30000,
-    refetchInterval: 60000,
+    refetchInterval: 30000, // More frequent refresh (30 seconds like UsageSummary)
+    refetchOnWindowFocus: true,
   })
 }
 
@@ -37,7 +38,8 @@ export const useGetCurrentWeeklyTide = (metricsType = 'creating') => {
     queryKey: tideKeys.weekly(metricsType),
     queryFn: () => TideApi.getCurrentWeeklyTide(metricsType),
     staleTime: 30000,
-    refetchInterval: 60000,
+    refetchInterval: 30000, // More frequent refresh (30 seconds like UsageSummary)
+    refetchOnWindowFocus: true,
   })
 }
 
