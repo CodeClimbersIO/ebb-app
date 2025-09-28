@@ -154,7 +154,7 @@ export const UsageSummaryWithTides = ({
       {/* Two-column layout: Goals card on left, Chart on right */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         {/* Tide Goals Card */}
-        <TideGoalsCard />
+        <TideGoalsCard date={date}/>
 
         {/* Chart Card - spans 2 columns */}
         <Card className="md:col-span-2">

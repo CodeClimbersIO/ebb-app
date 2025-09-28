@@ -3,9 +3,7 @@ import { TideApi, Tide, TideTemplate } from '../ebbApi/tideApi'
 
 const tideKeys = {
   all: ['tides'] as const,
-  overview: (metricsType?: string) => [...tideKeys.all, 'overview', metricsType] as const,
-  daily: (metricsType?: string) => [...tideKeys.all, 'daily', metricsType] as const,
-  weekly: (metricsType?: string) => [...tideKeys.all, 'weekly', metricsType] as const,
+  overview: (date?: Date) => [...tideKeys.all, 'overview', date?.toISOString()] as const,
   recent: (limit?: number) => [...tideKeys.all, 'recent', limit] as const,
   active: () => [...tideKeys.all, 'active'] as const,
   templates: () => [...tideKeys.all, 'templates'] as const,
@@ -14,34 +12,35 @@ const tideKeys = {
 
 // Query Hooks
 
-export const useGetTideOverview = (metricsType = 'creating') => {
+export const useGetTideOverview = (date = new Date()) => {
+  console.log('useGetTideOverview', date)
   return useQuery({
-    queryKey: tideKeys.overview(metricsType),
-    queryFn: () => TideApi.getTideOverview(metricsType),
+    queryKey: tideKeys.overview(date),
+    queryFn: () => TideApi.getTideOverview(date),
     staleTime: 30000, // 30 seconds - tides update frequently
     refetchInterval: 60000, // Refetch every minute for real-time updates
   })
 }
 
-export const useGetCurrentDailyTide = (metricsType = 'creating') => {
-  return useQuery({
-    queryKey: tideKeys.daily(metricsType),
-    queryFn: () => TideApi.getCurrentDailyTide(metricsType),
-    staleTime: 30000,
-    refetchInterval: 30000, // More frequent refresh (30 seconds like UsageSummary)
-    refetchOnWindowFocus: true,
-  })
-}
+// export const useGetCurrentDailyTide = (metricsType = 'creating') => {
+//   return useQuery({
+//     queryKey: tideKeys.daily(metricsType),
+//     queryFn: () => TideApi.getCurrentDailyTide(metricsType),
+//     staleTime: 30000,
+//     refetchInterval: 30000, // More frequent refresh (30 seconds like UsageSummary)
+//     refetchOnWindowFocus: true,
+//   })
+// }
 
-export const useGetCurrentWeeklyTide = (metricsType = 'creating') => {
-  return useQuery({
-    queryKey: tideKeys.weekly(metricsType),
-    queryFn: () => TideApi.getCurrentWeeklyTide(metricsType),
-    staleTime: 30000,
-    refetchInterval: 30000, // More frequent refresh (30 seconds like UsageSummary)
-    refetchOnWindowFocus: true,
-  })
-}
+// export const useGetCurrentWeeklyTide = (metricsType = 'creating') => {
+//   return useQuery({
+//     queryKey: tideKeys.weekly(metricsType),
+//     queryFn: () => TideApi.getCurrentWeeklyTide(metricsType),
+//     staleTime: 30000,
+//     refetchInterval: 30000, // More frequent refresh (30 seconds like UsageSummary)
+//     refetchOnWindowFocus: true,
+//   })
+// }
 
 export const useGetRecentTides = (limit = 10) => {
   return useQuery({
@@ -134,11 +133,9 @@ export const useCreateTide = () => {
       goalAmount: number
       tideTemplateId: string
     }) => TideApi.createTide(start, end, metricsType, tideFrequency, goalAmount, tideTemplateId),
-    onSuccess: (_, { metricsType }) => {
+    onSuccess: () => {
       // Invalidate related queries
-      queryClient.invalidateQueries({ queryKey: tideKeys.overview(metricsType) })
-      queryClient.invalidateQueries({ queryKey: tideKeys.daily(metricsType) })
-      queryClient.invalidateQueries({ queryKey: tideKeys.weekly(metricsType) })
+      queryClient.invalidateQueries({ queryKey: tideKeys.overview() })
       queryClient.invalidateQueries({ queryKey: tideKeys.active() })
       queryClient.invalidateQueries({ queryKey: tideKeys.recent() })
     },
@@ -156,9 +153,7 @@ export const useUpdateTide = () => {
       // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: tideKeys.detail(id) })
       if (metricsType) {
-        queryClient.invalidateQueries({ queryKey: tideKeys.overview(metricsType) })
-        queryClient.invalidateQueries({ queryKey: tideKeys.daily(metricsType) })
-        queryClient.invalidateQueries({ queryKey: tideKeys.weekly(metricsType) })
+        queryClient.invalidateQueries({ queryKey: tideKeys.overview() })
       }
       queryClient.invalidateQueries({ queryKey: tideKeys.active() })
       queryClient.invalidateQueries({ queryKey: tideKeys.recent() })

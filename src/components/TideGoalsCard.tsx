@@ -1,25 +1,21 @@
 import { type FC, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { PieChart, Pie, Cell } from 'recharts'
-import { useGetCurrentDailyTide, useGetCurrentWeeklyTide } from '@/api/hooks/useTides'
 import { Skeleton } from '@/components/ui/skeleton'
-
+import { useGetTideOverview } from '../api/hooks/useTides'
 interface TideGoalsCardProps {
-  className?: string
-  metricsType?: string
+  date?: Date
 }
 
 export const TideGoalsCard: FC<TideGoalsCardProps> = ({
-  className = '',
-  metricsType = 'creating'
+  date = new Date()
 }) => {
   const [activeTab, setActiveTab] = useState<'daily' | 'weekly'>('daily')
 
-  const { data: dailyTideData, isLoading: isDailyLoading, error: dailyError } = useGetCurrentDailyTide(metricsType)
-  const { data: weeklyTideData, isLoading: isWeeklyLoading, error: weeklyError } = useGetCurrentWeeklyTide(metricsType)
+  const { data: tideData, isLoading: isTidesLoading, error: tideError } = useGetTideOverview(date)
 
-  const isLoading = isDailyLoading || isWeeklyLoading
-  const hasError = dailyError || weeklyError
+  const isLoading = isTidesLoading
+  const hasError = tideError
 
   // Format time helper
   const formatTime = (minutes: number, options: { overrideShowHours: boolean } = { overrideShowHours: false }) => {
@@ -263,7 +259,7 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({
   }
 
   return (
-    <Card className={className}>
+    <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">Tides</CardTitle>
@@ -308,14 +304,14 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({
           </div>
         ) : (
           <>
-            {activeTab === 'daily' && dailyTideData && (
+            {activeTab === 'daily' && tideData && (
               <div>
-                {renderGoalProgress(dailyTideData.progress.current, dailyTideData.progress.goal)}
+                {renderGoalProgress(tideData.daily.progress.current, tideData.daily.progress.goal)}
               </div>
             )}
-            {activeTab === 'weekly' && weeklyTideData && (
+            {activeTab === 'weekly' && tideData && (
               <div>
-                {renderGoalProgress(weeklyTideData.progress.current, weeklyTideData.progress.goal)}
+                {renderGoalProgress(tideData.weekly.progress.current, tideData.weekly.progress.goal)}
               </div>
             )}
           </>
