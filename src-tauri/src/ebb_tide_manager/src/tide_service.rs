@@ -1,14 +1,14 @@
 use ebb_db::{
-    db_manager::{self, DbManager},
     db::{
+        models::{tide::Tide, tide_template::TideTemplate},
         tide_repo::TideRepo,
         tide_template_repo::TideTemplateRepo,
-        models::{tide::Tide, tide_template::TideTemplate},
     },
+    db_manager::{self, DbManager},
 };
 use std::sync::Arc;
-use time::OffsetDateTime;
 use thiserror::Error;
+use time::OffsetDateTime;
 
 #[derive(Error, Debug)]
 pub enum TideServiceError {
@@ -34,9 +34,10 @@ pub struct TideService {
 
 impl TideService {
     pub async fn new() -> Result<Self> {
-        let db_manager = db_manager::DbManager::get_shared_ebb().await
+        let db_manager = db_manager::DbManager::get_shared_ebb()
+            .await
             .map_err(|e| TideServiceError::Database(Box::new(e)))?;
-        
+
         Ok(Self {
             tide_repo: TideRepo::new(db_manager.pool.clone()),
             tide_template_repo: TideTemplateRepo::new(db_manager.pool.clone()),
@@ -84,28 +85,39 @@ impl TideService {
     }
 
     pub async fn create_template(&self, template: &TideTemplate) -> Result<()> {
-        self.tide_template_repo.create_tide_template(template).await?;
+        self.tide_template_repo
+            .create_tide_template(template)
+            .await?;
         Ok(())
     }
 
     /// Get a specific template by ID
     pub async fn get_template(&self, template_id: &str) -> Result<Option<TideTemplate>> {
-        let template = self.tide_template_repo.get_tide_template(template_id).await?;
+        let template = self
+            .tide_template_repo
+            .get_tide_template(template_id)
+            .await?;
         Ok(template)
     }
 
     pub async fn update_template(&self, template: &TideTemplate) -> Result<()> {
-        self.tide_template_repo.update_tide_template(template).await?;
+        self.tide_template_repo
+            .update_tide_template(template)
+            .await?;
         Ok(())
     }
 
     pub async fn delete_template(&self, template_id: &str) -> Result<()> {
-        self.tide_template_repo.delete_tide_template(template_id).await?;
+        self.tide_template_repo
+            .delete_tide_template(template_id)
+            .await?;
         Ok(())
     }
 
     pub async fn update_tide_progress(&self, tide_id: &str, actual_amount: f64) -> Result<()> {
-        self.tide_repo.update_actual_amount(tide_id, actual_amount).await?;
+        self.tide_repo
+            .update_actual_amount(tide_id, actual_amount)
+            .await?;
         Ok(())
     }
 
@@ -136,38 +148,58 @@ impl TideService {
     /// Get or create active tides for the current period based on templates
     /// This method ensures that all templates have appropriate active tides for the evaluation time
     /// Currently only creates tides for the current evaluation time (no backfill)
-    pub async fn get_or_create_active_tides_for_period(&self, evaluation_time: OffsetDateTime) -> Result<Vec<Tide>> {
+    pub async fn get_or_create_active_tides_for_period(
+        &self,
+        evaluation_time: OffsetDateTime,
+    ) -> Result<Vec<Tide>> {
         // Get all templates and active tides (2 efficient queries)
         let templates = self.get_all_templates().await?;
         let mut active_tides = self.tide_repo.get_active_tides_at(evaluation_time).await?;
-        
+
+        println!("Active tides: {:?}", active_tides);
         // Create a set of template IDs that already have active tides
         let active_template_ids: std::collections::HashSet<String> = active_tides
             .iter()
             .map(|tide| tide.tide_template_id.clone())
             .collect();
-        
+
+        println!("Active template IDs: {:?}", active_template_ids);
+
         // Find templates that don't have active tides
         let templates_needing_evaluation: Vec<&TideTemplate> = templates
             .iter()
             .filter(|template| !active_template_ids.contains(&template.id))
             .collect();
-        
+
+        println!(
+            "Templates needing evaluation: {:?}",
+            templates_needing_evaluation
+        );
+
         // For each template without an active tide, check if we should create one
         for template in templates_needing_evaluation {
             if self.should_create_tide_now(template, evaluation_time) {
                 // Calculate the appropriate start time based on tide frequency
                 let tide_start_time = self.calculate_tide_start_time(template, evaluation_time);
-                let new_tide = self.create_tide_from_template(&template.id, Some(tide_start_time)).await?;
+                println!("Creating tide for template: {:?}", template);
+                println!("Tide start time: {:?}", tide_start_time);
+                let new_tide = self
+                    .create_tide_from_template(&template.id, Some(tide_start_time))
+                    .await?;
+                println!("New tide: {:?}", new_tide);
                 active_tides.push(new_tide);
             }
         }
-        
+
         Ok(active_tides)
     }
 
     /// Determine if we should create a new tide for a template at the given time
-    fn should_create_tide_now(&self, template: &TideTemplate, evaluation_time: OffsetDateTime) -> bool {
+    fn should_create_tide_now(
+        &self,
+        template: &TideTemplate,
+        evaluation_time: OffsetDateTime,
+    ) -> bool {
         match template.tide_frequency.as_str() {
             "indefinite" => true, // Always create if no active tide exists
             "daily" => {
@@ -175,19 +207,23 @@ impl TideService {
                 let current_weekday = evaluation_time.weekday().number_days_from_sunday() as u8;
                 let allowed_days = template.get_days_of_week();
                 allowed_days.contains(&current_weekday)
-            },
-            "weekly" => true, // Always create if no active tide exists
+            }
+            "weekly" => true,  // Always create if no active tide exists
             "monthly" => true, // Always create if no active tide exists
-            _ => false, // Unknown frequency
+            _ => false,        // Unknown frequency
         }
     }
 
     /// Calculate the appropriate start time for a new tide based on the template frequency
-    fn calculate_tide_start_time(&self, template: &TideTemplate, evaluation_time: OffsetDateTime) -> OffsetDateTime {
-        use crate::time_helpers::{get_day_start, get_week_start, get_month_start};
+    fn calculate_tide_start_time(
+        &self,
+        template: &TideTemplate,
+        evaluation_time: OffsetDateTime,
+    ) -> OffsetDateTime {
+        use crate::time_helpers::{get_day_start, get_month_start, get_week_start};
 
         match template.tide_frequency.as_str() {
-            "daily" => get_day_start(evaluation_time),  // Start of the current day
+            "daily" => get_day_start(evaluation_time), // Start of the current day
             "weekly" => get_week_start(evaluation_time), // Start of the current week
             "monthly" => get_month_start(evaluation_time), // Start of the current month
             "indefinite" => get_day_start(evaluation_time), // Default to start of day for indefinite
@@ -227,10 +263,7 @@ mod tests {
         // Run migrations manually
         let migrations = get_migrations();
         for migration in migrations {
-            sqlx::query(&migration.sql)
-                .execute(&pool)
-                .await
-                .unwrap();
+            sqlx::query(&migration.sql).execute(&pool).await.unwrap();
         }
 
         Arc::new(DbManager { pool })
@@ -240,7 +273,7 @@ mod tests {
     async fn test_tide_service_creation() -> Result<()> {
         let db_manager = create_test_db_manager().await;
         let _tide_service = TideService::new_with_manager(db_manager);
-        
+
         Ok(())
     }
 
@@ -496,10 +529,12 @@ mod tests {
         let tide_service = TideService::new_with_manager(db_manager);
 
         let evaluation_time = datetime!(2025-01-06 10:00 UTC); // Monday
-        
+
         // Should have 2 default templates: daily (weekdays) and weekly (all days)
         // Both should create tides on Monday
-        let active_tides = tide_service.get_or_create_active_tides_for_period(evaluation_time).await?;
+        let active_tides = tide_service
+            .get_or_create_active_tides_for_period(evaluation_time)
+            .await?;
         assert_eq!(active_tides.len(), 2);
 
         Ok(())
@@ -525,13 +560,17 @@ mod tests {
 
         // Should create a tide since indefinite templates always get one
         // Plus 2 default templates (daily weekdays + weekly all days) = 3 total
-        let active_tides = tide_service.get_or_create_active_tides_for_period(evaluation_time).await?;
+        let active_tides = tide_service
+            .get_or_create_active_tides_for_period(evaluation_time)
+            .await?;
         assert_eq!(active_tides.len(), 3);
         assert_eq!(active_tides[0].tide_template_id, template.id);
         assert_eq!(active_tides[0].tide_frequency, "indefinite");
 
         // Call again - should not create another tide (should return existing active tide)
-        let active_tides_2 = tide_service.get_or_create_active_tides_for_period(evaluation_time).await?;
+        let active_tides_2 = tide_service
+            .get_or_create_active_tides_for_period(evaluation_time)
+            .await?;
         assert_eq!(active_tides_2.len(), 3);
         assert_eq!(active_tides_2[0].id, active_tides[0].id);
 
@@ -557,7 +596,9 @@ mod tests {
         // Test on Monday (day 1) - should create tide
         // Plus 2 default templates = 3 total
         let monday_time = datetime!(2025-01-06 10:00 UTC); // Monday
-        let active_tides = tide_service.get_or_create_active_tides_for_period(monday_time).await?;
+        let active_tides = tide_service
+            .get_or_create_active_tides_for_period(monday_time)
+            .await?;
         assert_eq!(active_tides.len(), 3);
         assert_eq!(active_tides[0].tide_template_id, template.id);
 
@@ -583,7 +624,9 @@ mod tests {
         // Test on Sunday (day 0) - should NOT create tide for weekdays-only template
         // But default weekly template should create = 1 total tide
         let sunday_time = datetime!(2025-01-05 10:00 UTC); // Sunday
-        let active_tides = tide_service.get_or_create_active_tides_for_period(sunday_time).await?;
+        let active_tides = tide_service
+            .get_or_create_active_tides_for_period(sunday_time)
+            .await?;
         assert_eq!(active_tides.len(), 1); // Only weekly template creates on Sunday
 
         Ok(())
@@ -609,7 +652,9 @@ mod tests {
 
         // Should create a tide since weekly templates always get one if none exists
         // Plus 2 default templates = 3 total
-        let active_tides = tide_service.get_or_create_active_tides_for_period(evaluation_time).await?;
+        let active_tides = tide_service
+            .get_or_create_active_tides_for_period(evaluation_time)
+            .await?;
         assert_eq!(active_tides.len(), 3);
         assert_eq!(active_tides[0].tide_template_id, template.id);
         assert_eq!(active_tides[0].tide_frequency, "weekly");
@@ -653,7 +698,9 @@ mod tests {
         tide_service.create_template(&daily_template).await?;
 
         // Should create tides for all templates (3 custom + 2 default = 5 total)
-        let active_tides = tide_service.get_or_create_active_tides_for_period(evaluation_time).await?;
+        let active_tides = tide_service
+            .get_or_create_active_tides_for_period(evaluation_time)
+            .await?;
         assert_eq!(active_tides.len(), 5);
 
         // Verify all template IDs are represented
@@ -661,7 +708,7 @@ mod tests {
             .iter()
             .map(|tide| tide.tide_template_id.clone())
             .collect();
-        
+
         assert!(template_ids.contains(&indefinite_template.id));
         assert!(template_ids.contains(&weekly_template.id));
         assert!(template_ids.contains(&daily_template.id));
@@ -693,7 +740,9 @@ mod tests {
             .await?;
 
         // Should return the existing tide, not create a new one (1 custom + 2 default = 3 total)
-        let active_tides = tide_service.get_or_create_active_tides_for_period(evaluation_time).await?;
+        let active_tides = tide_service
+            .get_or_create_active_tides_for_period(evaluation_time)
+            .await?;
         assert_eq!(active_tides.len(), 3);
         assert!(active_tides.iter().any(|t| t.id == existing_tide.id));
 
@@ -732,8 +781,12 @@ mod tests {
         );
 
         tide_service.create_template(&template_with_active).await?;
-        tide_service.create_template(&template_should_create).await?;
-        tide_service.create_template(&template_weekdays_only).await?;
+        tide_service
+            .create_template(&template_should_create)
+            .await?;
+        tide_service
+            .create_template(&template_weekdays_only)
+            .await?;
 
         // Pre-create a tide for the first template
         let existing_tide = tide_service
@@ -741,21 +794,23 @@ mod tests {
             .await?;
 
         // Run the function
-        let active_tides = tide_service.get_or_create_active_tides_for_period(evaluation_time).await?;
-        
+        let active_tides = tide_service
+            .get_or_create_active_tides_for_period(evaluation_time)
+            .await?;
+
         // Should have 5 tides: 1 existing + 2 newly created + 2 default templates
         assert_eq!(active_tides.len(), 5);
 
         // Verify existing tide is included
         assert!(active_tides.iter().any(|t| t.id == existing_tide.id));
-        
+
         // Verify new tides were created for the other templates
         let new_template_ids: std::collections::HashSet<String> = active_tides
             .iter()
             .filter(|t| t.id != existing_tide.id)
             .map(|t| t.tide_template_id.clone())
             .collect();
-        
+
         assert!(new_template_ids.contains(&template_should_create.id));
         assert!(new_template_ids.contains(&template_weekdays_only.id));
 
@@ -780,30 +835,40 @@ mod tests {
         // Test evaluation time in the middle of the day (2:30 PM)
         let evaluation_time = datetime!(2025-01-06 14:30 UTC);
 
-        let active_tides = tide_service.get_or_create_active_tides_for_period(evaluation_time).await?;
+        let active_tides = tide_service
+            .get_or_create_active_tides_for_period(evaluation_time)
+            .await?;
 
         // Should create tides (including from seeded templates), find our specific one
         assert!(active_tides.len() == 3);
 
         // Find the tide created from our template
-        let our_tide = active_tides.iter()
+        let our_tide = active_tides
+            .iter()
             .find(|t| t.tide_template_id == template.id)
             .expect("Should find our tide");
 
-        // The tide should start at the beginning of the day (midnight) in local timezone
-        assert_eq!(our_tide.start.hour(), 0);
-        assert_eq!(our_tide.start.minute(), 0);
-        assert_eq!(our_tide.start.second(), 0);
+        // The tide should be stored in UTC but represent midnight in local timezone
+        assert_eq!(our_tide.start.offset(), time::UtcOffset::UTC);
+
+        // When converted to local time, should be at midnight
+        let local_offset = time::UtcOffset::current_local_offset().unwrap_or(time::UtcOffset::UTC);
+        let start_local = our_tide.start.to_offset(local_offset);
+        assert_eq!(start_local.hour(), 0);
+        assert_eq!(start_local.minute(), 0);
+        assert_eq!(start_local.second(), 0);
 
         // Verify the date in local timezone matches expected date
-        let evaluation_local = evaluation_time.to_offset(our_tide.start.offset());
-        assert_eq!(our_tide.start.date(), evaluation_local.date());
+        let evaluation_local = evaluation_time.to_offset(local_offset);
+        assert_eq!(start_local.date(), evaluation_local.date());
 
-        // The tide should end at the end of the day (for daily tides) in local timezone
+        // The tide should end at the end of the day (for daily tides)
         let end_time = our_tide.end.expect("Daily tide should have an end time");
-        assert_eq!(end_time.hour(), 0);
-        assert_eq!(end_time.minute(), 0);
-        assert_eq!(end_time.second(), 0);
+        assert_eq!(end_time.offset(), time::UtcOffset::UTC);
+        let end_local = end_time.to_offset(local_offset);
+        assert_eq!(end_local.hour(), 0);
+        assert_eq!(end_local.minute(), 0);
+        assert_eq!(end_local.second(), 0);
 
         Ok(())
     }

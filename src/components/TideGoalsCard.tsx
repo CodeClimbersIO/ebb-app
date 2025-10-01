@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { PieChart, Pie, Cell } from 'recharts'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useGetTideOverview } from '../api/hooks/useTides'
+import { TideEditDialog } from './TideEditDialog'
 interface TideGoalsCardProps {
   date?: Date
 }
@@ -11,11 +12,16 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({
   date = new Date()
 }) => {
   const [activeTab, setActiveTab] = useState<'daily' | 'weekly'>('daily')
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
 
   const { data: tideData, isLoading: isTidesLoading, error: tideError } = useGetTideOverview(date)
 
   const isLoading = isTidesLoading
   const hasError = tideError
+
+  const handleEditClick = () => {
+    setEditDialogOpen(true)
+  }
 
   // Format time helper
   const formatTime = (minutes: number, options: { overrideShowHours: boolean } = { overrideShowHours: false }) => {
@@ -28,11 +34,15 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({
 
   const renderNoGoalProgress = (current: number) => {
     return (
-      <div className="flex flex-col items-center justify-center py-4 pb-0">
+      <div
+        className="flex flex-col items-center justify-center py-4 pb-0 cursor-pointer"
+        onClick={handleEditClick}
+        title="Click to set a goal"
+      >
         <div className="relative mb-3">
           {/* Simple circle background for no-goal state */}
           <div
-            className="rounded-full border-4 border-muted flex items-center justify-center"
+            className="rounded-full border-4 border-muted flex items-center justify-center transition-all duration-300 hover:opacity-70"
             style={{ width: '160px', height: '160px' }}
           >
             {/* Center content */}
@@ -129,8 +139,12 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({
     }
 
     return (
-      <div className="flex flex-col items-center justify-center py-4 pb-0">
-        <div className="relative mb-3">
+      <div
+        className="flex flex-col items-center justify-center py-4 pb-0 cursor-pointer"
+        onClick={handleEditClick}
+        title="Click to edit goal"
+      >
+        <div className="relative mb-3 transition-all duration-300 hover:opacity-70">
           <PieChart width={size + 20} height={size + 20}>
             <defs>
               {/* Diagonal stripe pattern for stretch segments */}
@@ -251,7 +265,7 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({
         {/* Goal information - fixed height container */}
         <div className="text-center" style={{ minHeight: '60px' }}>
           <div className="text-sm text-muted-foreground">
-            Target: {formatTime(goal)}
+            Creating Time Target: {formatTime(goal)}
           </div>
         </div>
       </div>
@@ -262,7 +276,13 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Tides</CardTitle>
+          <CardTitle
+            className="text-lg cursor-pointer hover:text-primary/80 transition-all duration-300 hover:scale-[1.02]"
+            onClick={handleEditClick}
+            title="Click to edit tide goals"
+          >
+            Tides
+          </CardTitle>
           {/* Compact Chip Style in Header */}
           <div className="flex gap-1">
             <button
@@ -317,6 +337,11 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({
           </>
         )}
       </CardContent>
+
+      <TideEditDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+      />
     </Card>
   )
 }

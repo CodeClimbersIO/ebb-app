@@ -1,4 +1,4 @@
-import { type FC, useState } from 'react'
+import { type FC, useState, useEffect } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -6,144 +6,209 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { AnalyticsButton } from '@/components/ui/analytics-button'
-import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { useGetTideTemplates, useUpdateTideTemplate, useGetActiveTides, useUpdateTide } from '@/api/hooks/useTides'
+import { Skeleton } from '@/components/ui/skeleton'
+import { TimeSelector } from '@/components/TimeSelector'
+import { toast } from 'sonner'
 
 interface TideEditDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  tideType: 'daily' | 'weekly'
-  currentGoal?: number // in minutes
-  metricsType?: string
+}
+
+interface TemplateEdit {
+  id: string
+  goalMinutes: number // Total minutes for the goal
+  metricsType: string
+  daysOfWeek: number[] // For daily templates
 }
 
 export const TideEditDialog: FC<TideEditDialogProps> = ({
   open,
-  onOpenChange,
-  tideType,
-  currentGoal = 0,
-  metricsType = 'creating'
+  onOpenChange
 }) => {
-  const [goalHours, setGoalHours] = useState(Math.floor(currentGoal / 60))
-  const [goalMinutes, setGoalMinutes] = useState(currentGoal % 60)
-  const [selectedMetrics, setSelectedMetrics] = useState(metricsType)
+  const { data: templates, isLoading } = useGetTideTemplates()
+  const { data: activeTides } = useGetActiveTides()
+  const updateTemplateMutation = useUpdateTideTemplate()
+  const updateTideMutation = useUpdateTide()
+  const [editedTemplates, setEditedTemplates] = useState<Record<string, TemplateEdit>>({})
 
-  const handleSave = () => {
-    const totalMinutes = goalHours * 60 + goalMinutes
-    console.log('Saving tide:', { tideType, totalMinutes, selectedMetrics })
-    // TODO: Implement actual save logic using TideApi
-    onOpenChange(false)
+  // Initialize edited templates when templates load
+  useEffect(() => {
+    if (templates && templates.length > 0) {
+      const initialEdits: Record<string, TemplateEdit> = {}
+      templates.forEach(template => {
+        initialEdits[template.id] = {
+          id: template.id,
+          goalMinutes: template.goal_amount,
+          metricsType: template.metrics_type,
+          daysOfWeek: template.day_of_week ? template.day_of_week.split(',').map(Number) : [1,2,3,4,5] // Default weekdays
+        }
+      })
+      setEditedTemplates(initialEdits)
+    }
+  }, [templates])
+
+  const handleSave = async () => {
+    try {
+      const updatePromises = []
+
+      // Update each modified template
+      for (const [templateId, editedTemplate] of Object.entries(editedTemplates)) {
+        const originalTemplate = templates?.find(t => t.id === templateId)
+        if (!originalTemplate) continue
+
+        const hasChanges =
+          originalTemplate.goal_amount !== editedTemplate.goalMinutes ||
+          originalTemplate.day_of_week !== editedTemplate.daysOfWeek.join(',')
+
+        if (hasChanges) {
+          const templateUpdate = {
+            goal_amount: editedTemplate.goalMinutes,
+            day_of_week: editedTemplate.daysOfWeek.length > 0 ? editedTemplate.daysOfWeek.join(',') : undefined
+          }
+
+          updatePromises.push(
+            updateTemplateMutation.mutateAsync({
+              id: templateId,
+              updates: templateUpdate
+            })
+          )
+
+          // Update any active tides using this template
+          const activeTidesForTemplate = activeTides?.filter(tide =>
+            tide.tide_template_id === templateId
+          )
+
+          if (activeTidesForTemplate && activeTidesForTemplate.length > 0) {
+            for (const activeTide of activeTidesForTemplate) {
+              // Only update the goal amount if it changed, preserve actual progress
+              if (originalTemplate.goal_amount !== editedTemplate.goalMinutes) {
+                updatePromises.push(
+                  updateTideMutation.mutateAsync({
+                    id: activeTide.id,
+                    updates: {
+                      goal_amount: editedTemplate.goalMinutes
+                    }
+                  })
+                )
+              }
+            }
+          }
+        }
+      }
+
+      if (updatePromises.length > 0) {
+        await Promise.all(updatePromises)
+        toast.success('Tide templates updated successfully')
+      }
+
+      onOpenChange(false)
+    } catch (error) {
+      console.error('Failed to save tide templates:', error)
+      toast.error('Failed to save tide templates. Please try again.')
+    }
   }
 
-  const formatTime = (hours: number, minutes: number) => {
-    if (hours === 0 && minutes === 0) return '0m'
-    if (hours === 0) return `${minutes}m`
-    if (minutes === 0) return `${hours}h`
-    return `${hours}h ${minutes}m`
+  const updateTemplate = (templateId: string, updates: Partial<TemplateEdit>) => {
+    setEditedTemplates(prev => ({
+      ...prev,
+      [templateId]: { ...prev[templateId], ...updates }
+    }))
+  }
+
+
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+  if (isLoading) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Tide Templates</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-20 w-full" />
+          </div>
+        </DialogContent>
+      </Dialog>
+    )
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>
-            {currentGoal > 0 ? 'Edit' : 'Create'} {tideType} tide goal
-          </DialogTitle>
+          <DialogTitle>Edit Tides</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
-          {/* Goal Amount */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Goal Amount</label>
-            <div className="flex items-center space-x-2">
-              <div className="flex items-center space-x-1">
-                <Input
-                  type="number"
-                  min="0"
-                  max="23"
-                  value={goalHours}
-                  onChange={(e) => setGoalHours(parseInt(e.target.value) || 0)}
-                  className="w-16"
-                />
-                <span className="text-sm text-muted-foreground">h</span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <Input
-                  type="number"
-                  min="0"
-                  max="59"
-                  step="15"
-                  value={goalMinutes}
-                  onChange={(e) => setGoalMinutes(parseInt(e.target.value) || 0)}
-                  className="w-16"
-                />
-                <span className="text-sm text-muted-foreground">m</span>
-              </div>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Goal: {formatTime(goalHours, goalMinutes)}
-            </p>
-          </div>
+        <div className="space-y-4 py-4 max-h-80 overflow-y-auto">
+          {templates?.map(template => {
+            const edit = editedTemplates[template.id]
+            if (!edit) return null
 
-          {/* Metrics Type */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Activity Type</label>
-            <Select value={selectedMetrics} onValueChange={setSelectedMetrics}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="creating">Creating</SelectItem>
-                <SelectItem value="neutral">Neutral</SelectItem>
-                <SelectItem value="consuming">Consuming</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+            return (
+              <div key={template.id} className="space-y-3 p-3 border rounded-lg">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-medium capitalize">
+                    {template.tide_frequency} Tide
+                  </h3>
+                </div>
 
-          {/* Quick Presets */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Quick Presets</label>
-            <div className="flex space-x-2">
-              <AnalyticsButton
-                variant="outline"
-                size="sm"
-                onClick={() => { setGoalHours(1); setGoalMinutes(0) }}
-                analyticsEvent="get_pro_clicked"
-              >
-                1h
-              </AnalyticsButton>
-              <AnalyticsButton
-                variant="outline"
-                size="sm"
-                onClick={() => { setGoalHours(2); setGoalMinutes(0) }}
-                analyticsEvent="get_pro_clicked"
-              >
-                2h
-              </AnalyticsButton>
-              <AnalyticsButton
-                variant="outline"
-                size="sm"
-                onClick={() => { setGoalHours(4); setGoalMinutes(0) }}
-                analyticsEvent="get_pro_clicked"
-              >
-                4h
-              </AnalyticsButton>
-              <AnalyticsButton
-                variant="outline"
-                size="sm"
-                onClick={() => { setGoalHours(0); setGoalMinutes(0) }}
-                analyticsEvent="get_pro_clicked"
-              >
-                No Goal
-              </AnalyticsButton>
-            </div>
-          </div>
+                {/* Goal Amount */}
+                <div className="space-y-2">
+                  <TimeSelector
+                    value={edit.goalMinutes || null}
+                    onChange={(minutes) => updateTemplate(template.id, { goalMinutes: minutes || 0 })}
+                    presets={
+                      template.tide_frequency === 'daily'
+                        ? [
+                          { value: '60', label: '1 hour' },
+                          { value: '120', label: '2 hours' },
+                          { value: '180', label: '3 hours' },
+                          { value: '240', label: '4 hours' }
+                        ]
+                        : [
+                          { value: '600', label: '10 hours' },
+                          { value: '900', label: '15 hours' },
+                          { value: '1200', label: '20 hours' },
+                          { value: '1500', label: '25 hours' }
+                        ]
+                    }
+                  />
+                </div>
+
+                {/* Days of Week (only for daily templates) */}
+                {template.tide_frequency === 'daily' && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Days of Week</label>
+                    <div className="flex space-x-1">
+                      {dayNames.map((day, index) => (
+                        <button
+                          key={index}
+                          onClick={() => {
+                            const currentDays = edit.daysOfWeek
+                            const newDays = currentDays.includes(index)
+                              ? currentDays.filter(d => d !== index)
+                              : [...currentDays, index].sort()
+                            updateTemplate(template.id, { daysOfWeek: newDays })
+                          }}
+                          className={`px-2 py-1 text-xs rounded-full transition-colors ${
+                            edit.daysOfWeek.includes(index)
+                              ? 'bg-primary text-primary-foreground'
+                              : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                          }`}
+                        >
+                          {day}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
 
         <div className="flex justify-end space-x-2">
@@ -157,8 +222,9 @@ export const TideEditDialog: FC<TideEditDialogProps> = ({
           <AnalyticsButton
             onClick={handleSave}
             analyticsEvent="get_pro_clicked"
+            disabled={updateTemplateMutation.isPending || updateTideMutation.isPending}
           >
-            Save Tide
+            {updateTemplateMutation.isPending || updateTideMutation.isPending ? 'Saving...' : 'Save Templates'}
           </AnalyticsButton>
         </div>
       </DialogContent>

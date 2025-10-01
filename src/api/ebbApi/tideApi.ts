@@ -137,7 +137,6 @@ const getTideProgress = async (type = 'daily', date = new Date()): Promise<TideP
     tide.tide_frequency === type
   )
 
-
   if(!tide) {
     let time: GraphableTimeByHourBlock[] = []
     if(type === 'daily') {

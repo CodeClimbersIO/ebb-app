@@ -13,7 +13,6 @@ const tideKeys = {
 // Query Hooks
 
 export const useGetTideOverview = (date = new Date()) => {
-  console.log('useGetTideOverview', date)
   return useQuery({
     queryKey: tideKeys.overview(date),
     queryFn: () => TideApi.getTideOverview(date),
