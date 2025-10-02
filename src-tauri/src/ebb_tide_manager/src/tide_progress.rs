@@ -180,7 +180,7 @@ impl TideProgress {
         }
 
         let current_progress = self
-            .get_tide_progress_cached(tide, evaluation_time, true)
+            .get_tide_progress_cached(tide, evaluation_time, false)
             .await?;
 
         // If progress meets or exceeds goal, force refresh validation to ensure accuracy

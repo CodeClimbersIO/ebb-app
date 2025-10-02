@@ -167,8 +167,6 @@ impl ActivityStateRepo {
             }
         }
 
-
-
         // Calculate the total duration
         let mut total_minutes = 0.0;
         let target_record_count = target_tag_records.len();
@@ -189,21 +187,20 @@ impl ActivityStateRepo {
                     // Each individual record gets: duration / total_tags_of_same_type
                     let split_minutes = duration_minutes / (*tag_count as f64);
                     total_minutes += split_minutes;
-
                 }
             }
         }
 
         let total_function_duration = function_start.elapsed();
 
-        println!("=== APPLICATION-SIDE CALCULATION ===");
-        println!("Target tag: '{}' (type: '{}')", tag_name, tag_type);
-        println!("Time range: {} to {}", start_time, end_time);
-        println!("Processed {} activity states", activity_states.len());
-        println!("Found {} records with target tag", target_record_count);
-        println!("Total minutes: {:.2}", total_minutes);
-        println!("TOTAL FUNCTION TIME: {:?}", total_function_duration);
-        println!("=====================================");
+        log::debug!("=== APPLICATION-SIDE CALCULATION ===");
+        log::debug!("Target tag: '{}' (type: '{}')", tag_name, tag_type);
+        log::debug!("Time range: {} to {}", start_time, end_time);
+        log::debug!("Processed {} activity states", activity_states.len());
+        log::debug!("Found {} records with target tag", target_record_count);
+        log::debug!("Total minutes: {:.2}", total_minutes);
+        log::debug!("TOTAL FUNCTION TIME: {:?}", total_function_duration);
+        log::debug!("=====================================");
 
         Ok(total_minutes)
     }
@@ -231,9 +228,9 @@ impl ActivityStateRepo {
         .fetch_all(&self.pool)
         .await?;
 
-        println!("=== DEBUG ACTIVITY STATES FOR TAG '{}' ===", tag_name);
-        println!("Query range: {} to {}", start_time, end_time);
-        println!("Found {} matching activity states:", states.len());
+        log::debug!("=== DEBUG ACTIVITY STATES FOR TAG '{}' ===", tag_name);
+        log::debug!("Query range: {} to {}", start_time, end_time);
+        log::debug!("Found {} matching activity states:", states.len());
 
         let mut total_manual = 0.0;
         for (id, start, end_opt) in states {
@@ -247,15 +244,20 @@ impl ActivityStateRepo {
                 let actual_end = if end > end_time { end_time } else { end };
                 let duration = (actual_end - actual_start).whole_minutes() as f64;
 
-                println!(
+                log::debug!(
                     "  ID: {}, Original: {} to {}, Clipped: {} to {}, Duration: {:.2} min",
-                    id, start, end, actual_start, actual_end, duration
+                    id,
+                    start,
+                    end,
+                    actual_start,
+                    actual_end,
+                    duration
                 );
                 total_manual += duration;
             }
         }
-        println!("Manual calculation total: {:.2} minutes", total_manual);
-        println!("===============================================");
+        log::debug!("Manual calculation total: {:.2} minutes", total_manual);
+        log::debug!("===============================================");
 
         Ok(())
     }
@@ -739,7 +741,6 @@ mod tests {
 
         Ok(())
     }
-
 
     #[tokio::test]
     async fn test_calculate_tagged_duration_empty_result() -> Result<()> {
