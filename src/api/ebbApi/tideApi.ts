@@ -70,7 +70,7 @@ const updateTideTemplates = async (editedTemplates: TemplateEdit[]): Promise<voi
       tide.tide_template_id === editedTemplate.id
     )
 
-    for (const activeTide of activeTidesForTemplate) {
+    for (const activeTide of activeTidesForTemplate) { // update any tides that are currently active
       updatePromises.push(
         updateTide(activeTide.id, {
           goal_amount: editedTemplate.goal_amount
@@ -108,6 +108,7 @@ const getActiveTides = async (): Promise<Tide[]> => {
 const getTideProgress = async (type = 'daily', date = new Date()): Promise<TideProgressData> => {
 
   const evaluationTime = date.toISOString()
+  console.log('getTideProgress', type, evaluationTime)
   const activeTides = await TideRepo.getActiveTidesForPeriod(evaluationTime)
   // Find today's daily tide for the specific metrics type
   const tide = activeTides.find(tide =>

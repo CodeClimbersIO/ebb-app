@@ -109,7 +109,7 @@ export const TideEditDialog: FC<TideEditDialogProps> = ({
   const handleSave = async () => {
     try {
       await updateTemplatesMutation.mutateAsync(editedTemplates)
-      toast.success('Tide updated successfully')
+      toast.success('Tides going forward successfully updated to reflect changes.')
       onOpenChange(false)
     } catch (error) {
       console.error('Failed to save tide:', error)

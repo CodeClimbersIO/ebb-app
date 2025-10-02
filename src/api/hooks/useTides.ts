@@ -38,9 +38,7 @@ const useUpdateTideTemplates = () => {
     mutationFn: (editedTemplates: TemplateEdit[]) =>
       TideApi.updateTideTemplates(editedTemplates),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: tideKeys.templates() })
-      queryClient.invalidateQueries({ queryKey: tideKeys.active() })
-      queryClient.invalidateQueries({ queryKey: tideKeys.overview() })
+      queryClient.invalidateQueries({ queryKey: tideKeys.all })
     },
   })
 }

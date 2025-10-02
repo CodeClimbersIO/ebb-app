@@ -1,5 +1,5 @@
 import { QueryResult } from '@tauri-apps/plugin-sql'
-import { insert, update } from '@/lib/utils/sql.util'
+import { update } from '@/lib/utils/sql.util'
 import { getEbbDb } from './ebbDb'
 
 export interface TideSchema {
@@ -62,15 +62,14 @@ const getActiveTides = async (): Promise<Tide[]> => {
 const getActiveTidesForPeriod = async (evaluationTime: string): Promise<Tide[]> => {
   const ebbDb = await getEbbDb()
 
-  // Get tides that overlap with the evaluation time
   const query = `
     SELECT * FROM tide
-    WHERE start <= ?
-    AND (end IS NULL OR end > ?)
+    WHERE datetime(start) <= datetime(?)
+    AND (end IS NULL OR datetime(end) > datetime(?))
     ORDER BY start DESC
   `
-
-  return await ebbDb.select<Tide[]>(query, [evaluationTime, evaluationTime])
+  const tides = await ebbDb.select<Tide[]>(query, [evaluationTime, evaluationTime])
+  return tides
 }
 
 // Tide Template Repository Functions
