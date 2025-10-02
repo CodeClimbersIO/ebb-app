@@ -163,6 +163,54 @@ const getTideOverview = async (date = new Date()): Promise<TideOverview> => {
   }
 }
 
+export interface DailyTideHistory {
+  date: string // ISO date
+  dayOfWeek: number // 0-6
+  progress: TideProgress
+}
+
+const getWeeklyDailyHistory = async (date = new Date()): Promise<DailyTideHistory[]> => {
+  const dateTime = DateTime.fromJSDate(date)
+  const startOfWeek = dateTime.startOf('week') // Sunday
+
+  const history: DailyTideHistory[] = []
+
+  // Get daily tide template to know which days have goals
+  const templates = await TideRepo.getAllTideTemplates()
+  const dailyTemplate = templates.find(t => t.tide_frequency === 'daily')
+
+  if (!dailyTemplate) {
+    return []
+  }
+
+  // Parse days of week from template (comma-separated: "0,1,2,3,4,5,6")
+  const activeDays = dailyTemplate.day_of_week
+    ? dailyTemplate.day_of_week.split(',').map(Number)
+    : [1, 2, 3, 4, 5] // Default to weekdays
+
+  // Iterate through each day of the week
+  for (let i = 0; i < 7; i++) {
+    const currentDay = startOfWeek.plus({ days: i })
+    // Luxon weekday is 1-7 (Mon-Sun), convert to 0-6 (Sun-Sat)
+    const dayOfWeek = currentDay.weekday === 7 ? 0 : currentDay.weekday
+
+    // Skip if this day doesn't have a goal
+    if (!activeDays.includes(dayOfWeek)) {
+      continue
+    }
+
+    const progress = await getTideProgress('daily', currentDay.toJSDate())
+
+    history.push({
+      date: currentDay.toISODate() || '',
+      dayOfWeek,
+      progress: progress.progress
+    })
+  }
+
+  return history
+}
+
 const formatTime = (minutes: number): string => {
   const hours = Math.floor(minutes / 60)
   const remainingMinutes = Math.round(minutes % 60)
@@ -201,6 +249,7 @@ export const TideApi = {
 
   // Business logic
   getTideOverview,
+  getWeeklyDailyHistory,
 
   // Utilities
   formatTime,

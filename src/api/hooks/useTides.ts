@@ -8,6 +8,7 @@ const tideKeys = {
   active: () => [...tideKeys.all, 'active'] as const,
   templates: () => [...tideKeys.all, 'templates'] as const,
   detail: (id: string) => [...tideKeys.all, 'detail', id] as const,
+  weeklyHistory: (date?: Date) => [...tideKeys.all, 'weeklyHistory', date?.toISOString()] as const,
 }
 
 // Query Hooks
@@ -29,6 +30,15 @@ const useGetTideTemplates = () => {
   })
 }
 
+const useGetWeeklyDailyHistory = (date = new Date()) => {
+  return useQuery({
+    queryKey: tideKeys.weeklyHistory(date),
+    queryFn: () => TideApi.getWeeklyDailyHistory(date),
+    staleTime: 30000, // 30 seconds
+    refetchInterval: 60000, // Refetch every minute
+  })
+}
+
 // Mutation Hooks
 
 const useUpdateTideTemplates = () => {
@@ -46,5 +56,6 @@ const useUpdateTideTemplates = () => {
 export const useTides = {
   useGetTideOverview,
   useGetTideTemplates,
+  useGetWeeklyDailyHistory,
   useUpdateTideTemplates,
 }

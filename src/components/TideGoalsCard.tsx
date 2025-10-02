@@ -4,6 +4,7 @@ import { PieChart, Pie, Cell } from 'recharts'
 import { Skeleton } from '@/components/ui/skeleton'
 import { TideEditDialog } from '@/components/TideEditDialog'
 import { useTides } from '../api/hooks/useTides'
+import { DateTime } from 'luxon'
 interface TideGoalsCardProps {
   date?: Date
 }
@@ -15,12 +16,68 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({
   const [editDialogOpen, setEditDialogOpen] = useState(false)
 
   const { data: tideData, isLoading: isTidesLoading, error: tideError } = useTides.useGetTideOverview(date)
+  const { data: weeklyHistory, isLoading: isHistoryLoading } = useTides.useGetWeeklyDailyHistory(date)
 
-  const isLoading = isTidesLoading
+  const isLoading = isTidesLoading || isHistoryLoading
   const hasError = tideError
 
   const handleEditClick = () => {
     setEditDialogOpen(true)
+  }
+
+  const renderWeeklyProgress = () => {
+    if (!weeklyHistory || weeklyHistory.length === 0) return null
+
+    const dayNames = ['S', 'M', 'Tu', 'W', 'Th', 'F', 'S']
+    const today = DateTime.fromJSDate(date).startOf('day')
+
+    return (
+      <div className="flex justify-center gap-2 mt-3 px-4">
+        {weeklyHistory.map((day) => {
+          const dayDate = DateTime.fromISO(day.date).startOf('day')
+          const isToday = dayDate.hasSame(today, 'day')
+          const isFuture = dayDate > today
+
+          const fillPercentage = day.progress.goal > 0
+            ? Math.min((day.progress.current / day.progress.goal) * 100, 100)
+            : 0
+
+          return (
+            <div key={day.date} className="flex flex-col items-center gap-1">
+              <div className="relative w-4 h-4">
+                {/* Background circle */}
+                <svg className="w-full h-full -rotate-90" viewBox="0 0 32 32">
+                  <circle
+                    cx="16"
+                    cy="16"
+                    r="14"
+                    fill="none"
+                    stroke="hsl(var(--muted))"
+                    strokeWidth="3"
+                  />
+                  {/* Progress circle */}
+                  {fillPercentage > 0 && (
+                    <circle
+                      cx="16"
+                      cy="16"
+                      r="14"
+                      fill="none"
+                      stroke="hsl(var(--primary))"
+                      strokeWidth="3"
+                      strokeDasharray={`${(fillPercentage / 100) * 87.96} 87.96`}
+                      opacity={isFuture ? 0.3 : 1}
+                    />
+                  )}
+                </svg>
+              </div>
+              <span className={`text-xs ${isToday ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
+                {dayNames[day.dayOfWeek]}
+              </span>
+            </div>
+          )
+        })}
+      </div>
+    )
   }
 
   // Format time helper
@@ -267,6 +324,8 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({
           <div className="text-sm text-muted-foreground">
             Creating Time Target: {formatTime(goal)}
           </div>
+          {/* Weekly progress for daily goals */}
+          {renderWeeklyProgress()}
         </div>
       </div>
     )
