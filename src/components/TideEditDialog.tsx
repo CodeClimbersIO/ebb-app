@@ -10,6 +10,7 @@ import { useGetTideTemplates, useUpdateTideTemplate, useGetActiveTides, useUpdat
 import { Skeleton } from '@/components/ui/skeleton'
 import { TimeSelector } from '@/components/TimeSelector'
 import { toast } from 'sonner'
+import { TideTemplate } from '@/api/ebbApi/tideApi'
 
 interface TideEditDialogProps {
   open: boolean
@@ -18,9 +19,77 @@ interface TideEditDialogProps {
 
 interface TemplateEdit {
   id: string
-  goalMinutes: number // Total minutes for the goal
-  metricsType: string
-  daysOfWeek: number[] // For daily templates
+  goal_amount: number
+  metrics_type: string
+  days_of_week: number[]
+  tide_frequency: string
+}
+
+interface TideTemplateItemProps {
+  edit: TemplateEdit
+  onUpdate: (templateId: string, updates: Partial<TemplateEdit>) => void
+}
+
+const TideTemplateItem: FC<TideTemplateItemProps> = ({ edit, onUpdate }) => {
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+  return (
+    <div className="space-y-3 p-3 border rounded-lg">
+      <div className="flex items-center justify-between">
+        <h3 className="font-medium capitalize">
+          {edit.tide_frequency} Tide
+        </h3>
+      </div>
+
+      {/* Goal Amount */}
+      <div className="space-y-2">
+        <TimeSelector
+          value={edit.goal_amount || null}
+          onChange={(minutes) => onUpdate(edit.id, { goal_amount: minutes || 0 })}
+          presets={
+            edit.tide_frequency === 'daily'
+              ? [
+                { value: '60', label: '1 hour' },
+                { value: '120', label: '2 hours' },
+                { value: '180', label: '3 hours' },
+                { value: '240', label: '4 hours' }
+              ]
+              : [
+                { value: '600', label: '10 hours' },
+                { value: '900', label: '15 hours' },
+                { value: '1200', label: '20 hours' },
+                { value: '1500', label: '25 hours' }
+              ]
+          }
+        />
+      </div>
+
+      {/* Days of Week (only for daily templates) */}
+      {edit.tide_frequency === 'daily' && (
+        <div className="space-y-2">
+          <span className="text-sm font-medium">Days of Week</span>
+          <div className="flex space-x-1">
+            {dayNames.map((day, index) => (
+              <button
+                key={day}
+                onClick={() => {
+                  const currentDays = edit.days_of_week
+                  const newDays = currentDays.includes(index)
+                    ? currentDays.filter(d => d !== index)
+                    : [...currentDays, index].sort((a, b) => a - b)
+                  onUpdate(edit.id, { days_of_week: newDays })
+                }}
+                className={`px-2 py-1 text-xs rounded-full transition-colors ${edit.days_of_week.includes(index)
+                  ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
+              >
+                {day}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }
 
 export const TideEditDialog: FC<TideEditDialogProps> = ({
@@ -31,20 +100,18 @@ export const TideEditDialog: FC<TideEditDialogProps> = ({
   const { data: activeTides } = useGetActiveTides()
   const updateTemplateMutation = useUpdateTideTemplate()
   const updateTideMutation = useUpdateTide()
-  const [editedTemplates, setEditedTemplates] = useState<Record<string, TemplateEdit>>({})
+  const [editedTemplates, setEditedTemplates] = useState<TemplateEdit[]>([])
 
   // Initialize edited templates when templates load
   useEffect(() => {
     if (templates && templates.length > 0) {
-      const initialEdits: Record<string, TemplateEdit> = {}
-      templates.forEach(template => {
-        initialEdits[template.id] = {
-          id: template.id,
-          goalMinutes: template.goal_amount,
-          metricsType: template.metrics_type,
-          daysOfWeek: template.day_of_week ? template.day_of_week.split(',').map(Number) : [1,2,3,4,5] // Default weekdays
-        }
-      })
+      const initialEdits: TemplateEdit[] = templates.map(template => ({
+        id: template.id,
+        goal_amount: template.goal_amount,
+        metrics_type: template.metrics_type,
+        days_of_week: template.day_of_week ? template.day_of_week.split(',').map(Number) : [1, 2, 3, 4, 5], // Default weekdays
+        tide_frequency: template.tide_frequency
+      }))
       setEditedTemplates(initialEdits)
     }
   }, [templates])
@@ -54,41 +121,41 @@ export const TideEditDialog: FC<TideEditDialogProps> = ({
       const updatePromises = []
 
       // Update each modified template
-      for (const [templateId, editedTemplate] of Object.entries(editedTemplates)) {
-        const originalTemplate = templates?.find(t => t.id === templateId)
+      for (const editedTemplate of editedTemplates) {
+        const originalTemplate = templates?.find(t => t.id === editedTemplate.id)
         if (!originalTemplate) continue
 
         const hasChanges =
-          originalTemplate.goal_amount !== editedTemplate.goalMinutes ||
-          originalTemplate.day_of_week !== editedTemplate.daysOfWeek.join(',')
+          originalTemplate.goal_amount !== editedTemplate.goal_amount ||
+          originalTemplate.day_of_week !== editedTemplate.days_of_week.join(',')
 
         if (hasChanges) {
           const templateUpdate = {
-            goal_amount: editedTemplate.goalMinutes,
-            day_of_week: editedTemplate.daysOfWeek.length > 0 ? editedTemplate.daysOfWeek.join(',') : undefined
+            goal_amount: editedTemplate.goal_amount,
+            day_of_week: editedTemplate.days_of_week.length > 0 ? editedTemplate.days_of_week.join(',') : undefined
           }
 
           updatePromises.push(
             updateTemplateMutation.mutateAsync({
-              id: templateId,
+              id: editedTemplate.id,
               updates: templateUpdate
             })
           )
 
           // Update any active tides using this template
           const activeTidesForTemplate = activeTides?.filter(tide =>
-            tide.tide_template_id === templateId
+            tide.tide_template_id === editedTemplate.id
           )
 
           if (activeTidesForTemplate && activeTidesForTemplate.length > 0) {
             for (const activeTide of activeTidesForTemplate) {
               // Only update the goal amount if it changed, preserve actual progress
-              if (originalTemplate.goal_amount !== editedTemplate.goalMinutes) {
+              if (originalTemplate.goal_amount !== editedTemplate.goal_amount) {
                 updatePromises.push(
                   updateTideMutation.mutateAsync({
                     id: activeTide.id,
                     updates: {
-                      goal_amount: editedTemplate.goalMinutes
+                      goal_amount: editedTemplate.goal_amount
                     }
                   })
                 )
@@ -100,25 +167,21 @@ export const TideEditDialog: FC<TideEditDialogProps> = ({
 
       if (updatePromises.length > 0) {
         await Promise.all(updatePromises)
-        toast.success('Tide templates updated successfully')
+        toast.success('Tide updated successfully')
       }
 
       onOpenChange(false)
     } catch (error) {
-      console.error('Failed to save tide templates:', error)
-      toast.error('Failed to save tide templates. Please try again.')
+      console.error('Failed to save tide:', error)
+      toast.error('Failed to save tide. Please try again.')
     }
   }
 
   const updateTemplate = (templateId: string, updates: Partial<TemplateEdit>) => {
-    setEditedTemplates(prev => ({
-      ...prev,
-      [templateId]: { ...prev[templateId], ...updates }
-    }))
+    setEditedTemplates(prev =>
+      prev.map(t => t.id === templateId ? { ...t, ...updates } : t)
+    )
   }
-
-
-  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
   if (isLoading) {
     return (
@@ -144,71 +207,13 @@ export const TideEditDialog: FC<TideEditDialogProps> = ({
         </DialogHeader>
 
         <div className="space-y-4 py-4 max-h-80 overflow-y-auto">
-          {templates?.map(template => {
-            const edit = editedTemplates[template.id]
-            if (!edit) return null
-
-            return (
-              <div key={template.id} className="space-y-3 p-3 border rounded-lg">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-medium capitalize">
-                    {template.tide_frequency} Tide
-                  </h3>
-                </div>
-
-                {/* Goal Amount */}
-                <div className="space-y-2">
-                  <TimeSelector
-                    value={edit.goalMinutes || null}
-                    onChange={(minutes) => updateTemplate(template.id, { goalMinutes: minutes || 0 })}
-                    presets={
-                      template.tide_frequency === 'daily'
-                        ? [
-                          { value: '60', label: '1 hour' },
-                          { value: '120', label: '2 hours' },
-                          { value: '180', label: '3 hours' },
-                          { value: '240', label: '4 hours' }
-                        ]
-                        : [
-                          { value: '600', label: '10 hours' },
-                          { value: '900', label: '15 hours' },
-                          { value: '1200', label: '20 hours' },
-                          { value: '1500', label: '25 hours' }
-                        ]
-                    }
-                  />
-                </div>
-
-                {/* Days of Week (only for daily templates) */}
-                {template.tide_frequency === 'daily' && (
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Days of Week</label>
-                    <div className="flex space-x-1">
-                      {dayNames.map((day, index) => (
-                        <button
-                          key={index}
-                          onClick={() => {
-                            const currentDays = edit.daysOfWeek
-                            const newDays = currentDays.includes(index)
-                              ? currentDays.filter(d => d !== index)
-                              : [...currentDays, index].sort()
-                            updateTemplate(template.id, { daysOfWeek: newDays })
-                          }}
-                          className={`px-2 py-1 text-xs rounded-full transition-colors ${
-                            edit.daysOfWeek.includes(index)
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                          }`}
-                        >
-                          {day}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )
-          })}
+          {editedTemplates.map(edit => (
+            <TideTemplateItem
+              key={edit.id}
+              edit={edit}
+              onUpdate={updateTemplate}
+            />
+          ))}
         </div>
 
         <div className="flex justify-end space-x-2">

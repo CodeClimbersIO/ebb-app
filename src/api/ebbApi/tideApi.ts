@@ -57,6 +57,57 @@ const updateTideTemplate = async (
   id: string,
   updates: Partial<TideTemplateSchema>
 ): Promise<QueryResult> => {
+  // const updatePromises = []
+
+  // // Update each modified template
+  // for (const [templateId, editedTemplate] of Object.entries(editedTemplates)) {
+  //   const originalTemplate = templates?.find(t => t.id === templateId)
+  //   if (!originalTemplate) continue
+
+  //   const hasChanges =
+  //     originalTemplate.goal_amount !== editedTemplate.goalMinutes ||
+  //     originalTemplate.day_of_week !== editedTemplate.daysOfWeek.join(',')
+
+  //   if (hasChanges) {
+  //     const templateUpdate = {
+  //       goal_amount: editedTemplate.goalMinutes,
+  //       day_of_week: editedTemplate.daysOfWeek.length > 0 ? editedTemplate.daysOfWeek.join(',') : undefined
+  //     }
+
+  //     updatePromises.push(
+  //       updateTemplateMutation.mutateAsync({
+  //         id: templateId,
+  //         updates: templateUpdate
+  //       })
+  //     )
+
+  //     // Update any active tides using this template
+  //     const activeTidesForTemplate = activeTides?.filter(tide =>
+  //       tide.tide_template_id === templateId
+  //     )
+
+  //     if (activeTidesForTemplate && activeTidesForTemplate.length > 0) {
+  //       for (const activeTide of activeTidesForTemplate) {
+  //         // Only update the goal amount if it changed, preserve actual progress
+  //         if (originalTemplate.goal_amount !== editedTemplate.goalMinutes) {
+  //           updatePromises.push(
+  //             updateTideMutation.mutateAsync({
+  //               id: activeTide.id,
+  //               updates: {
+  //                 goal_amount: editedTemplate.goalMinutes
+  //               }
+  //             })
+  //           )
+  //         }
+  //       }
+  //     }
+  //   }
+  // }
+
+  // if (updatePromises.length > 0) {
+  //   await Promise.all(updatePromises)
+  //   toast.success('Tide updated successfully')
+  // }
   const updatedTemplate = {
     ...updates,
     updated_at: new Date().toISOString(),
