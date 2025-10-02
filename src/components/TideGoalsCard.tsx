@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { PieChart, Pie, Cell } from 'recharts'
 import { Skeleton } from '@/components/ui/skeleton'
 import { TideEditDialog } from '@/components/TideEditDialog'
+import { TideCompletedBadge } from '@/components/icons/TideCompletedBadge'
 import { useTides } from '../api/hooks/useTides'
 import { DateTime } from 'luxon'
 interface TideGoalsCardProps {
@@ -30,7 +31,7 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({
   const renderWeeklyProgress = () => {
     if (!weeklyHistory || weeklyHistory.length === 0) return null
 
-    const dayNames = ['S', 'M', 'Tu', 'W', 'Th', 'F', 'S']
+    const dayNames = ['Su', 'M', 'Tu', 'W', 'Th', 'F', 'Sa']
     const selectedDay = DateTime.fromJSDate(date).startOf('day')
     const currentDay = DateTime.now().startOf('day')
 
@@ -44,6 +45,7 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({
           const fillPercentage = day.progress.goal > 0
             ? Math.min((day.progress.current / day.progress.goal) * 100, 100)
             : 0
+          const isCompleted = day.progress.goal > 0 && day.progress.current >= day.progress.goal
 
           const handleDayClick = (e: React.MouseEvent) => {
             e.stopPropagation()
@@ -61,31 +63,27 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({
               onClick={handleDayClick}
               title={isFuture ? 'Future date' : `View ${dayNames[day.dayOfWeek]} (${day.date})`}
             >
-              <div className="relative w-4 h-4">
-                {/* Background circle */}
-                <svg className="w-full h-full -rotate-90" viewBox="0 0 32 32">
-                  <circle
-                    cx="16"
-                    cy="16"
-                    r="14"
-                    fill="none"
-                    stroke="hsl(var(--muted))"
-                    strokeWidth="3"
-                  />
-                  {/* Progress circle */}
-                  {fillPercentage > 0 && (
-                    <circle
-                      cx="16"
-                      cy="16"
-                      r="14"
-                      fill="none"
-                      stroke="hsl(var(--primary))"
-                      strokeWidth="3"
-                      strokeDasharray={`${(fillPercentage / 100) * 87.96} 87.96`}
-                      opacity={isFuture ? 0.3 : 1}
-                    />
-                  )}
-                </svg>
+              <div className={'relative w-6 h-6'}>
+                {isCompleted ? (
+                  <TideCompletedBadge id={day.date} />
+                ) : (
+                  // Regular progress circle for incomplete days
+                  <svg className="w-full h-full -rotate-90" viewBox="0 0 32 32">
+                    <circle cx="16" cy="16" r="14" fill="none" stroke="hsl(var(--muted))" strokeWidth="3" />
+                    {fillPercentage > 0 && (
+                      <circle
+                        cx="16"
+                        cy="16"
+                        r="14"
+                        fill="none"
+                        stroke="hsl(var(--primary))"
+                        strokeWidth="3"
+                        strokeDasharray={`${(fillPercentage / 100) * 87.96} 87.96`}
+                        opacity={isFuture ? 0.3 : 1}
+                      />
+                    )}
+                  </svg>
+                )}
               </div>
               <span className={`text-xs ${isSElected ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
                 {dayNames[day.dayOfWeek]}
