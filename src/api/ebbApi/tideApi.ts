@@ -31,28 +31,6 @@ export interface TideOverview {
 
 // Tide Template API Functions
 
-const createTideTemplate = async (
-  metricsType: string,
-  tideFrequency: string,
-  goalAmount: number,
-  firstTide: string,
-  dayOfWeek?: string
-): Promise<string> => {
-  const template: TideTemplateSchema = {
-    id: self.crypto.randomUUID(),
-    metrics_type: metricsType,
-    tide_frequency: tideFrequency,
-    first_tide: firstTide,
-    day_of_week: dayOfWeek,
-    goal_amount: goalAmount,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  }
-
-  await TideRepo.createTideTemplate(template)
-  return template.id
-}
-
 const updateTideTemplate = async (
   id: string,
   updates: Partial<TideTemplateSchema>
@@ -108,36 +86,7 @@ const getTideTemplates = async (): Promise<TideTemplate[]> => {
   return TideRepo.getAllTideTemplates()
 }
 
-const getTideTemplateById = async (id: string): Promise<TideTemplate | undefined> => {
-  return TideRepo.getTideTemplateById(id)
-}
-
 // Tide API Functions
-
-const createTide = async (
-  start: string,
-  end: string | undefined,
-  metricsType: string,
-  tideFrequency: string,
-  goalAmount: number,
-  tideTemplateId: string
-): Promise<string> => {
-  const tide: TideSchema = {
-    id: self.crypto.randomUUID(),
-    start,
-    end,
-    metrics_type: metricsType,
-    tide_frequency: tideFrequency,
-    goal_amount: goalAmount,
-    actual_amount: 0,
-    tide_template_id: tideTemplateId,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  }
-
-  await TideRepo.createTide(tide)
-  return tide.id
-}
 
 const updateTide = async (
   id: string,
@@ -150,20 +99,8 @@ const updateTide = async (
   return TideRepo.updateTide(id, updatedTide)
 }
 
-const getTideById = async (id: string): Promise<Tide | undefined> => {
-  return TideRepo.getTideById(id)
-}
-
 const getActiveTides = async (): Promise<Tide[]> => {
   return TideRepo.getActiveTides()
-}
-
-const completeTide = async (id: string): Promise<QueryResult> => {
-  return TideRepo.completeTide(id)
-}
-
-const updateTideProgress = async (id: string, actualAmount: number): Promise<QueryResult> => {
-  return TideRepo.updateTideProgress(id, actualAmount)
 }
 
 // Business Logic Functions
@@ -225,14 +162,6 @@ const getTideOverview = async (date = new Date()): Promise<TideOverview> => {
   }
 }
 
-const getRecentTides = async (limit = 10): Promise<Tide[]> => {
-  return TideRepo.getRecentTides(limit)
-}
-
-const getTidesWithTemplates = async (limit = 10): Promise<TideWithTemplate[]> => {
-  return TideRepo.getTidesWithTemplates(limit)
-}
-
 const formatTime = (minutes: number): string => {
   const hours = Math.floor(minutes / 60)
   const remainingMinutes = Math.round(minutes % 60)
@@ -261,25 +190,16 @@ const isWithinTimeRange = (checkTime: string, startTime: string, endTime?: strin
 
 export const TideApi = {
   // Template operations
-  createTideTemplate,
   updateTideTemplate,
   updateTideTemplates,
   getTideTemplates,
-  getTideTemplateById,
 
   // Tide operations
-  createTide,
   updateTide,
-  getTideById,
   getActiveTides,
-  completeTide,
-  updateTideProgress,
 
   // Business logic
-  getTideProgress,
   getTideOverview,
-  getRecentTides,
-  getTidesWithTemplates,
 
   // Utilities
   formatTime,

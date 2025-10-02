@@ -2,8 +2,8 @@ import { type FC, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { PieChart, Pie, Cell } from 'recharts'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useGetTideOverview } from '../api/hooks/useTides'
-import { TideEditDialog } from './TideEditDialog'
+import { TideEditDialog } from '@/components/TideEditDialog'
+import { useTides } from '../api/hooks/useTides'
 interface TideGoalsCardProps {
   date?: Date
 }
@@ -14,7 +14,7 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({
   const [activeTab, setActiveTab] = useState<'daily' | 'weekly'>('daily')
   const [editDialogOpen, setEditDialogOpen] = useState(false)
 
-  const { data: tideData, isLoading: isTidesLoading, error: tideError } = useGetTideOverview(date)
+  const { data: tideData, isLoading: isTidesLoading, error: tideError } = useTides.useGetTideOverview(date)
 
   const isLoading = isTidesLoading
   const hasError = tideError
@@ -192,7 +192,7 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({
                 fill={isGoalComplete ? 'hsl(var(--primary))' : 'hsl(var(--muted))'}
                 style={{ opacity: 0 }}
                 className={isGoalComplete ? 'animate-pulse' : ''}
-                
+
               />
               <Cell key="stretchTrack" fill="hsl(var(--muted))" style={{ opacity: 0 }} />
             </Pie>
@@ -257,7 +257,7 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({
                 <div>Tide reached!</div>
                 <div className="text-primary-600 dark:text-primary-400 pt-1">+{formatTime(current - goal)}</div>
               </div>
-              
+
             )}
           </div>
         </div>
@@ -287,21 +287,15 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({
           <div className="flex gap-1">
             <button
               onClick={() => setActiveTab('daily')}
-              className={`px-2 py-1 text-xs font-medium rounded-full transition-all duration-200 ${
-                activeTab === 'daily'
-                  ? 'bg-primary text-primary-foreground shadow-sm'
-                  : 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground'
-              }`}
+              className={`px-2 py-1 text-xs font-medium rounded-full transition-all duration-200 ${activeTab === 'daily'
+                ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground'}`}
             >
               Daily
             </button>
             <button
               onClick={() => setActiveTab('weekly')}
-              className={`px-2 py-1 text-xs font-medium rounded-full transition-all duration-200 ${
-                activeTab === 'weekly'
-                  ? 'bg-primary text-primary-foreground shadow-sm'
-                  : 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground'
-              }`}
+              className={`px-2 py-1 text-xs font-medium rounded-full transition-all duration-200 ${activeTab === 'weekly'
+                ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground'}`}
             >
               Weekly
             </button>
