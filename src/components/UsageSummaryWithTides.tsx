@@ -82,6 +82,7 @@ export interface UsageSummaryWithTidesProps {
   yAxisMax?: number;
   rangeMode: 'day' | 'week' | 'month';
   date: Date;
+  setDate?: (date: Date) => void;
   lastUpdated?: Date | null;
 }
 
@@ -94,6 +95,7 @@ export const UsageSummaryWithTides = ({
   showIdleTime,
   rangeMode,
   date,
+  setDate,
   lastUpdated,
   setShowIdleTime,
 }: UsageSummaryWithTidesProps) => {
@@ -154,7 +156,7 @@ export const UsageSummaryWithTides = ({
       {/* Two-column layout: Goals card on left, Chart on right */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         {/* Tide Goals Card */}
-        <TideGoalsCard date={date}/>
+        <TideGoalsCard date={date} onDateChange={setDate}/>
 
         {/* Chart Card - spans 2 columns */}
         <Card className="md:col-span-2">

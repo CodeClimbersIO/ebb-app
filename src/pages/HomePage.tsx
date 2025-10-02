@@ -102,6 +102,7 @@ export const HomePage = () => {
               setShowIdleTime={setShowIdleTime}
               rangeMode={rangeMode}
               date={date}
+              setDate={setDate}
               lastUpdated={lastUpdated}
             />
           ) : (

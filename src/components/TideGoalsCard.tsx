@@ -7,10 +7,12 @@ import { useTides } from '../api/hooks/useTides'
 import { DateTime } from 'luxon'
 interface TideGoalsCardProps {
   date?: Date
+  onDateChange?: (date: Date) => void
 }
 
 export const TideGoalsCard: FC<TideGoalsCardProps> = ({
-  date = new Date()
+  date = new Date(),
+  onDateChange
 }) => {
   const [activeTab, setActiveTab] = useState<'daily' | 'weekly'>('daily')
   const [editDialogOpen, setEditDialogOpen] = useState(false)
@@ -29,21 +31,36 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({
     if (!weeklyHistory || weeklyHistory.length === 0) return null
 
     const dayNames = ['S', 'M', 'Tu', 'W', 'Th', 'F', 'S']
-    const today = DateTime.fromJSDate(date).startOf('day')
+    const selectedDay = DateTime.fromJSDate(date).startOf('day')
+    const currentDay = DateTime.now().startOf('day')
 
     return (
       <div className="flex justify-center gap-2 mt-3 px-4">
         {weeklyHistory.map((day) => {
           const dayDate = DateTime.fromISO(day.date).startOf('day')
-          const isToday = dayDate.hasSame(today, 'day')
-          const isFuture = dayDate > today
+          const isSElected = dayDate.hasSame(selectedDay, 'day')
+          const isFuture = dayDate > currentDay
 
           const fillPercentage = day.progress.goal > 0
             ? Math.min((day.progress.current / day.progress.goal) * 100, 100)
             : 0
 
+          const handleDayClick = (e: React.MouseEvent) => {
+            e.stopPropagation()
+            if (isFuture) return
+            if (onDateChange) {
+              const clickedDate = DateTime.fromISO(day.date).toJSDate()
+              onDateChange(clickedDate)
+            }
+          }
+
           return (
-            <div key={day.date} className="flex flex-col items-center gap-1">
+            <div
+              key={day.date}
+              className={`flex flex-col items-center gap-1 transition-opacity ${isFuture ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:opacity-80'}`}
+              onClick={handleDayClick}
+              title={isFuture ? 'Future date' : `View ${dayNames[day.dayOfWeek]} (${day.date})`}
+            >
               <div className="relative w-4 h-4">
                 {/* Background circle */}
                 <svg className="w-full h-full -rotate-90" viewBox="0 0 32 32">
@@ -70,7 +87,7 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({
                   )}
                 </svg>
               </div>
-              <span className={`text-xs ${isToday ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
+              <span className={`text-xs ${isSElected ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
                 {dayNames[day.dayOfWeek]}
               </span>
             </div>
