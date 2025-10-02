@@ -259,6 +259,81 @@ pub fn get_migrations() -> Vec<Migration> {
             "#,
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 18,
+            description: "create_tide_template",
+            sql: r#"
+            CREATE TABLE IF NOT EXISTS tide_template (
+                id TEXT PRIMARY KEY NOT NULL,
+                metrics_type TEXT NOT NULL,
+                tide_frequency TEXT NOT NULL,
+                first_tide DATETIME NOT NULL,
+                day_of_week TEXT,
+                goal_amount REAL NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+            "#,
+            kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 19,
+            description: "create_tide",
+            sql: r#"
+            CREATE TABLE IF NOT EXISTS tide (
+                id TEXT PRIMARY KEY NOT NULL,
+                start DATETIME NOT NULL,
+                end DATETIME,
+                completed_at DATETIME,
+                metrics_type TEXT NOT NULL,
+                tide_frequency TEXT NOT NULL,
+                goal_amount REAL NOT NULL,
+                actual_amount REAL NOT NULL DEFAULT 0.0,
+                tide_template_id TEXT NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (tide_template_id) REFERENCES tide_template (id)
+            );
+            "#,
+            kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 20,
+            description: "seed_default_tide_templates",
+            sql: r#"
+            INSERT INTO tide_template (
+                id, 
+                metrics_type, 
+                tide_frequency, 
+                first_tide, 
+                day_of_week, 
+                goal_amount, 
+                created_at, 
+                updated_at
+            ) VALUES 
+            (
+                'default-daily-template', 
+                'creating', 
+                'daily', 
+                datetime('now'), 
+                '1,2,3,4,5', 
+                180.0, 
+                datetime('now'), 
+                datetime('now')
+            ),
+            (
+                'default-weekly-template', 
+                'creating', 
+                'weekly', 
+                datetime('now'), 
+                '0,1,2,3,4,5,6', 
+                600.0, 
+                datetime('now'), 
+                datetime('now')
+            );
+            "#,
+            kind: MigrationKind::Up,
+        },
     ]
 }
 
@@ -310,6 +385,8 @@ mod tests {
             "workflow",
             "device_profile", // renamed from user_profile in migration 14
             "user_notification",
+            "tide_template",
+            "tide",
         ];
 
         for table_name in tables_to_check {

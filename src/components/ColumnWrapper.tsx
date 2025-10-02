@@ -2,6 +2,7 @@ import { useDroppable } from '@dnd-kit/core'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { DraggableAppCard } from './DraggableAppCard'
 import { AppsWithTime } from '../api/monitorApi/monitorApi'
+import { formatTime } from '@/components/UsageSummary'
 
 
 type ColumnWrapperProps = {
@@ -32,6 +33,9 @@ export function ColumnWrapper({
     <Card className={`p-4 border ${highlightClass} transition-colors duration-200`} ref={setNodeRef}>
       <CardHeader className="p-0 mb-4 flex flex-row items-center justify-between">
         <CardTitle className={titleClassName}>{title}</CardTitle>
+        <span className="text-sm text-muted-foreground font-medium">
+          {formatTime(categoryUsage)}
+        </span>
       </CardHeader>
       <CardContent className="p-0 space-y-4 min-h-[100px]"> {/* min-h to prevent collapse when empty */}
         {apps.length === 0 && (

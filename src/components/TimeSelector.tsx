@@ -15,7 +15,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 
-const presetTimes = [
+const defaultPresetTimes = [
   { value: 'no-limit', label: 'No limit' },
   { value: '15', label: '15 minutes' },
   { value: '30', label: '30 minutes' },
@@ -96,9 +96,10 @@ const formatMinutes = (minutes: number): string => {
 interface TimeSelectorProps {
   value: number | null
   onChange: (value: number | null) => void
+  presets?: Array<{ value: string; label: string }>
 }
 
-export function TimeSelector({ value: externalValue, onChange }: TimeSelectorProps) {
+export function TimeSelector({ value: externalValue, onChange, presets = defaultPresetTimes }: TimeSelectorProps) {
   const [open, setOpen] = React.useState(false)
   const [value, setValue] = React.useState<string>(externalValue?.toString() || 'no-limit')
   const [inputValue, setInputValue] = React.useState('')
@@ -113,7 +114,7 @@ export function TimeSelector({ value: externalValue, onChange }: TimeSelectorPro
       const stringValue = externalValue.toString()
       setValue(stringValue)
       // If the value doesn't match any preset, create a custom option
-      if (!presetTimes.some(time => time.value === stringValue)) {
+      if (!presets.some(time => time.value === stringValue)) {
         setCustomOption({
           value: stringValue, // Keep the numeric value for onChange
           label: formatMinutes(externalValue)
@@ -122,10 +123,10 @@ export function TimeSelector({ value: externalValue, onChange }: TimeSelectorPro
         setCustomOption(null) // Ensure custom option is cleared if matching preset
       }
     }
-  }, [externalValue])
+  }, [externalValue, presets])
 
   const displayOptions = React.useMemo(() => {
-    const options = [...presetTimes]
+    const options = [...presets]
     const parsedInput = parseTimeInput(inputValue)
     
     const filtered = options.filter(option => {
@@ -147,7 +148,7 @@ export function TimeSelector({ value: externalValue, onChange }: TimeSelectorPro
       return [customOption, ...filtered]
     }
     return filtered
-  }, [customOption, inputValue])
+  }, [customOption, inputValue, presets])
 
   const handleInputChange = (input: string) => {
     setInputValue(input)
@@ -155,7 +156,7 @@ export function TimeSelector({ value: externalValue, onChange }: TimeSelectorPro
     // Try to parse for custom duration
     const parsedMinutes = parseTimeInput(input)
     if (parsedMinutes !== null) {
-      const matchingPreset = presetTimes.find(preset => 
+      const matchingPreset = presets.find(preset =>
         parseTimeInput(preset.value) === parsedMinutes
       )
       
@@ -203,7 +204,7 @@ export function TimeSelector({ value: externalValue, onChange }: TimeSelectorPro
           className='w-full justify-between'
         >
           {value
-            ? presetTimes.find((time) => time.value === value)?.label ||
+            ? presets.find((time) => time.value === value)?.label ||
               (customOption?.value === value ? customOption.label : 'Select duration')
             : 'Select duration'}
           <ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
