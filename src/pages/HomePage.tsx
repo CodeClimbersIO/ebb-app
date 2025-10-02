@@ -104,6 +104,7 @@ export const HomePage = () => {
               date={date}
               setDate={setDate}
               lastUpdated={lastUpdated}
+              totalTime={totalTime}
             />
           ) : (
             <UsageSummary

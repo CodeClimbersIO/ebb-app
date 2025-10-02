@@ -84,6 +84,7 @@ export interface UsageSummaryWithTidesProps {
   date: Date;
   setDate?: (date: Date) => void;
   lastUpdated?: Date | null;
+  totalTime: { value: number; trend: { percent: number; direction: 'up' | 'down' | 'none' } };
 }
 
 
@@ -97,6 +98,7 @@ export const UsageSummaryWithTides = ({
   date,
   setDate,
   lastUpdated,
+  totalTime,
   setShowIdleTime,
 }: UsageSummaryWithTidesProps) => {
   const { user } = useAuth()
@@ -286,13 +288,16 @@ export const UsageSummaryWithTides = ({
               </div>
             )}
           </CardContent>
-          {lastUpdated && (
-            <div className="px-6 pb-4">
-              <div className="text-xs text-muted-foreground text-right">
-              Last updated: {formatLastUpdated(lastUpdated)}
-              </div>
+          <div className="px-6 pb-4 flex justify-between items-center">
+            <div className="text-xs text-muted-foreground">
+              Total Time Active: {formatTime(totalTime.value)}
             </div>
-          )}
+            {lastUpdated && (
+              <div className="text-xs text-muted-foreground">
+                Last updated: {formatLastUpdated(lastUpdated)}
+              </div>
+            )}
+          </div>
         </Card>
       </div>
 
