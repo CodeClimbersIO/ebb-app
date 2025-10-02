@@ -6,23 +6,15 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { AnalyticsButton } from '@/components/ui/analytics-button'
-import { useGetTideTemplates, useUpdateTideTemplate, useGetActiveTides, useUpdateTide } from '@/api/hooks/useTides'
+import { useTides } from '@/api/hooks/useTides'
 import { Skeleton } from '@/components/ui/skeleton'
 import { TimeSelector } from '@/components/TimeSelector'
 import { toast } from 'sonner'
-import { TideTemplate } from '@/api/ebbApi/tideApi'
+import { TemplateEdit } from '@/api/ebbApi/tideApi'
 
 interface TideEditDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-}
-
-interface TemplateEdit {
-  id: string
-  goal_amount: number
-  metrics_type: string
-  days_of_week: number[]
-  tide_frequency: string
 }
 
 interface TideTemplateItemProps {
@@ -96,10 +88,8 @@ export const TideEditDialog: FC<TideEditDialogProps> = ({
   open,
   onOpenChange
 }) => {
-  const { data: templates, isLoading } = useGetTideTemplates()
-  const { data: activeTides } = useGetActiveTides()
-  const updateTemplateMutation = useUpdateTideTemplate()
-  const updateTideMutation = useUpdateTide()
+  const { data: templates, isLoading } = useTides.useGetTideTemplates()
+  const updateTemplatesMutation = useTides.useUpdateTideTemplates()
   const [editedTemplates, setEditedTemplates] = useState<TemplateEdit[]>([])
 
   // Initialize edited templates when templates load
@@ -118,58 +108,8 @@ export const TideEditDialog: FC<TideEditDialogProps> = ({
 
   const handleSave = async () => {
     try {
-      const updatePromises = []
-
-      // Update each modified template
-      for (const editedTemplate of editedTemplates) {
-        const originalTemplate = templates?.find(t => t.id === editedTemplate.id)
-        if (!originalTemplate) continue
-
-        const hasChanges =
-          originalTemplate.goal_amount !== editedTemplate.goal_amount ||
-          originalTemplate.day_of_week !== editedTemplate.days_of_week.join(',')
-
-        if (hasChanges) {
-          const templateUpdate = {
-            goal_amount: editedTemplate.goal_amount,
-            day_of_week: editedTemplate.days_of_week.length > 0 ? editedTemplate.days_of_week.join(',') : undefined
-          }
-
-          updatePromises.push(
-            updateTemplateMutation.mutateAsync({
-              id: editedTemplate.id,
-              updates: templateUpdate
-            })
-          )
-
-          // Update any active tides using this template
-          const activeTidesForTemplate = activeTides?.filter(tide =>
-            tide.tide_template_id === editedTemplate.id
-          )
-
-          if (activeTidesForTemplate && activeTidesForTemplate.length > 0) {
-            for (const activeTide of activeTidesForTemplate) {
-              // Only update the goal amount if it changed, preserve actual progress
-              if (originalTemplate.goal_amount !== editedTemplate.goal_amount) {
-                updatePromises.push(
-                  updateTideMutation.mutateAsync({
-                    id: activeTide.id,
-                    updates: {
-                      goal_amount: editedTemplate.goal_amount
-                    }
-                  })
-                )
-              }
-            }
-          }
-        }
-      }
-
-      if (updatePromises.length > 0) {
-        await Promise.all(updatePromises)
-        toast.success('Tide updated successfully')
-      }
-
+      await updateTemplatesMutation.mutateAsync(editedTemplates)
+      toast.success('Tide updated successfully')
       onOpenChange(false)
     } catch (error) {
       console.error('Failed to save tide:', error)
@@ -227,9 +167,9 @@ export const TideEditDialog: FC<TideEditDialogProps> = ({
           <AnalyticsButton
             onClick={handleSave}
             analyticsEvent="get_pro_clicked"
-            disabled={updateTemplateMutation.isPending || updateTideMutation.isPending}
+            disabled={updateTemplatesMutation.isPending}
           >
-            {updateTemplateMutation.isPending || updateTideMutation.isPending ? 'Saving...' : 'Save Templates'}
+            {updateTemplatesMutation.isPending ? 'Saving...' : 'Save Templates'}
           </AnalyticsButton>
         </div>
       </DialogContent>

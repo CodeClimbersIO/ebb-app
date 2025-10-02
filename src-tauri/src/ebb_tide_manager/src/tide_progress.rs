@@ -3,6 +3,7 @@ use ebb_db::{
     db::{activity_state_repo::ActivityStateRepo, models::tide::Tide},
     db_manager::{self, DbManager},
 };
+use log;
 use std::collections::HashMap;
 use std::sync::Arc;
 use thiserror::Error;
@@ -83,7 +84,7 @@ impl TideProgress {
             if !skip_cache {
                 // Cache hit - calculate incremental progress
                 let time_diff = evaluation_time - cached.last_evaluation_time;
-                println!(
+                log::debug!(
                     "Cache check: tide_id={}, cached_time={:?}, eval_time={:?}, diff={:?} ({} seconds)",
                     tide_id,
                     cached.last_evaluation_time,
@@ -91,9 +92,10 @@ impl TideProgress {
                     time_diff,
                     time_diff.whole_seconds()
                 );
-                println!(
+                log::debug!(
                     "Cache hit for tide: incremental progress for tide with start and end times: {:?}, {:?}",
-                    cached.last_evaluation_time, evaluation_time
+                    cached.last_evaluation_time,
+                    evaluation_time
                 );
                 let delta_minutes = self
                     .activity_state_repo
@@ -121,9 +123,10 @@ impl TideProgress {
         }
 
         // Cache miss - calculate full range from tide start
-        println!(
+        log::debug!(
             "Cache miss for tide: calculating full range for tide with start and end times: {:?}, {:?}",
-            tide.start, tide.end
+            tide.start,
+            tide.end
         );
         let total_minutes = self.calculate_tide_progress(tide, evaluation_time).await?;
 

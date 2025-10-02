@@ -1507,6 +1507,7 @@ name = "ebb_tide_manager"
 version = "0.1.0"
 dependencies = [
  "ebb-db",
+ "log",
  "thiserror 2.0.12",
  "time",
  "tokio",

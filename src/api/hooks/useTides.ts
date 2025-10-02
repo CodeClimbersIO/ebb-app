@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { TideApi, Tide, TideTemplate } from '../ebbApi/tideApi'
+import { TideApi, Tide, TemplateEdit } from '../ebbApi/tideApi'
 
 const tideKeys = {
   all: ['tides'] as const,
@@ -12,7 +12,7 @@ const tideKeys = {
 
 // Query Hooks
 
-export const useGetTideOverview = (date = new Date()) => {
+const useGetTideOverview = (date = new Date()) => {
   return useQuery({
     queryKey: tideKeys.overview(date),
     queryFn: () => TideApi.getTideOverview(date),
@@ -21,27 +21,7 @@ export const useGetTideOverview = (date = new Date()) => {
   })
 }
 
-// export const useGetCurrentDailyTide = (metricsType = 'creating') => {
-//   return useQuery({
-//     queryKey: tideKeys.daily(metricsType),
-//     queryFn: () => TideApi.getCurrentDailyTide(metricsType),
-//     staleTime: 30000,
-//     refetchInterval: 30000, // More frequent refresh (30 seconds like UsageSummary)
-//     refetchOnWindowFocus: true,
-//   })
-// }
-
-// export const useGetCurrentWeeklyTide = (metricsType = 'creating') => {
-//   return useQuery({
-//     queryKey: tideKeys.weekly(metricsType),
-//     queryFn: () => TideApi.getCurrentWeeklyTide(metricsType),
-//     staleTime: 30000,
-//     refetchInterval: 30000, // More frequent refresh (30 seconds like UsageSummary)
-//     refetchOnWindowFocus: true,
-//   })
-// }
-
-export const useGetRecentTides = (limit = 10) => {
+const useGetRecentTides = (limit = 10) => {
   return useQuery({
     queryKey: tideKeys.recent(limit),
     queryFn: () => TideApi.getRecentTides(limit),
@@ -49,7 +29,7 @@ export const useGetRecentTides = (limit = 10) => {
   })
 }
 
-export const useGetActiveTides = () => {
+const useGetActiveTides = () => {
   return useQuery({
     queryKey: tideKeys.active(),
     queryFn: () => TideApi.getActiveTides(),
@@ -58,7 +38,7 @@ export const useGetActiveTides = () => {
   })
 }
 
-export const useGetTideTemplates = () => {
+const useGetTideTemplates = () => {
   return useQuery({
     queryKey: tideKeys.templates(),
     queryFn: () => TideApi.getTideTemplates(),
@@ -66,7 +46,7 @@ export const useGetTideTemplates = () => {
   })
 }
 
-export const useGetTideById = (id: string) => {
+const useGetTideById = (id: string) => {
   return useQuery({
     queryKey: tideKeys.detail(id),
     queryFn: () => TideApi.getTideById(id),
@@ -77,7 +57,7 @@ export const useGetTideById = (id: string) => {
 
 // Mutation Hooks
 
-export const useCreateTideTemplate = () => {
+const useCreateTideTemplate = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -100,20 +80,22 @@ export const useCreateTideTemplate = () => {
   })
 }
 
-export const useUpdateTideTemplate = () => {
+
+const useUpdateTideTemplates = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: Partial<TideTemplate> }) =>
-      TideApi.updateTideTemplate(id, updates),
-    onSuccess: (_, { id }) => {
+    mutationFn: (editedTemplates: TemplateEdit[]) =>
+      TideApi.updateTideTemplates(editedTemplates),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: tideKeys.templates() })
-      queryClient.invalidateQueries({ queryKey: tideKeys.detail(id) })
+      queryClient.invalidateQueries({ queryKey: tideKeys.active() })
+      queryClient.invalidateQueries({ queryKey: tideKeys.overview() })
     },
   })
 }
 
-export const useCreateTide = () => {
+const useCreateTide = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -141,7 +123,7 @@ export const useCreateTide = () => {
   })
 }
 
-export const useUpdateTide = () => {
+const useUpdateTide = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -160,7 +142,7 @@ export const useUpdateTide = () => {
   })
 }
 
-export const useCompleteTide = () => {
+const useCompleteTide = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -172,7 +154,7 @@ export const useCompleteTide = () => {
   })
 }
 
-export const useUpdateTideProgress = () => {
+const useUpdateTideProgress = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -186,15 +168,31 @@ export const useUpdateTideProgress = () => {
 }
 
 // Utility hook for formatting time consistently
-export const useFormatTime = () => {
+const useFormatTime = () => {
   return (minutes: number) => TideApi.formatTime(minutes)
 }
 
 // Hook for refetching tide data manually (useful for pull-to-refresh)
-export const useRefreshTides = () => {
+const useRefreshTides = () => {
   const queryClient = useQueryClient()
 
   return () => {
     queryClient.invalidateQueries({ queryKey: tideKeys.all })
   }
+}
+
+export const useTides = {
+  useGetTideOverview,
+  useGetRecentTides,
+  useGetActiveTides,
+  useGetTideTemplates,
+  useGetTideById,
+  useCreateTideTemplate,
+  useUpdateTideTemplates,
+  useCreateTide,
+  useUpdateTide,
+  useCompleteTide,
+  useUpdateTideProgress,
+  useFormatTime,
+  useRefreshTides,
 }
