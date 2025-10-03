@@ -158,6 +158,7 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({
               <div className="text-xs text-muted-foreground mt-1 max-w-24 leading-tight">
                 Today's creating time
               </div>
+
             </div>
           </div>
         </div>
@@ -167,7 +168,11 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({
           <div className="text-sm text-muted-foreground">
             Enjoy your day off!
           </div>
+          <div>
+            {activeTab === 'daily' ? renderWeeklyProgress() : renderMonthlyWeeklyProgress()}
+          </div>
         </div>
+
       </div>
     )
   }
