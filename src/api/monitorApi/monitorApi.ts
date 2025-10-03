@@ -373,7 +373,9 @@ export const getTimeCreatingByDay = async (start: DateTime, end: DateTime): Prom
     ...state,
     tags_json: state.tags ? JSON.parse(state.tags) : []
   }))
-  return aggregateTimeBlocks(activityStates, 'day', start, end)
+  
+  const result = aggregateTimeBlocks(activityStates, 'day', start, end)
+  return result
 }
 
 export const getTimeCreatingByWeek = async (start: DateTime, end: DateTime): Promise<GraphableTimeByHourBlock[]> => {
@@ -383,7 +385,9 @@ export const getTimeCreatingByWeek = async (start: DateTime, end: DateTime): Pro
     ...state,
     tags_json: state.tags ? JSON.parse(state.tags) : []
   }))
-  return aggregateTimeBlocks(activityStates, 'week', start, end)
+  
+  const result = aggregateTimeBlocks(activityStates, 'week', start, end)
+  return result
 }
 
 export const getTopAppsByPeriod = async (start: DateTime, end: DateTime): Promise<AppsWithTime[]> => {

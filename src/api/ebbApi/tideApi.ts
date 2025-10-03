@@ -105,10 +105,9 @@ const getActiveTides = async (): Promise<Tide[]> => {
 
 // Business Logic Functions
 
-const getTideProgress = async (type = 'daily', date = new Date()): Promise<TideProgressData> => {
-
+const getTideProgress = async (type = 'daily', {date = new Date(), isBadgeRequest = false}: {date?: Date, isBadgeRequest?: boolean}): Promise<TideProgressData> => {
   const evaluationTime = date.toISOString()
-  console.log('getTideProgress', type, evaluationTime)
+  
   const activeTides = await TideRepo.getActiveTidesForPeriod(evaluationTime)
   // Find today's daily tide for the specific metrics type
   const tide = activeTides.find(tide =>
@@ -116,13 +115,27 @@ const getTideProgress = async (type = 'daily', date = new Date()): Promise<TideP
   )
 
   if(!tide) {
+    if(isBadgeRequest) { // if we don't have a tide and it's for a badge, don't make the api call and return 0
+      return {
+        tide: undefined,
+        progress: {
+          current: 0,
+          goal: 0,
+          isCompleted: false,
+          progressPercentage: 0,
+          overflowAmount: undefined
+        }
+      }
+    }
     let time: GraphableTimeByHourBlock[] = []
     if(type === 'daily') {
       time = await MonitorApi.getTimeCreatingByDay(DateTime.fromISO(evaluationTime).startOf('day'), DateTime.fromISO(evaluationTime).endOf('day'))
     } else if(type === 'weekly') {
       time = await MonitorApi.getTimeCreatingByWeek(DateTime.fromISO(evaluationTime).startOf('week'), DateTime.fromISO(evaluationTime).endOf('week'))
     }
+    
     const current = time.reduce((acc, curr) => acc + curr.creating, 0)
+    
     return { // no tide for the date
       tide: undefined,
       progress: {
@@ -152,10 +165,15 @@ const getTideProgress = async (type = 'daily', date = new Date()): Promise<TideP
 }
 
 const getTideOverview = async (date = new Date()): Promise<TideOverview> => {
+  const startTime = Date.now()
+  
   const [daily, weekly] = await Promise.all([
-    getTideProgress('daily', date),
-    getTideProgress('weekly', date)
+    getTideProgress('daily', {date, isBadgeRequest: false}),
+    getTideProgress('weekly', {date, isBadgeRequest: false})
   ])
+
+  const totalTime = Date.now() - startTime
+  console.log('🌊 TideOverview:', `${totalTime}ms`)
 
   return {
     daily,
@@ -166,6 +184,13 @@ const getTideOverview = async (date = new Date()): Promise<TideOverview> => {
 export interface DailyTideHistory {
   date: string // ISO date
   dayOfWeek: number // 0-6
+  progress: TideProgress
+}
+
+export interface WeeklyTideHistory {
+  weekStart: string // ISO date of week start (Sunday)
+  weekEnd: string // ISO date of week end (Saturday)
+  weekNumber: number // Week number in month (1-5)
   progress: TideProgress
 }
 
@@ -199,13 +224,50 @@ const getWeeklyDailyHistory = async (date = new Date()): Promise<DailyTideHistor
       continue
     }
 
-    const progress = await getTideProgress('daily', currentDay.toJSDate())
+    const progress = await getTideProgress('daily', {date: currentDay.toJSDate(), isBadgeRequest: true})
 
     history.push({
       date: currentDay.toISODate() || '',
       dayOfWeek,
       progress: progress.progress
     })
+  }
+
+  return history
+}
+
+const getMonthlyWeeklyHistory = async (date = new Date()): Promise<WeeklyTideHistory[]> => {
+  const dateTime = DateTime.fromJSDate(date)
+  const startOfMonth = dateTime.startOf('month')
+  const endOfMonth = dateTime.endOf('month')
+
+  const history: WeeklyTideHistory[] = []
+
+  // Start from the first Sunday of or before the month
+  let currentWeekStart = startOfMonth.startOf('week') // Sunday
+
+  let weekNumber = 1
+
+  // Iterate through each week that overlaps with the current month
+  while (currentWeekStart <= endOfMonth) {
+    const weekEnd = currentWeekStart.plus({ days: 6 }) // Saturday
+
+    // Only include weeks that have at least one day in the current month
+    if (weekEnd >= startOfMonth && currentWeekStart <= endOfMonth) {
+      const progress = await getTideProgress('weekly', {date: currentWeekStart.toJSDate(), isBadgeRequest: true})
+
+      history.push({
+        weekStart: currentWeekStart.toISODate() || '',
+        weekEnd: weekEnd.toISODate() || '',
+        weekNumber,
+        progress: progress.progress
+      })
+
+      weekNumber++
+    }
+
+    // Move to next week
+    currentWeekStart = currentWeekStart.plus({ weeks: 1 })
   }
 
   return history
@@ -250,6 +312,7 @@ export const TideApi = {
   // Business logic
   getTideOverview,
   getWeeklyDailyHistory,
+  getMonthlyWeeklyHistory,
 
   // Utilities
   formatTime,

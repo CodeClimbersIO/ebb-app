@@ -67,7 +67,7 @@ export const formatTime = (minutes: number) => {
 // Tooltip Helper function to format time in hours/minutes for tooltip
 export const formatTimeToDecimalHours = (minutes: number) => {
   if (minutes >= 60) {
-    const hours = Math.round((minutes / 60) * 10)/ 10
+    const hours = Math.round((minutes / 60) * 10) / 10
     return `${hours}h`
   }
   return `${minutes}m`
@@ -108,8 +108,9 @@ export const UsageSummaryWithTides = ({
   const [chartConfigState, setChartConfigState] = useState(defaultChartConfig)
   const appUsageRef = useRef<HTMLDivElement>(null)
 
+
   useEffect(() => {
-    if(!appUsage) return
+    if (!appUsage) return
     const hasFirefox = appUsage.some(app => app.app_external_id === 'org.mozilla.firefox')
     if (user?.id && hasFirefox) {
       if (notificationBySentId) return
@@ -126,11 +127,11 @@ export const UsageSummaryWithTides = ({
   }, [user?.id, appUsage, createNotification])
 
   useEffect(() => {
-    if(showIdleTime) {
+    if (showIdleTime) {
       setChartDataState(chartData)
       setChartConfigState(idleChartConfig)
     } else {
-      setChartDataState(chartData.map(d => ({...d, idle: 0})))
+      setChartDataState(chartData.map(d => ({ ...d, idle: 0 })))
       setChartConfigState(defaultChartConfig)
     }
   }, [showIdleTime, chartData])
@@ -158,10 +159,10 @@ export const UsageSummaryWithTides = ({
       {/* Two-column layout: Goals card on left, Chart on right */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         {/* Tide Goals Card */}
-        <TideGoalsCard date={date} onDateChange={setDate}/>
+        <TideGoalsCard date={date} onDateChange={setDate} />
 
-        {/* Chart Card - spans 2 columns */}
-        <Card className="md:col-span-2">
+        {/* Chart Card - spans 2 columns, space between rows */}
+        <Card className="md:col-span-2 space-y-6">
           <CardContent className="p-0">
             {isLoading ? (
               <div className="pt-6 h-[200px]">
@@ -173,7 +174,7 @@ export const UsageSummaryWithTides = ({
                   <TooltipTrigger asChild>
                     <div className="absolute top-4 right-4 z-10 flex items-center space-x-2 bg-background/80 backdrop-blur-sm rounded-md px-3 py-2 border">
                       <label htmlFor="show-idle-time" className="text-sm font-medium opacity-50 cursor-pointer">
-                      Idle Time
+                        Idle Time
                       </label>
                       <Switch
                         id="show-idle-time"
@@ -288,7 +289,7 @@ export const UsageSummaryWithTides = ({
               </div>
             )}
           </CardContent>
-          <div className="px-6 pb-4 flex justify-between items-center">
+          <div className="px-6 flex justify-between items-center">
             <div className="text-xs text-muted-foreground">
               Total Time Active: {formatTime(totalTime.value)}
             </div>

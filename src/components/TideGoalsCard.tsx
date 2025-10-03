@@ -3,9 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { PieChart, Pie, Cell } from 'recharts'
 import { Skeleton } from '@/components/ui/skeleton'
 import { TideEditDialog } from '@/components/TideEditDialog'
-import { TideCompletedBadge } from '@/components/icons/TideCompletedBadge'
+import { TideProgressBadge } from '@/components/ui/tide-progress-badge'
 import { useTides } from '../api/hooks/useTides'
 import { DateTime } from 'luxon'
+import { TimeUtil } from '../lib/utils/time.util'
 interface TideGoalsCardProps {
   date?: Date
   onDateChange?: (date: Date) => void
@@ -18,14 +19,61 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({
   const [activeTab, setActiveTab] = useState<'daily' | 'weekly'>('daily')
   const [editDialogOpen, setEditDialogOpen] = useState(false)
 
+  // Add timing logs for each network call
   const { data: tideData, isLoading: isTidesLoading, error: tideError } = useTides.useGetTideOverview(date)
-  const { data: weeklyHistory, isLoading: isHistoryLoading } = useTides.useGetWeeklyDailyHistory(date)
+  const { data: weeklyHistory, isLoading: isWeeklyHistoryLoading } = useTides.useGetWeeklyDailyHistory(date)
+  const { data: monthlyWeeklyHistory, isLoading: isMonthlyWeeklyHistoryLoading } = useTides.useGetMonthlyWeeklyHistory(date)
 
-  const isLoading = isTidesLoading || isHistoryLoading
+  const isLoading = isTidesLoading || isWeeklyHistoryLoading || isMonthlyWeeklyHistoryLoading
   const hasError = tideError
 
   const handleEditClick = () => {
     setEditDialogOpen(true)
+  }
+
+  const renderMonthlyWeeklyProgress = () => {
+    if (!monthlyWeeklyHistory || monthlyWeeklyHistory.length === 0) return null
+
+    const selectedWeekStart = DateTime.fromJSDate(date).startOf('week')
+    const currentWeekStart = DateTime.now().startOf('week')
+
+    return (
+      <div className="flex justify-center gap-2 mt-3 px-4">
+        {monthlyWeeklyHistory.map((week) => {
+          const weekStart = DateTime.fromISO(week.weekStart).startOf('day')
+          const isSelected = weekStart.hasSame(selectedWeekStart, 'day')
+          const isFuture = weekStart > currentWeekStart
+
+          const fillPercentage = week.progress.goal > 0
+            ? Math.min((week.progress.current / week.progress.goal) * 100, 100)
+            : 0
+          const isCompleted = week.progress.goal > 0 && week.progress.current >= week.progress.goal
+
+          const handleWeekClick = (e: React.MouseEvent) => {
+            e.stopPropagation()
+            if (isFuture) return
+            if (onDateChange) {
+              const clickedDate = DateTime.fromISO(week.weekStart).toJSDate()
+              onDateChange(clickedDate)
+            }
+          }
+
+          return (
+            <TideProgressBadge
+              key={week.weekStart}
+              id={week.weekStart}
+              label={`W${week.weekNumber}`}
+              fillPercentage={fillPercentage}
+              isCompleted={isCompleted}
+              isSelected={isSelected}
+              isFuture={isFuture}
+              onClick={handleWeekClick}
+              tooltip={isFuture ? 'Future week' : `Week ${week.weekNumber} (${week.weekStart})`}
+            />
+          )
+        })}
+      </div>
+    )
   }
 
   const renderWeeklyProgress = () => {
@@ -39,7 +87,7 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({
       <div className="flex justify-center gap-2 mt-3 px-4">
         {weeklyHistory.map((day) => {
           const dayDate = DateTime.fromISO(day.date).startOf('day')
-          const isSElected = dayDate.hasSame(selectedDay, 'day')
+          const isSelected = dayDate.hasSame(selectedDay, 'day')
           const isFuture = dayDate > currentDay
 
           const fillPercentage = day.progress.goal > 0
@@ -57,38 +105,17 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({
           }
 
           return (
-            <div
+            <TideProgressBadge
               key={day.date}
-              className={`flex flex-col items-center gap-1 transition-opacity ${isFuture ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:opacity-80'}`}
+              id={day.date}
+              label={dayNames[day.dayOfWeek]}
+              fillPercentage={fillPercentage}
+              isCompleted={isCompleted}
+              isSelected={isSelected}
+              isFuture={isFuture}
               onClick={handleDayClick}
-              title={isFuture ? 'Future date' : `View ${dayNames[day.dayOfWeek]} (${day.date})`}
-            >
-              <div className={'relative w-6 h-6'}>
-                {isCompleted ? (
-                  <TideCompletedBadge id={day.date} />
-                ) : (
-                  // Regular progress circle for incomplete days
-                  <svg className="w-full h-full -rotate-90" viewBox="0 0 32 32">
-                    <circle cx="16" cy="16" r="14" fill="none" stroke="hsl(var(--muted))" strokeWidth="3" />
-                    {fillPercentage > 0 && (
-                      <circle
-                        cx="16"
-                        cy="16"
-                        r="14"
-                        fill="none"
-                        stroke="hsl(var(--primary))"
-                        strokeWidth="3"
-                        strokeDasharray={`${(fillPercentage / 100) * 87.96} 87.96`}
-                        opacity={isFuture ? 0.3 : 1}
-                      />
-                    )}
-                  </svg>
-                )}
-              </div>
-              <span className={`text-xs ${isSElected ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
-                {dayNames[day.dayOfWeek]}
-              </span>
-            </div>
+              tooltip={isFuture ? 'Future date' : `View ${dayNames[day.dayOfWeek]} (${day.date})`}
+            />
           )
         })}
       </div>
@@ -339,16 +366,17 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({
           <div className="text-sm text-muted-foreground">
             Creating Time Target: {formatTime(goal)}
           </div>
-          {/* Weekly progress for daily goals */}
-          {renderWeeklyProgress()}
+          {/* Progress badges based on active tab */}
+          {activeTab === 'daily' ? renderWeeklyProgress() : renderMonthlyWeeklyProgress()}
         </div>
       </div>
     )
   }
 
+  const luxonDate = DateTime.fromJSDate(date)
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="pb-0">
         <div className="flex items-center justify-between">
           <CardTitle
             className="text-lg cursor-pointer hover:text-primary/80 transition-all duration-300 hover:scale-[1.02]"
@@ -374,6 +402,12 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({
               Weekly
             </button>
           </div>
+        </div>
+        <div className="text-sm font-normal text-muted-foreground mt-1">
+          {activeTab === 'daily'
+            ? luxonDate.toFormat('MMMM ') + TimeUtil.ordinal(luxonDate.day)
+            : `${luxonDate.toFormat('MMMM ')} ${TimeUtil.ordinal(luxonDate.day)} - ${TimeUtil.ordinal(luxonDate.plus({ weeks: 1 }).day)}`
+          }
         </div>
       </CardHeader>
       <CardContent className="px-0 pt-0 pb-2">
