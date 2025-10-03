@@ -3,13 +3,11 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ColumnWrapper } from './ColumnWrapper'
 import { useKanbanBoard } from '../api/hooks/useKanbanBoard'
+import { useUsageSummaryStore } from '@/lib/stores/usageSummaryStore'
 
-interface AppKanbanBoardProps {
-  rangeMode: 'day' | 'week' | 'month'
-  date: Date
-}
-
-export function AppKanbanBoard({ rangeMode, date }: AppKanbanBoardProps) {
+export function AppKanbanBoard() {
+  const rangeMode = useUsageSummaryStore((state) => state.rangeMode)
+  const date = useUsageSummaryStore((state) => state.date)
   // Use our new hook instead of managing state directly
   const {
     columns,

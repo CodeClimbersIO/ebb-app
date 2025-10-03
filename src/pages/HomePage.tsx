@@ -15,20 +15,21 @@ import { PermissionAlert } from '@/components/PermissionAlert'
 import { useUsageSummary } from './useUsageSummary'
 import { RangeModeSelector } from '@/components/RangeModeSelector'
 import { isTideGoalsFeatureEnabled } from '@/lib/utils/environment.util'
+import { useUsageSummaryStore } from '@/lib/stores/usageSummaryStore'
 
 export const HomePage = () => {
   const { user } = useAuth()
+  const date = useUsageSummaryStore((state) => state.date)
+  const setDate = useUsageSummaryStore((state) => state.setDate)
+  const rangeMode = useUsageSummaryStore((state) => state.rangeMode)
+  const setRangeMode = useUsageSummaryStore((state) => state.setRangeMode)
 
   const firstName = user?.user_metadata?.full_name?.split(' ')[0] ||
     user?.user_metadata?.name?.split(' ')[0] ||
     user?.email?.split('@')[0]
 
   const {
-    date,
-    setDate,
-    rangeMode,
     appUsage,
-    setRangeMode,
     chartData,
     isLoading,
     yAxisMax,
@@ -100,9 +101,6 @@ export const HomePage = () => {
               yAxisMax={yAxisMax}
               showIdleTime={showIdleTime}
               setShowIdleTime={setShowIdleTime}
-              rangeMode={rangeMode}
-              date={date}
-              setDate={setDate}
               lastUpdated={lastUpdated}
               totalTime={totalTime}
             />
@@ -119,8 +117,6 @@ export const HomePage = () => {
               setShowIdleTime={setShowIdleTime}
               isLoading={isLoading}
               yAxisMax={yAxisMax}
-              rangeMode={rangeMode}
-              date={date}
               lastUpdated={lastUpdated}
             />
           )}

@@ -3,92 +3,136 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { PieChart, Pie, Cell } from 'recharts'
 import { Skeleton } from '@/components/ui/skeleton'
 import { TideEditDialog } from '@/components/TideEditDialog'
-import { TideCompletedBadge } from '@/components/icons/TideCompletedBadge'
+import { TideProgressBadge } from '@/components/ui/tide-progress-badge'
 import { useTides } from '../api/hooks/useTides'
 import { DateTime } from 'luxon'
+import { TimeUtil } from '../lib/utils/time.util'
+import { useUsageSummaryStore } from '@/lib/stores/usageSummaryStore'
+
 interface TideGoalsCardProps {
   date?: Date
   onDateChange?: (date: Date) => void
 }
 
 export const TideGoalsCard: FC<TideGoalsCardProps> = ({
-  date = new Date(),
-  onDateChange
+  date: dateProp,
+  onDateChange: onDateChangeProp
 }) => {
+  const dateFromStore = useUsageSummaryStore((state) => state.date)
+  const setDateInStore = useUsageSummaryStore((state) => state.setDate)
+  const setRangeMode = useUsageSummaryStore((state) => state.setRangeMode)
+
+  // Use props if provided, otherwise use store
+  const date = dateProp ?? dateFromStore
+  const onDateChange = onDateChangeProp ?? setDateInStore
   const [activeTab, setActiveTab] = useState<'daily' | 'weekly'>('daily')
   const [editDialogOpen, setEditDialogOpen] = useState(false)
 
+  // Add timing logs for each network call
   const { data: tideData, isLoading: isTidesLoading, error: tideError } = useTides.useGetTideOverview(date)
-  const { data: weeklyHistory, isLoading: isHistoryLoading } = useTides.useGetWeeklyDailyHistory(date)
+  const { data: weeklyHistory, isLoading: isWeeklyHistoryLoading } = useTides.useGetWeeklyDailyHistory(date)
+  const { data: monthlyWeeklyHistory, isLoading: isMonthlyWeeklyHistoryLoading } = useTides.useGetMonthlyWeeklyHistory(date)
 
-  const isLoading = isTidesLoading || isHistoryLoading
+  const isLoading = isTidesLoading || isWeeklyHistoryLoading || isMonthlyWeeklyHistoryLoading
   const hasError = tideError
 
   const handleEditClick = () => {
     setEditDialogOpen(true)
   }
 
-  const renderWeeklyProgress = () => {
-    if (!weeklyHistory || weeklyHistory.length === 0) return null
+  const renderMonthlyWeeklyProgress = () => {
+    if (!monthlyWeeklyHistory || monthlyWeeklyHistory.length === 0) return null
 
-    const dayNames = ['Su', 'M', 'Tu', 'W', 'Th', 'F', 'Sa']
-    const selectedDay = DateTime.fromJSDate(date).startOf('day')
-    const currentDay = DateTime.now().startOf('day')
+    const selectedWeekStart = DateTime.fromJSDate(date).startOf('week')
+    const currentWeekStart = DateTime.now().startOf('week')
 
     return (
       <div className="flex justify-center gap-2 mt-3 px-4">
-        {weeklyHistory.map((day) => {
-          const dayDate = DateTime.fromISO(day.date).startOf('day')
-          const isSElected = dayDate.hasSame(selectedDay, 'day')
-          const isFuture = dayDate > currentDay
+        {monthlyWeeklyHistory.map((week) => {
+          const weekStart = DateTime.fromISO(week.weekStart).startOf('day')
+          const isSelected = weekStart.hasSame(selectedWeekStart, 'day')
+          const isFuture = weekStart > currentWeekStart
 
-          const fillPercentage = day.progress.goal > 0
-            ? Math.min((day.progress.current / day.progress.goal) * 100, 100)
+          const fillPercentage = week.progress.goal > 0
+            ? Math.min((week.progress.current / week.progress.goal) * 100, 100)
             : 0
-          const isCompleted = day.progress.goal > 0 && day.progress.current >= day.progress.goal
+          const isCompleted = week.progress.goal > 0 && week.progress.current >= week.progress.goal
 
-          const handleDayClick = (e: React.MouseEvent) => {
+          const handleWeekClick = (e: React.MouseEvent) => {
             e.stopPropagation()
             if (isFuture) return
+            setRangeMode('week')
             if (onDateChange) {
-              const clickedDate = DateTime.fromISO(day.date).toJSDate()
+              const clickedDate = DateTime.fromISO(week.weekStart).toJSDate()
               onDateChange(clickedDate)
             }
           }
 
           return (
-            <div
-              key={day.date}
-              className={`flex flex-col items-center gap-1 transition-opacity ${isFuture ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:opacity-80'}`}
+            <TideProgressBadge
+              key={week.weekStart}
+              id={week.weekStart}
+              label={`W${week.weekNumber}`}
+              fillPercentage={fillPercentage}
+              isCompleted={isCompleted}
+              isSelected={isSelected}
+              isFuture={isFuture}
+              onClick={handleWeekClick}
+              tooltip={isFuture ? 'Future week' : `Week ${week.weekNumber} (${week.weekStart})`}
+            />
+          )
+        })}
+      </div>
+    )
+  }
+
+  const renderWeeklyProgress = () => {
+    const dayNames = ['Su', 'M', 'Tu', 'W', 'Th', 'F', 'Sa']
+    const selectedDay = DateTime.fromJSDate(date).startOf('day')
+    const currentDay = DateTime.now().startOf('day')
+
+    // Get the start of the week for the selected date
+    const weekStart = selectedDay.startOf('week')
+
+    return (
+      <div className="flex justify-center gap-2 mt-3 px-4">
+        {Array.from({ length: 7 }, (_, index) => {
+          const dayDate = weekStart.plus({ days: index })
+          const dayOfWeek = dayDate.weekday % 7 // Convert to 0-6 where 0 is Sunday
+          const isSelected = dayDate.hasSame(selectedDay, 'day')
+          const isFuture = dayDate > currentDay
+
+          // Find data for this day in weeklyHistory
+          const dayData = weeklyHistory?.find(day =>
+            DateTime.fromISO(day.date).hasSame(dayDate, 'day')
+          )
+
+          const fillPercentage = dayData && dayData.progress.goal > 0
+            ? Math.min((dayData.progress.current / dayData.progress.goal) * 100, 100)
+            : 0
+          const isCompleted = dayData && dayData.progress.goal > 0 && dayData.progress.current >= dayData.progress.goal
+
+          const handleDayClick = (e: React.MouseEvent) => {
+            e.stopPropagation()
+            if (isFuture) return
+            setRangeMode('day')
+            if (onDateChange) {
+              onDateChange(dayDate.toJSDate())
+            }
+          }
+
+          return (
+            <TideProgressBadge
+              key={dayDate.toISODate() || dayDate.toFormat('yyyy-MM-dd')}
+              id={dayDate.toISODate() || dayDate.toFormat('yyyy-MM-dd')}
+              label={dayNames[dayOfWeek]}
+              fillPercentage={fillPercentage}
+              isCompleted={isCompleted || false}
+              isSelected={isSelected}
+              isFuture={isFuture}
               onClick={handleDayClick}
-              title={isFuture ? 'Future date' : `View ${dayNames[day.dayOfWeek]} (${day.date})`}
-            >
-              <div className={'relative w-6 h-6'}>
-                {isCompleted ? (
-                  <TideCompletedBadge id={day.date} />
-                ) : (
-                  // Regular progress circle for incomplete days
-                  <svg className="w-full h-full -rotate-90" viewBox="0 0 32 32">
-                    <circle cx="16" cy="16" r="14" fill="none" stroke="hsl(var(--muted))" strokeWidth="3" />
-                    {fillPercentage > 0 && (
-                      <circle
-                        cx="16"
-                        cy="16"
-                        r="14"
-                        fill="none"
-                        stroke="hsl(var(--primary))"
-                        strokeWidth="3"
-                        strokeDasharray={`${(fillPercentage / 100) * 87.96} 87.96`}
-                        opacity={isFuture ? 0.3 : 1}
-                      />
-                    )}
-                  </svg>
-                )}
-              </div>
-              <span className={`text-xs ${isSElected ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
-                {dayNames[day.dayOfWeek]}
-              </span>
-            </div>
+              tooltip={isFuture ? 'Future date' : `View ${dayNames[dayOfWeek]} (${dayDate.toISODate() || dayDate.toFormat('yyyy-MM-dd')})`}
+            />
           )
         })}
       </div>
@@ -125,6 +169,7 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({
               <div className="text-xs text-muted-foreground mt-1 max-w-24 leading-tight">
                 Today's creating time
               </div>
+
             </div>
           </div>
         </div>
@@ -134,7 +179,11 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({
           <div className="text-sm text-muted-foreground">
             Enjoy your day off!
           </div>
+          <div>
+            {activeTab === 'daily' ? renderWeeklyProgress() : renderMonthlyWeeklyProgress()}
+          </div>
         </div>
+
       </div>
     )
   }
@@ -339,16 +388,17 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({
           <div className="text-sm text-muted-foreground">
             Creating Time Target: {formatTime(goal)}
           </div>
-          {/* Weekly progress for daily goals */}
-          {renderWeeklyProgress()}
+          {/* Progress badges based on active tab */}
+          {activeTab === 'daily' ? renderWeeklyProgress() : renderMonthlyWeeklyProgress()}
         </div>
       </div>
     )
   }
 
+  const luxonDate = DateTime.fromJSDate(date)
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="pb-0">
         <div className="flex items-center justify-between">
           <CardTitle
             className="text-lg cursor-pointer hover:text-primary/80 transition-all duration-300 hover:scale-[1.02]"
@@ -360,20 +410,32 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({
           {/* Compact Chip Style in Header */}
           <div className="flex gap-1">
             <button
-              onClick={() => setActiveTab('daily')}
+              onClick={() => {
+                setActiveTab('daily')
+                setRangeMode('day')
+              }}
               className={`px-2 py-1 text-xs font-medium rounded-full transition-all duration-200 ${activeTab === 'daily'
                 ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground'}`}
             >
               Daily
             </button>
             <button
-              onClick={() => setActiveTab('weekly')}
+              onClick={() => {
+                setActiveTab('weekly')
+                setRangeMode('week')
+              }}
               className={`px-2 py-1 text-xs font-medium rounded-full transition-all duration-200 ${activeTab === 'weekly'
                 ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground'}`}
             >
               Weekly
             </button>
           </div>
+        </div>
+        <div className="text-sm font-normal text-muted-foreground mt-1">
+          {activeTab === 'daily'
+            ? luxonDate.toFormat('MMMM ') + TimeUtil.ordinal(luxonDate.day)
+            : `${luxonDate.toFormat('MMMM ')} ${TimeUtil.ordinal(luxonDate.day)} - ${TimeUtil.ordinal(luxonDate.plus({ weeks: 1 }).day)}`
+          }
         </div>
       </CardHeader>
       <CardContent className="px-0 pt-0 pb-2">
