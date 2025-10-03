@@ -77,44 +77,50 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({
   }
 
   const renderWeeklyProgress = () => {
-    if (!weeklyHistory || weeklyHistory.length === 0) return null
-
     const dayNames = ['Su', 'M', 'Tu', 'W', 'Th', 'F', 'Sa']
     const selectedDay = DateTime.fromJSDate(date).startOf('day')
     const currentDay = DateTime.now().startOf('day')
 
+    // Get the start of the week for the selected date
+    const weekStart = selectedDay.startOf('week')
+
     return (
       <div className="flex justify-center gap-2 mt-3 px-4">
-        {weeklyHistory.map((day) => {
-          const dayDate = DateTime.fromISO(day.date).startOf('day')
+        {Array.from({ length: 7 }, (_, index) => {
+          const dayDate = weekStart.plus({ days: index })
+          const dayOfWeek = dayDate.weekday % 7 // Convert to 0-6 where 0 is Sunday
           const isSelected = dayDate.hasSame(selectedDay, 'day')
           const isFuture = dayDate > currentDay
 
-          const fillPercentage = day.progress.goal > 0
-            ? Math.min((day.progress.current / day.progress.goal) * 100, 100)
+          // Find data for this day in weeklyHistory
+          const dayData = weeklyHistory?.find(day =>
+            DateTime.fromISO(day.date).hasSame(dayDate, 'day')
+          )
+
+          const fillPercentage = dayData && dayData.progress.goal > 0
+            ? Math.min((dayData.progress.current / dayData.progress.goal) * 100, 100)
             : 0
-          const isCompleted = day.progress.goal > 0 && day.progress.current >= day.progress.goal
+          const isCompleted = dayData && dayData.progress.goal > 0 && dayData.progress.current >= dayData.progress.goal
 
           const handleDayClick = (e: React.MouseEvent) => {
             e.stopPropagation()
             if (isFuture) return
             if (onDateChange) {
-              const clickedDate = DateTime.fromISO(day.date).toJSDate()
-              onDateChange(clickedDate)
+              onDateChange(dayDate.toJSDate())
             }
           }
 
           return (
             <TideProgressBadge
-              key={day.date}
-              id={day.date}
-              label={dayNames[day.dayOfWeek]}
+              key={dayDate.toISODate() || dayDate.toFormat('yyyy-MM-dd')}
+              id={dayDate.toISODate() || dayDate.toFormat('yyyy-MM-dd')}
+              label={dayNames[dayOfWeek]}
               fillPercentage={fillPercentage}
-              isCompleted={isCompleted}
+              isCompleted={isCompleted || false}
               isSelected={isSelected}
               isFuture={isFuture}
               onClick={handleDayClick}
-              tooltip={isFuture ? 'Future date' : `View ${dayNames[day.dayOfWeek]} (${day.date})`}
+              tooltip={isFuture ? 'Future date' : `View ${dayNames[dayOfWeek]} (${dayDate.toISODate() || dayDate.toFormat('yyyy-MM-dd')})`}
             />
           )
         })}
