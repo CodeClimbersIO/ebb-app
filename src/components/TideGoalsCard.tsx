@@ -20,6 +20,7 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({
 }) => {
   const dateFromStore = useUsageSummaryStore((state) => state.date)
   const setDateInStore = useUsageSummaryStore((state) => state.setDate)
+  const setRangeMode = useUsageSummaryStore((state) => state.setRangeMode)
 
   // Use props if provided, otherwise use store
   const date = dateProp ?? dateFromStore
@@ -60,6 +61,7 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({
           const handleWeekClick = (e: React.MouseEvent) => {
             e.stopPropagation()
             if (isFuture) return
+            setRangeMode('week')
             if (onDateChange) {
               const clickedDate = DateTime.fromISO(week.weekStart).toJSDate()
               onDateChange(clickedDate)
@@ -113,6 +115,7 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({
           const handleDayClick = (e: React.MouseEvent) => {
             e.stopPropagation()
             if (isFuture) return
+            setRangeMode('day')
             if (onDateChange) {
               onDateChange(dayDate.toJSDate())
             }
@@ -407,14 +410,20 @@ export const TideGoalsCard: FC<TideGoalsCardProps> = ({
           {/* Compact Chip Style in Header */}
           <div className="flex gap-1">
             <button
-              onClick={() => setActiveTab('daily')}
+              onClick={() => {
+                setActiveTab('daily')
+                setRangeMode('day')
+              }}
               className={`px-2 py-1 text-xs font-medium rounded-full transition-all duration-200 ${activeTab === 'daily'
                 ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground'}`}
             >
               Daily
             </button>
             <button
-              onClick={() => setActiveTab('weekly')}
+              onClick={() => {
+                setActiveTab('weekly')
+                setRangeMode('week')
+              }}
               className={`px-2 py-1 text-xs font-medium rounded-full transition-all duration-200 ${activeTab === 'weekly'
                 ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground'}`}
             >
