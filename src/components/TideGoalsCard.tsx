@@ -7,15 +7,23 @@ import { TideProgressBadge } from '@/components/ui/tide-progress-badge'
 import { useTides } from '../api/hooks/useTides'
 import { DateTime } from 'luxon'
 import { TimeUtil } from '../lib/utils/time.util'
+import { useUsageSummaryStore } from '@/lib/stores/usageSummaryStore'
+
 interface TideGoalsCardProps {
   date?: Date
   onDateChange?: (date: Date) => void
 }
 
 export const TideGoalsCard: FC<TideGoalsCardProps> = ({
-  date = new Date(),
-  onDateChange
+  date: dateProp,
+  onDateChange: onDateChangeProp
 }) => {
+  const dateFromStore = useUsageSummaryStore((state) => state.date)
+  const setDateInStore = useUsageSummaryStore((state) => state.setDate)
+
+  // Use props if provided, otherwise use store
+  const date = dateProp ?? dateFromStore
+  const onDateChange = onDateChangeProp ?? setDateInStore
   const [activeTab, setActiveTab] = useState<'daily' | 'weekly'>('daily')
   const [editDialogOpen, setEditDialogOpen] = useState(false)
 

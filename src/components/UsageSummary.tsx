@@ -89,8 +89,6 @@ export interface UsageSummaryProps {
   setShowIdleTime?: (showIdleTime: boolean) => void;
   isLoading?: boolean;
   yAxisMax?: number;
-  rangeMode: 'day' | 'week' | 'month';
-  date: Date;
   lastUpdated?: Date | null;
 }
 
@@ -123,8 +121,6 @@ export const UsageSummary = ({
   isLoading = false,
   yAxisMax,
   showIdleTime,
-  rangeMode,
-  date,
   lastUpdated,
   setShowIdleTime,
 }: UsageSummaryProps) => {
@@ -390,7 +386,7 @@ export const UsageSummary = ({
 
 
       <div ref={appUsageRef}>
-        <AppKanbanBoard rangeMode={rangeMode} date={date} />
+        <AppKanbanBoard />
       </div>
       
     </>

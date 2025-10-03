@@ -3,8 +3,9 @@ import { DateTime } from 'luxon'
 import { MonitorApi, GraphableTimeByHourBlock } from '@/api/monitorApi/monitorApi'
 import { Tag } from '../db/monitor/tagRepo'
 import { useAppUsage, useGetChartData } from '@/api/hooks/useAppUsage'
+import { useUsageSummaryStore, type RangeMode } from '@/lib/stores/usageSummaryStore'
 
-const buildTotalTimeTooltip = (rangeMode: 'day' | 'week' | 'month', showIdleTime: boolean) => {
+const buildTotalTimeTooltip = (rangeMode: RangeMode, showIdleTime: boolean) => {
   let message = 'Total time spent online'
   if (rangeMode === 'day') {
     message += ' today'
@@ -27,8 +28,10 @@ const buildTotalTimeLabel = (showIdleTime: boolean) => {
 }
 
 export function useUsageSummary() {
-  const [date, setDate] = useState<Date>(new Date())
-  const [rangeMode, setRangeMode] = useState<'day' | 'week' | 'month'>('day')
+  const date = useUsageSummaryStore((state) => state.date)
+  const setDate = useUsageSummaryStore((state) => state.setDate)
+  const rangeMode = useUsageSummaryStore((state) => state.rangeMode)
+  const setRangeMode = useUsageSummaryStore((state) => state.setRangeMode)
   const { data: appUsage, refetch: refetchAppUsage } = useAppUsage({ rangeMode, date })
   const { data: chartData, refetch: refetchChartData } = useGetChartData({ rangeMode, date })
   const [yAxisMax, setYAxisMax] = useState(0)

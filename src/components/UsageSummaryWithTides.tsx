@@ -80,9 +80,6 @@ export interface UsageSummaryWithTidesProps {
   setShowIdleTime?: (showIdleTime: boolean) => void;
   isLoading?: boolean;
   yAxisMax?: number;
-  rangeMode: 'day' | 'week' | 'month';
-  date: Date;
-  setDate?: (date: Date) => void;
   lastUpdated?: Date | null;
   totalTime: { value: number; trend: { percent: number; direction: 'up' | 'down' | 'none' } };
 }
@@ -94,9 +91,6 @@ export const UsageSummaryWithTides = ({
   isLoading = false,
   yAxisMax,
   showIdleTime,
-  rangeMode,
-  date,
-  setDate,
   lastUpdated,
   totalTime,
   setShowIdleTime,
@@ -159,7 +153,7 @@ export const UsageSummaryWithTides = ({
       {/* Two-column layout: Goals card on left, Chart on right */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         {/* Tide Goals Card */}
-        <TideGoalsCard date={date} onDateChange={setDate} />
+        <TideGoalsCard />
 
         {/* Chart Card - spans 2 columns, space between rows */}
         <Card className="md:col-span-2 space-y-6">
@@ -303,7 +297,7 @@ export const UsageSummaryWithTides = ({
       </div>
 
       <div ref={appUsageRef}>
-        <AppKanbanBoard rangeMode={rangeMode} date={date} />
+        <AppKanbanBoard />
       </div>
     </>
   )
