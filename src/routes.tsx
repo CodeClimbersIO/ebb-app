@@ -1,4 +1,4 @@
-import { HashRouter, Route, Routes, Navigate, useNavigate} from 'react-router-dom'
+import { HashRouter, Route, Routes, Navigate, useNavigate } from 'react-router-dom'
 import { HomePage } from '@/pages/HomePage'
 import { LoginPage } from '@/pages/LoginPage'
 import { CommunityPage } from '@/pages/CommunityPage'
@@ -83,7 +83,7 @@ const Router = () => {
       <Route path="/friends-analytics" element={<FriendsAnalyticsPage />} />
       <Route path="/category-dashboard" element={<CategoryDashboardPage />} />
       <Route path="/focus-schedule" element={<FocusSchedulePage />} />
-      {import.meta.env.DEV && <Route path="/activity-history" element={<ActivityHistoryPage />} />}
+      <Route path="/activity-history" element={<ActivityHistoryPage />} />
       <Route path="/start-flow" element={<StartFlowPage />} />
       <Route path="/flow" element={<FlowPage />} />
       <Route path="/feedback" element={<FeedbackPage />} />
