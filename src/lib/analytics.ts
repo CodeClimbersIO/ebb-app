@@ -125,6 +125,13 @@ export type AnalyticsEvent =
   // App Kanban Board Events
   | 'app_dragged'
 
+  // Activity History Events
+  | 'activity_history_search_used'
+  | 'activity_history_delete_clicked'
+  | 'activity_history_delete_selected_clicked'
+  | 'activity_history_delete_all_clicked'
+  | 'activity_history_page_changed'
+
 export interface AnalyticsEventProperties {
   // Focus session properties
   difficulty?: 'easy' | 'medium' | 'hard'

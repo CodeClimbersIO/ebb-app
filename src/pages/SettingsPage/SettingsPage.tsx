@@ -26,10 +26,9 @@ import { ShortcutInput } from '@/components/ShortcutInput'
 import { Switch } from '@/components/ui/switch'
 import { isEnabled } from '@tauri-apps/plugin-autostart'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
-import { ActiveDevicesSettings } from '@/components/ActiveDevicesSettings'
 import { UserProfileSettings } from '@/components/UserProfileSettings'
+import { ChevronRight } from 'lucide-react'
 import { userApi } from '@/api/ebbApi/userApi'
-import { usePermissions } from '@/hooks/usePermissions'
 import { DeveloperSettings } from '@/components/developer/DeveloperSettings'
 import { CommunityCard } from '@/components/CommunityCard'
 import { useDeviceProfile, useUpdateDeviceProfilePreferences } from '@/api/hooks/useDeviceProfile'
@@ -46,7 +45,6 @@ export function SettingsPage() {
   const [showDeleteAccountDialog, setShowDeleteAccountDialog] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const { user } = useAuth()
-  const { maxDevices } = usePermissions()
   const { deviceProfile } = useDeviceProfile()
   const { mutate: updateDeviceProfilePreferences } = useUpdateDeviceProfilePreferences()
 
@@ -66,7 +64,7 @@ export function SettingsPage() {
       setAutostartEnabled(enabled)
     }
     checkAutostart()
-    
+
     // Initialize session start notification setting from localStorage
     setShowSessionStartNotification(StorageUtils.getShowSessionStartNotification())
   }, [])
@@ -117,7 +115,7 @@ export function SettingsPage() {
     setShowSessionStartNotification(newValue)
     StorageUtils.setShowSessionStartNotification(newValue)
   }
-  
+
   const idleSensitivity = deviceProfile?.preferences_json?.idle_sensitivity || 60
 
   return (
@@ -130,19 +128,12 @@ export function SettingsPage() {
             <UserProfileSettings user={user} />
 
             <div className="border rounded-lg p-6">
-              <ActiveDevicesSettings 
-                user={user} 
-                maxDevices={maxDevices} 
-              />
-            </div>
-
-            <div className="border rounded-lg p-6">
               <h2 className="text-lg font-semibold mb-4">System</h2>
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <div className="font-medium">Theme</div>
                   <div className="text-sm text-muted-foreground">
-                      Customize how Ebb looks on your device
+                    Customize how Ebb looks on your device
                   </div>
                 </div>
                 <div className="relative">
@@ -153,7 +144,7 @@ export function SettingsPage() {
                 <div>
                   <div className="font-medium">Global Shortcut</div>
                   <div className="text-sm text-muted-foreground">
-                      Use this shortcut anywhere to start a focus session
+                    Use this shortcut anywhere to start a focus session
                   </div>
                 </div>
                 <ShortcutInput popoverAlign="end" />
@@ -163,7 +154,7 @@ export function SettingsPage() {
                 <div>
                   <div className="font-medium">Idle Sensitivity</div>
                   <div className={`text-sm ${idleSensitivityChanged ? 'text-red-500' : 'text-muted-foreground'}`}>
-                    {idleSensitivityChanged 
+                    {idleSensitivityChanged
                       ? 'Please restart Ebb to apply changes'
                       : 'Changes how long you have to be inactive to be considered "idle"'
                     }
@@ -186,7 +177,7 @@ export function SettingsPage() {
                 <div>
                   <div className="font-medium">Launch on Startup</div>
                   <div className="text-sm text-muted-foreground">
-                      Automatically start Ebb when you log in to your computer
+                    Automatically start Ebb when you log in to your computer
                   </div>
                 </div>
                 <Switch
@@ -198,7 +189,7 @@ export function SettingsPage() {
                 <div>
                   <div className="font-medium">Session Start Notification</div>
                   <div className="text-sm text-muted-foreground">
-                      Show notification popup when starting a session via shortcut
+                    Show notification popup when starting a session via shortcut
                   </div>
                 </div>
                 <Switch
@@ -207,9 +198,27 @@ export function SettingsPage() {
                 />
               </div>
             </div>
+
+            {import.meta.env.DEV && (
+              <div className="border rounded-lg p-6">
+                <h2 className="text-lg font-semibold mb-4">Data Management</h2>
+                <button
+                  onClick={() => navigate('/activity-history')}
+                  className="flex items-center justify-between w-full p-4 rounded-lg border hover:bg-accent/50 transition-colors"
+                >
+                  <div className="text-left">
+                    <div className="font-medium">Recently Used Apps</div>
+                    <div className="text-sm text-muted-foreground">
+                      Manage your tracked applications and their history
+                    </div>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                </button>
+              </div>
+            )}
             <IntegrationSettings />
 
-            <CommunityCard/>
+            <CommunityCard />
 
             <div className="border rounded-lg p-6 mt-8">
               <h2 className="text-lg font-semibold mb-4 text-red-500">Danger Zone</h2>
@@ -218,7 +227,7 @@ export function SettingsPage() {
                   <div>
                     <div className="font-medium">Delete Account</div>
                     <div className="text-sm text-muted-foreground">
-                        Permanently delete your account, Ebb license, and cloud data. Local usage data will not be deleted.
+                      Permanently delete your account, Ebb license, and cloud data. Local usage data will not be deleted.
                     </div>
                   </div>
                   <div className="flex-shrink-0">
@@ -228,7 +237,7 @@ export function SettingsPage() {
                       analyticsEvent="delete_account_clicked"
                       analyticsProperties={{ button_location: 'settings_page' }}
                     >
-                        Delete Account
+                      Delete Account
                     </AnalyticsButton>
                   </div>
                 </div>
@@ -240,32 +249,32 @@ export function SettingsPage() {
             <div>Ebb Version {version}</div>
             <div className="flex items-center gap-2">
               <span>Slop by </span>
-              <button 
+              <button
                 onClick={() => invoke('plugin:shell|open', { path: 'https://x.com/PaulHovley' })}
                 className="hover:underline"
               >
-                  Paul Hovley
+                Paul Hovley
               </button>
               <span>&</span>
-              <button 
+              <button
                 onClick={() => invoke('plugin:shell|open', { path: 'https://x.com/nathan_covey' })}
                 className="hover:underline"
               >
-                  Nathan Covey
+                Nathan Covey
               </button>
               <span>•</span>
-              <button 
+              <button
                 onClick={() => invoke('plugin:shell|open', { path: 'https://ebb.cool/terms' })}
                 className="hover:underline"
               >
-                  Terms
+                Terms
               </button>
               <span>•</span>
-              <button 
+              <button
                 onClick={() => invoke('plugin:shell|open', { path: 'https://ebb.cool/privacy' })}
                 className="hover:underline"
               >
-                  Privacy
+                Privacy
               </button>
             </div>
           </div>
@@ -277,7 +286,7 @@ export function SettingsPage() {
           <DialogHeader>
             <DialogTitle>Warning: Will Also Delete Your Ebb License</DialogTitle>
             <DialogDescription>
-                This will permanently delete your account, your Ebb License, and remove all of your scoring and friends data from our servers. This action cannot be undone.  Your local usage data will remain.
+              This will permanently delete your account, your Ebb License, and remove all of your scoring and friends data from our servers. This action cannot be undone.  Your local usage data will remain.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -288,7 +297,7 @@ export function SettingsPage() {
               analyticsEvent="delete_account_clicked_canceled"
               analyticsProperties={{ button_location: 'settings_page' }}
             >
-                Cancel
+              Cancel
             </AnalyticsButton>
             <AnalyticsButton
               variant="destructive"
