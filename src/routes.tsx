@@ -26,6 +26,7 @@ import { useOnboarding } from '@/hooks/useOnboarding'
 import { useCheckout } from '@/hooks/useCheckout'
 import { useFlowListener } from '@/hooks/useFlowListener'
 import { useNotificationListener } from '@/hooks/useNotificationListener'
+import ActivityHistoryPage from '@/pages/ActivityHistoryPage'
 
 
 const Router = () => {
@@ -82,6 +83,7 @@ const Router = () => {
       <Route path="/friends-analytics" element={<FriendsAnalyticsPage />} />
       <Route path="/category-dashboard" element={<CategoryDashboardPage />} />
       <Route path="/focus-schedule" element={<FocusSchedulePage />} />
+      {import.meta.env.DEV && <Route path="/activity-history" element={<ActivityHistoryPage />} />}
       <Route path="/start-flow" element={<StartFlowPage />} />
       <Route path="/flow" element={<FlowPage />} />
       <Route path="/feedback" element={<FeedbackPage />} />

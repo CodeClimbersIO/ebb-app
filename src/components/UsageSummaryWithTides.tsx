@@ -283,7 +283,7 @@ export const UsageSummaryWithTides = ({
               </div>
             )}
           </CardContent>
-          <div className="px-6 flex justify-between items-center">
+          <div className="px-6 pb-4 flex justify-between items-center">
             <div className="text-xs text-muted-foreground">
               Total Time Active: {formatTime(totalTime.value)}
             </div>

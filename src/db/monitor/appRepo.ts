@@ -100,10 +100,70 @@ const createApp = async (externalId: string, isBrowser: boolean, name = ''): Pro
   return id
 }
 
+export interface AppWithLastUsed extends AppDb {
+  last_used?: string
+  activity_count?: number
+}
+
+const getRecentlyUsedApps = async (limit = 100, offset = 0): Promise<AppWithLastUsed[]> => {
+  const monitorDb = await MonitorDb.getMonitorDb()
+  const query = `
+    SELECT
+      a.*,
+      MAX(act.timestamp) as last_used,
+      COUNT(act.id) as activity_count
+    FROM app a
+    LEFT JOIN activity act ON act.app_id = a.id
+    GROUP BY a.id
+    HAVING last_used IS NOT NULL
+    ORDER BY last_used DESC
+    LIMIT ${limit} OFFSET ${offset}
+  `
+  return await monitorDb.select<AppWithLastUsed[]>(query)
+}
+
+const deleteApp = async (appId: string): Promise<void> => {
+  const monitorDb = await MonitorDb.getMonitorDb()
+  // Delete related records first (in order of foreign key dependencies)
+  // 1. Delete activity_state_tag records that reference app_tag
+  await monitorDb.execute(`DELETE FROM activity_state_tag WHERE app_tag_id IN (SELECT id FROM app_tag WHERE app_id = '${appId}')`)
+  // 2. Delete activities
+  await monitorDb.execute(`DELETE FROM activity WHERE app_id = '${appId}'`)
+  // 3. Delete app_tag records
+  await monitorDb.execute(`DELETE FROM app_tag WHERE app_id = '${appId}'`)
+  // 4. Delete the app itself
+  await monitorDb.execute(`DELETE FROM app WHERE id = '${appId}'`)
+}
+
+const deleteApps = async (appIds: string[]): Promise<void> => {
+  if (appIds.length === 0) return
+  const monitorDb = await MonitorDb.getMonitorDb()
+  const placeholders = appIds.map(() => '?').join(',')
+  // Delete in order of foreign key dependencies
+  // 1. Delete activity_state_tag records that reference app_tag
+  await monitorDb.execute(`DELETE FROM activity_state_tag WHERE app_tag_id IN (SELECT id FROM app_tag WHERE app_id IN (${placeholders}))`, appIds)
+  // 2. Delete activities
+  await monitorDb.execute(`DELETE FROM activity WHERE app_id IN (${placeholders})`, appIds)
+  // 3. Delete app_tag records
+  await monitorDb.execute(`DELETE FROM app_tag WHERE app_id IN (${placeholders})`, appIds)
+  // 4. Delete the app itself
+  await monitorDb.execute(`DELETE FROM app WHERE id IN (${placeholders})`, appIds)
+}
+
+const getAppCount = async (): Promise<number> => {
+  const monitorDb = await MonitorDb.getMonitorDb()
+  const result = await monitorDb.select<[{ count: number }]>('SELECT COUNT(DISTINCT app_id) as count FROM activity WHERE app_id IS NOT NULL')
+  return result[0]?.count || 0
+}
+
 export const AppRepo = {
   setAppTag,
   getApps,
   getAppsByIds,
   getAppsByCategoryTags,
-  createApp
+  createApp,
+  getRecentlyUsedApps,
+  deleteApp,
+  deleteApps,
+  getAppCount,
 }
