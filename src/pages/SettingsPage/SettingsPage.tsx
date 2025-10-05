@@ -199,23 +199,21 @@ export function SettingsPage() {
               </div>
             </div>
 
-            {import.meta.env.DEV && (
-              <div className="border rounded-lg p-6">
-                <h2 className="text-lg font-semibold mb-4">Data Management</h2>
-                <button
-                  onClick={() => navigate('/activity-history')}
-                  className="flex items-center justify-between w-full p-4 rounded-lg border hover:bg-accent/50 transition-colors"
-                >
-                  <div className="text-left">
-                    <div className="font-medium">Recently Used Apps</div>
-                    <div className="text-sm text-muted-foreground">
-                      Manage your tracked applications and their history
-                    </div>
+            <div className="border rounded-lg p-6">
+              <h2 className="text-lg font-semibold mb-4">Data Management</h2>
+              <button
+                onClick={() => navigate('/activity-history')}
+                className="flex items-center justify-between w-full p-4 rounded-lg border hover:bg-accent/50 transition-colors"
+              >
+                <div className="text-left">
+                  <div className="font-medium">Recently Used Apps</div>
+                  <div className="text-sm text-muted-foreground">
+                    Manage your tracked applications and their history
                   </div>
-                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                </button>
-              </div>
-            )}
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </button>
+            </div>
             <IntegrationSettings />
 
             <CommunityCard />
