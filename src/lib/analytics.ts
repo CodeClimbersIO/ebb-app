@@ -38,6 +38,7 @@ export type AnalyticsEvent =
   // Onboarding Events
   | 'accessibility_enabled'
   | 'shortcut_tutorial_completed'
+  | 'onboarding_continue_clicked'
 
   // Category Dashboard Events
   | 'date_picker_clicked'

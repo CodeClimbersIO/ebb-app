@@ -46,8 +46,8 @@ export const LoginPage = () => {
   }
 
   const handleSkipLogin = () => {
-    OnboardingUtils.setOnboardingStep('accessibility')
-    navigate('/onboarding/accessibility')
+    OnboardingUtils.setOnboardingStep('welcome-trial')
+    navigate('/onboarding/welcome-trial')
   }
 
   const openLink = async (url: string) => {
@@ -99,20 +99,22 @@ export const LoginPage = () => {
         Continue with Google
       </AnalyticsButton>
       
-      <AnalyticsButton 
-        type="button" 
-        variant="ghost" 
-        size="lg"
-        className="min-w-[240px] text-muted-foreground hover:text-foreground"
-        onClick={handleSkipLogin}
-        analyticsEvent="login_skipped"
-        analyticsProperties={{
-          context: 'skip_login',
-          button_location: 'login_page'
-        }}
-      >
-        Do this later
-      </AnalyticsButton>
+      {isDev() && (
+        <AnalyticsButton 
+          type="button" 
+          variant="ghost" 
+          size="lg"
+          className="min-w-[240px] text-muted-foreground hover:text-foreground"
+          onClick={handleSkipLogin}
+          analyticsEvent="login_skipped"
+          analyticsProperties={{
+            context: 'skip_login',
+            button_location: 'login_page'
+          }}
+        >
+          Do this later
+        </AnalyticsButton>
+      )}
       
       <div className="mt-6 max-w-[240px] w-full">
         <div className="h-px bg-border mb-6" />

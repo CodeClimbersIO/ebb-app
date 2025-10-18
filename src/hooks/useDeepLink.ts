@@ -92,7 +92,7 @@ export const useDeepLink = () => {
         if (code) {
           const { data, error } = await supabase.auth.exchangeCodeForSession(code)
           if(!OnboardingUtils.isOnboardingCompleted()) {
-            OnboardingUtils.setOnboardingStep('accessibility')
+            OnboardingUtils.setOnboardingStep('welcome-trial')
           }
 
           if (error) throw error

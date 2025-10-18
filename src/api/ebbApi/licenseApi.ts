@@ -1,6 +1,7 @@
 import { PostgrestError } from '@supabase/supabase-js'
 import { licenseRepo } from '@/db/supabase/licenseRepo'
 import { DeviceInfo } from '@/api/ebbApi/deviceApi'
+import { platformApiRequest } from '../platformRequest'
 
 export type LicenseStatus = 'active' | 'expired'
 export type LicenseType = 'perpetual' | 'subscription'
@@ -112,9 +113,42 @@ const getLicenseInfo = async (userId: string): Promise<{data: LicenseInfo, error
   return {data: {license, permissions, deviceInfo }, error}
 }
 
+export interface StartTrialResponse {
+  success: boolean
+  message: string
+}
+
+export interface CancelLicenseResponse {
+  success: boolean
+  message: string
+  data?: {
+    license_id: number
+    stripe_subscription_id: string
+    canceled_at: number
+    cancel_at_period_end: boolean
+  }
+}
+
+const startTrial = async (): Promise<StartTrialResponse> => {
+  const response = await platformApiRequest({
+    url: '/api/license/start-trial',
+    method: 'POST'
+  })
+  return response as StartTrialResponse
+}
+
+const cancelLicense = async (): Promise<CancelLicenseResponse> => {
+  const response = await platformApiRequest({
+    url: '/api/license/cancel',
+    method: 'POST'
+  })
+  return response as CancelLicenseResponse
+}
 
 export const licenseApi = {
   getLicenseInfo,
   calculatePermissions,
+  startTrial,
+  cancelLicense,
 }
 
