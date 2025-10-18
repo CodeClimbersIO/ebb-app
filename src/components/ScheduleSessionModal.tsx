@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { AnalyticsButton } from '@/components/ui/analytics-button'
 import { DialogFooter } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -18,6 +19,7 @@ interface ScheduleSessionModalProps {
 const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 export function ScheduleSessionModal({ scheduleId, onClose }: ScheduleSessionModalProps) {
+  const navigate = useNavigate()
   const [label, setLabel] = useState('')
   const [selectedWorkflowId, setSelectedWorkflowId] = useState('')
   const [recurrenceType, setRecurrenceType] = useState<'daily' | 'weekly'>('weekly')
@@ -61,11 +63,19 @@ export function ScheduleSessionModal({ scheduleId, onClose }: ScheduleSessionMod
   }, [workflows, selectedWorkflowId])
 
   const handleDayToggle = (dayIndex: number) => {
-    setSelectedDays(prev => 
+    setSelectedDays(prev =>
       prev.includes(dayIndex)
         ? prev.filter(d => d !== dayIndex)
         : [...prev, dayIndex].sort()
     )
+  }
+
+  const handleWorkflowChange = (value: string) => {
+    if (value === '__create_new__') {
+      navigate('/start-flow')
+    } else {
+      setSelectedWorkflowId(value)
+    }
   }
 
   const handleSubmit = async () => {
@@ -134,10 +144,10 @@ export function ScheduleSessionModal({ scheduleId, onClose }: ScheduleSessionMod
       </div>
 
       <div className="space-y-2">
-        <label htmlFor="workflow" className="text-sm font-medium">Focus Session Workflow</label>
-        <Select value={selectedWorkflowId} onValueChange={setSelectedWorkflowId}>
+        <label htmlFor="workflow" className="text-sm font-medium">Focus Session Profile</label>
+        <Select value={selectedWorkflowId} onValueChange={handleWorkflowChange}>
           <SelectTrigger>
-            <SelectValue placeholder="Select a workflow" />
+            <SelectValue placeholder="Select a profile" />
           </SelectTrigger>
           <SelectContent>
             {workflows?.map((workflow: Workflow) => (
@@ -145,6 +155,10 @@ export function ScheduleSessionModal({ scheduleId, onClose }: ScheduleSessionMod
                 {workflow.name}
               </SelectItem>
             ))}
+            <div className="border-t border-white/20 my-1" />
+            <SelectItem value="__create_new__" className="text-white font-medium">
+              + Create New Profile
+            </SelectItem>
           </SelectContent>
         </Select>
       </div>
