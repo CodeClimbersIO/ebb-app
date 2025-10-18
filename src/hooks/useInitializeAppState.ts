@@ -11,7 +11,6 @@ import { useConnectedStore } from '@/lib/stores/connectedStore'
 import { useProfile } from '@/api/hooks/useProfile'
 import { useWorkerPolling } from '@/hooks/useWorkerPolling'
 import { useCreateNotification, useGetNotificationBySentId } from '@/api/hooks/useNotifications'
-import { isFocusScheduleFeatureEnabled } from '@/lib/utils/environment.util'
 
 
 
@@ -73,7 +72,7 @@ export const useInitializeAppState = () => {
 
   // Show notification about Focus Schedule feature to new users
   useEffect(() => {
-    if(!isFocusScheduleFeatureEnabled(user?.email) || isFocusScheduleNotificationLoading) {
+    if(isFocusScheduleNotificationLoading) {
       return
     }
     if (user?.id && !focusScheduleNotification) {
