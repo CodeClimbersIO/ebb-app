@@ -9,8 +9,8 @@ import { AppIcon } from '@/components/AppIcon'
 import { AnalyticsButton } from '@/components/ui/analytics-button'
 import { DifficultySelector } from '@/components/difficulty-selector'
 import { CategoryTooltip } from '@/components/CategoryTooltip'
-import { PaywallDialog } from '@/components/PaywallDialog'
 import { usePermissions } from '@/hooks/usePermissions'
+import { usePaywall } from '@/hooks/usePaywall'
 
 interface CategoryOption {
   type: 'category'
@@ -110,6 +110,7 @@ export function AppSelector({
   onDifficultyChange
 }: AppSelectorProps) {
   const { canUseAllowList, canUseHardDifficulty } = usePermissions()
+  const { openPaywall } = usePaywall()
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
   const inputRef = useRef<HTMLDivElement>(null)
@@ -535,23 +536,22 @@ export function AppSelector({
               </AnalyticsButton>
 
               {!canUseAllowList ? (
-                <PaywallDialog>
-                  <AnalyticsButton
-                    variant="ghost"
-                    size="sm"
-                    className={cn(
-                      'h-6 px-2 text-xs text-muted-foreground/80 hover:text-foreground',
-                      isAllowList && 'bg-muted/50'
-                    )}
-                    analyticsEvent="allow_list_clicked"
-                    analyticsProperties={{
-                      context: 'allow_list',
-                      button_location: 'app_selector'
-                    }}
-                  >
-                    Allow
-                  </AnalyticsButton>
-                </PaywallDialog>
+                <AnalyticsButton
+                  variant="ghost"
+                  size="sm"
+                  className={cn(
+                    'h-6 px-2 text-xs text-muted-foreground/80 hover:text-foreground',
+                    isAllowList && 'bg-muted/50'
+                  )}
+                  analyticsEvent="allow_list_clicked"
+                  analyticsProperties={{
+                    context: 'allow_list',
+                    button_location: 'app_selector'
+                  }}
+                  onClick={openPaywall}
+                >
+                  Allow
+                </AnalyticsButton>
               ) : (
                 <AnalyticsButton
                   variant="ghost"

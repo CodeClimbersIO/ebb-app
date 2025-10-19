@@ -5,12 +5,13 @@ import { AnalyticsButton } from '@/components/ui/analytics-button'
 import { AlertCircle } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { usePermissions } from '@/hooks/usePermissions'
-import { paywallStore } from '@/lib/stores/paywallStore'
+import { usePaywall } from '@/hooks/usePaywall'
 
 
 export function DeviceLimitPage() {
   const { user } = useAuth()
   const { canUseMultipleDevices } = usePermissions()
+  const { openPaywall } = usePaywall()
   const maxDevices = 1
 
   return (
@@ -32,7 +33,7 @@ export function DeviceLimitPage() {
                       context: 'device_limit',
                       button_location: 'device_limit_page'
                     }}
-                    onClick={() => paywallStore.getState().openPaywall()}
+                    onClick={openPaywall}
                   >
                     upgrade to Ebb Pro
                   </AnalyticsButton>{' '}

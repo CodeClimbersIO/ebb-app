@@ -1,4 +1,3 @@
-import * as React from 'react'
 import { useState } from 'react'
 import {
   Dialog,
@@ -16,8 +15,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { isDev } from '../lib/utils/environment.util'
 import supabase from '../lib/integrations/supabase'
 import { invoke } from '@tauri-apps/api/core'
-import { useStore } from 'zustand'
-import { paywallStore } from '@/lib/stores/paywallStore'
+import { usePaywall } from '@/hooks/usePaywall'
 
 const users = [
   { name: 'Samantha', image: '/images/avatars/samantha.jpg', initials: 'S' },
@@ -31,8 +29,7 @@ export function PaywallDialog() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { user } = useAuth()
-  const isOpen = useStore(paywallStore, (state) => state.isOpen)
-  const closePaywall = useStore(paywallStore, (state) => state.closePaywall)
+  const { isOpen, closePaywall } = usePaywall()
 
   const handleGoogleLogin = async () => {
     try {

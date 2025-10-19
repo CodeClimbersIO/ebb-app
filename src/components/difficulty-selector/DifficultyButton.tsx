@@ -1,9 +1,9 @@
 import { AnalyticsButton } from '@/components/ui/analytics-button'
 import { cn } from '@/lib/utils/tailwind.util'
 import { KeyRound } from 'lucide-react'
-import { PaywallDialog } from '../PaywallDialog'
 import { SignalBars } from './SignalBars'
 import { DifficultyOption, DifficultyValue } from './types'
+import { usePaywall } from '@/hooks/usePaywall'
 
 interface DifficultyButtonProps {
   difficulty: DifficultyOption
@@ -12,12 +12,14 @@ interface DifficultyButtonProps {
   onChange: (value: DifficultyValue) => void
 }
 
-export function DifficultyButton({ 
-  difficulty, 
-  isSelected, 
-  isDisabled, 
-  onChange 
+export function DifficultyButton({
+  difficulty,
+  isSelected,
+  isDisabled,
+  onChange
 }: DifficultyButtonProps) {
+  const { openPaywall } = usePaywall()
+
   return (
     <div
       key={difficulty.value}
@@ -51,16 +53,15 @@ export function DifficultyButton({
       </AnalyticsButton>
       {difficulty.value === 'hard' && isDisabled && (
         <div className="absolute right-2 top-1/2 -translate-y-1/2">
-          <PaywallDialog>
-            <AnalyticsButton
-              analyticsEvent='paywall_dialog_hard_clicked'
-              variant="ghost"
-              size="icon"
-              className="h-4 w-4 p-0 hover:bg-transparent"
-            >
-              <KeyRound className="h-3 w-3 text-yellow-500" />
-            </AnalyticsButton>
-          </PaywallDialog>
+          <AnalyticsButton
+            analyticsEvent='paywall_dialog_hard_clicked'
+            variant="ghost"
+            size="icon"
+            className="h-4 w-4 p-0 hover:bg-transparent"
+            onClick={openPaywall}
+          >
+            <KeyRound className="h-3 w-3 text-yellow-500" />
+          </AnalyticsButton>
         </div>
       )}
     </div>

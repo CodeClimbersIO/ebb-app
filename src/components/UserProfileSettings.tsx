@@ -1,7 +1,6 @@
 import { AnalyticsButton } from '@/components/ui/analytics-button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { PaywallDialog } from '@/components/PaywallDialog'
 import { GoogleIcon } from '@/components/icons/GoogleIcon'
 import { LogOut, KeyRound, User as UserIcon } from 'lucide-react'
 import { format } from 'date-fns'
@@ -13,6 +12,7 @@ import { usePermissions } from '@/hooks/usePermissions'
 import { useLicenseWithDevices } from '@/api/hooks/useLicense'
 import { invoke } from '@tauri-apps/api/core'
 import { isDev } from '@/lib/utils/environment.util'
+import { usePaywall } from '@/hooks/usePaywall'
 
 interface UserProfileSettingsProps {
   user: User | null
@@ -22,6 +22,7 @@ export function UserProfileSettings({ user }: UserProfileSettingsProps) {
   const { hasProAccess } = usePermissions()
   const { data: licenseData, isLoading } = useLicenseWithDevices(user?.id || null)
   const license = licenseData?.license
+  const { openPaywall } = usePaywall()
 
   const { logout } = useAuth()
 
@@ -170,9 +171,10 @@ export function UserProfileSettings({ user }: UserProfileSettingsProps) {
                   </Tooltip>
                 </TooltipProvider>
               ) : (
-                <PaywallDialog>
-                  <KeyRound className="h-5 w-5 text-muted-foreground hover:text-yellow-500 cursor-pointer" />
-                </PaywallDialog>
+                <KeyRound
+                  className="h-5 w-5 text-muted-foreground hover:text-yellow-500 cursor-pointer"
+                  onClick={openPaywall}
+                />
               )}
             </div>
           </div>
