@@ -3,7 +3,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { GoogleIcon } from '@/components/icons/GoogleIcon'
 import { LogOut, KeyRound, User as UserIcon } from 'lucide-react'
-import { format } from 'date-fns'
+import { format, differenceInDays } from 'date-fns'
 import { User } from '@supabase/supabase-js'
 import supabase from '@/lib/integrations/supabase'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
@@ -13,6 +13,8 @@ import { useLicenseWithDevices } from '@/api/hooks/useLicense'
 import { invoke } from '@tauri-apps/api/core'
 import { isDev } from '@/lib/utils/environment.util'
 import { usePaywall } from '@/hooks/usePaywall'
+import { RainbowButton } from '@/components/ui/rainbow-button'
+import { AnalyticsService } from '@/lib/analytics'
 
 interface UserProfileSettingsProps {
   user: User | null
@@ -26,6 +28,41 @@ export function UserProfileSettings({ user }: UserProfileSettingsProps) {
 
   const { logout } = useAuth()
 
+  // Check license type
+  const isFreeTrial = license?.licenseType === 'free_trial'
+  const isActiveSubscription = license?.licenseType === 'subscription'
+  const daysRemaining = license?.expirationDate
+    ? differenceInDays(new Date(license.expirationDate), new Date())
+    : 0
+
+  const handleUpgradeClick = () => {
+    AnalyticsService.trackEvent('upgrade_now_clicked', {
+      button_location: 'user_profile_settings',
+      days_remaining: daysRemaining
+    })
+    openPaywall()
+  }
+
+  const handleManageSubscription = async () => {
+    try {
+      AnalyticsService.trackEvent('manage_subscription_clicked', {
+        button_location: 'user_profile_settings'
+      })
+
+      const portalUrl = isDev()
+        ? 'https://billing.stripe.com/p/login/test_aFaeVc2Fn2e08mqg9MeEo00'
+        : 'https://billing.stripe.com/p/login/aFaeVc2Fn2e08mqg9MeEo00'
+
+      if (isDev()) {
+        window.location.href = portalUrl
+      } else {
+        await invoke('plugin:shell|open', { path: portalUrl })
+      }
+    } catch (error) {
+      logAndToastError(`Failed to open billing portal: ${error}`, error)
+    }
+  }
+
   const handleLogout = async () => {
     const { error } = await logout()
     if (error) {
@@ -33,21 +70,6 @@ export function UserProfileSettings({ user }: UserProfileSettingsProps) {
     }
 
     window.location.reload()
-  }
-
-  const handleManageSubscription = async () => {
-    try {
-      const { data, error } = await supabase.functions.invoke('create-portal-session', {
-        body: { return_url: window.location.href },
-      })
-      if (error) throw error
-      if (data?.url) {
-        window.location.href = data.url
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err)
-      logAndToastError(`Error creating portal session: ${message}`, err)
-    }
   }
 
   const handleGoogleLogin = async () => {
@@ -186,14 +208,37 @@ export function UserProfileSettings({ user }: UserProfileSettingsProps) {
               <span>{user?.email}</span>
               <GoogleIcon className="h-3.5 w-3.5" />
             </div>
+            {isFreeTrial && (
+              <div className="text-sm text-muted-foreground text-primary-400 mt-1">
+                {daysRemaining > 0
+                  ? `${daysRemaining} day${daysRemaining === 1 ? '' : 's'} remaining on free trial`
+                  : 'Free trial expired'}
+              </div>
+            )}
           </div>
         </div>
 
         <div className="flex items-center gap-3">
-          <AnalyticsButton 
+          {isFreeTrial && (
+            <RainbowButton onClick={handleUpgradeClick} className="h-9">
+              Upgrade Now
+            </RainbowButton>
+          )}
+          {isActiveSubscription && (
+            <AnalyticsButton
+              analyticsEvent='manage_subscription_clicked'
+              analyticsProperties={{ button_location: 'user_profile_settings' }}
+              variant="outline"
+              size="sm"
+              onClick={handleManageSubscription}
+            >
+              Manage Billing
+            </AnalyticsButton>
+          )}
+          <AnalyticsButton
             analyticsEvent='user_profile_settings_logout_clicked'
-            variant="outline" 
-            size="sm" 
+            variant="outline"
+            size="sm"
             onClick={handleLogout}
           >
             <LogOut className="h-4 w-4 mr-2" />
