@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dialog'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
-import { KeyRound } from 'lucide-react'
+import { KeyRound, Layers, Shield, Calendar, MessageSquare, Eye, BarChart3 } from 'lucide-react'
 import { RainbowButton } from '@/components/ui/rainbow-button'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
 import { StripeApi } from '@/lib/integrations/stripe/stripeApi'
@@ -147,41 +147,29 @@ export function PaywallDialog({ children }: PaywallDialogProps) {
 
         {/* Features List */}
         <div className="grid grid-cols-2 gap-2 text-sm mt-4">
-          <div className="flex items-center">
-            <svg className="h-4 w-4 text-primary mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-            <span>6 focus profiles</span>
+          <div className="flex items-center gap-1.5">
+            <BarChart3 className="w-4 h-4 text-primary shrink-0" />
+            <span>Hands-Free Time Tracking</span>
           </div>
-          <div className="flex items-center">
-            <svg className="h-4 w-4 text-primary mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-            <span>Hard difficulty</span>
+          <div className="flex items-center gap-1.5">
+            <Shield className="w-4 h-4 text-primary shrink-0" />
+            <span>Site and App Blocking</span>
           </div>
-          <div className="flex items-center">
-            <svg className="h-4 w-4 text-primary mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-            <span>Typewriter mode</span>
+          <div className="flex items-center gap-1.5">
+            <MessageSquare className="w-4 h-4 text-primary shrink-0" />
+            <span>Slack & Spotify Integrations</span>
           </div>
-          <div className="flex items-center">
-            <svg className="h-4 w-4 text-primary mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-            <span>Allow list</span>
+          <div className="flex items-center gap-1.5">
+            <Calendar className="w-4 h-4 text-primary shrink-0" />
+            <span>Schedule Focus Sessions</span>
           </div>
-          <div className="flex items-center">
-            <svg className="h-4 w-4 text-primary mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-            <span>3 macOS devices</span>
+          <div className="flex items-center gap-1.5">
+            <Eye className="w-4 h-4 text-primary shrink-0" />
+            <span>Doomscroll Detection</span>
           </div>
-          <div className="flex items-center">
-            <svg className="h-4 w-4 text-primary mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-            <span>1 year of updates</span>
+          <div className="flex items-center gap-1.5">
+            <Layers className="w-4 h-4 text-primary shrink-0" />
+            <span>Multiple Focus Profiles</span>
           </div>
         </div>
 
