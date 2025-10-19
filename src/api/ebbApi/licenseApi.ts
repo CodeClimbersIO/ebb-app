@@ -4,11 +4,11 @@ import { DeviceInfo } from '@/api/ebbApi/deviceApi'
 import { platformApiRequest } from '../platformRequest'
 
 export type LicenseStatus = 'active' | 'expired'
-export type LicenseType = 'perpetual' | 'subscription'
+export type LicenseType = 'perpetual' | 'subscription' | 'free_trial'
 export interface RawLicense {
   id: string
   status: string
-  license_type: 'perpetual' | 'subscription'
+  license_type: LicenseType
   expiration_date: string | null
 }
 export interface License {
@@ -35,12 +35,9 @@ export interface LicenseDevice {
 export interface LicensePermissions {
   canUseHardDifficulty: boolean
   canUseAllowList: boolean
-  canUseTypewriter: boolean
   canUseMultipleProfiles: boolean
   canUseMultipleDevices: boolean
   hasProAccess: boolean
-  maxDevices: number
-  isUpdateEligible: boolean
 }
 
 export type LicenseInfo = {
@@ -52,12 +49,9 @@ export type LicenseInfo = {
 export const defaultPermissions: LicensePermissions = {
   canUseHardDifficulty: false,
   canUseAllowList: false,
-  canUseTypewriter: false,
   canUseMultipleProfiles: false,
   canUseMultipleDevices: false,
   hasProAccess: false,
-  maxDevices: 1,
-  isUpdateEligible: false,
 }
 
 const transformLicense = (rawLicense: RawLicense | null): License | null => {
@@ -78,25 +72,18 @@ const transformLicense = (rawLicense: RawLicense | null): License | null => {
 
 const calculatePermissions = (license: License | null): LicensePermissions | null => {
   if (!license) return null
-  const hasProAccess = license?.status === 'active'
+  let hasProAccess = license?.status === 'active'
 
-  const isUpdateEligible = hasProAccess && license && (
-    license.licenseType === 'subscription' ||
-    (license.licenseType === 'perpetual' &&
-      !!license.expirationDate &&
-      license.expirationDate > new Date()
-    )
-  )
+  if (license.licenseType === 'free_trial' && license.expirationDate < new Date()) {
+    hasProAccess = false
+  }
 
   return {
     canUseHardDifficulty: hasProAccess,
     canUseAllowList: hasProAccess,
-    canUseTypewriter: hasProAccess,
     canUseMultipleProfiles: hasProAccess,
     canUseMultipleDevices: hasProAccess,
     hasProAccess,
-    maxDevices: hasProAccess ? 3 : 1,
-    isUpdateEligible,
   }
 }
 
@@ -106,7 +93,6 @@ const getLicenseInfo = async (userId: string): Promise<{data: LicenseInfo, error
   const permissions = calculatePermissions(license) || defaultPermissions
   const deviceInfo: DeviceInfo = {
     devices: [],
-    maxDevices: permissions.maxDevices,
     isDeviceLimitReached: false,
   }
   
