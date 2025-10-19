@@ -2,9 +2,9 @@ import { onOpenUrl } from '@tauri-apps/plugin-deep-link'
 import { error } from '@tauri-apps/plugin-log'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import supabase from '@/lib/integrations/supabase'
 import { SpotifyAuthService } from '@/lib/integrations/spotify/spotifyAuth'
-import { useLicenseStore } from '@/lib/stores/licenseStore'
 import { useAuth } from './useAuth'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
 import { useUpdateProfileLocation } from '@/api/hooks/useProfile'
@@ -17,7 +17,7 @@ export const useDeepLink = () => {
   const navigate = useNavigate()
   const [isHandlingDeepLink, setIsHandlingDeepLink] = useState(false)
   const { user } = useAuth()
-  const fetchLicense = useLicenseStore((state) => state.fetchLicense)
+  const queryClient = useQueryClient()
   const { mutate: updateProfileLocation } = useUpdateProfileLocation()
   
   useEffect(() => {
@@ -46,9 +46,8 @@ export const useDeepLink = () => {
 
         // Check if this is a license success callback
         if (url.includes('license/success')) {
-          if (user) {
-            await fetchLicense(user.id)
-          }
+          // Invalidate license queries to refetch updated license info
+          await queryClient.invalidateQueries({ queryKey: ['license'] })
           navigate('/')
           return
         }
@@ -109,7 +108,7 @@ export const useDeepLink = () => {
     }
 
     onOpenUrl(handleUrl)
-  }, [navigate, user, fetchLicense])
+  }, [navigate, user, queryClient])
 
   return isHandlingDeepLink
 }
