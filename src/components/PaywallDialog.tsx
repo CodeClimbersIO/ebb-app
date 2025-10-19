@@ -5,7 +5,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -17,10 +16,8 @@ import { useAuth } from '@/hooks/useAuth'
 import { isDev } from '../lib/utils/environment.util'
 import supabase from '../lib/integrations/supabase'
 import { invoke } from '@tauri-apps/api/core'
-
-interface PaywallDialogProps {
-  children: React.ReactNode
-}
+import { useStore } from 'zustand'
+import { paywallStore } from '@/lib/stores/paywallStore'
 
 const users = [
   { name: 'Samantha', image: '/images/avatars/samantha.jpg', initials: 'S' },
@@ -30,10 +27,12 @@ const users = [
   { name: 'Dude', image: '/images/avatars/dude.jpg', initials: 'D' }
 ]
 
-export function PaywallDialog({ children }: PaywallDialogProps) {
+export function PaywallDialog() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { user } = useAuth()
+  const isOpen = useStore(paywallStore, (state) => state.isOpen)
+  const closePaywall = useStore(paywallStore, (state) => state.closePaywall)
 
   const handleGoogleLogin = async () => {
     try {
@@ -89,10 +88,7 @@ export function PaywallDialog({ children }: PaywallDialogProps) {
   }
 
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        {children}
-      </DialogTrigger>
+    <Dialog open={isOpen} onOpenChange={closePaywall}>
       <DialogContent className="sm:max-w-[400px]">
         <DialogHeader className="space-y-2">
           <div className="flex justify-center mb-3">
