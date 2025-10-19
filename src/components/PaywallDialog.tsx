@@ -39,7 +39,6 @@ export function PaywallDialog() {
   const { data: licenseData } = useLicenseWithDevices(user?.id || null)
 
   const hasTrial = licenseData?.license?.licenseType === 'free_trial'
-  const hasProAccess = licenseData?.permissions?.hasProAccess || false
 
   const handleGoogleLogin = async () => {
     try {
@@ -153,7 +152,7 @@ export function PaywallDialog() {
           </p>
           <p className="text-sm font-semibold mt-1 min-h-[20px]">
             {billingPeriod === 'annual' && (
-              <span className="text-primary-600">
+              <span className="text-primary-400">
                 Save ${(monthlyPrice * 12) - annualPrice}/year
               </span>
             )}
