@@ -31,6 +31,7 @@ export function UserProfileSettings({ user }: UserProfileSettingsProps) {
   // Check license type
   const isFreeTrial = license?.licenseType === 'free_trial'
   const isActiveSubscription = license?.licenseType === 'subscription'
+  const isPerpetual = license?.licenseType === 'perpetual'
   const daysRemaining = license?.expirationDate
     ? differenceInDays(new Date(license.expirationDate), new Date())
     : 0
@@ -174,18 +175,27 @@ export function UserProfileSettings({ user }: UserProfileSettingsProps) {
                 <TooltipProvider>
                   <Tooltip delayDuration={0}>
                     <TooltipTrigger asChild>
-                      <KeyRound className="h-5 w-5 text-yellow-500 cursor-pointer" />
+                      <KeyRound className={`h-5 w-5 cursor-pointer ${
+                        isPerpetual
+                          ? 'text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.5)]'
+                          : 'text-yellow-500'
+                      }`} />
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>Status: {license?.status}</p>
                       {license?.licenseType && <p>Type: {license.licenseType}</p>}
+                      {isPerpetual && (
+                        <p className="text-yellow-500 font-semibold mt-1">
+                          ✨ Lifetime Access - Thank you for your support!
+                        </p>
+                      )}
                       {license?.expirationDate && <p>Updates until: {format(new Date(license.expirationDate), 'PP')}</p>}
                       {license?.licenseType === 'subscription' && (
-                        <AnalyticsButton 
+                        <AnalyticsButton
                           analyticsEvent='user_profile_settings_manage_subscription_clicked'
-                          size="sm" 
-                          variant="outline" 
-                          onClick={handleManageSubscription} 
+                          size="sm"
+                          variant="outline"
+                          onClick={handleManageSubscription}
                           className="mt-2 w-full"
                         >Manage Subscription</AnalyticsButton>
                       )}
@@ -213,6 +223,11 @@ export function UserProfileSettings({ user }: UserProfileSettingsProps) {
                 {daysRemaining > 0
                   ? `${daysRemaining} day${daysRemaining === 1 ? '' : 's'} remaining on free trial`
                   : 'Free trial expired'}
+              </div>
+            )}
+            {isPerpetual && (
+              <div className="text-sm font-medium mt-1 bg-gradient-to-r from-yellow-600 to-yellow-500 bg-clip-text text-transparent">
+                ✨ Lifetime Access • Early access to new features
               </div>
             )}
           </div>
