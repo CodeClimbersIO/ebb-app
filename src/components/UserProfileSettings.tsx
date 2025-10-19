@@ -3,7 +3,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { GoogleIcon } from '@/components/icons/GoogleIcon'
 import { LogOut, KeyRound, User as UserIcon } from 'lucide-react'
-import { format, differenceInDays } from 'date-fns'
+import { differenceInDays } from 'date-fns'
 import { User } from '@supabase/supabase-js'
 import supabase from '@/lib/integrations/supabase'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
@@ -184,12 +184,6 @@ export function UserProfileSettings({ user }: UserProfileSettingsProps) {
                     <TooltipContent>
                       <p>Status: {license?.status}</p>
                       {license?.licenseType && <p>Type: {license.licenseType}</p>}
-                      {isPerpetual && (
-                        <p className="text-yellow-500 font-semibold mt-1">
-                          ✨ Lifetime Access - Thank you for your support!
-                        </p>
-                      )}
-                      {license?.expirationDate && <p>Updates until: {format(new Date(license.expirationDate), 'PP')}</p>}
                       {license?.licenseType === 'subscription' && (
                         <AnalyticsButton
                           analyticsEvent='user_profile_settings_manage_subscription_clicked'
