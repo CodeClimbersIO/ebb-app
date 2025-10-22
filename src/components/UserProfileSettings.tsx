@@ -28,13 +28,19 @@ export function UserProfileSettings({ user }: UserProfileSettingsProps) {
 
   const { logout } = useAuth()
 
+
+
   // Check license type
   const isFreeTrial = license?.licenseType === 'free_trial'
-  const isActiveSubscription = license?.licenseType === 'subscription'
+  const isSubscription = license?.licenseType === 'subscription'
   const isPerpetual = license?.licenseType === 'perpetual'
+  const isExpired = license?.status === 'expired'
+
   const daysRemaining = license?.expirationDate
     ? differenceInDays(new Date(license.expirationDate), new Date())
     : 0
+
+  const showUpgradeButton = isFreeTrial || !license || isExpired
 
   const handleUpgradeClick = () => {
     AnalyticsService.trackEvent('upgrade_now_clicked', {
@@ -228,12 +234,12 @@ export function UserProfileSettings({ user }: UserProfileSettingsProps) {
         </div>
 
         <div className="flex items-center gap-3">
-          {isFreeTrial && (
+          {showUpgradeButton && (
             <RainbowButton onClick={handleUpgradeClick} className="h-9">
               Upgrade Now
             </RainbowButton>
           )}
-          {isActiveSubscription && (
+          {isSubscription && (
             <AnalyticsButton
               analyticsEvent='manage_subscription_clicked'
               analyticsProperties={{ button_location: 'user_profile_settings' }}

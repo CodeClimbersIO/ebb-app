@@ -9,6 +9,7 @@ import { useAuth } from './useAuth'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
 import { useUpdateProfileLocation } from '@/api/hooks/useProfile'
 import { OnboardingUtils } from '@/lib/utils/onboarding.util'
+import { usePaywall } from '@/hooks/usePaywall'
 
 const processedUrls = new Set<string>()
 
@@ -17,9 +18,10 @@ export const useDeepLink = () => {
   const navigate = useNavigate()
   const [isHandlingDeepLink, setIsHandlingDeepLink] = useState(false)
   const { user } = useAuth()
+  const { closePaywall } = usePaywall()
   const queryClient = useQueryClient()
   const { mutate: updateProfileLocation } = useUpdateProfileLocation()
-  
+
   useEffect(() => {
     const urlObj = new URL(window.location.href)
     const searchParams = new URLSearchParams(urlObj.search)
@@ -48,7 +50,7 @@ export const useDeepLink = () => {
         if (url.includes('license/success')) {
           // Set flag for confetti celebration
           localStorage.setItem('ebb_purchase_success', 'true')
-          // Invalidate license queries to refetch updated license info
+          closePaywall()
           await queryClient.invalidateQueries({ queryKey: ['license'] })
           navigate('/')
           return
