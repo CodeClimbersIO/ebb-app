@@ -7,7 +7,7 @@ interface PaywallStoreState {
 }
 
 export const paywallStore = createStore<PaywallStoreState>((set) => ({
-  isOpen: true,
+  isOpen: false,
   openPaywall: () => set({ isOpen: true }),
   closePaywall: () => set({ isOpen: false }),
 }))

@@ -16,6 +16,7 @@ import { useUsageSummary } from './useUsageSummary'
 import { RangeModeSelector } from '@/components/RangeModeSelector'
 import { isTideGoalsFeatureEnabled } from '@/lib/utils/environment.util'
 import { useUsageSummaryStore } from '@/lib/stores/usageSummaryStore'
+import { usePurchaseConfetti } from '@/hooks/usePurchaseConfetti'
 
 export const HomePage = () => {
   const { user } = useAuth()
@@ -43,6 +44,9 @@ export const HomePage = () => {
   } = useUsageSummary()
 
   const isTideGoalsEnabled = isTideGoalsFeatureEnabled(user?.email)
+
+  // Celebrate successful purchases with confetti
+  usePurchaseConfetti()
 
 
   return (

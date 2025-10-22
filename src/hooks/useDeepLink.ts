@@ -46,6 +46,8 @@ export const useDeepLink = () => {
 
         // Check if this is a license success callback
         if (url.includes('license/success')) {
+          // Set flag for confetti celebration
+          localStorage.setItem('ebb_purchase_success', 'true')
           // Invalidate license queries to refetch updated license info
           await queryClient.invalidateQueries({ queryKey: ['license'] })
           navigate('/')

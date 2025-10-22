@@ -66,7 +66,7 @@ export function useLogoutDevice() {
   })
 }
 
-export function useRegisterDevice(userId: string, maxDevices: number) {
+export function useRegisterDevice(userId: string, maxDevices = 1) {
   return useQuery({
     queryKey: deviceKeys.registration(userId, maxDevices),
     queryFn: () => DeviceApi.registerDevice(userId, maxDevices),

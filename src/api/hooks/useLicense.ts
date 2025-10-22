@@ -36,7 +36,6 @@ export function useLicenseWithDevices(userId: string | null) {
   const { data: licenseData, isLoading: licenseLoading, error: licenseError } = useGetLicenseInfo(userId)
   const { data: deviceInfo, isLoading: deviceLoading, error: deviceError } = useRegisterDevice(
     userId || '',
-    licenseData?.permissions.maxDevices || 1
   )
 
   const isLoading = licenseLoading || deviceLoading
