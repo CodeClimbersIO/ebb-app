@@ -2,6 +2,7 @@ import { PostgrestError } from '@supabase/supabase-js'
 import { licenseRepo } from '@/db/supabase/licenseRepo'
 import { DeviceInfo } from '@/api/ebbApi/deviceApi'
 import { platformApiRequest } from '../platformRequest'
+import { DateTime } from 'luxon'
 
 export type LicenseStatus = 'active' | 'expired'
 export type LicenseType = 'perpetual' | 'subscription' | 'free_trial'
@@ -74,7 +75,7 @@ const calculatePermissions = (license: License | null): LicensePermissions | nul
   if (!license) return null
   let hasProAccess = license?.status === 'active'
 
-  if (license.licenseType === 'free_trial' && license.expirationDate < new Date()) {
+  if (license.licenseType === 'free_trial' && DateTime.fromJSDate(license.expirationDate) < DateTime.now()) {
     hasProAccess = false
   }
 

@@ -3,7 +3,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { GoogleIcon } from '@/components/icons/GoogleIcon'
 import { LogOut, KeyRound, User as UserIcon } from 'lucide-react'
-import { differenceInDays } from 'date-fns'
+import { DateTime } from 'luxon'
 import { User } from '@supabase/supabase-js'
 import supabase from '@/lib/integrations/supabase'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
@@ -28,8 +28,6 @@ export function UserProfileSettings({ user }: UserProfileSettingsProps) {
 
   const { logout } = useAuth()
 
-
-
   // Check license type
   const isFreeTrial = license?.licenseType === 'free_trial'
   const isSubscription = license?.licenseType === 'subscription'
@@ -37,7 +35,7 @@ export function UserProfileSettings({ user }: UserProfileSettingsProps) {
   const isExpired = license?.status === 'expired'
 
   const daysRemaining = license?.expirationDate
-    ? differenceInDays(new Date(license.expirationDate), new Date())
+    ? Math.ceil(DateTime.fromJSDate(license.expirationDate).diffNow('days').days)
     : 0
 
   const showUpgradeButton = isFreeTrial || !license || isExpired

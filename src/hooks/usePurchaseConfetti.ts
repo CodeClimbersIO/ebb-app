@@ -10,9 +10,6 @@ export const usePurchaseConfetti = () => {
   useEffect(() => {
     const purchaseSuccess = localStorage.getItem('ebb_purchase_success')
 
-    console.log('purchaseSuccess', purchaseSuccess)
-    console.log('licenseData', licenseData)
-
     if (purchaseSuccess === 'true' && licenseData?.license) {
       // Verify the license is actually active
       const hasActiveLicense = licenseData.license.status === 'active'
