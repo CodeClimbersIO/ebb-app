@@ -34,10 +34,13 @@ export type AnalyticsEvent =
   // Upgrade/Pro Events
   | 'get_pro_clicked'
   | 'paywall_shown'
+  | 'upgrade_now_clicked'
+  | 'manage_subscription_clicked'
 
   // Onboarding Events
   | 'accessibility_enabled'
   | 'shortcut_tutorial_completed'
+  | 'onboarding_continue_clicked'
 
   // Category Dashboard Events
   | 'date_picker_clicked'
@@ -151,6 +154,9 @@ export interface AnalyticsEventProperties {
   button_location?: string
   keyboard_shortcut_used?: boolean
   context?: string
+
+  // Billing properties
+  days_remaining?: number
 }
 
 const trackEvent = (

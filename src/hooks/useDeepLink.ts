@@ -2,13 +2,14 @@ import { onOpenUrl } from '@tauri-apps/plugin-deep-link'
 import { error } from '@tauri-apps/plugin-log'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import supabase from '@/lib/integrations/supabase'
 import { SpotifyAuthService } from '@/lib/integrations/spotify/spotifyAuth'
-import { useLicenseStore } from '@/lib/stores/licenseStore'
 import { useAuth } from './useAuth'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
 import { useUpdateProfileLocation } from '@/api/hooks/useProfile'
 import { OnboardingUtils } from '@/lib/utils/onboarding.util'
+import { usePaywall } from '@/hooks/usePaywall'
 
 const processedUrls = new Set<string>()
 
@@ -17,9 +18,10 @@ export const useDeepLink = () => {
   const navigate = useNavigate()
   const [isHandlingDeepLink, setIsHandlingDeepLink] = useState(false)
   const { user } = useAuth()
-  const fetchLicense = useLicenseStore((state) => state.fetchLicense)
+  const { closePaywall } = usePaywall()
+  const queryClient = useQueryClient()
   const { mutate: updateProfileLocation } = useUpdateProfileLocation()
-  
+
   useEffect(() => {
     const urlObj = new URL(window.location.href)
     const searchParams = new URLSearchParams(urlObj.search)
@@ -46,9 +48,10 @@ export const useDeepLink = () => {
 
         // Check if this is a license success callback
         if (url.includes('license/success')) {
-          if (user) {
-            await fetchLicense(user.id)
-          }
+          // Set flag for confetti celebration
+          localStorage.setItem('ebb_purchase_success', 'true')
+          closePaywall()
+          await queryClient.invalidateQueries({ queryKey: ['license'] })
           navigate('/')
           return
         }
@@ -92,7 +95,7 @@ export const useDeepLink = () => {
         if (code) {
           const { data, error } = await supabase.auth.exchangeCodeForSession(code)
           if(!OnboardingUtils.isOnboardingCompleted()) {
-            OnboardingUtils.setOnboardingStep('accessibility')
+            OnboardingUtils.setOnboardingStep('welcome-trial')
           }
 
           if (error) throw error
@@ -109,7 +112,7 @@ export const useDeepLink = () => {
     }
 
     onOpenUrl(handleUrl)
-  }, [navigate, user, fetchLicense])
+  }, [navigate, user, queryClient])
 
   return isHandlingDeepLink
 }

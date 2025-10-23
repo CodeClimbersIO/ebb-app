@@ -8,6 +8,7 @@ import { FlowPage } from '@/pages/FlowPage/FlowPage'
 import { AccessibilityPage } from '@/pages/AccessibilityPage'
 import { SlackOnboardingPage } from '@/pages/SlackOnboardingPage'
 import { ShortcutTutorialPage } from '@/pages/ShortcutTutorialPage'
+import { WelcomeTrialPage } from '@/pages/WelcomeTrialPage'
 // import { DeviceLimitPage } from './pages/DeviceLimitPage'
 import { useDeepLink } from '@/hooks/useDeepLink'
 import { getCurrentWindow } from '@tauri-apps/api/window'
@@ -75,6 +76,7 @@ const Router = () => {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/onboarding/login" element={<LoginPage />} />
+      <Route path="/onboarding/welcome-trial" element={<WelcomeTrialPage />} />
 
       {/* Protected routes group */}
       <Route path="/" element={<HomePage />} />

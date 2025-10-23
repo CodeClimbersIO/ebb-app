@@ -16,6 +16,8 @@ import { useUsageSummary } from './useUsageSummary'
 import { RangeModeSelector } from '@/components/RangeModeSelector'
 import { isTideGoalsFeatureEnabled } from '@/lib/utils/environment.util'
 import { useUsageSummaryStore } from '@/lib/stores/usageSummaryStore'
+import { usePurchaseConfetti } from '@/hooks/usePurchaseConfetti'
+import { useGetLicenseInfo } from '@/api/hooks/useLicense'
 
 export const HomePage = () => {
   const { user } = useAuth()
@@ -23,6 +25,7 @@ export const HomePage = () => {
   const setDate = useUsageSummaryStore((state) => state.setDate)
   const rangeMode = useUsageSummaryStore((state) => state.rangeMode)
   const setRangeMode = useUsageSummaryStore((state) => state.setRangeMode)
+  const { data: licenseInfo } = useGetLicenseInfo(user?.id || null)
 
   const firstName = user?.user_metadata?.full_name?.split(' ')[0] ||
     user?.user_metadata?.name?.split(' ')[0] ||
@@ -42,7 +45,10 @@ export const HomePage = () => {
     totalTimeLabel,
   } = useUsageSummary()
 
-  const isTideGoalsEnabled = isTideGoalsFeatureEnabled(user?.email)
+  const isTideGoalsEnabled = isTideGoalsFeatureEnabled(user?.email, licenseInfo?.license?.licenseType)
+
+  // Celebrate successful purchases with confetti
+  usePurchaseConfetti()
 
 
   return (

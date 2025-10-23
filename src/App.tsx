@@ -8,6 +8,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useInitializeAppState } from './hooks/useInitializeAppState'
 import { SpotifyConfetti } from '@/components/SpotifyConfetti'
 import { useSpotifyEasterEgg } from '@/hooks/useSpotifyEasterEgg'
+import { PaywallDialog } from '@/components/PaywallDialog'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -38,6 +39,7 @@ const App = () => {
         <TooltipProvider>
           <AppRouterWrapper />
           <Toaster position="bottom-right" richColors />
+          <PaywallDialog />
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>

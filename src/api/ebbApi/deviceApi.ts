@@ -9,13 +9,11 @@ export interface Device {
 
 export interface DeviceInfo {
   devices: Device[]
-  maxDevices: number
   isDeviceLimitReached: boolean
 }
 
 export const defaultDeviceInfo: DeviceInfo = {
   devices: [],
-  maxDevices: 1,
   isDeviceLimitReached: false,
 }
 
@@ -63,7 +61,6 @@ const registerDevice = async (userId: string, maxDevices: number): Promise<Devic
   if (deviceCount > maxDevices) {
     return {
       devices: existingDevices,
-      maxDevices,
       isDeviceLimitReached: true,
     }
   }
@@ -79,7 +76,6 @@ const registerDevice = async (userId: string, maxDevices: number): Promise<Devic
 
   return {
     devices: existingDevices,
-    maxDevices,
     isDeviceLimitReached: false,
   }
 

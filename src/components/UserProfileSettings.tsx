@@ -1,10 +1,9 @@
 import { AnalyticsButton } from '@/components/ui/analytics-button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { PaywallDialog } from '@/components/PaywallDialog'
 import { GoogleIcon } from '@/components/icons/GoogleIcon'
 import { LogOut, KeyRound, User as UserIcon } from 'lucide-react'
-import { format } from 'date-fns'
+import { DateTime } from 'luxon'
 import { User } from '@supabase/supabase-js'
 import supabase from '@/lib/integrations/supabase'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
@@ -13,6 +12,9 @@ import { usePermissions } from '@/hooks/usePermissions'
 import { useLicenseWithDevices } from '@/api/hooks/useLicense'
 import { invoke } from '@tauri-apps/api/core'
 import { isDev } from '@/lib/utils/environment.util'
+import { usePaywall } from '@/hooks/usePaywall'
+import { RainbowButton } from '@/components/ui/rainbow-button'
+import { AnalyticsService } from '@/lib/analytics'
 
 interface UserProfileSettingsProps {
   user: User | null
@@ -22,8 +24,49 @@ export function UserProfileSettings({ user }: UserProfileSettingsProps) {
   const { hasProAccess } = usePermissions()
   const { data: licenseData, isLoading } = useLicenseWithDevices(user?.id || null)
   const license = licenseData?.license
+  const { openPaywall } = usePaywall()
 
   const { logout } = useAuth()
+
+  // Check license type
+  const isFreeTrial = license?.licenseType === 'free_trial'
+  const isSubscription = license?.licenseType === 'subscription'
+  const isPerpetual = license?.licenseType === 'perpetual'
+  const isExpired = license?.status === 'expired'
+
+  const daysRemaining = license?.expirationDate
+    ? Math.ceil(DateTime.fromJSDate(license.expirationDate).diffNow('days').days)
+    : 0
+
+  const showUpgradeButton = isFreeTrial || !license || isExpired
+
+  const handleUpgradeClick = () => {
+    AnalyticsService.trackEvent('upgrade_now_clicked', {
+      button_location: 'user_profile_settings',
+      days_remaining: daysRemaining
+    })
+    openPaywall()
+  }
+
+  const handleManageSubscription = async () => {
+    try {
+      AnalyticsService.trackEvent('manage_subscription_clicked', {
+        button_location: 'user_profile_settings'
+      })
+
+      const portalUrl = isDev()
+        ? 'https://billing.stripe.com/p/login/test_aFaeVc2Fn2e08mqg9MeEo00'
+        : 'https://billing.stripe.com/p/login/aFaeVc2Fn2e08mqg9MeEo00'
+
+      if (isDev()) {
+        window.location.href = portalUrl
+      } else {
+        await invoke('plugin:shell|open', { path: portalUrl })
+      }
+    } catch (error) {
+      logAndToastError(`Failed to open billing portal: ${error}`, error)
+    }
+  }
 
   const handleLogout = async () => {
     const { error } = await logout()
@@ -32,21 +75,6 @@ export function UserProfileSettings({ user }: UserProfileSettingsProps) {
     }
 
     window.location.reload()
-  }
-
-  const handleManageSubscription = async () => {
-    try {
-      const { data, error } = await supabase.functions.invoke('create-portal-session', {
-        body: { return_url: window.location.href },
-      })
-      if (error) throw error
-      if (data?.url) {
-        window.location.href = data.url
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err)
-      logAndToastError(`Error creating portal session: ${message}`, err)
-    }
   }
 
   const handleGoogleLogin = async () => {
@@ -151,18 +179,21 @@ export function UserProfileSettings({ user }: UserProfileSettingsProps) {
                 <TooltipProvider>
                   <Tooltip delayDuration={0}>
                     <TooltipTrigger asChild>
-                      <KeyRound className="h-5 w-5 text-yellow-500 cursor-pointer" />
+                      <KeyRound className={`h-5 w-5 cursor-pointer ${
+                        isPerpetual
+                          ? 'text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.5)]'
+                          : 'text-yellow-500'
+                      }`} />
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>Status: {license?.status}</p>
                       {license?.licenseType && <p>Type: {license.licenseType}</p>}
-                      {license?.expirationDate && <p>Updates until: {format(new Date(license.expirationDate), 'PP')}</p>}
                       {license?.licenseType === 'subscription' && (
-                        <AnalyticsButton 
+                        <AnalyticsButton
                           analyticsEvent='user_profile_settings_manage_subscription_clicked'
-                          size="sm" 
-                          variant="outline" 
-                          onClick={handleManageSubscription} 
+                          size="sm"
+                          variant="outline"
+                          onClick={handleManageSubscription}
                           className="mt-2 w-full"
                         >Manage Subscription</AnalyticsButton>
                       )}
@@ -170,9 +201,10 @@ export function UserProfileSettings({ user }: UserProfileSettingsProps) {
                   </Tooltip>
                 </TooltipProvider>
               ) : (
-                <PaywallDialog>
-                  <KeyRound className="h-5 w-5 text-muted-foreground hover:text-yellow-500 cursor-pointer" />
-                </PaywallDialog>
+                <KeyRound
+                  className="h-5 w-5 text-muted-foreground hover:text-yellow-500 cursor-pointer"
+                  onClick={openPaywall}
+                />
               )}
             </div>
           </div>
@@ -184,14 +216,42 @@ export function UserProfileSettings({ user }: UserProfileSettingsProps) {
               <span>{user?.email}</span>
               <GoogleIcon className="h-3.5 w-3.5" />
             </div>
+            {isFreeTrial && (
+              <div className="text-sm text-muted-foreground text-primary-400 mt-1">
+                {daysRemaining > 0
+                  ? `${daysRemaining} day${daysRemaining === 1 ? '' : 's'} remaining on free trial`
+                  : 'Free trial expired'}
+              </div>
+            )}
+            {isPerpetual && (
+              <div className="text-sm font-medium mt-1 bg-gradient-to-r from-yellow-600 to-yellow-500 bg-clip-text text-transparent">
+                ✨ Lifetime Access • Early access to new features
+              </div>
+            )}
           </div>
         </div>
 
         <div className="flex items-center gap-3">
-          <AnalyticsButton 
+          {showUpgradeButton && (
+            <RainbowButton onClick={handleUpgradeClick} className="h-9">
+              Upgrade Now
+            </RainbowButton>
+          )}
+          {isSubscription && (
+            <AnalyticsButton
+              analyticsEvent='manage_subscription_clicked'
+              analyticsProperties={{ button_location: 'user_profile_settings' }}
+              variant="outline"
+              size="sm"
+              onClick={handleManageSubscription}
+            >
+              Manage Billing
+            </AnalyticsButton>
+          )}
+          <AnalyticsButton
             analyticsEvent='user_profile_settings_logout_clicked'
-            variant="outline" 
-            size="sm" 
+            variant="outline"
+            size="sm"
             onClick={handleLogout}
           >
             <LogOut className="h-4 w-4 mr-2" />

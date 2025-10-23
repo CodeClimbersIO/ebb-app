@@ -22,8 +22,8 @@ import { cn } from '@/lib/utils/tailwind.util'
 import { Button } from './ui/button'
 import { Switch } from '@/components/ui/switch'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
-import { PaywallDialog } from '@/components/PaywallDialog'
 import { usePermissions } from '@/hooks/usePermissions'
+import { usePaywall } from '@/hooks/usePaywall'
 
 interface WorkflowSelectorProps {
   selectedId: string | null
@@ -258,6 +258,7 @@ export function WorkflowSelector({ selectedId, onSelect, onSettingsChange }: Wor
   const [workflows, setWorkflows] = useState<Workflow[]>([])
   const [showLeftMask, setShowLeftMask] = useState(false)
   const { canUseMultipleProfiles } = usePermissions()
+  const { openPaywall } = usePaywall()
 
   const handleScroll = () => {
     if (scrollContainerRef.current) {
@@ -485,14 +486,13 @@ export function WorkflowSelector({ selectedId, onSelect, onSettingsChange }: Wor
               {workflows.length < 6 && (
                 <motion.div layout>
                   {workflows.length >= 1 && !canUseMultipleProfiles ? (
-                    <PaywallDialog>
-                      <Badge 
-                        variant='secondary' 
-                        className='cursor-pointer border-dashed opacity-50 px-4'
-                      >
-                        +
-                      </Badge>
-                    </PaywallDialog>
+                    <Badge
+                      variant='secondary'
+                      className='cursor-pointer border-dashed opacity-50 px-4'
+                      onClick={openPaywall}
+                    >
+                      +
+                    </Badge>
                   ) : (
                     <Badge 
                       variant='secondary' 

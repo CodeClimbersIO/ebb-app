@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { defaultPermissions, License, licenseApi, LicensePermissions } from '@/api/ebbApi/licenseApi'
 import { useRegisterDevice } from '@/api/hooks/useDevice'
 import { defaultDeviceInfo, DeviceInfo } from '@/api/ebbApi/deviceApi'
@@ -35,8 +35,7 @@ export function useGetLicenseInfo(userId: string | null) {
 export function useLicenseWithDevices(userId: string | null) {
   const { data: licenseData, isLoading: licenseLoading, error: licenseError } = useGetLicenseInfo(userId)
   const { data: deviceInfo, isLoading: deviceLoading, error: deviceError } = useRegisterDevice(
-    userId || '', 
-    licenseData?.permissions.maxDevices || 1
+    userId || '',
   )
 
   const isLoading = licenseLoading || deviceLoading
@@ -53,4 +52,29 @@ export function useLicenseWithDevices(userId: string | null) {
     isLoading,
     error,
   }
-} 
+}
+
+export function useStartTrial() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: () => licenseApi.startTrial(),
+    onSuccess: () => {
+      // Invalidate license queries to refetch updated license info
+      queryClient.invalidateQueries({ queryKey: licenseKeys.all })
+    },
+  })
+}
+
+export function useCancelLicense() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: () => licenseApi.cancelLicense(),
+    onSuccess: () => {
+      // Invalidate license queries to refetch updated license info
+      queryClient.invalidateQueries({ queryKey: licenseKeys.all })
+    },
+  })
+}
+

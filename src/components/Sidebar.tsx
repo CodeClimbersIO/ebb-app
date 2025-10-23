@@ -8,14 +8,15 @@ import { UsersIcon } from '@/components/icons/UsersIcon'
 import { KeyIcon } from '@/components/icons/KeyIcon'
 import { GlobeIcon } from '@/components/icons/GlobeIcon'
 import { CalendarDaysIcon } from '@/components/icons/CalendarDaysIcon'
-import { PaywallDialog } from '@/components/PaywallDialog'
 import { usePermissions } from '@/hooks/usePermissions'
 import { useFriendsWithInsights } from '@/api/hooks/useFriends'
+import { usePaywall } from '@/hooks/usePaywall'
 
 export function Sidebar() {
   const location = useLocation()
   const { hasProAccess } = usePermissions()
   const { hasPendingInvitesReceived } = useFriendsWithInsights()
+  const { openPaywall } = usePaywall()
 
 
   return (
@@ -110,11 +111,14 @@ export function Sidebar() {
 
         {!hasProAccess && (
           <div className="p-2 border-t flex justify-center">
-            <PaywallDialog>
-              <NoAnalyticsButton variant="ghost" iconSize={5} className="w-9 h-9 p-2">
-                <KeyIcon size={20} className="text-yellow-500" />
-              </NoAnalyticsButton>
-            </PaywallDialog>
+            <NoAnalyticsButton
+              variant="ghost"
+              iconSize={5}
+              className="w-9 h-9 p-2"
+              onClick={openPaywall}
+            >
+              <KeyIcon size={20} className="text-yellow-500" />
+            </NoAnalyticsButton>
           </div>
         )}
 

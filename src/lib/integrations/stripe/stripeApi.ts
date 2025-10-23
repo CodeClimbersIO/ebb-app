@@ -1,24 +1,32 @@
-import supabase from '../supabase'
 import { invoke } from '@tauri-apps/api/core'
-export type LicenseType = 'perpetual' | 'subscription'
+import { platformApiRequest } from '@/api/platformRequest'
+
+export type LicenseType = 'monthly_subscription' | 'annual_subscription'
+
+interface CheckoutResponse {
+  success: boolean
+  data: {
+    url: string
+  }
+}
 
 export class StripeApi {
 
-  static async createCheckoutSession(licenseType: LicenseType): Promise<string> {
-    const res = await supabase.functions.invoke('create-checkout', {
-      method: 'POST',
-      body: { licenseType }
-    })
-    if (res.error) {
-      throw res.error
-    }
-    return res.data.url
-  }
-
   static async startCheckout(licenseType: LicenseType): Promise<void> {
     try {
-      const checkoutUrl = await this.createCheckoutSession(licenseType)
-      await invoke('plugin:shell|open', { path: checkoutUrl })
+      // Call backend checkout API
+      const response = await platformApiRequest({
+        url: '/api/checkout/create',
+        method: 'POST',
+        body: { licenseType }
+      }) as CheckoutResponse
+
+      if (!response.success || !response.data?.url) {
+        throw new Error('Failed to create checkout session')
+      }
+
+      // Open Stripe checkout URL
+      await invoke('plugin:shell|open', { path: response.data.url })
     } catch (error) {
       const fullError = error instanceof Error ? error.message : String(error)
       console.error('Error starting checkout: -', JSON.stringify(fullError))
