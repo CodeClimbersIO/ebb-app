@@ -11,6 +11,7 @@ import { SmartSessionApi } from '@/api/ebbApi/smartSessionApi'
 import { ScheduledSessionExecutionApi } from '@/api/ebbApi/scheduledSessionExecutionApi'
 import { useAuth } from './useAuth'
 import { debug } from '@tauri-apps/plugin-log'
+import { usePermissions } from './usePermissions'
 
 type OnlinePingEvent = {
   event: string
@@ -24,6 +25,7 @@ export const useWorkerPolling = () => {
   const { deviceId } = useDeviceProfile()
   const { mutate: updateProfile } = useUpdateProfile()
   const { updateRollupForUser } = useUpdateRollupForUser()
+  const { canUseSmartFocus, canScheduleSessions } = usePermissions()
 
   useEffect(() => {
     if(isLoading || !profile) return
@@ -45,7 +47,8 @@ export const useWorkerPolling = () => {
             updateProfile({ id: profile.id, last_check_in: last_check_in.toISO(), version })
             refetch()
           }
-          if(deviceId) {
+          const handleShouldStartSmartFocus = async () => {
+            if(!deviceId || !canUseSmartFocus) return
             const shouldSuggestSmartSession = await SmartSessionApi.checkShouldSuggestSmartSession(deviceId)
             if(shouldSuggestSmartSession === 'smart') {
               invoke('show_notification', {
@@ -59,30 +62,36 @@ export const useWorkerPolling = () => {
             }
           }
 
-          // Check for scheduled sessions
-          const scheduledSessionStatus = await ScheduledSessionExecutionApi.checkScheduledSessionStatus()
-          if(scheduledSessionStatus.type === 'reminder') {
-            const payload = {
-              workflowId: scheduledSessionStatus.schedule.workflowId,
-              workflowName: scheduledSessionStatus.schedule.workflowName,
-            }
-            invoke('show_notification', {
-              notificationType: 'scheduled-session-reminder',
-              payload: JSON.stringify(payload),
-            })
-          }
-          else if(scheduledSessionStatus.type === 'start') {
-            invoke('show_notification', {
-              notificationType: 'scheduled-session-start',
-              payload: JSON.stringify({
+          const handleShouldStartScheduledSession = async () => {
+
+            // Check for scheduled sessions (Pro feature)
+            if(!canScheduleSessions) return
+            const scheduledSessionStatus = await ScheduledSessionExecutionApi.checkScheduledSessionStatus()
+            if(scheduledSessionStatus.type === 'reminder') {
+              const payload = {
                 workflowId: scheduledSessionStatus.schedule.workflowId,
                 workflowName: scheduledSessionStatus.schedule.workflowName,
-              }),
-            })
-          }
+              }
+              invoke('show_notification', {
+                notificationType: 'scheduled-session-reminder',
+                payload: JSON.stringify(payload),
+              })
+            }
+            else if(scheduledSessionStatus.type === 'start') {
+              invoke('show_notification', {
+                notificationType: 'scheduled-session-start',
+                payload: JSON.stringify({
+                  workflowId: scheduledSessionStatus.schedule.workflowId,
+                  workflowName: scheduledSessionStatus.schedule.workflowName,
+                }),
+              })
+            }
 
-          // Clean up old scheduled session tracking periodically
-          ScheduledSessionExecutionApi.cleanupOldSessionTracking()
+            // Clean up old scheduled session tracking periodically
+            ScheduledSessionExecutionApi.cleanupOldSessionTracking()
+          }
+          handleShouldStartSmartFocus()
+          handleShouldStartScheduledSession()
         }
         EbbWorker.work(event.payload, run) // used to make sure we don't run the same work multiple times
 
@@ -97,6 +106,6 @@ export const useWorkerPolling = () => {
         debug(`[useWorkerPolling] Failed to unlisten online-ping event: ${error}`)
       }
     }
-  }, [profile, isLoading, updateRollupForUser, deviceId, user]) 
+  }, [profile, isLoading, updateRollupForUser, deviceId, user, canUseSmartFocus, canScheduleSessions]) 
 
 }

@@ -4,6 +4,7 @@ import { Workflow, WorkflowApi } from './workflowApi'
 import { slackApi } from './slackApi'
 import { logAndToastError } from '@/lib/utils/ebbError.util'
 import { WorkflowDb } from '../../db/ebb/workflowRepo'
+import { usePermissionsStore } from '@/lib/stores/permissionsStore'
 
 export type FlowSessionWithWorkflow = FlowSessionWithWorkflowDb & {
   workflow_json?: Workflow
@@ -13,10 +14,12 @@ const startFlowSession = async (
   objective: string, 
   type: 'smart' | 'manual',
   workflow?: Workflow | null,
+  
 ): Promise<string> => {
   const inProgressFlowSession = await FlowSessionRepo.getInProgressFlowSession()
   
   if (inProgressFlowSession) throw new Error('Flow session already in progress')
+  const { permissions } = usePermissionsStore.getState()
 
   let workflowToUse = workflow
   if (!workflow) {
@@ -37,7 +40,7 @@ const startFlowSession = async (
   await FlowSessionRepo.createFlowSession(flowSession)
   
   // Handle Slack DND if enabled
-  if (workflowToUse.settings.slack?.dndEnabled) {
+  if (permissions.canUseSlackIntegration && workflowToUse.settings.slack?.dndEnabled) {
     const durationMinutes = workflowToUse.settings.defaultDuration || 25
     slackApi.startFocusSession(durationMinutes).catch(error => {
       logAndToastError('Failed to enable Slack DND for all workspaces', error)
