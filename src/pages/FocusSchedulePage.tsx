@@ -8,15 +8,18 @@ import { FocusScheduleApi } from '@/api/ebbApi/focusScheduleApi'
 import { ScheduleSessionModal } from '@/components/ScheduleSessionModal'
 import { Calendar, Clock, Trash2 } from 'lucide-react'
 import { error as errorLog } from '@tauri-apps/plugin-log'
+import { usePermissions } from '@/hooks/usePermissions'
+import { ProFeatureOverlay } from '@/components/ProFeatureOverlay'
 
 export default function FocusSchedulePage() {
   const [showScheduleModal, setShowScheduleModal] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [editingScheduleId, setEditingScheduleId] = useState<string | undefined>()
   const [deletingScheduleId, setDeletingScheduleId] = useState<string | undefined>()
-  
+
   const { data: schedules, isLoading } = useFocusSchedulesWithWorkflow()
   const { mutateAsync: deleteFocusSchedule } = useDeleteFocusSchedule()
+  const { canScheduleSessions } = usePermissions()
 
   const handleEditSchedule = (scheduleId: string) => {
     setEditingScheduleId(scheduleId)
@@ -66,7 +69,13 @@ export default function FocusSchedulePage() {
 
   return (
     <Layout>
-      <div className="p-8">
+      <div className="p-8 relative">
+        {!canScheduleSessions && (
+          <ProFeatureOverlay
+            title="Scheduled Focus Sessions"
+            subtitle="Automatically start focus sessions at your most productive times with Pro"
+          />
+        )}
         <div className="max-w-5xl mx-auto">
           { schedules && schedules.length > 0 && (
             <div className="mb-8 flex items-center justify-between">

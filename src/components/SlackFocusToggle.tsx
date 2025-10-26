@@ -19,6 +19,8 @@ import { SlackSettings } from '@/api/ebbApi/workflowApi'
 import { useAuth } from '@/hooks/useAuth'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
+import { usePermissions } from '@/hooks/usePermissions'
+import { usePaywall } from '@/hooks/usePaywall'
 
 interface SlackFocusToggleProps {
   slackSettings: SlackSettings
@@ -28,6 +30,8 @@ interface SlackFocusToggleProps {
 export function SlackFocusToggle({ slackSettings, onSlackSettingsChange }: SlackFocusToggleProps) {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const { canUseSlackIntegration } = usePermissions()
+  const { openPaywall } = usePaywall()
 
   const [showDialog, setShowDialog] = useState(false)
   const [customStatusText, setCustomStatusText] = useState('')
@@ -44,6 +48,12 @@ export function SlackFocusToggle({ slackSettings, onSlackSettingsChange }: Slack
   }, [showDialog, slackStatus?.preferences])
 
   const handleSlackToggle = async () => {
+    // Check permissions first
+    if (!canUseSlackIntegration) {
+      openPaywall()
+      return
+    }
+
     if (!user) {
       toast.error('Must be logged in to use Slack', {
         action: {
@@ -104,6 +114,9 @@ export function SlackFocusToggle({ slackSettings, onSlackSettingsChange }: Slack
   }
 
   const getTooltipText = () => {
+    if (!canUseSlackIntegration) {
+      return 'Slack Integration (Pro)'
+    }
     if (!user) {
       return 'Please login to use the slack integration'
     }
@@ -124,13 +137,15 @@ export function SlackFocusToggle({ slackSettings, onSlackSettingsChange }: Slack
         ) : (
           <Tooltip>
             <TooltipTrigger asChild>
-              <div 
+              <div
                 onClick={handleSlackToggle}
-                className="h-9 w-9 rounded-md flex items-center justify-center hover:bg-accent cursor-pointer relative"
+                className={`h-9 w-9 rounded-md flex items-center justify-center hover:bg-accent cursor-pointer relative ${
+                  !canUseSlackIntegration ? 'opacity-40' : ''
+                }`}
               >
                 <SlackIcon fill={isActive ? '' : 'currentColor'} className={`h-5 w-5 transition-colors ${
-                  isActive 
-                    ? 'text-green-500' 
+                  isActive
+                    ? 'text-green-500'
                     : 'text-muted-foreground'
                 }`} />
                 {isActive && (

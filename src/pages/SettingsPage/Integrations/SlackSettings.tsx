@@ -3,21 +3,35 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { SlackIcon } from '@/components/icons/SlackIcon'
 import { AnalyticsButton } from '@/components/ui/analytics-button'
 import { SlackDisconnectModal } from '@/components/SlackDisconnectModal'
+import { Badge } from '@/components/ui/badge'
+import { KeyRound } from 'lucide-react'
 
 import { useSlackStatus } from '@/api/hooks/useSlack'
 import { initiateSlackOAuth } from '@/lib/utils/slackAuth.util'
 import { useAuth } from '@/hooks/useAuth'
+import { usePermissions } from '@/hooks/usePermissions'
+import { usePaywall } from '@/hooks/usePaywall'
 
 export const SlackSettings = () => {
   const { user } = useAuth()
   const { data: slackStatus, refetch } = useSlackStatus()
+  const { canUseSlackIntegration } = usePermissions()
+  const { openPaywall } = usePaywall()
   const [isDisconnectModalOpen, setIsDisconnectModalOpen] = useState(false)
 
   const handleConnect = async () => {
+    if (!canUseSlackIntegration) {
+      openPaywall()
+      return
+    }
     await initiateSlackOAuth()
   }
 
   const handleDisconnect = async () => {
+    if (!canUseSlackIntegration) {
+      openPaywall()
+      return
+    }
     setIsDisconnectModalOpen(true)
   }
 
@@ -51,23 +65,29 @@ export const SlackSettings = () => {
           <div>
             <div className="flex items-center gap-2">
               <div className="font-medium">Slack</div>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex items-center gap-2 cursor-pointer">
-                    <div className="h-2 w-2 rounded-full bg-green-500" />
-                    <div className="text-sm text-muted-foreground">
-                      {getSlackWorkspaceMessage()}
+              <Badge className="bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 border-0">
+                <KeyRound className="h-3 w-3 mr-1" />
+                Pro
+              </Badge>
+              {slackStatus?.workspaces?.length || 0 > 0 ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-2 cursor-pointer">
+                      <div className="h-2 w-2 rounded-full bg-green-500" />
+                      <div className="text-sm text-muted-foreground">
+                        {getSlackWorkspaceMessage()}
+                      </div>
                     </div>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  {slackStatus?.workspaces?.length || 0 > 0 ? slackStatus?.workspaces.map((workspace) => (
-                    <div key={workspace.team_name}>
-                      {workspace.team_name}
-                    </div>
-                  )) : 'Press "Connect" to begin adding your Slack workspaces'}
-                </TooltipContent>
-              </Tooltip>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {slackStatus?.workspaces.map((workspace) => (
+                      <div key={workspace.team_name}>
+                        {workspace.team_name}
+                      </div>
+                    ))}
+                  </TooltipContent>
+                </Tooltip>
+              ) : null}
             </div>
           </div>
         </div>
@@ -77,35 +97,27 @@ export const SlackSettings = () => {
               variant="outline"
               size="sm"
               onClick={handleDisconnect}
-              disabled={!slackStatus?.workspaces?.length}
               analyticsEvent="slack_configure_clicked"
               analyticsProperties={{
-                context: 'slack_configure',
+                context: canUseSlackIntegration ? 'slack_configure' : 'slack_configure_locked',
                 button_location: 'slack_settings'
               }}
             >
               Configure
             </AnalyticsButton>
           ) : (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span>
-                  <AnalyticsButton
-                    variant="outline"
-                    size="sm"
-                    onClick={handleConnect}
-                    disabled={!slackStatus?.workspaces?.length}
-                    analyticsEvent="slack_connect_clicked"
-                    analyticsProperties={{
-                      context: 'slack_connect',
-                      button_location: 'slack_settings'
-                    }}
-                  >
-                    Connect
-                  </AnalyticsButton>
-                </span>
-              </TooltipTrigger>
-            </Tooltip>
+            <AnalyticsButton
+              variant="outline"
+              size="sm"
+              onClick={handleConnect}
+              analyticsEvent="slack_connect_clicked"
+              analyticsProperties={{
+                context: canUseSlackIntegration ? 'slack_connect' : 'slack_connect_locked',
+                button_location: 'slack_settings'
+              }}
+            >
+              Connect
+            </AnalyticsButton>
           )}
         </div>
       </div>
