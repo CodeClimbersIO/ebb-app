@@ -1,12 +1,15 @@
 import { Sidebar } from './Sidebar'
 import { TopNav } from './TopNav'
 import { NotificationBanner } from './NotificationBanner'
+import { useLicenseExpirationNotification } from '@/hooks/useLicenseExpirationNotification'
 
 interface LayoutProps {
   children: React.ReactNode
 }
 
 export function Layout({ children }: LayoutProps) {
+  useLicenseExpirationNotification()
+
   return (
     <div className="h-screen flex flex-col">
       <div className="w-full">

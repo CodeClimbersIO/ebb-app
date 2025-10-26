@@ -3,6 +3,7 @@ import { useGetActiveNotification, useUpdateNotificationStatus } from '@/api/hoo
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AnalyticsButton } from './ui/analytics-button'
+import { usePaywall } from '@/hooks/usePaywall'
 
 interface NotificationAction {
   label: string
@@ -14,6 +15,17 @@ export const NotificationBanner: React.FC = () => {
   const { mutate: markAsRead } = useUpdateNotificationStatus()
   const { mutate: dismiss } = useUpdateNotificationStatus()
   const navigate = useNavigate()
+  const { openPaywall } = usePaywall()
+
+  // Helper to wrap actions with dismiss logic
+  const createActionWithDismiss = (actionFn: () => void): (() => void) => {
+    return () => {
+      actionFn()
+      if (activeNotification?.id) {
+        dismiss({ id: activeNotification.id, options: { dismissed: true } })
+      }
+    }
+  }
 
   // Action mapping based on notification_sent_id
   const getNotificationAction = (notificationSentId: string | null | undefined): NotificationAction | null => {
@@ -22,12 +34,23 @@ export const NotificationBanner: React.FC = () => {
     const actionMap: Record<string, NotificationAction> = {
       'focus_schedule_feature_intro': {
         label: 'Try It',
-        action: () => {
-          navigate('/focus-schedule')
-          if (activeNotification?.id) {
-            dismiss({ id: activeNotification.id, options: { dismissed: true } })
-          }
-        }
+        action: createActionWithDismiss(() => navigate('/focus-schedule'))
+      },
+      'trial_expiring_3_days': {
+        label: 'Upgrade',
+        action: createActionWithDismiss(() => openPaywall())
+      },
+      'trial_expired': {
+        label: 'Upgrade',
+        action: createActionWithDismiss(() => openPaywall())
+      },
+      'paid_expiring_3_days': {
+        label: 'Renew',
+        action: createActionWithDismiss(() => openPaywall())
+      },
+      'paid_expired': {
+        label: 'Renew',
+        action: createActionWithDismiss(() => openPaywall())
       }
     }
 
