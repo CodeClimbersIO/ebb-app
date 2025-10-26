@@ -38,6 +38,9 @@ export interface LicensePermissions {
   canUseAllowList: boolean
   canUseMultipleProfiles: boolean
   canUseMultipleDevices: boolean
+  canUseSmartFocus: boolean
+  canUseSlackIntegration: boolean
+  canScheduleSessions: boolean
   hasProAccess: boolean
 }
 
@@ -52,6 +55,9 @@ export const defaultPermissions: LicensePermissions = {
   canUseAllowList: false,
   canUseMultipleProfiles: false,
   canUseMultipleDevices: false,
+  canUseSmartFocus: false,
+  canUseSlackIntegration: false,
+  canScheduleSessions: false,
   hasProAccess: false,
 }
 
@@ -84,6 +90,9 @@ const calculatePermissions = (license: License | null): LicensePermissions | nul
     canUseAllowList: hasProAccess,
     canUseMultipleProfiles: hasProAccess,
     canUseMultipleDevices: hasProAccess,
+    canUseSmartFocus: hasProAccess,
+    canUseSlackIntegration: hasProAccess,
+    canScheduleSessions: hasProAccess,
     hasProAccess,
   }
 }

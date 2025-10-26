@@ -20,6 +20,8 @@ import { logAndToastError } from '@/lib/utils/ebbError.util'
 import { SmartFocusSettings as SmartFocusSettingsType } from '@/db/ebb/deviceProfileRepo'
 import { useDeviceProfile, useUpdateDeviceProfilePreferences } from '@/api/hooks/useDeviceProfile'
 import { Skeleton } from '@/components/ui/skeleton'
+import { usePermissions } from '@/hooks/usePermissions'
+import { usePaywall } from '@/hooks/usePaywall'
 
 interface SmartFocusSelectorProps {
   workflows: Workflow[]
@@ -38,6 +40,8 @@ export function SmartFocusSelector({ workflows }: SmartFocusSelectorProps) {
   })
   const { deviceId, deviceProfile } = useDeviceProfile()
   const { mutate: updateDeviceProfilePreferences } = useUpdateDeviceProfilePreferences()
+  const { canUseSmartFocus } = usePermissions()
+  const { openPaywall } = usePaywall()
 
   const durationOptions = [
     { value: 10, label: '10 minutes' },
@@ -134,6 +138,14 @@ export function SmartFocusSelector({ workflows }: SmartFocusSelectorProps) {
     setIsSaving(false)
   }
 
+  const handleClick = () => {
+    if (!canUseSmartFocus) {
+      openPaywall()
+      return
+    }
+    setShowDialog(true)
+  }
+
   return (
     <>
       <div className="flex items-center">
@@ -142,26 +154,32 @@ export function SmartFocusSelector({ workflows }: SmartFocusSelectorProps) {
         ) : (
           <Tooltip>
             <TooltipTrigger asChild>
-              <div 
-                onClick={() => setShowDialog(true)}
-                className="h-9 w-9 rounded-md flex items-center justify-center hover:bg-accent cursor-pointer"
+              <div
+                onClick={handleClick}
+                className={`h-9 w-9 rounded-md flex items-center justify-center hover:bg-accent cursor-pointer ${
+                  !canUseSmartFocus ? 'opacity-40' : ''
+                }`}
               >
-                <Shield 
+                <Shield
                   stroke="currentColor"
                   strokeWidth={1.5}
                   className={`h-5 w-5 transition-all duration-500 ${
-                    settings.enabled 
-                      ? 'text-violet-500 fill-violet-500/30' 
-                      : 'text-muted-foreground fill-muted-foreground/30'
+                    !canUseSmartFocus
+                      ? 'text-muted-foreground fill-muted-foreground/30'
+                      : settings.enabled
+                        ? 'text-violet-500 fill-violet-500/30'
+                        : 'text-muted-foreground fill-muted-foreground/30'
                   } ${
-                    isAnimating && !settings.enabled
-                      ? 'animate-pulse drop-shadow-lg brightness-250' 
+                    isAnimating && !settings.enabled && canUseSmartFocus
+                      ? 'animate-pulse drop-shadow-lg brightness-250'
                       : ''
                   }`}
                 />
               </div>
             </TooltipTrigger>
-            <TooltipContent side="right" sideOffset={10}>Smart Focus</TooltipContent>
+            <TooltipContent side="right" sideOffset={10}>
+              {canUseSmartFocus ? 'Smart Focus' : 'Smart Focus (Pro)'}
+            </TooltipContent>
           </Tooltip>
         )}
       </div>

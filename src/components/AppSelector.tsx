@@ -11,6 +11,7 @@ import { DifficultySelector } from '@/components/difficulty-selector'
 import { CategoryTooltip } from '@/components/CategoryTooltip'
 import { usePermissions } from '@/hooks/usePermissions'
 import { usePaywall } from '@/hooks/usePaywall'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 interface CategoryOption {
   type: 'category'
@@ -86,7 +87,7 @@ const getOptionDetails = (option: SearchOption) => {
 }
 
 export function AppSelector({
-  placeholder = 'Search apps & websites...',
+  placeholder,
   emptyText = 'Enter full URL to add website',
   maxItems = 5,
   selectedApps,
@@ -117,6 +118,12 @@ export function AppSelector({
   const [selected, setSelected] = useState(0)
   const [apps, setApps] = useState<AppOption[]>([])
   const [categoryOptions, setCategoryOptions] = useState<CategoryOption[]>([])
+
+  // Dynamic placeholder based on allowlist/blocklist mode
+  const dynamicPlaceholder = placeholder || (isAllowList
+    ? 'Search apps & websites to allow...'
+    : 'Search apps & websites to block...')
+
   const handleClose = () => {
     setOpen(false)
     setSearch('')
@@ -487,7 +494,7 @@ export function AppSelector({
 
           <div className="relative flex-1 min-w-[200px]">
             <input
-              placeholder={placeholder}
+              placeholder={dynamicPlaceholder}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onFocus={() => setOpen(true)}
@@ -535,44 +542,39 @@ export function AppSelector({
                 Block
               </AnalyticsButton>
 
-              {!canUseAllowList ? (
-                <AnalyticsButton
-                  variant="ghost"
-                  size="sm"
-                  className={cn(
-                    'h-6 px-2 text-xs text-muted-foreground/80 hover:text-foreground',
-                    isAllowList && 'bg-muted/50'
-                  )}
-                  analyticsEvent="allow_list_clicked"
-                  analyticsProperties={{
-                    context: 'allow_list',
-                    button_location: 'app_selector'
-                  }}
-                  onClick={openPaywall}
-                >
-                  Allow
-                </AnalyticsButton>
-              ) : (
-                <AnalyticsButton
-                  variant="ghost"
-                  size="sm"
-                  className={cn(
-                    'h-6 px-2 text-xs text-muted-foreground/80 hover:text-foreground',
-                    isAllowList && 'bg-muted/50'
-                  )}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleAllowListChange(true)
-                  }}
-                  analyticsEvent="allow_list_clicked"
-                  analyticsProperties={{
-                    context: 'allow_list',
-                    button_location: 'app_selector'
-                  }}
-                >
-                  Allow
-                </AnalyticsButton>
-              )}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <AnalyticsButton
+                    variant="ghost"
+                    size="sm"
+                    className={cn(
+                      'h-6 px-2 text-xs text-muted-foreground/80 hover:text-foreground',
+                      !canUseAllowList && 'opacity-50',
+                      isAllowList && 'bg-muted/50'
+                    )}
+                    analyticsEvent="allow_list_clicked"
+                    analyticsProperties={{
+                      context: canUseAllowList ? 'allow_list' : 'allow_list_locked',
+                      button_location: 'app_selector'
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      if (!canUseAllowList) {
+                        openPaywall()
+                      } else {
+                        handleAllowListChange(true)
+                      }
+                    }}
+                  >
+                    Allow
+                  </AnalyticsButton>
+                </TooltipTrigger>
+                {!canUseAllowList && (
+                  <TooltipContent>
+                    Allow List (Pro)
+                  </TooltipContent>
+                )}
+              </Tooltip>
             </div>
           )}
         </div>
