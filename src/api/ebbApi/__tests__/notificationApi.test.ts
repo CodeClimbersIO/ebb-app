@@ -58,7 +58,7 @@ describe('NotificationApi', () => {
 
         expect(result).toEqual({
           sentId: 'trial_expiring_3_days',
-          content: 'Your free trial ends in 3 days. Upgrade to keep your pro features.',
+          content: 'Your free trial ends in less than 3 days on Jan 18, 2024. Upgrade to keep your pro features.',
           subType: 'info',
         })
       })
@@ -69,7 +69,7 @@ describe('NotificationApi', () => {
 
         expect(result).toEqual({
           sentId: 'trial_expiring_3_days',
-          content: 'Your free trial ends in 3 days. Upgrade to keep your pro features.',
+          content: 'Your free trial ends in less than 3 days on Jan 16, 2024. Upgrade to keep your pro features.',
           subType: 'info',
         })
       })
@@ -118,7 +118,7 @@ describe('NotificationApi', () => {
 
         expect(result).toEqual({
           sentId: 'paid_expiring_3_days',
-          content: 'Your subscription expires in 3 days. Renew to keep your access.',
+          content: 'Your subscription expires in less than 3 days on Jan 18, 2024. Renew to keep your access.',
           subType: 'info',
         })
       })
@@ -129,7 +129,7 @@ describe('NotificationApi', () => {
 
         expect(result).toEqual({
           sentId: 'paid_expiring_3_days',
-          content: 'Your subscription expires in 3 days. Renew to keep your access.',
+          content: 'Your subscription expires in less than 3 days on Jan 16, 2024. Renew to keep your access.',
           subType: 'info',
         })
       })
