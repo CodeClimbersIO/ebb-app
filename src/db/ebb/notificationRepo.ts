@@ -7,7 +7,7 @@ export interface NotificationSchema {
   content: string
   notification_type: 'app'
   notification_sub_type: 'warning' | 'info'
-  notification_sent_id: 'firefox_not_supported' | 'focus_schedule_feature_intro'
+  notification_sent_id: 'firefox_not_supported' | 'focus_schedule_feature_intro' | 'trial_expiring_3_days' | 'trial_expired' | 'paid_expiring_3_days' | 'paid_expired'
   read: number
   dismissed: number
   notification_sent_at: string
