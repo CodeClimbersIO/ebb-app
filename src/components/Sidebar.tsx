@@ -111,8 +111,8 @@ export function Sidebar() {
           </Tooltip>
         </nav>
 
-        {!hasProAccess && (
-          <div className="p-2 border-t flex justify-center">
+        <div className="p-2 border-t flex flex-col items-center space-y-2">
+          {!hasProAccess && (
             <NoAnalyticsButton
               variant="ghost"
               iconSize={5}
@@ -121,10 +121,8 @@ export function Sidebar() {
             >
               <KeyIcon size={20} className="text-yellow-500" />
             </NoAnalyticsButton>
-          </div>
-        )}
+          )}
 
-        <div className="p-2 border-t flex justify-center">
           <Tooltip>
             <TooltipTrigger asChild>
               <NoAnalyticsButton
@@ -138,9 +136,7 @@ export function Sidebar() {
             </TooltipTrigger>
             <TooltipContent side="right" sideOffset={10}>Book a Consultation</TooltipContent>
           </Tooltip>
-        </div>
 
-        <div className="p-2 border-t flex justify-center">
           <Tooltip>
             <TooltipTrigger asChild>
               <NoAnalyticsButton
