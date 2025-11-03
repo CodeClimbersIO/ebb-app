@@ -8,9 +8,11 @@ import { UsersIcon } from '@/components/icons/UsersIcon'
 import { KeyIcon } from '@/components/icons/KeyIcon'
 import { GlobeIcon } from '@/components/icons/GlobeIcon'
 import { CalendarDaysIcon } from '@/components/icons/CalendarDaysIcon'
+import { MessageCircleIcon } from '@/components/icons/MessageCircleIcon'
 import { usePermissions } from '@/hooks/usePermissions'
 import { useFriendsWithInsights } from '@/api/hooks/useFriends'
 import { usePaywall } from '@/hooks/usePaywall'
+import { open } from '@tauri-apps/plugin-shell'
 
 export function Sidebar() {
   const location = useLocation()
@@ -109,8 +111,8 @@ export function Sidebar() {
           </Tooltip>
         </nav>
 
-        {!hasProAccess && (
-          <div className="p-2 border-t flex justify-center">
+        <div className="p-2 border-t flex flex-col items-center space-y-2">
+          {!hasProAccess && (
             <NoAnalyticsButton
               variant="ghost"
               iconSize={5}
@@ -119,10 +121,22 @@ export function Sidebar() {
             >
               <KeyIcon size={20} className="text-yellow-500" />
             </NoAnalyticsButton>
-          </div>
-        )}
+          )}
 
-        <div className="p-2 border-t flex justify-center">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <NoAnalyticsButton
+                variant="ghost"
+                iconSize={5}
+                className="w-9 h-9 p-2 text-muted-foreground [&>svg]:text-muted-foreground"
+                onClick={() => open('https://calendar.app.google/UT16rbeEvS5Ye4bx9')}
+              >
+                <MessageCircleIcon size={20} />
+              </NoAnalyticsButton>
+            </TooltipTrigger>
+            <TooltipContent side="right" sideOffset={10}>Book a Consultation</TooltipContent>
+          </Tooltip>
+
           <Tooltip>
             <TooltipTrigger asChild>
               <NoAnalyticsButton
