@@ -202,11 +202,22 @@ function aggregateTimeBlocks(
   }
 
   return Object.entries(buckets)
+    .sort(([keyA], [keyB]) => {
+      // Sort by date to ensure correct chronological order
+      return keyA.localeCompare(keyB)
+    })
     .filter(([key]) => {
-      if (unit !== 'week') return true
-      // Only include weeks that have started and are not in the future
-      const dt = DateTime.fromFormat(key, 'kkkk-WW')
-      return dt <= DateTime.local().endOf('day')
+      if (unit === 'day' && start && end) {
+        // Only include days within the start-end range
+        const dt = DateTime.fromISO(key)
+        return dt >= start.startOf('day') && dt <= end.startOf('day')
+      }
+      if (unit === 'week') {
+        // Only include weeks that have started and are not in the future
+        const dt = DateTime.fromFormat(key, 'kkkk-WW')
+        return dt <= DateTime.local().endOf('day')
+      }
+      return true
     })
     .map(([key, vals]) => {
       let dt: DateTime

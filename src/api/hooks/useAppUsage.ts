@@ -21,8 +21,11 @@ export const useAppUsage = ({ rangeMode, date }: { rangeMode: 'day' | 'week' | '
         start = DateTime.fromJSDate(date).startOf('day')
         end = DateTime.fromJSDate(date).endOf('day')
       } else if (rangeMode === 'week') {
-        start = DateTime.fromJSDate(date).minus({ days: 6 }).startOf('day')
-        end = DateTime.fromJSDate(date).endOf('day')
+        // Get Monday-Sunday of the week containing the selected date
+        const currentDate = DateTime.fromJSDate(date)
+        const monday = currentDate.minus({ days: currentDate.weekday - 1 })
+        start = monday.startOf('day')
+        end = monday.plus({ days: 6 }).endOf('day') // Sunday
       } else {
       // Month view - show current week and previous 4 weeks
         const currentDate = DateTime.fromJSDate(date)
@@ -73,8 +76,11 @@ export const useGetChartData = ({ rangeMode, date }: { rangeMode: 'day' | 'week'
         start = DateTime.fromJSDate(date).startOf('day')
         end = DateTime.fromJSDate(date).endOf('day')
       } else if (rangeMode === 'week') {
-        start = DateTime.fromJSDate(date).minus({ days: 6 }).startOf('day')
-        end = DateTime.fromJSDate(date).endOf('day')
+        // Get Monday-Sunday of the week containing the selected date
+        const currentDate = DateTime.fromJSDate(date)
+        const monday = currentDate.minus({ days: currentDate.weekday - 1 })
+        start = monday.startOf('day')
+        end = monday.plus({ days: 6 }).endOf('day') // Sunday
       } else {
       // Month view - show current week and previous 4 weeks
         const currentDate = DateTime.fromJSDate(date)
