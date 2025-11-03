@@ -59,8 +59,12 @@ export function useUsageSummary() {
   const getPreviousPeriod = () => {
     let prevStart, prevEnd
     if (rangeMode === 'week') {
-      prevStart = DateTime.fromJSDate(date).minus({ days: 13 }).startOf('day')
-      prevEnd = DateTime.fromJSDate(date).minus({ days: 7 }).endOf('day')
+      // Get Monday of the previous week
+      const currentDate = DateTime.fromJSDate(date)
+      const thisMonday = currentDate.minus({ days: currentDate.weekday - 1 })
+      const prevMonday = thisMonday.minus({ weeks: 1 })
+      prevStart = prevMonday.startOf('day')
+      prevEnd = prevMonday.plus({ days: 6 }).endOf('day') // Sunday
     } else {
       // Month view - previous 4 weeks before current 4 weeks
       const currentDate = DateTime.fromJSDate(date)
@@ -80,8 +84,11 @@ export function useUsageSummary() {
         start = DateTime.fromJSDate(date).startOf('day')
         end = DateTime.fromJSDate(date).endOf('day')
       } else if (rangeMode === 'week') {
-        start = DateTime.fromJSDate(date).minus({ days: 6 }).startOf('day')
-        end = DateTime.fromJSDate(date).endOf('day')
+        // Get Monday-Sunday of the week containing the selected date
+        const currentDate = DateTime.fromJSDate(date)
+        const monday = currentDate.minus({ days: currentDate.weekday - 1 })
+        start = monday.startOf('day')
+        end = monday.plus({ days: 6 }).endOf('day') // Sunday
       } else {
       // Month view - show current week and previous 4 weeks
         const currentDate = DateTime.fromJSDate(date)

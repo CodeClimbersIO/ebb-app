@@ -15,5 +15,5 @@ export const isEarlyAccessUser = (email?: string, licenseType?: LicenseType) => 
 }
 
 export const isTideGoalsFeatureEnabled = (email?: string, licenseType?: LicenseType) => {
-  return isEarlyAccessUser(email, licenseType)
+  return isDev() || isEarlyAccessUser(email, licenseType)
 }
