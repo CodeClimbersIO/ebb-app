@@ -8,7 +8,7 @@ import { UsersIcon } from '@/components/icons/UsersIcon'
 import { KeyIcon } from '@/components/icons/KeyIcon'
 import { GlobeIcon } from '@/components/icons/GlobeIcon'
 import { CalendarDaysIcon } from '@/components/icons/CalendarDaysIcon'
-import { CircleHelpIcon } from '@/components/icons/CircleHelpIcon'
+import { MessageCircleIcon } from '@/components/icons/MessageCircleIcon'
 import { usePermissions } from '@/hooks/usePermissions'
 import { useFriendsWithInsights } from '@/api/hooks/useFriends'
 import { usePaywall } from '@/hooks/usePaywall'
@@ -133,7 +133,7 @@ export function Sidebar() {
                 className="w-9 h-9 p-2 text-muted-foreground [&>svg]:text-muted-foreground"
                 onClick={() => open('https://calendar.app.google/UT16rbeEvS5Ye4bx9')}
               >
-                <CircleHelpIcon size={20} />
+                <MessageCircleIcon size={20} />
               </NoAnalyticsButton>
             </TooltipTrigger>
             <TooltipContent side="right" sideOffset={10}>Book a Consultation</TooltipContent>
