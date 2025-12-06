@@ -32,6 +32,7 @@ import { EbbWorker } from '@/lib/ebbWorker'
 import { Timer } from './Timer'
 import { MonitorApi } from '@/api/monitorApi/monitorApi'
 import { StorageUtils } from '../../lib/utils/storage.util'
+import { AnalyticsService } from '@/lib/analytics'
 
 type CurrentTrack = {
   song: {
@@ -65,6 +66,17 @@ const startBlocking = async (workflow: Workflow) => {
   // start blocking
   const isBlockList = !workflow.settings.isAllowList
   await invoke('start_blocking', { blockingApps, isBlockList })
+
+  // Track analytics for PostHog
+  if (workflow.id) {
+    const analyticsData = await BlockingPreferenceApi.getWorkflowBlockedAppsAnalytics(workflow.id)
+    AnalyticsService.trackEvent('apps_and_websites_blocked', {
+      ...analyticsData,
+      is_block_list: isBlockList,
+      workflow_id: workflow.id,
+      workflow_name: workflow.name,
+    })
+  }
 }
 
 export const FlowPage = () => {
