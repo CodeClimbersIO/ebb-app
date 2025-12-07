@@ -135,6 +135,9 @@ export type AnalyticsEvent =
   | 'activity_history_delete_all_clicked'
   | 'activity_history_page_changed'
 
+  // Blocking Events
+  | 'app_or_website_block_attempt'
+
 export interface AnalyticsEventProperties {
   // Focus session properties
   difficulty?: 'easy' | 'medium' | 'hard'
@@ -157,6 +160,9 @@ export interface AnalyticsEventProperties {
 
   // Billing properties
   days_remaining?: number
+
+  // Block attempt properties
+  blocked_item_name?: string
 }
 
 const trackEvent = (

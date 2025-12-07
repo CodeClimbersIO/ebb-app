@@ -121,17 +121,17 @@ const getWorkflowBlockedApps = async (workflowId: string): Promise<BlockingAppCo
 const getDefaultSearchOptions = async (): Promise<SearchOption[]> => {
   const defaultCategoryNames = ['social media', 'entertainment']
   const allCategoryTags = await TagRepo.getTagsByType('category')
-  const defaultTags = allCategoryTags.filter((tag: Tag) => 
+  const defaultTags = allCategoryTags.filter((tag: Tag) =>
     defaultCategoryNames.includes(tag.name)
   )
   const defaultTagIds = defaultTags.map((tag: Tag) => tag.id).filter((id): id is string => !!id)
-  
+
   let defaultSearchOptions: SearchOption[] = []
   if (defaultTagIds.length > 0) {
     const categoriesWithCounts = await TagRepo.getCategoriesWithAppCounts(defaultTagIds)
     defaultSearchOptions = categoriesWithCounts.map((catInfo: TagWithAppCount): SearchOption => ({
       type: 'category',
-      tag: catInfo, 
+      tag: catInfo,
       category: catInfo.name as AppCategory,
       count: catInfo.count
     }))

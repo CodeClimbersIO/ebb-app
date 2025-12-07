@@ -7,6 +7,25 @@ import { useNavigate } from 'react-router-dom'
 import { SmartSessionApi } from '@/api/ebbApi/smartSessionApi'
 import { useFlowTimer } from '@/lib/stores/flowTimer'
 import { FlowSessionApi } from '@/api/ebbApi/flowSessionApi'
+import { AnalyticsService } from '@/lib/analytics'
+
+interface BlockedApp {
+  app_name: string
+  app_external_id: string
+}
+
+const trackBlockedApps = (blockedApps: BlockedApp[], workflowId?: string, workflowName?: string) => {
+  blockedApps.forEach((app) => {
+    // For websites, use app_external_id (the URL), for apps use app_name
+    const blockedName = app.app_external_id || app.app_name
+
+    AnalyticsService.trackEvent('app_or_website_block_attempt', {
+      blocked_item_name: blockedName,
+      workflow_id: workflowId,
+      workflow_name: workflowName,
+    })
+  })
+}
 
 export const useNotificationListener = () => {
   const navigate = useNavigate()
@@ -55,16 +74,25 @@ export const useNotificationListener = () => {
           window.dispatchEvent(new Event('end-session'))
         })
       })
-      unlistenAppBlocked = await listen('on-app-blocked', async () => {
+      unlistenAppBlocked = await listen('on-app-blocked', async (event: { payload: { blocked_apps: BlockedApp[] } }) => {
         info('App: app blocked')
         EbbWorker.debounceWork(async () => {
           try {
             const session = await FlowSessionApi.getInProgressFlowSessionWithWorkflow()
             const isHardMode = session?.workflow_json?.settings.difficulty === 'hard'
+
             if (isHardMode) {
               await invoke('show_notification', { notificationType: 'blocked-app-hard' })
             } else {
               await invoke('show_notification', { notificationType: 'blocked-app' })
+            }
+
+            if (event.payload?.blocked_apps) {
+              trackBlockedApps(
+                event.payload.blocked_apps,
+                session?.workflow_id,
+                session?.workflow_json?.name
+              )
             }
           } catch (error) {
             console.error(`Error getting in progress flow session with workflow: ${error}`, error)

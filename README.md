@@ -31,5 +31,4 @@ Ebb uses your window, mouse and keyboard activity to track your workflow habits.
 The monitoring service is a Rust application that runs on your computer and is responsible for recording your activities. It is designed to be run as a background service and will not interfere with your workflow. Makes use of the os-monitor crate to monitor your activities and then record them to the database on your device.
 
 # [Monitor](https://github.com/CodeClimbersIO/os-monitor)
-
 The monitor is a Rust application that runs on your computer and is responsible for monitoring your activities. It is specifically responsible for monitoring (but not recording) your window, mouse and keyboard activity.
