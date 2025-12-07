@@ -136,7 +136,7 @@ export type AnalyticsEvent =
   | 'activity_history_page_changed'
 
   // Blocking Events
-  | 'apps_and_websites_blocked'
+  | 'app_or_website_block_attempt'
 
 export interface AnalyticsEventProperties {
   // Focus session properties
@@ -161,13 +161,8 @@ export interface AnalyticsEventProperties {
   // Billing properties
   days_remaining?: number
 
-  // Blocking properties
-  blocked_apps_count?: number
-  blocked_websites_count?: number
-  total_blocked_count?: number
-  is_block_list?: boolean
-  blocked_app_names?: string[]
-  blocked_website_names?: string[]
+  // Block attempt properties
+  blocked_item_name?: string
 }
 
 const trackEvent = (
