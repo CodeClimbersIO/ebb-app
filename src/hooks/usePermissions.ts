@@ -23,13 +23,9 @@ export const usePermissions = () => {
 
   // In dev mode, grant all pro permissions
   const isDevMode = isDev()
-  console.log('[usePermissions] isDev:', isDevMode, 'import.meta.env.DEV:', import.meta.env.DEV)
-
   const permissions = isDevMode
     ? devPermissions
     : (licenseData?.permissions || defaultPermissions)
-
-  console.log('[usePermissions] permissions:', permissions)
 
   // Sync to store whenever permissions change
   useEffect(() => {
