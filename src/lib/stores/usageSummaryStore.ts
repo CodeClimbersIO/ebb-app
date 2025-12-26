@@ -11,7 +11,7 @@ interface UsageSummaryStore {
 
 export const useUsageSummaryStore = create<UsageSummaryStore>((set) => ({
   date: new Date(),
-  rangeMode: 'day',
+  rangeMode: 'week',
   setDate: (date) => set({ date }),
   setRangeMode: (rangeMode) => set({ rangeMode }),
 }))
